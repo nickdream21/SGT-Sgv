@@ -106,6 +106,7 @@
                                 <asp:ListItem Value="DELETE">Eliminación</asp:ListItem>
                                 <asp:ListItem Value="LOGIN">Inicio de sesión</asp:ListItem>
                                 <asp:ListItem Value="LOGIN_FALLIDO">Inicio de sesión fallido</asp:ListItem>
+                                <asp:ListItem Value="LOGIN_BLOQUEADO">Acceso bloqueado</asp:ListItem>
                                 <asp:ListItem Value="LOGOUT">Cierre de sesión</asp:ListItem>
                                 <asp:ListItem Value="APROBAR">Aprobación</asp:ListItem>
                                 <asp:ListItem Value="RECHAZAR">Rechazo</asp:ListItem>

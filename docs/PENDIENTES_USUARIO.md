@@ -4,7 +4,7 @@ Lo que **solo puede hacer el usuario** (o la oficina, a pedido suyo): decisiones
 
 Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = valor claro; C = menor. Las mejoras de código están en `docs/PLAN_MEJORAS_SGV.md` (`M-`), los datos por corregir en `docs/DATOS_POR_CORREGIR.md` (`D-`) y las pruebas en `docs/PRUEBAS_PENDIENTES.md` (`P-`).
 
-Último id usado: U-086 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: U-087 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Credenciales y paneles externos
 
@@ -20,6 +20,7 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 
 - [ ] **U-073** Panel de somee: ¿permite un segundo usuario de BD con permisos limitados? — hoy la aplicación entra como `db_owner` y desde SQL no se pueden crear logins; con un usuario limitado nadie podría saltarse la protección de firmas y auditoría. · B
 - [ ] **U-077** Panel de somee: ¿modelo de recuperación FULL o respaldo del log (restaurar a un punto en el tiempo)? — hoy la BD está en SIMPLE y solo hay el `.bacpac` diario: un error de datos a media tarde se pierde hasta el respaldo de la noche anterior. Ver si el plan lo permite y qué cuesta. · B
+- [ ] **U-087** Actualizar la contraseña de la cuenta de prueba de CONTABILIDAD (id 93) en `privado/CREDENCIALES_USUARIOS.txt` — la del archivo ya no entra (comprobado el 2026-11-21 en E4-4); restablecerla en pruebas desde Gestión de usuarios y anotar la nueva en el archivo de cada PC, sin pegarla en el chat. · C
 - [ ] **U-075** Quitar de `privado/CREDENCIALES_USUARIOS.txt` los usuarios desactivados `admin.grifo`, `admin.maquinaria` y `operador` y su nota (*) — en esta máquina y en la laptop (el archivo está fuera de git). Además, cambiar ya la contraseña de `operador` (quedó expuesta en la salida de una herramienta) y, si se conserva su línea, dejarla con el mismo formato que las demás; si alguno se reactiva, cambiar antes su contraseña. · C
 - [ ] **U-078** El repositorio de GitHub es público: pasarlo a privado o purgar su historial — cualquiera puede leer el código, el token de apisperu (U-001), una contraseña antigua de la BD con el login vigente, y DNI y nombres de conductores (U-033). Recomendado: hacerlo privado ya (GitHub → Settings → Danger zone → Change visibility) y rotar U-001; en privado las Actions de Windows gastan minutos del plan (confirmar el cupo) y el secret scanning gratuito se pierde. Si debe seguir público, U-033 pasa a ser obligatorio. · A
 - [ ] **U-083** Preguntar a somee por parches y FTPS — el SQL Server es 2022 sin ninguna actualización (16.0.1000.6): ¿cuándo aplican las acumulativas?; ¿ofrecen FTPS o SFTP? (hoy la contraseña FTP, los PDF firmados y el archivo de secretos viajan sin cifrar). Va con U-073 y U-077 en la misma consulta. · B

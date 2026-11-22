@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using WebSGV.Helpers;
 using Xunit;
 
@@ -233,6 +234,360 @@ namespace WebSGV.Tests
             var tercero = control.Reservar(null, "FIRMA_1");
             Assert.True(tercero.BloqueoCuenta);
             Assert.Equal(10 * 60, control.Reservar(null, "FIRMA_1").SegundosRestantes);
+        }
+
+        // ── Login con tres niveles (E4-4): cuenta desde la IP, cuenta en todas las IP, IP ──
+
+        private ControlIntentosLogin Login(AlmacenEnMemoria almacen = null) =>
+            ControlIntentosLogin.CrearLogin(almacen ?? new AlmacenEnMemoria(() => _ahora), () => _ahora);
+
+        [Fact]
+        public void Login_CincoFallosDesdeUnaIp_NoBloqueanLaCuentaDesdeOtra()
+        {
+            var login = Login();
+            for (int i = 1; i <= 4; i++) Assert.False(login.ReservarLogin("10.0.0.1", "ana").BloqueoCuenta);
+            var quinto = login.ReservarLogin("10.0.0.1", "ana");
+            Assert.True(quinto.BloqueoCuenta);
+            Assert.True(quinto.BloqueoCuentaSoloDesdeIp);
+            Assert.False(quinto.BloqueoIp);
+
+            var sexto = login.ReservarLogin("10.0.0.1", "ana");
+            Assert.True(sexto.Rechazado);
+            Assert.Equal(15 * 60, sexto.SegundosRestantes);
+
+            // La misma cuenta desde otra IP sigue pudiendo intentar.
+            var otraIp = login.ReservarLogin("10.0.0.2", "ana");
+            Assert.False(otraIp.Rechazado);
+            Assert.False(otraIp.BloqueoCuenta);
+            // Y otra cuenta desde la IP A también.
+            Assert.False(login.ReservarLogin("10.0.0.1", "beto").Rechazado);
+        }
+
+        [Fact]
+        public void Login_TreintaFallosRepartidosEnVariasIp_BloqueanLaCuentaEnTodas()
+        {
+            var login = Login();
+            int n = 0;
+            ControlIntentosLogin.Reserva ultima = null;
+            // 4 por IP (ninguna llega a 5 de cuenta+IP ni a 20 de IP).
+            for (int ip = 1; n < 30; ip++)
+                for (int k = 0; k < 4 && n < 30; k++, n++)
+                {
+                    ultima = login.ReservarLogin("10.1.0." + ip, "Ana");
+                    Assert.False(ultima.Rechazado);
+                    if (n < 29) Assert.False(ultima.BloqueoCuenta);
+                }
+            Assert.True(ultima.BloqueoCuenta);
+            Assert.False(ultima.BloqueoCuentaSoloDesdeIp);
+            Assert.False(ultima.BloqueoIp);
+
+            // Desde una IP nueva, la cuenta ya está bloqueada 15 min; otra cuenta no.
+            var nueva = login.ReservarLogin("10.9.9.9", " ANA ");
+            Assert.True(nueva.Rechazado);
+            Assert.Equal(15 * 60, nueva.SegundosRestantes);
+            Assert.False(login.ReservarLogin("10.9.9.9", "beto").Rechazado);
+
+            _ahora = _ahora.AddMinutes(15).AddSeconds(1);
+            Assert.False(login.ReservarLogin("10.9.9.9", "ana").Rechazado);
+        }
+
+        [Fact]
+        public void Login_VeintiNueveFallosEnMasDeUnaHora_NoBloqueanLaCuenta()
+        {
+            var login = Login();
+            for (int i = 0; i < 29; i++) login.ReservarLogin("10.2.0." + (i / 4), "ana");
+            _ahora = _ahora.AddMinutes(61);
+            var r = login.ReservarLogin("10.3.0.1", "ana");
+            Assert.False(r.BloqueoCuenta);
+        }
+
+        [Fact]
+        public void Login_VeinteFallosDeLaIp_BloqueanLaIp()
+        {
+            var login = Login();
+            for (int i = 1; i <= 19; i++) Assert.False(login.ReservarLogin("10.0.0.1", "u" + i).BloqueoIp);
+            var vigesimo = login.ReservarLogin("10.0.0.1", "u20");
+            Assert.True(vigesimo.BloqueoIp);
+            Assert.False(vigesimo.BloqueoCuenta);
+
+            var otro = login.ReservarLogin("10.0.0.1", "u99");
+            Assert.True(otro.Rechazado);
+            Assert.Equal(5 * 60, otro.SegundosRestantes);
+            Assert.False(login.ReservarLogin("10.0.0.2", "u99").Rechazado);
+        }
+
+        [Fact]
+        public void Login_Correcto_LimpiaLosDosNivelesDeCuentaYDevuelveElIntentoALaIp()
+        {
+            var almacen = new AlmacenEnMemoria(() => _ahora);
+            var login = Login(almacen);
+            for (int i = 0; i < 4; i++) login.ReservarLogin("10.0.0.1", "ana");
+            login.LoginCorrecto(login.ReservarLogin("10.0.0.1", "ana"));
+
+            Assert.DoesNotContain(ControlIntentosLogin.ClaveCuenta("ana"), almacen.Claves);
+            Assert.DoesNotContain(ControlIntentosLogin.ClaveCuentaIp("ana", "10.0.0.1"), almacen.Claves);
+            // La IP conserva sus 4 fallos: 15 más no la bloquean, el 16.º (20 en total) sí.
+            for (int i = 0; i < 15; i++) Assert.False(login.ReservarLogin("10.0.0.1", "x" + i).BloqueoIp);
+            Assert.True(login.ReservarLogin("10.0.0.1", "y").BloqueoIp);
+        }
+
+        [Fact]
+        public void Login_ErrorDeBd_DevuelveLosTresNiveles()
+        {
+            var almacen = new AlmacenEnMemoria(() => _ahora);
+            var login = Login(almacen);
+            login.ErrorAlValidar(login.ReservarLogin("10.0.0.1", "ana"));
+            Assert.Empty(almacen.Claves);
+        }
+
+        [Fact]
+        public void Login_ReservarDeDosNiveles_NoSeUsaConElDeTres()
+        {
+            Assert.Throws<InvalidOperationException>(() => Login().Reservar("IP_1", "USR_x"));
+            Assert.Throws<InvalidOperationException>(() => _control.ReservarLogin("10.0.0.1", "ana"));
+        }
+
+        [Fact]
+        public void Claves_NoLlevanElUsuarioEnClaro()
+        {
+            const string escrito = "Contrasena.Secreta99";
+            var almacen = new AlmacenEnMemoria(() => _ahora);
+            Login(almacen).ReservarLogin("10.0.0.1", escrito);
+
+            Assert.Equal(3, almacen.Claves.Count());
+            foreach (string clave in almacen.Claves.Concat(new[] { SolicitudRecuperacion.ClaveCuenta(escrito) }))
+            {
+                Assert.DoesNotContain("contrasena", clave, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("secreta", clave, StringComparison.OrdinalIgnoreCase);
+                Assert.True(clave.Length <= AlmacenBdIntentos.LargoMaximoClave, clave);
+            }
+
+            // SHA-256 del texto recortado y en minúsculas: mismo contador con mayúsculas o espacios.
+            Assert.Equal("USR_" + ControlIntentosLogin.Sha256Hex("ana"), ControlIntentosLogin.ClaveCuenta(" ANA "));
+            Assert.Equal(ControlIntentosLogin.ClaveCuentaIp("ana", "1.1.1.1"), ControlIntentosLogin.ClaveCuentaIp("Ana ", "1.1.1.1"));
+            Assert.NotEqual(ControlIntentosLogin.ClaveCuentaIp("ana", "1.1.1.1"), ControlIntentosLogin.ClaveCuentaIp("ana", "1.1.1.2"));
+            Assert.Matches("^USR_[0-9a-f]{64}$", ControlIntentosLogin.ClaveCuenta("ana"));
+            Assert.Matches("^UIP_[0-9a-f]{64}$", ControlIntentosLogin.ClaveCuentaIp("ana", "1.1.1.1"));
+            // Vector conocido de SHA-256.
+            Assert.Equal("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", ControlIntentosLogin.Sha256Hex("abc"));
+        }
+
+        [Fact]
+        public void LimitesDelLogin_SonLosDeE4_4()
+        {
+            Assert.Equal(30, ControlIntentosLogin.MaxFallosCuentaGlobal);
+            Assert.Equal(TimeSpan.FromHours(1), ControlIntentosLogin.VentanaCuentaGlobal);
+            Assert.Equal(TimeSpan.FromMinutes(15), ControlIntentosLogin.BloqueoCuentaGlobal);
+        }
+
+        // ── AlmacenBdIntentos: respaldo en el proceso si la BD falla ──
+
+        [Fact]
+        public void AlmacenBd_SiLaBdFalla_UsaElRespaldoUnMinutoYLuegoVuelveALaBd()
+        {
+            var respaldo = new AlmacenEnMemoria(() => _ahora);
+            var datosBd = new AlmacenEnMemoria(() => _ahora);
+            var bd = new AlmacenAtomicoEnProceso(datosBd);   // hace de los SP
+            int llamadasBd = 0;
+            bool bdCaida = true;
+            void Tocar() { llamadasBd++; if (bdCaida) throw new InvalidOperationException("sin BD"); }
+            var almacen = new AlmacenBdIntentos(new AlmacenAtomicoEnProceso(respaldo), () => _ahora,
+                (niveles, ahora) => { Tocar(); return bd.Reservar(niveles, ahora); },
+                (clave, bloqueo, previo, limite, ahora) => { Tocar(); bd.Devolver(clave, bloqueo, previo, limite, ahora); },
+                clave => { Tocar(); bd.Quitar(clave); });
+
+            // Con la BD caída el control sigue bloqueando, sobre el respaldo.
+            var control = new ControlIntentosLogin(almacen, () => _ahora, null,
+                new ControlIntentosLogin.Limite(5, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15)));
+            for (int i = 0; i < 5; i++) control.Reservar(null, "USR_a");
+            Assert.True(control.Reservar(null, "USR_a").Rechazado);
+            Assert.True(almacen.UsandoRespaldo);
+            Assert.Equal(1, llamadasBd);              // tras el primer fallo no se insiste en la BD
+            Assert.Contains("USR_a", respaldo.Claves);
+            Assert.Empty(datosBd.Claves);
+
+            // Pasado el minuto vuelve a la BD (que no tiene el bloqueo del respaldo).
+            _ahora = _ahora.AddMinutes(1).AddSeconds(1);
+            bdCaida = false;
+            Assert.False(almacen.UsandoRespaldo);
+            var r = control.Reservar(null, "USR_b");
+            Assert.False(r.Rechazado);
+            Assert.Contains("USR_b", datosBd.Claves);
+            Assert.DoesNotContain("USR_b", respaldo.Claves);
+            control.LoginCorrecto(r);
+            Assert.Empty(datosBd.Claves);
+        }
+
+        [Fact]
+        public void AlmacenBd_ClaveLarga_SeGuardaComoHash()
+        {
+            string larga = "IP_" + new string('f', 120);
+            string enBd = AlmacenBdIntentos.ClaveBd(larga);
+            Assert.Equal("H_" + ControlIntentosLogin.Sha256Hex(larga), enBd);
+            Assert.True(enBd.Length <= AlmacenBdIntentos.LargoMaximoClave);
+            Assert.Equal("IP_10.0.0.1", AlmacenBdIntentos.ClaveBd("IP_10.0.0.1"));
+        }
+
+        [Fact]
+        public void AlmacenEnProceso_ReservasEnParalelo_CuentanTodas()
+        {
+            var datos = new AlmacenEnMemoria(() => _ahora);
+            var almacen = new AlmacenAtomicoEnProceso(new AlmacenSincronizado(datos));
+            var limite = new ControlIntentosLogin.Limite(1000, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(15));
+            System.Threading.Tasks.Parallel.For(0, 200, _ =>
+                almacen.Reservar(new[] { new NivelIntento { Clave = "IP_x", Limite = limite } }, _ahora));
+            Assert.Equal(200, datos.Leer("IP_x").Fallidos);
+        }
+
+        // ── Usuario con caracteres fuera de [A-Za-z0-9._@-]: la colación de la BD lo iguala a la cuenta real ──
+
+        public static IEnumerable<object[]> VariantesDeUsuario() => new[]
+        {
+            new object[] { "ana\uFEFF" },          // BOM / espacio de ancho cero
+            new object[] { "\uFEFFana" },
+            new object[] { "\uFF41\uFF4E\uFF41" },              // ancho completo
+            new object[] { "an\uFF41" },
+            new object[] { "ana\0" },              // NUL
+            new object[] { "an a" },
+            new object[] { "an\u00E0" },
+        };
+
+        [Theory]
+        [MemberData(nameof(VariantesDeUsuario))]
+        public void UsuarioConCaracteresRaros_NoTieneFormato_YCuentaEnLaClaveFija(string variante)
+        {
+            Assert.False(ControlIntentosLogin.UsuarioConFormatoValido(variante));
+            Assert.Equal(ControlIntentosLogin.ClaveCuentaInvalida, ControlIntentosLogin.ClaveCuenta(variante));
+            Assert.Null(ControlIntentosLogin.ClaveCuentaIp(variante, "10.0.0.1"));
+            Assert.Equal(SolicitudRecuperacion.ClaveCuentaInvalida, SolicitudRecuperacion.ClaveCuenta(variante));
+            Assert.False(SolicitudRecuperacion.SeBuscaLaCuenta(variante));
+        }
+
+        [Theory]
+        [InlineData("ana")]
+        [InlineData(" Ana.Perez_2 ")]
+        [InlineData("ana-perez@empresa.com.pe")]
+        public void UsuarioYCorreoNormales_TienenFormato(string usuario)
+        {
+            Assert.True(ControlIntentosLogin.UsuarioConFormatoValido(usuario));
+            Assert.StartsWith("USR_", ControlIntentosLogin.ClaveCuenta(usuario));
+            Assert.NotEqual(ControlIntentosLogin.ClaveCuentaInvalida, ControlIntentosLogin.ClaveCuenta(usuario));
+            Assert.True(SolicitudRecuperacion.SeBuscaLaCuenta(usuario));
+        }
+
+        [Fact]
+        public void Login_RotarVariantesDelUsuario_NoEsquivaElLimite()
+        {
+            var almacen = new AlmacenEnMemoria(() => _ahora);
+            var login = Login(almacen);
+            string[] variantes = VariantesDeUsuario().Select(v => (string)v[0]).ToArray();
+
+            // 30 intentos con variantes, 4 por IP: el 30.º bloquea la clave fija de cuenta inválida.
+            ControlIntentosLogin.Reserva ultima = null;
+            for (int i = 0; i < 30; i++)
+            {
+                ultima = login.ReservarLogin("10.4.0." + (i / 4), variantes[i % variantes.Length]);
+                Assert.False(ultima.Rechazado);
+            }
+            Assert.True(ultima.BloqueoCuenta);
+            Assert.True(login.ReservarLogin("10.4.9.9", "\uFF41\uFF4E\uFF41").Rechazado);
+            // Solo la IP y la clave fija: nada por cada variante, y la cuenta real no se toca.
+            Assert.All(almacen.Claves, c => Assert.True(c.StartsWith("IP_") || c == ControlIntentosLogin.ClaveCuentaInvalida, c));
+            Assert.False(login.ReservarLogin("10.4.9.9", "ana").Rechazado);
+        }
+
+        [Fact]
+        public void Recuperacion_RotarVariantes_CuentaEnLaClaveFija()
+        {
+            var control = SolicitudRecuperacion.Crear(new AlmacenEnMemoria(() => _ahora), () => _ahora);
+            Assert.True(SolicitudRecuperacion.Permitir(control, "10.0.0.1", "juan\uFEFF"));
+            Assert.True(SolicitudRecuperacion.Permitir(control, "10.0.0.2", "\uFF4A\uFF55\uFF41\uFF4E"));
+            Assert.True(SolicitudRecuperacion.Permitir(control, "10.0.0.3", "juan\0"));
+            Assert.False(SolicitudRecuperacion.Permitir(control, "10.0.0.4", "jua\uFF4E"));   // 4.ª en la clave fija
+            Assert.True(SolicitudRecuperacion.Permitir(control, "10.0.0.4", "juan"));        // la cuenta real, aparte
+        }
+
+        // ── Auditoría de acceso (M-062): LOGIN_FALLIDO y LOGIN_BLOQUEADO ──
+
+        private readonly List<(string Accion, int? Id, string Nombre, string Descripcion)> _auditado =
+            new List<(string, int?, string, string)>();
+
+        private void Auditar(string accion, int? id, string nombre, string descripcion) => _auditado.Add((accion, id, nombre, descripcion));
+
+        [Fact]
+        public void Auditoria_CuentaExistente_ContrasenaIncorrecta_DejaLoginFallido()
+        {
+            var login = Login();
+            AuditoriaAccesoLogin.RegistrarRechazo(login.ReservarLogin("10.0.0.1", "ana"), 7, "ana", false, "10.0.0.1", Auditar);
+
+            var a = Assert.Single(_auditado);
+            Assert.Equal("LOGIN_FALLIDO", a.Accion);
+            Assert.Equal(7, a.Id);
+            Assert.Equal("ana", a.Nombre);
+            Assert.Contains("contraseña incorrecta", a.Descripcion);
+            Assert.Contains("10.0.0.1", a.Descripcion);
+        }
+
+        [Fact]
+        public void Auditoria_CuentaInactiva_DejaLoginFallidoConElMotivo()
+        {
+            AuditoriaAccesoLogin.RegistrarRechazo(Login().ReservarLogin("10.0.0.1", "ana"), 7, "ana", true, "10.0.0.1", Auditar);
+            var a = Assert.Single(_auditado);
+            Assert.Equal("LOGIN_FALLIDO", a.Accion);
+            Assert.Contains("cuenta inactiva", a.Descripcion);
+        }
+
+        [Fact]
+        public void Auditoria_UsuarioInexistente_NoDejaNada_NiElTextoEscrito()
+        {
+            var login = Login();
+            for (int i = 0; i < 4; i++)
+                AuditoriaAccesoLogin.RegistrarRechazo(login.ReservarLogin("10.0.0.1", "Secreta99"), null, "Secreta99", false, "10.0.0.1", Auditar);
+            Assert.Empty(_auditado);
+
+            // El 5.º bloquea la "cuenta" desde la IP: un LOGIN_BLOQUEADO sin id ni el texto escrito.
+            AuditoriaAccesoLogin.RegistrarRechazo(login.ReservarLogin("10.0.0.1", "Secreta99"), null, "Secreta99", false, "10.0.0.1", Auditar);
+            var a = Assert.Single(_auditado);
+            Assert.Equal("LOGIN_BLOQUEADO", a.Accion);
+            Assert.Null(a.Id);
+            Assert.Null(a.Nombre);
+            Assert.DoesNotContain("Secreta99", a.Descripcion);
+        }
+
+        [Fact]
+        public void Auditoria_LoginBloqueado_UnaSolaVezPorBloqueo()
+        {
+            var login = Login();
+            for (int i = 0; i < 8; i++)
+                AuditoriaAccesoLogin.RegistrarRechazo(login.ReservarLogin("10.0.0.1", "ana"), 7, "ana", false, "10.0.0.1", Auditar);
+
+            // 5 fallos auditados (el 5.º bloquea) y 1 bloqueo; los 3 rechazos durante el bloqueo, nada.
+            Assert.Equal(5, _auditado.Count(x => x.Accion == "LOGIN_FALLIDO"));
+            var b = Assert.Single(_auditado, x => x.Accion == "LOGIN_BLOQUEADO");
+            Assert.Equal(7, b.Id);
+            Assert.Contains("desde esta IP", b.Descripcion);
+        }
+
+        [Fact]
+        public void Auditoria_BloqueoDeIp_SeAuditaUnaVez()
+        {
+            var login = Login();
+            for (int i = 1; i <= 21; i++)
+                AuditoriaAccesoLogin.RegistrarRechazo(login.ReservarLogin("10.0.0.1", "u" + i), null, null, false, "10.0.0.1", Auditar);
+            var b = Assert.Single(_auditado);
+            Assert.Equal("LOGIN_BLOQUEADO", b.Accion);
+            Assert.Contains("la IP", b.Descripcion);
+            Assert.DoesNotContain("cuenta", b.Descripcion);
+        }
+
+        /// <summary>Envuelve otro almacén con un candado (el diccionario no es seguro entre hilos).</summary>
+        private class AlmacenSincronizado : IAlmacenIntentosLogin
+        {
+            private readonly IAlmacenIntentosLogin _a;
+            public AlmacenSincronizado(IAlmacenIntentosLogin a) { _a = a; }
+            public IntentosLogin Leer(string clave) { lock (_a) return _a.Leer(clave); }
+            public void Guardar(string clave, IntentosLogin intentos, DateTime venceUtc) { lock (_a) _a.Guardar(clave, intentos, venceUtc); }
+            public void Quitar(string clave) { lock (_a) _a.Quitar(clave); }
         }
 
         private class AlmacenEnMemoria : IAlmacenIntentosLogin

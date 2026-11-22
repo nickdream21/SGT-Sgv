@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `c152f98` — E4-2: `GuardasAccesoTests` (44 puntos de entrada y 23 WebMethods con su guarda, polaridad y orden comprobados; falla con uno nuevo sin decidir); `DashboardConductor` con `ExigirRolConductor`; `IdConductor` solo vía `SesionHelper`; `no-store` desde `Site.Master`; `DescargarPdfOrdenViaje` con `ExigirSesion`; nuevo M-113. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `b8e447c` — E4-4: intentos de acceso en la BD (migración 61 `IntentoAcceso`; SP `sp_US_ReservarIntentoAcceso`, `sp_US_DevolverIntentoAcceso` y `sp_US_QuitarIntentoAcceso`, aplicados en pruebas); tres límites en el login; usuarios fuera de `[A-Za-z0-9._@-]` cuentan en una clave fija; `LOGIN_FALLIDO` y `LOGIN_BLOQUEADO` en la auditoría; fuera `LimiteConsultas`; cierra M-062; nuevos M-114 y M-115, U-087 y P-035. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-113 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-115 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -144,7 +144,8 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 
 - [ ] **M-112** Nombres de conductores reales en el árbol — 44 líneas en 12 archivos (encontradas en la revisión de E4-1): datos de prueba (`WebSGV.Tests/Datos/Trazabilidad/casos.json`, `LectorDocumentosPedidoTests`, `ListaChoferesTests`, `LlegadaEstimadaTests`, `PdfOrdenViajeTests`, `ProgramacionCargaTests`), 2 scripts de `Database/Scripts/` ya aplicados, comentarios de `LectorDocumentosPedido.cs` y `LiquidacionesContabilidadService.cs`, y `docs/archivo/Documentacion_Tecnica_PBI_SGV_MARZO2025.md`. Cambiarlos por ficticios y ampliar `DatosPersonalesRepoTests` a nombres, teléfonos con separadores o `+51` y `Usuarios`/`FirmaDigital`. `docs/archivo/HISTORIAL_2026.md` (13 líneas) está congelado: queda para la purga del historial (U-033/U-078). · B
 - [ ] **M-113** `LiquidacionesAprobadasContabilidad.aspx` sin sesión manda a `Login.aspx` sin `?error=sesion` — las demás páginas protegidas lo agregan (observado por el probador en E4-2); revisar su guarda y unificar el mensaje. · C
-- [ ] **M-062** Login de una cuenta inactiva no deja `LOGIN_FALLIDO` — en AuditoriaLog (observado en B5-8). Va con "registrar LOGIN_FALLIDO y bloqueos" de la etapa 4. · B
+- [ ] **M-114** Claves de cuenta de `IntentoAcceso` con HMAC — hoy son SHA-256 sin secreto (`ControlIntentosLogin.ClaveCuenta`): con la tabla en mano, un nombre de usuario corto se puede adivinar. Pasar a HMAC-SHA256 con una clave de `appSettings.Secrets.config` (las filas viejas vencen solas en 1 h). · C
+- [ ] **M-115** Detalles del login tras E4-4 — un usuario fuera de formato responde unos 125 ms antes que uno inexistente (no consulta `Usuarios`; solo depende de lo escrito, no revela cuentas); el aviso del log de la recuperación dice "(IP …)" aunque lo bloqueó la clave fija `RECUP_USR_invalido`; Auditoría corta "Inicio de sesión fallido" en el combo de Acción a 1366 px (`Content/paginas/Auditoria.css`). · C
 - [ ] **M-064** Secciones de `TienePermiso` sin página — FACTURA, CPIC, CONSULTAS, INDICADORES, AUDITORIA… (`RolesHelper.cs:169-182`) y ADMIN con acceso a DASHBOARD_CONDUCTOR: depurarlas (cambia `RolesHelperTests` a propósito). · C
 - [ ] **M-065** ReportesOrdenesViaje: `ex.Message` de cualquier `ArgumentException` al usuario — `ResponderSolicitudInvalida(ex.Message)` (`ReportesOrdenesViaje.aspx.cs:~1123`): si ClosedXML/QuestPDF lanza una, su texto técnico llega al usuario. · C
 - [ ] **M-066** No quedarse sin administrador de sistema activo — impedir que dos se desactiven a la vez (`NOT EXISTS` de otro ADMINISTRADOR DE SISTEMA activo en el `WHERE`) y ocultar "Desactivar" en la fila propia (hoy el servidor lo rechaza con aviso). · C

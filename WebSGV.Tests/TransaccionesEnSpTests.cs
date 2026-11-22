@@ -113,10 +113,31 @@ namespace WebSGV.Tests
             Assert.Empty(Procedimientos().Where(p => TieneXactAbortOff(p.Codigo)).Select(p => p.Nombre));
         }
 
+        /// <summary>SP con un CATCH que a propósito no relanza, con su motivo. Cambiar esta lista es una decisión.</summary>
+        private static readonly Dictionary<string, string> CatchSinRelanzarPermitido = new Dictionary<string, string>
+        {
+            // La limpieza de vencidos corre tras el COMMIT de la reserva: si fallara (p. ej. un interbloqueo con otra
+            // reserva), el C# reintentaría una reserva ya hecha y contaría el fallo dos veces (E4-4).
+            ["sp_US_ReservarIntentoAcceso.sql"] = "limpieza de vencidos tras el COMMIT, sin transacción abierta",
+        };
+
         [Fact]
         public void Todo_CATCH_de_un_sp_relanza_el_error()
         {
-            Assert.Empty(Procedimientos().Where(p => CatchesQueNoRelanzan(p.Codigo) > 0).Select(p => p.Nombre));
+            Assert.Empty(Procedimientos()
+                .Where(p => CatchesQueNoRelanzan(p.Codigo) > (CatchSinRelanzarPermitido.ContainsKey(p.Nombre) ? 1 : 0))
+                .Select(p => p.Nombre));
+        }
+
+        [Fact]
+        public void Los_CATCH_sin_relanzar_permitidos_existen_y_no_tienen_transaccion_abierta()
+        {
+            foreach (string nombre in CatchSinRelanzarPermitido.Keys)
+            {
+                var sp = Procedimientos().SingleOrDefault(p => p.Nombre == nombre);
+                Assert.True(sp.Nombre != null, nombre + " está en CatchSinRelanzarPermitido pero no existe.");
+                Assert.Equal(1, CatchesQueNoRelanzan(sp.Codigo));
+            }
         }
 
         [Theory]

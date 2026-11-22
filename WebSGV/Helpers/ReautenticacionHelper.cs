@@ -31,14 +31,14 @@ namespace WebSGV.Helpers
         /// <summary>Mismo tope que el inicio de sesión: más largo no se verifica (no se gasta PBKDF2).</summary>
         public const int LargoMaximoIngresada = 200;
 
-        /// <summary>Contadores en HttpRuntime.Cache (vencen solos), con el mismo almacén del login.</summary>
+        /// <summary>Contadores en la tabla IntentoAcceso (sobreviven al reciclaje), con el mismo almacén del login.</summary>
         private static readonly ControlIntentosLogin Control = new ControlIntentosLogin(
-            ControlIntentosLogin.AlmacenCacheAspNet.Instancia, () => DateTime.UtcNow,
+            AlmacenBdIntentos.Sitio, () => DateTime.UtcNow,
             porIp: null, porCuenta: new ControlIntentosLogin.Limite(MaxIntentos, Bloqueo, Ventana));
 
         /// <summary>
         /// Clave del contador, la misma para firmar y para cambiar la contraseña (no choca con las del
-        /// login: IP_ / USR_, ni con las de recuperación: RECUP_ / RESET_).
+        /// login: IP_ / UIP_ / USR_, ni con las de recuperación: RECUP_ / RESET_). Lleva el id, no texto del usuario.
         /// </summary>
         public static string ClaveReautenticacion(int idUsuario) => "REAUT_" + idUsuario;
 

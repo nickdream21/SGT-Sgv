@@ -252,6 +252,29 @@ SELECT archivo, fechaAplicacion FROM dbo.SchemaVersion
 WHERE archivo IN ('59_BorrarRevocarFirmaYPortador.sql', '60_BorrarTablasGrifoYGuias.sql');
 ```
 
+**Migración 61** (`61_IntentoAcceso.sql`, E4-4): crea `dbo.IntentoAcceso` (contadores contra la fuerza bruta del login, la firma, la recuperación de contraseña y `VerificarDocumento`; las claves de cuenta son SHA-256, nunca el texto escrito, y un usuario con caracteres fuera de `[A-Za-z0-9._@-]` cuenta en `USR_invalido` / `RECUP_USR_invalido`) con `PK_IntentoAcceso`, `CK_IntentoAcceso_Fallidos` e `IX_IntentoAcceso_VenceUtc`. Es aditiva: no toca datos. **Orden: migración 61 → `aplicar-procedimientos.ps1`** (`sp_US_ReservarIntentoAcceso`, `sp_US_DevolverIntentoAcceso` y `sp_US_QuitarIntentoAcceso`, que usan la tabla) **→ publicar el código de E4-4**. Con el código publicado antes, el login sigue funcionando sobre la caché del proceso y deja un error en el log cada minuto. Antes, comprobar que ningún usuario queda fuera del formato (debe dar 0; si no, esa cuenta no podrá entrar):
+
+```sql
+SELECT COUNT(*) AS fueraDeFormato FROM dbo.Usuarios
+WHERE nombreUsuario COLLATE Latin1_General_BIN2 LIKE '%[^-A-Za-z0-9._@]%'
+   OR LTRIM(RTRIM(ISNULL(email, ''))) COLLATE Latin1_General_BIN2 LIKE '%[^-A-Za-z0-9._@]%';
+```
+
+Control posterior (solo SELECT):
+
+```sql
+-- Tabla, restricciones e índice: 4 filas.
+SELECT name FROM sys.objects WHERE name IN ('IntentoAcceso', 'PK_IntentoAcceso', 'CK_IntentoAcceso_Fallidos')
+UNION ALL SELECT name FROM sys.indexes WHERE object_id = OBJECT_ID('dbo.IntentoAcceso') AND name = 'IX_IntentoAcceso_VenceUtc';
+-- Los 3 SP: 3 filas.
+SELECT name FROM sys.procedures WHERE name IN ('sp_US_ReservarIntentoAcceso', 'sp_US_DevolverIntentoAcceso', 'sp_US_QuitarIntentoAcceso');
+-- Registrada: 1 fila.
+SELECT archivo, fechaAplicacion FROM dbo.SchemaVersion WHERE archivo = '61_IntentoAcceso.sql';
+-- Tras publicar y un login fallido de prueba: solo prefijos IP_/UIP_/USR_/REAUT_/RECUP_/RESET_/VERIF_ (las de cuenta, con 64 hex o *_invalido).
+SELECT LEFT(clave, 10) AS prefijo, COUNT(*) FROM dbo.IntentoAcceso GROUP BY LEFT(clave, 10);
+SELECT Accion, COUNT(*) FROM AuditoriaLog WHERE Accion IN ('LOGIN_FALLIDO', 'LOGIN_BLOQUEADO') GROUP BY Accion;
+```
+
 ## 5. Procedimientos almacenados
 
 **Obligatorio antes de este paso y del 4:** ensayar el mismo commit sobre el `.bacpac` más reciente con `.\herramientas\respaldo\ensayar-migracion.ps1` (migraciones, SP, ejecución de humo y `[FactBD]` en una copia local) y tener `RESULTADO: OK`. `aplicar-procedimientos.ps1` vuelve a hacer el humo al terminar, pero en producción eso llega tarde: el SP ya quedó aplicado.

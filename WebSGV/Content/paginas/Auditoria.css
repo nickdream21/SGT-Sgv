@@ -110,6 +110,7 @@
 .aud-badge-delete { background: #fef2f2; color: #991b1b; }
 .aud-badge-login { background: #e0f2fe; color: #0c4a6e; }
 .aud-badge-login_fallido { background: #fef2f2; color: #991b1b; }
+.aud-badge-login_bloqueado { background: #fee2e2; color: #7f1d1d; }
 .aud-badge-logout { background: #f1f5f9; color: #475569; }
 .aud-badge-aprobar { background: #dcfce7; color: #166534; }
 .aud-badge-rechazar { background: #fef3c7; color: #92400e; }

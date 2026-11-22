@@ -69,6 +69,10 @@ namespace WebSGV.Views
                 return;
             }
 
+            // Sin formato de usuario ni de correo: no se busca (la colación iguala variantes a la cuenta real).
+            if (!SolicitudRecuperacion.SeBuscaLaCuenta(usuarioEmail))
+                return;
+
             var usuario = SolicitudRecuperacion.Elegir(BuscarUsuarios(usuarioEmail));
             switch (SolicitudRecuperacion.Decidir(permitido, usuario))
             {

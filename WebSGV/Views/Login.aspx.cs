@@ -130,11 +130,12 @@ namespace WebSGV.Views
                 return;
             }
 
-            // Anti-fuerza-bruta por IP y por cuenta (ControlIntentosLogin): el intento se reserva
-            // como fallo ANTES de ir a la BD, para que peticiones en paralelo no se salten el bloqueo.
+            // Anti-fuerza-bruta por IP, por cuenta desde esa IP y por cuenta en todas las IP
+            // (ControlIntentosLogin, tabla IntentoAcceso): el intento se reserva como fallo ANTES de ir
+            // a la BD, para que peticiones en paralelo no se salten el bloqueo.
             var control = ControlIntentosLogin.Sitio;
-            var reserva = control.Reservar(ControlIntentosLogin.ClaveIp(IpClienteHelper.Obtener(Request)),
-                                           ControlIntentosLogin.ClaveCuenta(usuario));
+            string ip = IpClienteHelper.Obtener(Request);
+            var reserva = control.ReservarLogin(ip, usuario);
             if (reserva.Rechazado)
             {
                 int minutos = Math.Max(1, (int)Math.Ceiling(reserva.SegundosRestantes / 60.0));
@@ -142,8 +143,7 @@ namespace WebSGV.Views
                 return;
             }
 
-            (bool EsValido, string Rol, string Nombre, string NombreUsuario,
-             int IdUsuario, int? IdConductor, bool RequiereCambioContrasena, Guid SelloSesion) resultado;
+            ResultadoValidacion resultado;
             try
             {
                 resultado = ValidarUsuario(usuario, contrasena);
@@ -213,7 +213,13 @@ namespace WebSGV.Views
             }
             else
             {
-                // El fallo ya quedó contado en la reserva.
+                // El fallo ya quedó contado en la reserva. LOGIN_FALLIDO solo si la cuenta existe (también
+                // la inactiva) y LOGIN_BLOQUEADO si esta reserva bloqueó; nunca el texto escrito.
+                AuditoriaAccesoLogin.RegistrarRechazo(reserva,
+                    resultado.CuentaExiste ? resultado.IdUsuario : (int?)null,
+                    resultado.NombreUsuario, resultado.CuentaInactiva, ip);
+
+                // Mismo mensaje para contraseña incorrecta, usuario inexistente y cuenta inactiva.
                 if (reserva.BloqueoIp || reserva.BloqueoCuenta)
                     MostrarMensaje("Demasiados intentos fallidos. El acceso quedó bloqueado temporalmente; intente más tarde.");
                 else
@@ -248,39 +254,63 @@ namespace WebSGV.Views
         /// para que el tiempo de respuesta no revele qué usuarios existen.</summary>
         private static readonly string HashFicticio = PasswordHelper.HashPassword(Guid.NewGuid().ToString("N"));
 
-        private (bool EsValido, string Rol, string Nombre, string NombreUsuario,
-                 int IdUsuario, int? IdConductor, bool RequiereCambioContrasena, Guid SelloSesion) ValidarUsuario(string usuario, string contrasena)
+        /// <summary>Resultado de <see cref="ValidarUsuario"/>. <c>CuentaExiste</c>/<c>CuentaInactiva</c>,
+        /// <c>IdUsuario</c> y <c>NombreUsuario</c> (el de la BD) se llenan también si la contraseña no
+        /// coincide, solo para la auditoría; el mensaje al usuario es el mismo en todos los rechazos.</summary>
+        private struct ResultadoValidacion
         {
-            bool esValido = false;
-            string rol = "", nombre = "", nombreUsuario = "";
-            int idUsuario = 0;
-            int? idConductor = null;
-            bool requiereCambioContrasena = false;
-            Guid selloSesion = Guid.Empty;
+            public bool EsValido;
+            public bool CuentaExiste;
+            public bool CuentaInactiva;
+            public string Rol, Nombre, NombreUsuario;
+            public int IdUsuario;
+            public int? IdConductor;
+            public bool RequiereCambioContrasena;
+            public Guid SelloSesion;
+        }
+
+        private ResultadoValidacion ValidarUsuario(string usuario, string contrasena)
+        {
+            var r = new ResultadoValidacion { Rol = "", Nombre = "", NombreUsuario = "", SelloSesion = Guid.Empty };
+
+            // Sin formato de usuario (ancho completo, U+FEFF, NUL...): la colación de Usuarios lo igualaría a
+            // la cuenta real con otra clave de intentos. No se busca: mismo costo y mismo mensaje.
+            if (!ControlIntentosLogin.UsuarioConFormatoValido(usuario))
+            {
+                PasswordHelper.VerificarIngresada(contrasena, HashFicticio);
+                return r;
+            }
 
             try
             {
+                // Sin filtrar por activo: una cuenta inactiva se verifica igual (mismo costo) y se rechaza
+                // con el mismo mensaje, pero queda su LOGIN_FALLIDO (M-062).
                 DataTable dt = DbHelper.ConsultarTabla(@"
                     SELECT u.idUsuario, u.nombreUsuario, u.nombre, u.rol,
-                           u.idConductor, u.contrasena,
+                           u.idConductor, u.contrasena, u.activo,
                            ISNULL(u.requiereCambioContrasena, 0) AS requiereCambioContrasena,
                            u.selloSesion
                     FROM Usuarios u
-                    WHERE u.nombreUsuario = @Usuario AND u.activo = 1",
+                    WHERE u.nombreUsuario = @Usuario",
                     DbHelper.Param("@Usuario", usuario));
 
                 if (dt.Rows.Count > 0)
                 {
                     DataRow reader = dt.Rows[0];
                     string storedHash = reader["contrasena"].ToString();
-                    idUsuario = Convert.ToInt32(reader["idUsuario"]);
+                    r.IdUsuario = Convert.ToInt32(reader["idUsuario"]);
+                    r.CuentaExiste = true;
+                    r.CuentaInactiva = reader["activo"] == DBNull.Value || !Convert.ToBoolean(reader["activo"]);
+                    r.NombreUsuario = reader["nombreUsuario"].ToString().Trim();
+                    int idUsuario = r.IdUsuario;
 
                     string coincidente;
                     bool coincide = PasswordHelper.VerificarIngresada(contrasena, storedHash, out coincidente);
 
                     // Hash del formato anterior (PBKDF2-SHA1) → PBKDF2-SHA256. Si falla, el login sigue.
+                    // Una cuenta inactiva no se convierte: IgualarCostoVerificacion paga el mismo costo.
                     bool convertido = false;
-                    if (coincide)
+                    if (coincide && !r.CuentaInactiva)
                     {
                         try
                         {
@@ -298,18 +328,17 @@ namespace WebSGV.Views
                     if (!convertido)
                         PasswordHelper.IgualarCostoVerificacion(contrasena, storedHash, HashFicticio);
 
-                    if (coincide)
+                    if (coincide && !r.CuentaInactiva)
                     {
-                        nombreUsuario = reader["nombreUsuario"].ToString().Trim();
-                        nombre        = reader["nombre"].ToString().Trim();
-                        rol           = reader["rol"].ToString().Trim();
+                        r.Nombre = reader["nombre"].ToString().Trim();
+                        r.Rol    = reader["rol"].ToString().Trim();
 
-                        if (RolesHelper.EsRolConductor(rol) && reader["idConductor"] != DBNull.Value)
-                            idConductor = Convert.ToInt32(reader["idConductor"]);
+                        if (RolesHelper.EsRolConductor(r.Rol) && reader["idConductor"] != DBNull.Value)
+                            r.IdConductor = Convert.ToInt32(reader["idConductor"]);
 
-                        esValido = true;
-                        requiereCambioContrasena = Convert.ToBoolean(reader["requiereCambioContrasena"]);
-                        selloSesion = (Guid)reader["selloSesion"];
+                        r.EsValido = true;
+                        r.RequiereCambioContrasena = Convert.ToBoolean(reader["requiereCambioContrasena"]);
+                        r.SelloSesion = (Guid)reader["selloSesion"];
                     }
                 }
                 else
@@ -323,11 +352,12 @@ namespace WebSGV.Views
             {
                 // No tragar el error: un fallo de BD/lectura se registra y se propaga para
                 // que el llamador lo distinga de "credenciales incorrectas".
-                LogSGV.Error(ex, "Error de BD al validar credenciales del usuario {Usuario}", usuario);
+                // Sin el texto escrito: a veces es la contraseña.
+                LogSGV.Error(ex, "Error de BD al validar credenciales de un inicio de sesión");
                 throw;
             }
 
-            return (esValido, rol, nombre, nombreUsuario, idUsuario, idConductor, requiereCambioContrasena, selloSesion);
+            return r;
         }
 
         /// <summary>

@@ -16,9 +16,15 @@ namespace WebSGV.Views
     /// </summary>
     public partial class VerificarDocumento : System.Web.UI.Page
     {
-        /// <summary>Límite de consultas por IP (la página es pública): evita barrer códigos.</summary>
-        private static readonly LimiteConsultas _limite =
-            new LimiteConsultas(30, TimeSpan.FromMinutes(10), () => DateTime.UtcNow);
+        /// <summary>Límite de consultas por IP (la página es pública): evita barrer códigos. 30 consultas
+        /// en 10 min dejan la IP 10 min sin consultar; los contadores van en la tabla IntentoAcceso
+        /// (sobreviven al reciclaje), clave <see cref="ClaveConsulta"/>. Cada consulta cuenta y no se devuelve.</summary>
+        private static readonly ControlIntentosLogin _limite = new ControlIntentosLogin(
+            AlmacenBdIntentos.Sitio, () => DateTime.UtcNow, porIp: null,
+            porCuenta: new ControlIntentosLogin.Limite(30, TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(10)));
+
+        internal static string ClaveConsulta(string ip) =>
+            "VERIF_IP_" + (string.IsNullOrWhiteSpace(ip) ? IpClienteHelper.Desconocida : ip.Trim());
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -51,7 +57,7 @@ namespace WebSGV.Views
                 return;
             }
 
-            if (!_limite.Permitir(IpClienteHelper.Obtener(Request)))
+            if (_limite.Reservar(null, ClaveConsulta(IpClienteHelper.Obtener(Request))).Rechazado)
             {
                 MostrarNoEncontrado("Se hicieron demasiadas consultas desde su conexión. Intente nuevamente en unos minutos.");
                 return;

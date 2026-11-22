@@ -286,6 +286,7 @@ namespace WebSGV.Views
                 case "DELETE": return "delete";
                 case "LOGIN": return "login";
                 case "LOGIN_FALLIDO": return "login_fallido";
+                case "LOGIN_BLOQUEADO": return "login_bloqueado";
                 case "LOGOUT": return "logout";
                 case "APROBAR": return "aprobar";
                 case "RECHAZAR": return "rechazar";
@@ -305,6 +306,7 @@ namespace WebSGV.Views
                 case "DELETE": return "fas fa-trash";
                 case "LOGIN": return "fas fa-sign-in-alt";
                 case "LOGIN_FALLIDO": return "fas fa-exclamation-triangle";
+                case "LOGIN_BLOQUEADO": return "fas fa-lock";
                 case "LOGOUT": return "fas fa-sign-out-alt";
                 case "APROBAR": return "fas fa-check";
                 case "RECHAZAR": return "fas fa-times";

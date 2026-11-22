@@ -194,11 +194,15 @@
     <Content Include="Database\Schema\58_BorrarTablasRetiradas.sql" />
     <Content Include="Database\Schema\59_BorrarRevocarFirmaYPortador.sql" />
     <Content Include="Database\Schema\60_BorrarTablasGrifoYGuias.sql" />
+    <Content Include="Database\Schema\61_IntentoAcceso.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearCPIC.sql" />
     <Content Include="Database\StoredProcedures\sp_ActualizarLicenciaConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_US_ObtenerEstadoSesion.sql" />
+    <Content Include="Database\StoredProcedures\sp_US_QuitarIntentoAcceso.sql" />
+    <Content Include="Database\StoredProcedures\sp_US_ReservarIntentoAcceso.sql" />
+    <Content Include="Database\StoredProcedures\sp_US_DevolverIntentoAcceso.sql" />
     <Content Include="Database\StoredProcedures\sp_CompletarDespachoProgramado.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearDespacho.sql" />
     <Content Include="Database\StoredProcedures\sp_DD_QuitarDestino.sql" />
@@ -461,6 +465,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Helpers\AuditoriaAccesoLogin.cs" />
     <Compile Include="Helpers\AuditoriaHelper.cs" />
     <Compile Include="Helpers\DbHelper.cs" />
     <Compile Include="Helpers\SesionVigenteHelper.cs" />
@@ -468,7 +473,6 @@
     <Compile Include="Helpers\ArchivosTemporalesHelper.cs" />
     <Compile Include="Helpers\ErrorAplicacionHelper.cs" />
     <Compile Include="Helpers\IpClienteHelper.cs" />
-    <Compile Include="Helpers\LimiteConsultas.cs" />
     <Compile Include="Helpers\LimiteConsultasSesion.cs" />
     <Compile Include="Helpers\JsonSeguro.cs" />
     <Compile Include="Helpers\MensajeHtml.cs" />

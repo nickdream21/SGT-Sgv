@@ -186,13 +186,14 @@ namespace WebSGV.Tests.Integracion
             "CK_DespachoCarga_Pesos",
         };
 
-        /// <summary>CHECK anteriores a la Etapa 3 (y el de la migración 53).</summary>
+        /// <summary>CHECK anteriores a la Etapa 3 (y el de la migración 53), más el de la migración 61 (E4-4).</summary>
         private static readonly string[] ChecksAnteriores =
         {
             "CK_Cliente_Moneda", "CK_Correlativo_ultimo", "CK_DespachoCarga_Cantidad", "CK_DocumentosGuia_Tipo",
             "CK_DocumentosManifiesto_Tipo", "CK_Factura_Moneda", "CK_MovimientoDineroViaje_Medio",
             "CK_MovimientoDineroViaje_Montos", "CK_MovimientoDineroViaje_Tipo", "CK_OnwayAuthCache_UnaFila",
             "CK_PagoSaldoConductor_Medio",
+            "CK_IntentoAcceso_Fallidos",
         };
 
         /// <summary>

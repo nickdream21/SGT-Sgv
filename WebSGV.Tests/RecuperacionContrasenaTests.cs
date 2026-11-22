@@ -131,7 +131,8 @@ namespace WebSGV.Tests
         public void Claves_NoChocanConLoginNiFirma()
         {
             Assert.Equal("RECUP_IP_10.0.0.1", SolicitudRecuperacion.ClaveIp("10.0.0.1"));
-            Assert.Equal("RECUP_USR_juan", SolicitudRecuperacion.ClaveCuenta(" Juan "));
+            // La cuenta va como SHA-256 de lo escrito (recortado, en minúsculas), nunca en claro.
+            Assert.Equal("RECUP_USR_" + ControlIntentosLogin.Sha256Hex("juan"), SolicitudRecuperacion.ClaveCuenta(" Juan "));
             Assert.Equal("RESET_IP_10.0.0.1", SolicitudRecuperacion.ClaveTokenInvalido("10.0.0.1"));
             Assert.Equal("RECUP_IP_unknown", SolicitudRecuperacion.ClaveIp(null));
 

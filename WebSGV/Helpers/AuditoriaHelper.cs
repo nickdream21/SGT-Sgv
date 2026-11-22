@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.Data.SqlClient;
 using System.Web;
+using System.Web.Hosting;
 
 namespace WebSGV.Helpers
 {
@@ -27,18 +28,12 @@ namespace WebSGV.Helpers
         public static void Registrar(string accion, string tablaAfectada, string idRegistroAfectado = null,
             string descripcion = null, string valoresAnteriores = null, string valoresNuevos = null)
         {
-            // En los tests de integración solo se audita dentro de una TransaccionDePrueba (se deshace):
-            // AuditoriaLog es de solo inserción y una prueba fuera de transacción dejaría filas para siempre.
-            if (DbHelper.HayConexionDePruebas && System.Transactions.Transaction.Current == null)
-                return;
-
             try
             {
                 int? idUsuario = null;
                 string nombreUsuario = "Sistema";
                 string rolUsuario = "";
-                string direccionIP = "";
-                string navegador = "";
+                string direccionIP = "", navegador = "";
 
                 if (HttpContext.Current != null)
                 {
@@ -51,52 +46,122 @@ namespace WebSGV.Helpers
                             nombreUsuario = nombreSesion;
                         rolUsuario = SesionHelper.Rol(session);
                     }
-
-                    var request = HttpContext.Current.Request;
-                    if (request != null)
-                    {
-                        direccionIP = ObtenerIPCliente(request);
-                        navegador = request.UserAgent ?? "";
-                        if (navegador.Length > 500)
-                            navegador = navegador.Substring(0, 500);
-                    }
+                    LeerPeticion(out direccionIP, out navegador);
                 }
 
-                string query = @"
-                    INSERT INTO AuditoriaLog 
-                        (FechaHora, IdUsuario, NombreUsuario, RolUsuario, Accion, TablaAfectada, 
-                         IdRegistroAfectado, Descripcion, ValoresAnteriores, ValoresNuevos, DireccionIP, Navegador)
-                    VALUES 
-                        (dbo.fn_AhoraPeru(), @IdUsuario, @NombreUsuario, @RolUsuario, @Accion, @TablaAfectada, 
-                         @IdRegistroAfectado, @Descripcion, @ValoresAnteriores, @ValoresNuevos, @DireccionIP, @Navegador)";
-
-                using (SqlConnection conn = new SqlConnection(ConnectionString))
-                {
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@IdUsuario", (object)idUsuario ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@NombreUsuario", nombreUsuario ?? "");
-                        cmd.Parameters.AddWithValue("@RolUsuario", rolUsuario ?? "");
-                        cmd.Parameters.AddWithValue("@Accion", accion ?? "");
-                        cmd.Parameters.AddWithValue("@TablaAfectada", tablaAfectada ?? "");
-                        cmd.Parameters.AddWithValue("@IdRegistroAfectado", (object)idRegistroAfectado ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@Descripcion", (object)descripcion ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@ValoresAnteriores", (object)valoresAnteriores ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@ValoresNuevos", (object)valoresNuevos ?? DBNull.Value);
-                        cmd.Parameters.AddWithValue("@DireccionIP", direccionIP ?? "");
-                        cmd.Parameters.AddWithValue("@Navegador", navegador ?? "");
-
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-                    }
-                }
+                Insertar(accion, tablaAfectada, idRegistroAfectado, descripcion, valoresAnteriores, valoresNuevos,
+                         idUsuario, nombreUsuario, rolUsuario, direccionIP, navegador);
             }
             catch (Exception ex)
             {
-                // La auditoría nunca debe romper la operación principal: se registra en el log y sigue.
-                try { LogSGV.Error(ex, "No se pudo registrar la auditoría {Accion} en {Tabla} (id {Id})", accion, tablaAfectada, idRegistroAfectado); }
-                catch { /* ni el log puede romper la operación */ }
+                RegistrarFalloAuditoria(ex, accion, tablaAfectada, idRegistroAfectado);
             }
+        }
+
+        /// <summary>NombreUsuario de un evento de acceso sin cuenta conocida (la columna no admite NULL).</summary>
+        public const string NombreAccesoDesconocido = "(cuenta no identificada)";
+
+        /// <summary>
+        /// Registra un evento de acceso (LOGIN_FALLIDO, LOGIN_BLOQUEADO) sin depender de la sesión: el
+        /// usuario lo dice el llamador (la cuenta que se intentó usar, o null si no existe). Tabla
+        /// "Usuarios"; IP y navegador de la petición actual. Nunca pasar aquí el texto que escribió el
+        /// usuario si la cuenta no existe (puede ser su contraseña).
+        /// En el sitio, el INSERT va en segundo plano (HostingEnvironment.QueueBackgroundWorkItem): así
+        /// auditar el fallo de una cuenta que existe no alarga la respuesta y el tiempo no revela qué
+        /// cuentas existen. Fuera de IIS (pruebas) se inserta en el momento. Un error se registra en el
+        /// log y no corta el login.
+        /// </summary>
+        public static void RegistrarAcceso(string accion, int? idUsuario, string nombreUsuario, string descripcion)
+        {
+            try
+            {
+                string direccionIP = "", navegador = "";
+                if (HttpContext.Current != null)
+                    LeerPeticion(out direccionIP, out navegador);
+                string nombre = string.IsNullOrWhiteSpace(nombreUsuario) ? NombreAccesoDesconocido : nombreUsuario.Trim();
+                string idRegistro = idUsuario?.ToString();
+
+                Action insertar = () =>
+                {
+                    try
+                    {
+                        Insertar(accion, "Usuarios", idRegistro, descripcion, null, null,
+                                 idUsuario, nombre, "", direccionIP, navegador);
+                    }
+                    catch (Exception ex)
+                    {
+                        RegistrarFalloAuditoria(ex, accion, "Usuarios", idRegistro);
+                    }
+                };
+
+                if (HostingEnvironment.IsHosted)
+                    HostingEnvironment.QueueBackgroundWorkItem(_ => insertar());
+                else
+                    insertar();
+            }
+            catch (Exception ex)
+            {
+                RegistrarFalloAuditoria(ex, accion, "Usuarios", idUsuario?.ToString());
+            }
+        }
+
+        private static void LeerPeticion(out string direccionIP, out string navegador)
+        {
+            direccionIP = "";
+            navegador = "";
+            var request = HttpContext.Current?.Request;
+            if (request == null) return;
+            direccionIP = ObtenerIPCliente(request);
+            navegador = request.UserAgent ?? "";
+            if (navegador.Length > 500)
+                navegador = navegador.Substring(0, 500);
+        }
+
+        /// <summary>INSERT en AuditoriaLog. Lanza si falla: cada llamador lo atrapa.</summary>
+        private static void Insertar(string accion, string tablaAfectada, string idRegistroAfectado,
+            string descripcion, string valoresAnteriores, string valoresNuevos,
+            int? idUsuario, string nombreUsuario, string rolUsuario, string direccionIP, string navegador)
+        {
+            // En los tests de integración solo se audita dentro de una TransaccionDePrueba (se deshace):
+            // AuditoriaLog es de solo inserción y una prueba fuera de transacción dejaría filas para siempre.
+            if (DbHelper.HayConexionDePruebas && System.Transactions.Transaction.Current == null)
+                return;
+
+            string query = @"
+                INSERT INTO AuditoriaLog
+                    (FechaHora, IdUsuario, NombreUsuario, RolUsuario, Accion, TablaAfectada,
+                     IdRegistroAfectado, Descripcion, ValoresAnteriores, ValoresNuevos, DireccionIP, Navegador)
+                VALUES
+                    (dbo.fn_AhoraPeru(), @IdUsuario, @NombreUsuario, @RolUsuario, @Accion, @TablaAfectada,
+                     @IdRegistroAfectado, @Descripcion, @ValoresAnteriores, @ValoresNuevos, @DireccionIP, @Navegador)";
+
+            using (SqlConnection conn = new SqlConnection(ConnectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@IdUsuario", (object)idUsuario ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@NombreUsuario", nombreUsuario ?? "");
+                    cmd.Parameters.AddWithValue("@RolUsuario", rolUsuario ?? "");
+                    cmd.Parameters.AddWithValue("@Accion", accion ?? "");
+                    cmd.Parameters.AddWithValue("@TablaAfectada", tablaAfectada ?? "");
+                    cmd.Parameters.AddWithValue("@IdRegistroAfectado", (object)idRegistroAfectado ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Descripcion", (object)descripcion ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ValoresAnteriores", (object)valoresAnteriores ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ValoresNuevos", (object)valoresNuevos ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@DireccionIP", direccionIP ?? "");
+                    cmd.Parameters.AddWithValue("@Navegador", navegador ?? "");
+
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        private static void RegistrarFalloAuditoria(Exception ex, string accion, string tabla, string id)
+        {
+            // La auditoría nunca debe romper la operación principal: se registra en el log y sigue.
+            try { LogSGV.Error(ex, "No se pudo registrar la auditoría {Accion} en {Tabla} (id {Id})", accion, tabla, id); }
+            catch { /* ni el log puede romper la operación */ }
         }
 
         /// <summary>

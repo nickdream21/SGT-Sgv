@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-034 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-035 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -25,6 +25,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-023** Cronometrar una firma real en el hosting — para confirmar que las idas y vueltas a la BD desde somee son menores que desde la oficina (el arranque en frío ya lo evita UptimeRobot). · C
 - [ ] **P-033** Orden propia del conductor: detalle y PDF — con una orden de prueba (junto con P-025): el conductor abre su `DetalleOrdenViaje.aspx?id=` y descarga su PDF desde `DescargarPdfOrdenViaje.aspx`, y otro conductor recibe 403 con la misma orden (en E4-2 no había órdenes en la BD de pruebas). · B
 - [ ] **P-034** `no-store` en el sitio publicado — tras publicar E4-2, por HTTP y sin escribir: Login, Inicio y DashboardConductor salen con `Cache-Control: no-cache, no-store`; en un celular real, Atrás tras cerrar sesión no muestra el panel del conductor. · C
+- [ ] **P-035** Bloqueo de intentos en el sitio publicado — tras publicar E4-4, con una cuenta de prueba: 5 fallos, reciclar el sitio (o publicar) y comprobar que sigue bloqueada (`IntentoAcceso` en `sgvActualizada`), y que `LOGIN_FALLIDO`/`LOGIN_BLOQUEADO` guardan la IP pública real desde dos redes (oficina y datos del celular). · B
 - [ ] **P-030** Segundo factor con un celular real — tras publicar E4-14: alta con Google Authenticator o Microsoft Authenticator, entrada con código, un código de recuperación y "Quitar segundo factor" desde Gestión de usuarios, con una cuenta de prueba. · B
 - [ ] **P-031** Política de contenido en modo informe — tras publicar E4-5: recorrer todos los roles a 1366 y 390 px (cámara del celular en Movimientos, PDF en el iframe de contabilidad, mapa, firma) y revisar en `App_Data/logs` lo que anota `CspInforme`; solo se esperan avisos de `unsafe-eval` por los `AutoPostBack`. Condición de E4-15. · B
 - [ ] **P-032** Comprobaciones por HTTP en el sitio publicado — un POST de formulario a un PageMethod no ejecuta nada; `GpsAutomatico.ashx?iniciar=1` sin sesión da 403; la cookie `SGV_SessionId` sale con `Secure` tras iniciar sesión; `/trace.axd` y `/Web.config` no dan 200. · C
