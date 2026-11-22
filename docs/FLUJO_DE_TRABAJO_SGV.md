@@ -18,7 +18,7 @@ El sistema maneja **5 roles** (6 constantes `ROL_*`: `ADMIN` y `ADMINISTRADOR DE
 | **Administrador de Sistema** | `ROL_ADMIN_SISTEMA` | `ADMINISTRADOR DE SISTEMA` | `DashboardAdminSistema.aspx` | Gestión de usuarios y auditoría; no opera despachos, liquidaciones ni reportes |
 | **Conductor** | `ROL_CONDUCTOR` | `CONDUCTOR` (también `CHOFER`) | `DashboardConductor.aspx` | Liquidación firmada de viajes asignados y consulta de historial |
 | **Contabilidad** | `ROL_CONTABILIDAD` | `CONTABILIDAD` | `LiquidacionesAprobadasContabilidad.aspx` | Consulta de liquidaciones aprobadas y sus PDF (menú propio: Liquidaciones Aprobadas) |
-| **Supervisor** | `ROL_SUPERVISOR` | `SUPERVISOR` | `Inicio.aspx` | Permisos similares a ADMIN en despachos, órdenes de viaje y registros |
+| **Supervisor** | `ROL_SUPERVISOR` | `SUPERVISOR` | `Inicio.aspx` | Permisos similares a ADMIN en despachos, órdenes de viaje y registros, salvo Facturas de flete, Productos y Rutas (solo administración, DN-26) |
 
 > La página de inicio de cada rol sale de `RolesHelper.UrlInicioSegunRol` (login, redirecciones y logo del menú).
 
@@ -30,17 +30,19 @@ El sistema maneja **5 roles** (6 constantes `ROL_*`: `ADMIN` y `ADMINISTRADOR DE
 
 ADMIN\* = `ADMIN`, `ADMINISTRADOR` y `ADMINISTRADOR DE TRANSPORTE` (`RolesHelper.EsRolAdmin`); CONDUCTOR incluye `CHOFER`. Los roles retirados (`ADMINISTRADOR DE GRIFO`, `ADMINISTRADOR DE MAQUINARIA`, `OPERADOR`) no tienen ningún permiso.
 
-| Sección (`TienePermiso(seccion, rol)`) | ADMIN\* | SUPERVISOR | CONDUCTOR | CONTABILIDAD | ADMIN_SISTEMA |
-|----------------------------------------|:------:|:----------:|:---------:|:------------:|:-------------:|
-| `DESPACHO` / `FACTURA` / `CPIC` / `ORDEN_VIAJE` / `REGISTRO` / `CONSULTAS` / `INDICADORES` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `REGISTRO_CONDUCTORES` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `AUDITORIA` | ❌ | ❌ | ❌ | ❌ | ✅ |
-| `SEGUIMIENTO_EXPORTACION` / `DASHBOARD_EXPORTACION` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `DASHBOARD_CONDUCTOR` / `MIS_VIAJES` / `MI_PERFIL` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `LIQUIDACIONES_CONTABILIDAD` | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Cualquier otra sección | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Sección (`TienePermiso(seccion, rol)`) | Páginas | ADMIN\* | SUPERVISOR | CONDUCTOR | CONTABILIDAD | ADMIN_SISTEMA |
+|---|---|:-:|:-:|:-:|:-:|:-:|
+| `ORDEN_VIAJE` | LiquidacionesPendientes | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `REGISTRO` | Tractos, Semirremolques, Clientes, Catálogo del cliente, Plantas, Peajes | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `REGISTRO_CONDUCTORES` | RegistroChoferes | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `SEGUIMIENTO_EXPORTACION` | Exportacion/* y GpsAutomatico.ashx | ✅ | ✅ | ❌ | ❌ | ❌ |
+| `FACTURAS_FLETE` | FacturasFlete | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `REGISTRO_PRODUCTOS` | RegistroProductos | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `REGISTRO_RUTAS` | RegistroRutas | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `LIQUIDACIONES_CONTABILIDAD` | LiquidacionesAprobadasContabilidad | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Cualquier otra sección | — | ❌ | ❌ | ❌ | ❌ | ❌ |
 
-> Matriz verificada por `RolesHelperTests` (tabla literal; además comprueba que toda sección usada en el código existe en ella).
+> Matriz verificada por `RolesHelperTests` (tabla literal; toda sección usada en el código existe en ella y toda sección de la matriz la consulta alguna página). Las páginas con `SecurityHelper.Exigir*` no usan sección; quién entra a cada página lo fija `GuardasAccesoTests.AccesoEsperado` (DN-26).
 
 ---
 
@@ -131,8 +133,8 @@ Admin Revisa: Aprobar / Rechazar / Editar
 | `RegistroClientes.aspx` | Registrar, editar y gestionar **clientes de transporte** |
 | `RegistroPeajes.aspx` | Registrar, editar y gestionar **estaciones de peaje** |
 | `RegistroPlantas.aspx` | Registrar, editar y gestionar **plantas** (puntos de carga/descarga) |
-| `RegistroRutas.aspx` | Registrar, editar y gestionar **rutas de transporte** |
-| `RegistroProductos.aspx` | Registrar, editar y gestionar **productos transportados** |
+| `RegistroRutas.aspx` | Registrar, editar y gestionar **rutas de transporte** (solo administración) |
+| `RegistroProductos.aspx` | Registrar, editar y gestionar **productos transportados** (solo administración) |
 
 ### 5. Otros Módulos del Admin
 
@@ -176,7 +178,7 @@ El conductor accede a un dashboard con **3 pestañas**:
 ## 🛡️ Rol: Administrador de Sistema (`ADMINISTRADOR DE SISTEMA`)
 
 ### Acceso Completo
-Tiene **todos los permisos del Administrador de Transporte** más acceso exclusivo al módulo de auditoría.
+Solo gestión de usuarios y auditoría; no opera despachos, liquidaciones ni reportes.
 
 ### Auditoría del Sistema
 
@@ -284,27 +286,14 @@ Admin revisa liquidación pendiente:
 
 ### Menú Admin / Supervisor
 ```
-├── Despacho
-│   ├── Agregar Despacho
-│   └── Listar Despachos
-├── Orden de Viaje
-│   ├── Liquidaciones Pendientes
-│   └── Reportes
-├── Registro
-│   ├── Conductores
-│   ├── Tractos
-│   ├── Semiremolques
-│   ├── Clientes
-│   ├── Peajes
-│   ├── Plantas
-│   ├── Rutas
-│   └── Productos
-├── Herramientas
-│   ├── Cargar Excel
-│   └── Reportes Avanzados
-└── Configuración
-    ├── Cambiar Contraseña
-    └── Auditoría del Sistema (solo Admin Sistema)
+├── Despacho (solo administración; SUPERVISOR entra por URL, M-124)
+├── Seguimiento (administración y SUPERVISOR)
+├── Liquidaciones (administración y SUPERVISOR)
+├── Reportes (administración y SUPERVISOR; Facturas de flete solo administración)
+├── Catálogos (solo administración; SUPERVISOR entra por URL a los de la sección REGISTRO, M-124)
+└── Cuenta: Cambiar contraseña
+Rutas y Productos no tienen entrada de menú (solo administración, por URL).
+Gestión de usuarios y Auditoría: solo ADMINISTRADOR DE SISTEMA, en su propio menú.
 ```
 
 ### Menú Conductor

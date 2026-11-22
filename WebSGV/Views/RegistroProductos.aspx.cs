@@ -11,7 +11,7 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            SecurityHelper.ExigirRolAdmin();
+            RolesHelper.ValidarAccesoSeccion("REGISTRO_PRODUCTOS");
             SecurityHelper.AgregarHeadersSeguridad();
 
             if (!IsPostBack)

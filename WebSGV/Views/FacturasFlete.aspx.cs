@@ -26,7 +26,7 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            SecurityHelper.ExigirRolAdmin();
+            RolesHelper.ValidarAccesoSeccion("FACTURAS_FLETE");
             SecurityHelper.AgregarHeadersSeguridad();
 
             if (!IsPostBack)

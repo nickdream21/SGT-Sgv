@@ -12,7 +12,7 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            SecurityHelper.ExigirRolAdmin();
+            RolesHelper.ValidarAccesoSeccion("REGISTRO_RUTAS");
             SecurityHelper.AgregarHeadersSeguridad();
 
             if (!IsPostBack)

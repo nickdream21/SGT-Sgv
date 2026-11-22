@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-25 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-26 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -45,6 +45,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-23 | Cargas y flete por camión de los demás clientes (observada, a confirmar) |
 | DN-24 | En qué columna va el flete (observada, a confirmar) |
 | DN-25 | Se borra el portador del sobre aunque la pantalla de dinero siga apagada |
+| DN-26 | Permisos del SUPERVISOR y del administrador como funcionan hoy (opción recomendada, a confirmar) |
 
 ---
 
@@ -148,6 +149,14 @@ no correo; si no tiene correo, se pide al administrador. Hay límites por cuenta
 - Desde: 2026-11-15, `d8a6b4d`.
 - En el código: `WebSGV/Helpers/SolicitudRecuperacion.cs:27` (`MensajeUnico`) y `:31-34` (límites).
 - Estado: vigente.
+
+### DN-26 — Permisos del SUPERVISOR y del administrador como funcionan hoy (opción recomendada, a confirmar)
+El SUPERVISOR no entra a Facturas de flete, Productos ni Rutas (solo administración), y el administrador no tiene el
+panel del conductor: la matriz de permisos se ajustó a lo que ya hacían las páginas y el menú; nadie ganó ni perdió acceso.
+- Desde: 2026-11-22, E4-3. El usuario pidió terminar la Etapa 4 sin decidir U-081; se aplicó la opción que el pendiente
+  recomendaba. Si decide otra cosa, se cambia la matriz y `GuardasAccesoTests.AccesoEsperado` a propósito (U-090).
+- En el código: `WebSGV/Views/RolesHelper.cs` (`Matriz`), guardas de `FacturasFlete`, `RegistroProductos` y `RegistroRutas`.
+- Estado: vigente (observada, a confirmar).
 
 ## 3. Despachos y documentos
 

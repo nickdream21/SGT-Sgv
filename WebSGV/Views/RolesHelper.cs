@@ -154,53 +154,39 @@ namespace WebSGV.Helpers
         /// Matriz de permisos por sección: true si el rol indicado puede entrar a la sección.
         /// Pura (no lee la sesión), sin importar mayúsculas ni espacios; sección vacía o desconocida → false.
         /// La matriz está fijada en RolesHelperTests: cualquier cambio de permisos debe cambiar también la prueba.
+        /// Solo tiene las secciones que alguna página consulta (<see cref="ValidarAccesoSeccion"/> o
+        /// <see cref="TienePermiso(string)"/>); RolesHelperTests exige que cada una se use (E4-3, U-081).
         /// </summary>
         public static bool TienePermiso(string seccion, string rol)
         {
             if (string.IsNullOrWhiteSpace(seccion)) return false;
             string r = (rol ?? "").Trim().ToUpperInvariant();
-            bool admin = EsRolAdmin(r);
-            bool supervisor = r == ROL_SUPERVISOR;
+            return Matriz.TryGetValue(seccion.Trim(), out Func<string, bool> permite) && permite(r);
+        }
 
-            switch (seccion.Trim().ToUpperInvariant())
+        /// <summary>Secciones de la matriz (<see cref="TienePermiso(string, string)"/>).</summary>
+        public static IReadOnlyCollection<string> Secciones => Matriz.Keys;
+
+        private static bool AdminOSupervisor(string r) => EsRolAdmin(r) || r == ROL_SUPERVISOR;
+
+        /// <summary>Sección → roles que entran (el rol llega ya en mayúsculas y sin espacios).</summary>
+        private static readonly Dictionary<string, Func<string, bool>> Matriz =
+            new Dictionary<string, Func<string, bool>>(StringComparer.OrdinalIgnoreCase)
             {
                 // Operación del transporte: administración y supervisión
-                case "DESPACHO":
-                case "FACTURA":
-                case "CPIC":
-                case "ORDEN_VIAJE":
-                case "REGISTRO":
-                case "CONSULTAS":
-                case "INDICADORES":
-                    return admin || supervisor;
+                { "ORDEN_VIAJE",             AdminOSupervisor },   // LiquidacionesPendientes
+                { "REGISTRO",                AdminOSupervisor },   // Tractos, Semirremolques, Clientes, Catálogo del cliente, Plantas, Peajes
+                { "REGISTRO_CONDUCTORES",    AdminOSupervisor },   // RegistroChoferes
+                { "SEGUIMIENTO_EXPORTACION", AdminOSupervisor },   // Exportacion/* y GpsAutomatico.ashx
 
-                // Registro de Conductores
-                case "REGISTRO_CONDUCTORES":
-                    return admin || supervisor;
-
-                // Auditoría: solo ADMINISTRADOR DE SISTEMA
-                case "AUDITORIA":
-                    return r == ROL_ADMIN_SISTEMA;
-
-                // Seguimiento de Exportación: ADMIN y SUPERVISOR
-                case "SEGUIMIENTO_EXPORTACION":
-                case "DASHBOARD_EXPORTACION":
-                    return admin || supervisor;
-
-                // Páginas del CONDUCTOR
-                case "DASHBOARD_CONDUCTOR":
-                case "MIS_VIAJES":
-                case "MI_PERFIL":
-                    return EsRolConductor(r) || admin;
+                // Solo administración (U-081, 2026-11-22: SUPERVISOR no entra, como el menú)
+                { "FACTURAS_FLETE",          EsRolAdmin },         // FacturasFlete
+                { "REGISTRO_PRODUCTOS",      EsRolAdmin },         // RegistroProductos
+                { "REGISTRO_RUTAS",          EsRolAdmin },         // RegistroRutas
 
                 // Consulta para Contabilidad (solo lectura)
-                case "LIQUIDACIONES_CONTABILIDAD":
-                    return r == ROL_CONTABILIDAD || admin || supervisor;
-
-                default:
-                    return false;
-            }
-        }
+                { "LIQUIDACIONES_CONTABILIDAD", r => r == ROL_CONTABILIDAD || AdminOSupervisor(r) },
+            };
 
         /// <summary>
         /// True si el sistema reconoce el rol (tiene página de inicio): los del catálogo y sus

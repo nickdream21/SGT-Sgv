@@ -50,7 +50,7 @@ namespace WebSGV.Tests
                 { "Views/Exportacion/ImportarSeguimiento.aspx",   "RolesHelper.ValidarAccesoSeccion(\"SEGUIMIENTO_EXPORTACION\")" },
                 { "Views/Exportacion/RegistroSeguimiento.aspx",   "RolesHelper.ValidarAccesoSeccion(\"SEGUIMIENTO_EXPORTACION\")" },
                 { "Views/Exportacion/SeguimientoViaje.aspx",      "RolesHelper.ValidarAccesoSeccion(\"SEGUIMIENTO_EXPORTACION\")" },
-                { "Views/FacturasFlete.aspx",                     "SecurityHelper.ExigirRolAdmin()" },
+                { "Views/FacturasFlete.aspx",                     "RolesHelper.ValidarAccesoSeccion(\"FACTURAS_FLETE\")" },
                 { "Views/FirmarLiquidacion.aspx",                 "SecurityHelper.ExigirRolConductor()" },
                 { "Views/GestionUsuarios.aspx",                   "SecurityHelper.ExigirRolAdminSistema()" },
                 { "Views/Inicio.aspx",                            "SecurityHelper.ExigirRolAdminOSupervisor()" },
@@ -63,8 +63,8 @@ namespace WebSGV.Tests
                 { "Views/RegistroDespacho.aspx",                  "SecurityHelper.ExigirRolAdminOSupervisor()" },
                 { "Views/RegistroPeajes.aspx",                    "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
                 { "Views/RegistroPlantas.aspx",                   "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
-                { "Views/RegistroProductos.aspx",                 "SecurityHelper.ExigirRolAdmin()" },
-                { "Views/RegistroRutas.aspx",                     "SecurityHelper.ExigirRolAdmin()" },
+                { "Views/RegistroProductos.aspx",                 "RolesHelper.ValidarAccesoSeccion(\"REGISTRO_PRODUCTOS\")" },
+                { "Views/RegistroRutas.aspx",                     "RolesHelper.ValidarAccesoSeccion(\"REGISTRO_RUTAS\")" },
                 { "Views/RegistroSemiremolques.aspx",             "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
                 { "Views/RegistroTractos.aspx",                   "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
                 { "Views/ReporteCargas.aspx",                     "SecurityHelper.ExigirRolAdminOSupervisor()" },
@@ -251,6 +251,135 @@ namespace WebSGV.Tests
             }
 
             Assert.True(fallas.Count == 0, "Guardas de página:" + Environment.NewLine + string.Join(Environment.NewLine, fallas));
+        }
+
+        // ── Acceso real por página (E4-3) ──────────────────────────────────
+        // Quién entra a cada página según su guarda (GuardaEsperada), evaluada con la matriz de
+        // RolesHelper.TienePermiso para las de sección. Tabla literal: dar o quitar una página a un rol
+        // (en la guarda o en la matriz) debe cambiarla a propósito. U-081, opción recomendada
+        // (2026-11-22): SUPERVISOR no entra a FacturasFlete, RegistroProductos ni RegistroRutas, y la
+        // administración no tiene DashboardConductor (como hoy y como el menú).
+
+        private const string A = "ADMIN", S = "SUPERVISOR", C = "CONDUCTOR", K = "CONTABILIDAD", Y = "SISTEMA";
+        private static readonly string[] Todos = { A, S, C, K, Y };
+
+        private static readonly Dictionary<string, string[]> AccesoEsperado =
+            new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Views/Auditoria.aspx",                         new[] { Y } },
+                { "Views/BandejaDocumentos.aspx",                 new[] { A, S } },
+                { "Views/CargarExcel.aspx",                       new[] { A, S } },
+                { "Views/CatalogoCliente.aspx",                   new[] { A, S } },
+                // Solo la sesión: el permiso por orden y rol se decide después (ver GuardaEsperada).
+                { "Views/ConformarLiquidacion.aspx",              Todos },
+                { "Views/DashboardAdminSistema.aspx",             new[] { Y } },
+                { "Views/DashboardConductor.aspx",                new[] { C } },
+                { "Views/DescargarDocumento.aspx",                Todos },
+                { "Views/DescargarPdfOrdenViaje.aspx",            Todos },
+                { "Views/DestinoDescarga.aspx",                   new[] { A, S } },
+                { "Views/DetalleOrdenViaje.aspx",                 Todos },
+                { "Views/Exportacion/DashboardExportacion.aspx",  new[] { A, S } },
+                { "Views/Exportacion/ImportarSeguimiento.aspx",   new[] { A, S } },
+                { "Views/Exportacion/RegistroSeguimiento.aspx",   new[] { A, S } },
+                { "Views/Exportacion/SeguimientoViaje.aspx",      new[] { A, S } },
+                { "Views/FacturasFlete.aspx",                     new[] { A } },
+                { "Views/FirmarLiquidacion.aspx",                 new[] { C } },
+                { "Views/GestionUsuarios.aspx",                   new[] { Y } },
+                { "Views/Inicio.aspx",                            new[] { A, S } },
+                { "Views/LiquidacionesAprobadasContabilidad.aspx",new[] { A, S, K } },
+                { "Views/LiquidacionesPendientes.aspx",           new[] { A, S } },
+                { "Views/ListaDespachos.aspx",                    new[] { A, S } },
+                { "Views/MovimientosViaje.aspx",                  new[] { A, S } },
+                { "Views/RegistroChoferes.aspx",                  new[] { A, S } },
+                { "Views/RegistroClientes.aspx",                  new[] { A, S } },
+                { "Views/RegistroDespacho.aspx",                  new[] { A, S } },
+                { "Views/RegistroPeajes.aspx",                    new[] { A, S } },
+                { "Views/RegistroPlantas.aspx",                   new[] { A, S } },
+                { "Views/RegistroProductos.aspx",                 new[] { A } },
+                { "Views/RegistroRutas.aspx",                     new[] { A } },
+                { "Views/RegistroSemiremolques.aspx",             new[] { A, S } },
+                { "Views/RegistroTractos.aspx",                   new[] { A, S } },
+                { "Views/ReporteCargas.aspx",                     new[] { A, S } },
+                { "Views/ReporteGps.aspx",                        new[] { A, S } },
+                { "Views/ReportesOrdenesViaje.aspx",              new[] { A, S } },
+                { "Views/SaldosConductores.aspx",                 new[] { A, S } },
+            };
+
+        /// <summary>Valores reales de Usuarios.rol de cada grupo de la tabla (con sus alias).</summary>
+        private static readonly Dictionary<string, string[]> RolesDelGrupo = new Dictionary<string, string[]>
+        {
+            { A, new[] { "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE" } },
+            { S, new[] { "SUPERVISOR" } },
+            { C, new[] { "CONDUCTOR", "CHOFER" } },
+            { K, new[] { "CONTABILIDAD" } },
+            { Y, new[] { "ADMINISTRADOR DE SISTEMA" } },
+        };
+
+        // Retirados (2026-11): ninguna página con guarda de rol los deja pasar.
+        private static readonly string[] RolesRetirados = { "ADMINISTRADOR DE GRIFO", "ADMINISTRADOR DE MAQUINARIA", "OPERADOR" };
+
+        /// <summary>
+        /// Lo que deja pasar la guarda con sesión del rol indicado (en mayúsculas). Repite las reglas de
+        /// SecurityHelper.Exigir* (que leen la sesión) y, para las de sección, consulta la matriz misma.
+        /// </summary>
+        private static bool GuardaDejaPasar(string guarda, string rol)
+        {
+            Match seccion = Regex.Match(guarda, @"^RolesHelper\.ValidarAccesoSeccion\(""([A-Z_]+)""\)$");
+            if (seccion.Success) return WebSGV.Helpers.RolesHelper.TienePermiso(seccion.Groups[1].Value, rol);
+            switch (guarda)
+            {
+                case "SecurityHelper.ExigirSesion()":              return true;
+                case "SecurityHelper.ExigirRolAdmin()":            return WebSGV.Helpers.RolesHelper.EsRolAdmin(rol);
+                case "SecurityHelper.ExigirRolAdminOSupervisor()": return WebSGV.Helpers.RolesHelper.EsRolAdmin(rol) || rol == "SUPERVISOR";
+                case "SecurityHelper.ExigirRolAdminSistema()":     return rol == "ADMINISTRADOR DE SISTEMA";
+                case "SecurityHelper.ExigirRolConductor()":        return WebSGV.Helpers.RolesHelper.EsRolConductor(rol);
+                default: throw new InvalidOperationException("Guarda sin regla en GuardaDejaPasar: " + guarda);
+            }
+        }
+
+        [Fact]
+        public void Paginas_GuardaYMatrizDanElAccesoEsperado()
+        {
+            var sinTabla = GuardaEsperada.Keys.Except(AccesoEsperado.Keys, StringComparer.OrdinalIgnoreCase)
+                .Concat(AccesoEsperado.Keys.Except(GuardaEsperada.Keys, StringComparer.OrdinalIgnoreCase)).ToList();
+            Assert.True(sinTabla.Count == 0, "GuardaEsperada y AccesoEsperado deben tener las mismas páginas: " + string.Join(", ", sinTabla));
+
+            var fallas = new List<string>();
+            foreach (var par in GuardaEsperada.OrderBy(p => p.Key))
+            {
+                string[] grupos = AccesoEsperado[par.Key];
+                foreach (var g in RolesDelGrupo)
+                    foreach (string rol in g.Value)
+                    {
+                        bool esperado = grupos.Contains(g.Key);
+                        bool real = GuardaDejaPasar(par.Value, rol);
+                        if (real != esperado)
+                            fallas.Add($"{par.Key} ({par.Value}): {rol} {(real ? "entra" : "no entra")}; la tabla dice que {(esperado ? "sí" : "no")}.");
+                    }
+                foreach (string rol in RolesRetirados)
+                    if (par.Value != "SecurityHelper.ExigirSesion()" && GuardaDejaPasar(par.Value, rol))
+                        fallas.Add($"{par.Key}: el rol retirado {rol} entra.");
+            }
+            Assert.True(fallas.Count == 0, "Acceso por página:" + Environment.NewLine + string.Join(Environment.NewLine, fallas));
+        }
+
+        /// <summary>
+        /// Toda sección de la matriz la consulta algún punto de entrada (guarda de página, WebMethod o
+        /// guarda manual): una sección sin página es un permiso que no protege nada (M-064).
+        /// </summary>
+        [Fact]
+        public void Matriz_CadaSeccionLaConsultaAlgunPuntoDeEntrada()
+        {
+            string raiz = RaizWeb();
+            var patron = new Regex(@"(?:ValidarAccesoSeccion|TienePermiso)\(\s*""([A-Z_]+)""");
+            var usadas = new HashSet<string>(
+                GuardaEsperada.Values.Concat(ComprobacionesWebMethod.Values.SelectMany(v => v))
+                    .Concat(Manuales.Keys.Select(k => LeerSinComentarios(raiz, k + ".cs") ?? ""))
+                    .SelectMany(t => patron.Matches(t).Cast<Match>().Select(m => m.Groups[1].Value)),
+                StringComparer.OrdinalIgnoreCase);
+
+            var sinUso = WebSGV.Helpers.RolesHelper.Secciones.Where(s => !usadas.Contains(s)).OrderBy(s => s).ToList();
+            Assert.True(sinUso.Count == 0, "Secciones de RolesHelper que ninguna página consulta (quítalas o úsalas): " + string.Join(", ", sinUso));
         }
 
         [Fact]

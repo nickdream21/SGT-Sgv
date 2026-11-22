@@ -249,22 +249,21 @@ namespace WebSGV.Tests
 
         private static string[] Con(params string[] otros) => AdminOperacion.Concat(otros).ToArray();
 
+        // E4-3 (U-081, opción recomendada, 2026-11-22: "dejarlo como funciona hoy"): solo las secciones
+        // que alguna página consulta. SUPERVISOR no tiene FACTURAS_FLETE, REGISTRO_PRODUCTOS ni
+        // REGISTRO_RUTAS (esas páginas y el menú ya eran solo de administración) y la administración ya
+        // no tiene DASHBOARD_CONDUCTOR (la página la rebotaba). Se quitaron DESPACHO, FACTURA, CPIC,
+        // CONSULTAS, INDICADORES, AUDITORIA, DASHBOARD_EXPORTACION, DASHBOARD_CONDUCTOR, MIS_VIAJES y
+        // MI_PERFIL: ninguna página las consultaba (M-064). Quién entra a cada página: GuardasAccesoTests.
         private static readonly Dictionary<string, string[]> MatrizEsperada = new Dictionary<string, string[]>
         {
-            { "DESPACHO",                   Con("SUPERVISOR") },
-            { "FACTURA",                    Con("SUPERVISOR") },
-            { "CPIC",                       Con("SUPERVISOR") },
             { "ORDEN_VIAJE",                Con("SUPERVISOR") },
             { "REGISTRO",                   Con("SUPERVISOR") },
-            { "CONSULTAS",                  Con("SUPERVISOR") },
-            { "INDICADORES",                Con("SUPERVISOR") },
             { "REGISTRO_CONDUCTORES",       Con("SUPERVISOR") },
-            { "AUDITORIA",                  new[] { "ADMINISTRADOR DE SISTEMA" } },
             { "SEGUIMIENTO_EXPORTACION",    Con("SUPERVISOR") },
-            { "DASHBOARD_EXPORTACION",      Con("SUPERVISOR") },
-            { "DASHBOARD_CONDUCTOR",        Con("CONDUCTOR", "CHOFER") },
-            { "MIS_VIAJES",                 Con("CONDUCTOR", "CHOFER") },
-            { "MI_PERFIL",                  Con("CONDUCTOR", "CHOFER") },
+            { "FACTURAS_FLETE",             AdminOperacion },
+            { "REGISTRO_PRODUCTOS",         AdminOperacion },
+            { "REGISTRO_RUTAS",             AdminOperacion },
             { "LIQUIDACIONES_CONTABILIDAD", Con("CONTABILIDAD", "SUPERVISOR") },
         };
 
@@ -279,7 +278,10 @@ namespace WebSGV.Tests
 
         public static IEnumerable<object[]> CasosMatriz()
         {
-            foreach (string seccion in MatrizEsperada.Keys.Concat(new[] { "SECCION_DESCONOCIDA", "", null }))
+            // Las quitadas en E4-3 se prueban como desconocidas: nadie entra.
+            var quitadas = new[] { "DESPACHO", "FACTURA", "CPIC", "CONSULTAS", "INDICADORES", "AUDITORIA",
+                                   "DASHBOARD_EXPORTACION", "DASHBOARD_CONDUCTOR", "MIS_VIAJES", "MI_PERFIL" };
+            foreach (string seccion in MatrizEsperada.Keys.Concat(quitadas).Concat(new[] { "SECCION_DESCONOCIDA", "", null }))
             {
                 string[] permitidos = seccion != null && MatrizEsperada.TryGetValue(seccion, out var p) ? p : new string[0];
                 foreach (string rol in RolesProbados)
@@ -320,6 +322,13 @@ namespace WebSGV.Tests
             var validos = new HashSet<string>(ConstantesDeRol()) { "ADMINISTRADOR", "CHOFER" };
             var desconocidos = MatrizEsperada.SelectMany(p => p.Value).Distinct().Where(r => !validos.Contains(r)).ToList();
             Assert.Empty(desconocidos);
+        }
+
+        /// <summary>La matriz del código tiene exactamente las secciones de la tabla (ni una más sin probar).</summary>
+        [Fact]
+        public void Secciones_SonLasDeLaTabla()
+        {
+            Assert.Equal(MatrizEsperada.Keys.OrderBy(k => k), RolesHelper.Secciones.OrderBy(k => k));
         }
 
         [Fact]

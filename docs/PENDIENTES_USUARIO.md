@@ -4,7 +4,7 @@ Lo que **solo puede hacer el usuario** (o la oficina, a pedido suyo): decisiones
 
 Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = valor claro; C = menor. Las mejoras de código están en `docs/PLAN_MEJORAS_SGV.md` (`M-`), los datos por corregir en `docs/DATOS_POR_CORREGIR.md` (`D-`) y las pruebas en `docs/PRUEBAS_PENDIENTES.md` (`P-`).
 
-Último id usado: U-089 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: U-090 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Credenciales y paneles externos
 
@@ -29,6 +29,7 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-086** GitHub: activar las alertas de Dependabot y proteger `master` — Settings → Code security → Dependabot alerts y security updates (gratis); va con E4-9. Opcional: exigir el CI en verde antes de fusionar a `master`. · B
 - [ ] **U-088** Volver a registrar la tarea de respaldo en la PC de la oficina — tras actualizar el repo allí: `.\herramientas\respaldo\programar-respaldo.ps1 -Carpeta <la de siempre>` (sin esto la tarea diaria no sella firmas ni auditoría, E4-11). Luego, P-045. · B
 - [ ] **U-089** Cambiar las contraseñas de las cuentas de `privado/CREDENCIALES_USUARIOS.txt` (sobre todo las de producción) — el 2026-11-22, durante E4-12, un script de prueba las imprimió por error en la salida de una sesión de Claude Code: no llegaron al repositorio, pero quedaron en el registro de esa sesión. Hacerlo junto con las rotaciones U-001 a U-004 y actualizar el archivo. · B
+- [ ] **U-090** Confirmar los permisos del SUPERVISOR — se aplicó la opción recomendada de U-081 (DN-26: sin Facturas de flete, Productos ni Rutas). Además decidir: hoy entra por URL a Despacho (registro, bandeja, lista, destinos) y a los catálogos, pero no los ve en el menú: ¿se le muestran o se le quita el acceso? (M-124). · C
 - [ ] **U-076** Crear (o reactivar) un usuario SUPERVISOR de prueba — en GestionUsuarios de la BD de pruebas, con su clave en `privado/CREDENCIALES_USUARIOS.txt`, para la prueba P-028. · C
 
 ## Decisiones de negocio
@@ -82,7 +83,6 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-058** Dashboards e indicadores — el usuario tiene temas que comentar antes (al final). · C
 - [ ] **U-079** Segundo factor (código del celular al entrar) — decidir: (1) qué roles lo llevan: recomendado administración, supervisor y contabilidad (hoy 4 personas), no los conductores (ya reescriben su contraseña para firmar); (2) obligatorio tras 2 semanas de aviso, o voluntario; (3) si se pierde el celular: 10 códigos de recuperación de un solo uso, y si tampoco los tiene, otro administrador de sistema le quita el factor (U-080); (4) "recordar este equipo 30 días": recomendado no, al inicio. Frena E4-14. · A
 - [ ] **U-080** Crear un segundo usuario ADMINISTRADOR DE SISTEMA para otra persona — hoy hay uno solo activo y sin correo: si pierde la contraseña (o el celular, con el segundo factor) nadie puede restablecerle el acceso desde el sistema. Como mínimo, registrar su correo para la recuperación. Antes de E4-14. · A
-- [ ] **U-081** Permisos del SUPERVISOR y del administrador que no coinciden — la matriz dice que SUPERVISOR entra a Facturas de flete, Productos y Rutas, pero esas tres páginas solo dejan pasar a administración (y así está el menú): ¿se le abren o se quita de la matriz? Recomendado: dejarlo como funciona hoy. Y la matriz da al administrador el panel del conductor, pero la página lo rebota: recomendado quitarlo. Frena E4-3. · B
 - [ ] **U-082** Qué muestra la verificación pública de documentos — cualquiera con un código ve el nombre completo de cada firmante, el motivo de anulación (texto libre) y los códigos de las demás firmas de la orden. Recomendado: mantener nombre, fecha, estado y huella; quitar el motivo de anulación y los otros códigos. Entra en E4-8. · C
 
 ## Datos o documentos por conseguir

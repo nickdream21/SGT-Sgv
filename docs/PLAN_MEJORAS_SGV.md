@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `1a950f1` — E4-13: núcleo del segundo factor (`Totp`, `Base32`, `CifradoSecreto`) sin interfaz; lo que queda de la Etapa 4 espera al usuario (U-079, U-080, U-081, publicar E4-5 y P-031). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `5d701b7` — E4-3: matriz de permisos igual a lo que hacen las páginas (DN-26, opción recomendada de U-081), FacturasFlete, Productos y Rutas con guarda de sección, prueba rol × página; cierra M-064; nuevos M-124 y U-090. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-123 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-124 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -153,7 +153,7 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-121** Revisar a mano lo que Dependabot no ve del CI — antes del 2027-05-22: la versión fija de `retire` en `build.yml` (6.1.0; Dependabot no sigue lo que corre con `npx`) y la excepción de Bootstrap 4.6.2 en `.retireignore.json`; de paso, subir `actions/checkout` y `actions/setup-node` a la versión mayor que ya no use Node 20 si Dependabot no lo propuso. · C
 - [ ] **M-122** Validar el certificado de somee — hoy la conexión cifrada necesita `TrustServerCertificate=True` (y `-C` en sqlcmd) porque el certificado no coincide con el nombre del servidor: si somee lo corrige (preguntarlo con U-083), quitarlos de la plantilla, los scripts y `respaldar-bd.ps1`. · C
 - [ ] **M-123** Aviso por correo de una FALLA del sello (E4-11) y del respaldo — hoy solo existe el gancho `SGV_SCRIPT_AVISO`: escribir el `.ps1` que envíe el correo con el SMTP de `appSettings.Secrets.config` (o decidir otro canal) y probarlo con una FALLA de ensayo. · B
-- [ ] **M-064** Secciones de `TienePermiso` sin página — FACTURA, CPIC, CONSULTAS, INDICADORES, AUDITORIA… (`RolesHelper.cs:169-182`) y ADMIN con acceso a DASHBOARD_CONDUCTOR: depurarlas (cambia `RolesHelperTests` a propósito). · C
+- [ ] **M-124** El menú de `Site.Master` no sale de la matriz y no coincide con las páginas — "Despacho" y "Catálogos" solo se muestran a administración, pero RegistroDespacho, BandejaDocumentos, ListaDespachos, DestinoDescarga y los catálogos de `REGISTRO`/`REGISTRO_CONDUCTORES` dejan entrar al SUPERVISOR por URL; según U-090, mostrar el menú o quitar el acceso, y que el menú se arme con `TienePermiso`. · C
 - [ ] **M-068** Ajustar `Seguridad.IteracionesContrasena` — con los ms de "Hash de contraseña … convertido" en `App_Data/logs` del servidor (tarea 7); no volver a un DLL anterior. · C
 - [ ] **M-111** Tablas ledger de SQL Server 2022 para `FirmaDigital` y `AuditoriaLog` — darían prueba criptográfica de que nadie alteró las filas aunque la app sea `db_owner`; hay que reconstruir las tablas con datos reales y comprobar en un ensayo que `sqlpackage` exporta e importa un `.bacpac` con tablas ledger. Mientras tanto, el sello externo diario de E4-11. · C
 
