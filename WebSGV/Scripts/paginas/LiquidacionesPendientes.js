@@ -50,12 +50,12 @@ function buildSubTablePeajes(items) {
         '<th class="text-right">S/</th><th class="text-right">$</th><th>Observaciones</th></tr></thead><tbody>';
     items.forEach(function (item) {
         html += '<tr>' +
-            '<td>' + htmlEncode(item.Estacion || '-') + '</td>' +
-            '<td>' + htmlEncode(item.Fecha || '-') + '</td>' +
-            '<td>' + htmlEncode(item.Comprobante || '-') + '</td>' +
+            '<td>' + SGV.escaparHtml(item.Estacion || '-') + '</td>' +
+            '<td>' + SGV.escaparHtml(item.Fecha || '-') + '</td>' +
+            '<td>' + SGV.escaparHtml(item.Comprobante || '-') + '</td>' +
             '<td class="text-right">' + parseFloat(item.Soles || 0).toFixed(2) + '</td>' +
             '<td class="text-right">' + parseFloat(item.Dolares || 0).toFixed(2) + '</td>' +
-            '<td>' + htmlEncode(item.Observaciones || '-') + '</td>' +
+            '<td>' + SGV.escaparHtml(item.Observaciones || '-') + '</td>' +
             '</tr>';
     });
     html += '</tbody></table>';
@@ -69,11 +69,11 @@ function buildSubTableGenerica(items) {
         '<th class="text-right">S/</th><th class="text-right">$</th><th>Observaciones</th></tr></thead><tbody>';
     items.forEach(function (item) {
         html += '<tr>' +
-            '<td>' + htmlEncode(item.Fecha || '-') + '</td>' +
-            '<td>' + htmlEncode(item.Comprobante || '-') + '</td>' +
+            '<td>' + SGV.escaparHtml(item.Fecha || '-') + '</td>' +
+            '<td>' + SGV.escaparHtml(item.Comprobante || '-') + '</td>' +
             '<td class="text-right">' + parseFloat(item.Soles || 0).toFixed(2) + '</td>' +
             '<td class="text-right">' + parseFloat(item.Dolares || 0).toFixed(2) + '</td>' +
-            '<td>' + htmlEncode(item.Observaciones || '-') + '</td>' +
+            '<td>' + SGV.escaparHtml(item.Observaciones || '-') + '</td>' +
             '</tr>';
     });
     html += '</tbody></table>';
@@ -81,7 +81,7 @@ function buildSubTableGenerica(items) {
 }
 
 // label es HTML: los textos fijos traen entidades (Pr&eacute;stamo); los nombres que vienen de
-// la BD se pasan ya por htmlEncode. subTable también llega armado y codificado.
+// la BD se pasan ya por SGV.escaparHtml. subTable también llega armado y codificado.
 function makeRow(icon, iconClass, label, soles, dolares, desc, subTable) {
     var hasDetail = (desc && desc.trim()) || (subTable && subTable.trim());
     var expandBtn = hasDetail
@@ -100,7 +100,7 @@ function makeRow(icon, iconClass, label, soles, dolares, desc, subTable) {
     var subContent = '';
     if (desc && desc.trim()) {
         subContent += '<div class="detail-desc"><strong>Descripci&oacute;n:</strong> ' +
-            htmlEncode(desc) + '</div>';
+            SGV.escaparHtml(desc) + '</div>';
     }
     if (subTable && subTable.trim()) {
         subContent += '<div class="detail-sub-content">' + subTable + '</div>';
@@ -236,7 +236,7 @@ function mostrarDetalle(datos) {
 
     if (datos.DetallesIngresosAdicionales && datos.DetallesIngresosAdicionales.length > 0) {
         datos.DetallesIngresosAdicionales.forEach(function (item) {
-            var nombre = htmlEncode(item.Nombre || 'Ingreso Adicional');
+            var nombre = SGV.escaparHtml(item.Nombre || 'Ingreso Adicional');
             ingresosHtml += makeRow('fa-plus-circle', 'text-success', nombre,
                 item.Soles, item.Dolares, item.Descripcion || '', '');
         });
@@ -277,7 +277,7 @@ function mostrarDetalle(datos) {
 
     if (datos.DetallesGastosAdicionales && datos.DetallesGastosAdicionales.length > 0) {
         datos.DetallesGastosAdicionales.forEach(function (item) {
-            var nombre = htmlEncode(item.Nombre || 'Gasto Adicional');
+            var nombre = SGV.escaparHtml(item.Nombre || 'Gasto Adicional');
             gastosHtml += makeRow('fa-minus-circle', 'text-danger', nombre,
                 item.Soles, item.Dolares, item.Descripcion || '', '');
         });
@@ -559,10 +559,10 @@ function cargarMovimientosRevision(idOrden) {
                 if (m.Descripcion) sub.push(m.Descripcion);
                 html += '<tr class="' + (esPago ? 'mov-pago' : '') + '">';
                 html += '<td><input type="checkbox" class="chk-mov" data-id="' + m.IdMovimiento + '" checked onchange="aplicarEntregasALaTabla()"></td>';
-                html += '<td class="text-nowrap">' + htmlEncode(m.Fecha) + '</td>';
+                html += '<td class="text-nowrap">' + SGV.escaparHtml(m.Fecha) + '</td>';
                 html += '<td>' + (esPago ? 'Pago directo' : 'Entrega') + '</td>';
-                html += '<td>' + htmlEncode(m.Concepto) + (sub.length ? '<span class="mov-sub">' + htmlEncode(sub.join(' · ')) + '</span>' : '') + '</td>';
-                html += '<td>' + htmlEncode(m.Medio) + '</td>';
+                html += '<td>' + SGV.escaparHtml(m.Concepto) + (sub.length ? '<span class="mov-sub">' + SGV.escaparHtml(sub.join(' · ')) + '</span>' : '') + '</td>';
+                html += '<td>' + SGV.escaparHtml(m.Medio) + '</td>';
                 html += '<td class="text-right">' + (m.MontoSoles ? parseFloat(m.MontoSoles).toFixed(2) : '—') + '</td>';
                 html += '<td class="text-right">' + (m.MontoDolares ? parseFloat(m.MontoDolares).toFixed(2) : '—') + '</td>';
                 html += '</tr>';
@@ -822,11 +822,11 @@ function cargarLiquidacionesPorConformar(soloContador) {
                 _porConformarData[item.IdOrdenViaje] = item;
                 var espera = item.HorasEsperando >= 48 ? 'sgv-estado-peligro' : item.HorasEsperando >= 24 ? 'sgv-estado-alerta' : 'sgv-estado-ok';
                 html += '<tr>';
-                html += '<td><div class="orden-numero">' + htmlEncode(item.NumeroOrdenViaje) + '</div>';
-                html += '<div class="sgv-suave">' + htmlEncode(item.FechaSalida) + ' – ' + htmlEncode(item.FechaLlegada) + '</div></td>';
-                html += '<td><div>' + htmlEncode(item.NombreConductor) + '</div>';
-                html += '<div class="sgv-suave">' + htmlEncode(item.PlacaTracto) + ' / ' + htmlEncode(item.PlacaCarreta) + '</div></td>';
-                html += '<td class="text-nowrap"><div>' + htmlEncode(item.FechaEnvio) + '</div>';
+                html += '<td><div class="orden-numero">' + SGV.escaparHtml(item.NumeroOrdenViaje) + '</div>';
+                html += '<div class="sgv-suave">' + SGV.escaparHtml(item.FechaSalida) + ' – ' + SGV.escaparHtml(item.FechaLlegada) + '</div></td>';
+                html += '<td><div>' + SGV.escaparHtml(item.NombreConductor) + '</div>';
+                html += '<div class="sgv-suave">' + SGV.escaparHtml(item.PlacaTracto) + ' / ' + SGV.escaparHtml(item.PlacaCarreta) + '</div></td>';
+                html += '<td class="text-nowrap"><div>' + SGV.escaparHtml(item.FechaEnvio) + '</div>';
                 html += '<span class="sgv-estado ' + espera + '">' + (item.HorasEsperando < 1 ? 'hace menos de 1 h' : 'hace ' + item.HorasEsperando + ' h') + '</span></td>';
                 html += celdaMontos(parseFloat(item.DescuentoSoles || 0), parseFloat(item.DescuentoDolares || 0), 'sgv-negativo');
                 html += celdaMontos(parseFloat(item.ReintegroSoles || 0), parseFloat(item.ReintegroDolares || 0), 'sgv-positivo');
@@ -956,18 +956,18 @@ function cargarLiquidacionesAprobadas() {
                 html += '<tr>';
 
                 // N° Orden
-                html += '<td><div class="orden-numero">' + htmlEncode(item.NumeroOrdenViaje) + '</div>';
-                html += '<div class="sgv-suave">' + htmlEncode(item.FechaSalida) + '</div>';
-                if (item.FechaConformidad) html += '<div class="sgv-suave" title="Conformidad firmada por el conductor"><i class="fas fa-signature mr-1"></i>' + htmlEncode(item.FechaConformidad) + '</div>';
+                html += '<td><div class="orden-numero">' + SGV.escaparHtml(item.NumeroOrdenViaje) + '</div>';
+                html += '<div class="sgv-suave">' + SGV.escaparHtml(item.FechaSalida) + '</div>';
+                if (item.FechaConformidad) html += '<div class="sgv-suave" title="Conformidad firmada por el conductor"><i class="fas fa-signature mr-1"></i>' + SGV.escaparHtml(item.FechaConformidad) + '</div>';
                 if (item.Pagada) html += '<span class="sgv-estado sgv-estado-ok" title="Su pago o descuento está registrado en Saldos de conductores">Pagada</span>';
                 html += '</td>';
 
                 // Conductor
-                html += '<td><div>' + htmlEncode(item.NombreConductor) + '</div>';
-                html += '<div class="sgv-suave">' + htmlEncode(item.PlacaTracto) + ' / ' + htmlEncode(item.PlacaCarreta) + '</div></td>';
+                html += '<td><div>' + SGV.escaparHtml(item.NombreConductor) + '</div>';
+                html += '<div class="sgv-suave">' + SGV.escaparHtml(item.PlacaTracto) + ' / ' + SGV.escaparHtml(item.PlacaCarreta) + '</div></td>';
 
                 // Periodo
-                html += '<td class="text-nowrap">' + htmlEncode(item.FechaSalida) + ' – ' + htmlEncode(item.FechaLlegada) + '</td>';
+                html += '<td class="text-nowrap">' + SGV.escaparHtml(item.FechaSalida) + ' – ' + SGV.escaparHtml(item.FechaLlegada) + '</td>';
 
                 // Descuento en rojo, reintegro en verde, balance según su signo (S/ arriba, $ abajo)
                 html += celdaMontos(parseFloat(item.DescuentoSoles || 0), parseFloat(item.DescuentoDolares || 0), 'sgv-negativo');
@@ -1014,15 +1014,6 @@ function celdaMontos(soles, dolares, claseFija) {
         return '<div' + (clase ? ' class="' + clase + '"' : '') + '>' + simbolo + ' ' + valor.toFixed(2) + '</div>';
     }
     return '<td class="sgv-num">' + monto('S/', soles) + monto('$', dolares) + '</td>';
-}
-
-// Texto de la BD (escrito por el conductor o el admin) dentro de HTML armado con cadenas.
-// Escapa también comillas: sirve dentro de atributos.
-function htmlEncode(text) {
-    if (text === null || text === undefined) return '';
-    return String(text).replace(/[&<>"']/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
 }
 
 // --- Descargar PDF SGV-CDF-F-05 ---

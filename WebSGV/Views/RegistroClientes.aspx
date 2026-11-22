@@ -181,7 +181,7 @@
                                                 CommandName="ToggleActivo"
                                                 CommandArgument='<%# ArgumentoEstado(Eval("idCliente"), Eval("activo")) %>'
                                                 CssClass='<%# ObtenerClaseBoton(Eval("activo")) %>'
-                                                OnClientClick="return confirm('&#xBF;Cambiar el estado de este cliente?');">
+                                                data-confirmar="¿Cambiar el estado de este cliente?">
                                                 <%#: ObtenerTextoBoton(Eval("activo")) %>
                                             </asp:LinkButton>
                                         </ItemTemplate>

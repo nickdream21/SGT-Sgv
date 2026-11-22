@@ -69,7 +69,7 @@
         return L.divIcon({
             className: 'sx-camion-icono',
             html: '<span class="sx-camion sx-camion-' + clave + '"><i class="fas fa-truck" aria-hidden="true"></i></span>' +
-                  '<span class="sx-camion-placa">' + escapar(placa) + '</span>',
+                  '<span class="sx-camion-placa">' + SGV.escaparHtml(placa) + '</span>',
             iconSize: [34, 34], iconAnchor: [17, 17]
         });
     }
@@ -80,12 +80,6 @@
             html: '<span class="sx-mk sx-mk-' + clave + '">' + n + '</span>',
             iconSize: [22, 22], iconAnchor: [11, 11]
         });
-    }
-
-    function escapar(s) {
-        var d = document.createElement('div');
-        d.textContent = s == null ? '' : String(s);
-        return d.innerHTML;
     }
 
     function duracion(ms) {
@@ -123,7 +117,7 @@
         var grupo = L.layerGroup();
         (zonas || []).forEach(function (z) {
             L.polygon(z.Vertices, { color: '#7c3aed', weight: 1.5, dashArray: '5 4', fillColor: '#8b5cf6', fillOpacity: 0.16, interactive: true })
-                .bindTooltip(escapar(z.Nombre), { sticky: true, className: 'sx-ruta-tip' })
+                .bindTooltip(SGV.escaparHtml(z.Nombre), { sticky: true, className: 'sx-ruta-tip' })
                 .addTo(grupo);
         });
         capas.zonas = grupo.addTo(mapa);
@@ -146,11 +140,11 @@
         var grupo = L.layerGroup();
         var completa = L.polyline(latlngs, { color: color, weight: 4, opacity: 0.28, lineJoin: 'round' }).addTo(grupo);
         var avance = L.polyline([], { color: color, weight: 5, opacity: 0.95, lineJoin: 'round' }).addTo(grupo);
-        completa.bindTooltip(escapar(datos.Titulo + ' · ' + datos.Tracto), { sticky: true, className: 'sx-ruta-tip' });
+        completa.bindTooltip(SGV.escaparHtml(datos.Titulo + ' · ' + datos.Tracto), { sticky: true, className: 'sx-ruta-tip' });
 
         var hitos = datos.Hitos.map(function (h, i) {
             var m = L.marker([h.Lat, h.Lng], { icon: iconoHito(clave, i + 1), keyboard: false, zIndexOffset: 500 })
-                .bindTooltip('<strong>' + (i + 1) + '. ' + escapar(h.Nombre) + '</strong><br>' + escapar(h.Hora) +
+                .bindTooltip('<strong>' + (i + 1) + '. ' + SGV.escaparHtml(h.Nombre) + '</strong><br>' + SGV.escaparHtml(h.Hora) +
                              (h.PuntoGps ? '' : '<br><em>ubicado por la hora</em>'), { className: 'sx-ruta-tip', direction: 'top', offset: [0, -8] })
                 .addTo(grupo);
             m.on('click', function () { irA(h.T, false); });
@@ -164,7 +158,7 @@
         if (!capas.paradas) capas.paradas = L.layerGroup().addTo(mapa);
         paradas.forEach(function (pa) {
             L.marker(pa.latlng, { icon: iconoParada(), keyboard: false, zIndexOffset: 100 })
-                .bindTooltip('<strong>Parada de ' + duracion(pa.hasta - pa.desde) + '</strong><br>' + escapar(NOMBRES[clave] + ' ' + datos.Tracto) + '<br>' +
+                .bindTooltip('<strong>Parada de ' + duracion(pa.hasta - pa.desde) + '</strong><br>' + SGV.escaparHtml(NOMBRES[clave] + ' ' + datos.Tracto) + '<br>' +
                              horaLima.format(new Date(pa.desde)) + ' → ' + horaLima.format(new Date(pa.hasta)), { className: 'sx-ruta-tip', direction: 'top', offset: [0, -6] })
                 .on('click', function () { irA(pa.desde, false); })
                 .addTo(capas.paradas);
@@ -314,8 +308,8 @@
                 [duracion(detenido), tr.paradas.length + (tr.paradas.length === 1 ? ' parada' : ' paradas')],
                 [Math.round(vmax) + ' km/h', 'velocidad máxima']
             ];
-            var html = '<div class="sx-resumen-titulo">' + NOMBRES[tr.clave] + ' <span class="sx-mono">' + escapar(tr.datos.Tracto) + '</span></div><div class="sx-resumen-datos">';
-            datos.forEach(function (d) { html += '<span><strong>' + escapar(d[0]) + '</strong>' + escapar(d[1]) + '</span>'; });
+            var html = '<div class="sx-resumen-titulo">' + NOMBRES[tr.clave] + ' <span class="sx-mono">' + SGV.escaparHtml(tr.datos.Tracto) + '</span></div><div class="sx-resumen-datos">';
+            datos.forEach(function (d) { html += '<span><strong>' + SGV.escaparHtml(d[0]) + '</strong>' + SGV.escaparHtml(d[1]) + '</span>'; });
             caja.innerHTML = html + '</div>';
             resumen.appendChild(caja);
         });

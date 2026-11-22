@@ -392,7 +392,7 @@
                                 </asp:PlaceHolder>
                                 <button type="button" class="dc-btn dc-btn-linea dc-btn-chico" onclick='verDetalleLiquidacion(<%#: Eval("IdOrdenViaje") %>)'>Ver</button>
                                 <asp:PlaceHolder runat="server" Visible='<%# (bool)Eval("Firmada") %>'>
-                                    <a class="dc-btn dc-btn-linea dc-btn-chico" target="_blank" href='DescargarPdfOrdenViaje.aspx?id=<%#: Eval("IdOrdenViaje") %>' title="Documento firmado vigente">PDF</a>
+                                    <a class="dc-btn dc-btn-linea dc-btn-chico" target="_blank" rel="noopener" href='DescargarPdfOrdenViaje.aspx?id=<%#: Eval("IdOrdenViaje") %>' title="Documento firmado vigente">PDF</a>
                                 </asp:PlaceHolder>
                                 <asp:PlaceHolder runat="server" Visible='<%# (string)Eval("Estado") == "PENDIENTE" && !(bool)Eval("Revisada") %>'>
                                     <button type="button" class="dc-btn dc-btn-alerta dc-btn-chico" onclick='abrirModalRetirar(<%#: Eval("IdOrdenViaje") %>)'>Retirar</button>

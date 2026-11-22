@@ -179,17 +179,14 @@
 })();
 
 // ── Confirmaciones no bloqueantes ───────────────────────────────────
-// Reemplazo de confirm(): el cuadro nativo detiene la página y no se puede estilar.
+// Reemplazo del confirm nativo: el cuadro detiene la página y no se puede estilar.
 //   SGV.confirmar(mensaje[, alAceptar][, { titulo, textoAceptar, peligro }]) → Promise<bool>
 // "peligro" pinta el botón en rojo (eliminar, rechazar, revertir) y deja el foco en Cancelar.
 // El mensaje respeta los saltos de línea; Esc, la X o Cancelar responden false.
 // Botones de servidor: data-confirmar="texto" (\n = salto de línea), y opcionales
 // data-confirmar-titulo, data-confirmar-aceptar y data-confirmar-peligro="true". Se cancela el
 // clic, se pregunta y, al aceptar, se repite el mismo clic: su onclick (validación, postback) y el
-// UpdatePanel siguen igual. Úsalo en vez de OnClientClick="return confirm(...)".
-// Además, todo elemento con onclick="return confirm('texto');" (los OnClientClick simples que aún
-// quedan) usa este modal sin tocar su marcado: se intercepta el clic, se pregunta y, al aceptar,
-// se repite el clic con el onclick retirado un instante.
+// UpdatePanel siguen igual. Úsalo en vez de un OnClientClick con el confirm nativo.
 (function () {
     var SGV = window.SGV = window.SGV || {};
     var $modal = null;
@@ -283,34 +280,67 @@
             peligro: esPeligro
         });
     }, true);
+})();
 
-    // onclick="return confirm('...');" exacto, con el texto como literal de cadena simple.
-    var PATRON = /^\s*return\s+confirm\(\s*(['"])((?:\\.|(?!\1)[^\\])*)\1\s*\)\s*;?\s*$/;
+// ── Cerrar sesión: borradores del navegador fuera ──────────────────
+// DashboardConductor guarda en localStorage lo que el conductor va escribiendo (por id de conductor,
+// hasta 45 días). En un celular o PC compartido no debe quedar tras cerrar sesión, pero tampoco debe
+// perderse si el conductor pulsa "Cerrar sesión" y luego cancela el aviso de salir del navegador.
+//  1. Clic en [data-cerrar-sesion]: solo se marca (SGV.sesionCerrandose y una marca en sessionStorage,
+//     que vive lo que la pestaña). No se borra nada: el LinkButton hace theForm.submit(), el navegador
+//     puede preguntar "¿salir del sitio?" (beforeunload) y el conductor puede cancelar.
+//  2. Cancelar no genera ningún evento en la página: la marca se apaga con la siguiente interacción
+//     (pointerdown / keydown fuera del botón) o al volver a la pestaña (visibilitychange → visible).
+//     Si cierra la pestaña sin más, sessionStorage desaparece con ella y el borrador queda intacto.
+//  3. Si sale de verdad, el servidor cierra la sesión y redirige a Login.aspx (sin "error=" en la
+//     dirección): con la marca presente, ahí se borran las claves y la marca. Mientras tanto, el
+//     pagehide / visibilitychange de la página guardan el borrador como siempre.
+// Un vencimiento de sesión (Login.aspx?error=...) no los borra: el borrador existe para no perder lo escrito.
+(function () {
+    var SGV = window.SGV = window.SGV || {};
+    var PREFIJOS = ['sgv-borrador-liquidacion-'];
+    var MARCA = 'sgv-cerrando-sesion';
 
-    function textoDe(literal) {
-        // Solo se decodifican los escapes de cadena; no se evalúa nada.
-        var mapa = { n: '\n', r: '', t: ' ' };
-        return literal
-            .replace(/\\u([0-9a-fA-F]{4})/g, function (_, hex) { return String.fromCharCode(parseInt(hex, 16)); })
-            .replace(/\\(.)/g, function (_, c) { return mapa.hasOwnProperty(c) ? mapa[c] : c; });
+    function quitarMarca() {
+        SGV.sesionCerrandose = false;
+        try { window.sessionStorage.removeItem(MARCA); } catch (e) { /* sin almacenamiento */ }
     }
 
-    document.addEventListener('click', function (e) {
-        var el = e.target && e.target.closest ? e.target.closest('[onclick]') : null;
-        if (!el) return;
-        var m = PATRON.exec(el.getAttribute('onclick') || '');
-        if (!m) return;
+    SGV.borrarBorradoresLocales = function () {
+        try {
+            var claves = [];
+            for (var i = 0; i < window.localStorage.length; i++) {
+                var k = window.localStorage.key(i);
+                if (k && PREFIJOS.some(function (p) { return k.indexOf(p) === 0; })) claves.push(k);
+            }
+            claves.forEach(function (k) { window.localStorage.removeItem(k); });
+        } catch (e) { /* sin almacenamiento: no hay nada que borrar */ }
+    };
 
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        var onclick = el.getAttribute('onclick');
-        var esPeligro = /elimin|rechaz|revert|borrar|anular|desactiv/i.test(m[2]);
-        SGV.confirmar(textoDe(m[2]), function () {
-            el.removeAttribute('onclick');
-            try { el.click(); }
-            finally { setTimeout(function () { el.setAttribute('onclick', onclick); }, 0); }
-        }, { peligro: esPeligro, textoAceptar: esPeligro ? 'Continuar' : 'Aceptar' });
+    var marcada = false;
+    try { marcada = window.sessionStorage.getItem(MARCA) === '1'; } catch (e) { }
+    if (marcada && /\/Login\.aspx$/i.test(window.location.pathname) && !/[?&]error=/i.test(window.location.search)) {
+        SGV.borrarBorradoresLocales();
+    }
+    quitarMarca();   // en cualquier otra página, una marca que quedó de una salida cancelada
+
+    document.addEventListener('click', function (e) {
+        var el = e.target && e.target.closest ? e.target.closest('[data-cerrar-sesion]') : null;
+        if (!el) return;
+        SGV.sesionCerrandose = true;
+        try { window.sessionStorage.setItem(MARCA, '1'); } catch (err) { /* sin almacenamiento */ }
     }, true);
+
+    function alInteractuar(e) {
+        if (!SGV.sesionCerrandose) return;
+        if (e.target && e.target.closest && e.target.closest('[data-cerrar-sesion]')) return;
+        quitarMarca();
+    }
+    document.addEventListener('pointerdown', alInteractuar, true);
+    document.addEventListener('keydown', alInteractuar, true);
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible' && SGV.sesionCerrandose) quitarMarca();
+    });
 })();
 
 // ── Texto seguro dentro de HTML ─────────────────────────────────────

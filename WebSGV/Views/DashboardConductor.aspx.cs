@@ -667,7 +667,7 @@ namespace WebSGV.Views
                     MostrarResultadoExitoso(numeroOrdenViaje);
                     string redirectScript = $@"
                         setTimeout(function() {{
-                            window.location.href = '{ResolveUrl(Request.RawUrl)}';
+                            window.location.href = '{System.Web.HttpUtility.JavaScriptStringEncode(ResolveUrl(Request.RawUrl))}';
                         }}, 2000);";
                     ScriptManager.RegisterStartupScript(this, GetType(), "RedirectDespuesExito", redirectScript, true);
                 }

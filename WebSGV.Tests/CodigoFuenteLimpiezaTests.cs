@@ -604,5 +604,241 @@ namespace WebSGV.Tests
                 "\"DNI ****\"; si es otra cosa (un correlativo), escríbelo con su serie (F222-00008603):" +
                 Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
         }
+
+        // ---------- JS propio limpio (E4-6, 2026-11-22) ----------
+        // Un solo escape de HTML (SGV.escaparHtml, SiteMaster.js), ningún confirm() nativo (data-confirmar
+        // o SGV.confirmar), una versión por biblioteca, ningún archivo propio de Scripts/ o Content/ sin
+        // usar y rel="noopener" en cada target="_blank".
+
+        private static IEnumerable<string> ArchivosDe(string raiz, string carpeta, params string[] patrones)
+        {
+            string dir = Path.Combine(raiz, carpeta);
+            if (!Directory.Exists(dir)) return Enumerable.Empty<string>();
+            return patrones.SelectMany(p => Directory.GetFiles(dir, p, SearchOption.AllDirectories))
+                .Where(f => !f.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                    .Any(parte => parte.Equals("obj", StringComparison.OrdinalIgnoreCase) || parte.Equals("bin", StringComparison.OrdinalIgnoreCase)))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static string Relativo(string raiz, string archivo) =>
+            archivo.Substring(raiz.Length).TrimStart('\\', '/').Replace('\\', '/');
+
+        /// <summary>Todos los archivos propios de WebSGV con esas extensiones: fuera obj/, bin/ y el código de terceros.</summary>
+        private static List<string> ArchivosPropios(string raiz, params string[] extensiones)
+        {
+            string[] excluidas = { "obj/", "bin/", "Scripts/lib/", "Scripts/WebForms/", "Content/lib/" };
+            return Directory.GetFiles(raiz, "*.*", SearchOption.AllDirectories)
+                .Where(f => extensiones.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                .Where(f => !excluidas.Any(e => Relativo(raiz, f).StartsWith(e, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+        }
+
+        /// <summary>Líneas que no son comentario // (también ///) en las que <paramref name="patron"/> aparece.</summary>
+        private static List<string> BuscarEnArchivos(string raiz, IEnumerable<string> archivos, Regex patron)
+        {
+            var hallazgos = new List<string>();
+            foreach (string archivo in archivos)
+            {
+                string[] lineas = File.ReadAllLines(archivo);
+                for (int i = 0; i < lineas.Length; i++)
+                {
+                    string linea = lineas[i].TrimStart();
+                    if (linea.StartsWith("//", StringComparison.Ordinal)) continue;
+                    if (patron.IsMatch(linea))
+                        hallazgos.Add($"{Relativo(raiz, archivo)}:{i + 1}: {linea.Trim()}");
+                }
+            }
+            return hallazgos;
+        }
+
+        private static readonly Regex DefinicionEscapeHtml = new Regex(
+            @"\bfunction\s+(escHtml|htmlEncode|escapar|esc|escapeHtml|escaparHtml)\s*\(" +
+            @"|\b(escHtml|htmlEncode|escapar|esc|escapeHtml)\s*[:=]\s*(function\b|\([^)]*\)\s*=>|\w+\s*=>)");
+
+        [Fact]
+        public void Js_UnSoloEscapeHtml_EnSiteMaster()
+        {
+            Assert.Matches(DefinicionEscapeHtml, "function escHtml(str) {");
+            Assert.Matches(DefinicionEscapeHtml, "    function esc(s) {");
+            Assert.Matches(DefinicionEscapeHtml, "var htmlEncode = function (t) {");
+            Assert.Matches(DefinicionEscapeHtml, "const escapar = s => String(s);");
+            Assert.DoesNotMatch(DefinicionEscapeHtml, "'<td>' + SGV.escaparHtml(item.Nombre) + '</td>'");
+            Assert.DoesNotMatch(DefinicionEscapeHtml, "function escaparRegex(s) {");
+
+            string raiz = RaizWeb();
+            var archivos = ArchivosDe(raiz, Path.Combine("Scripts", "paginas"), "*.js")
+                .Where(f => !Relativo(raiz, f).Equals("Scripts/paginas/SiteMaster.js", StringComparison.OrdinalIgnoreCase))
+                .Concat(ArchivosDe(raiz, "Views", "*.aspx", "*.ascx"))
+                .Concat(new[] { Path.Combine(raiz, "Site.Master") })
+                .ToList();
+            Assert.True(archivos.Count > 50, "No se encontraron los scripts de página.");
+
+            List<string> hallazgos = BuscarEnArchivos(raiz, archivos, DefinicionEscapeHtml);
+            Assert.True(hallazgos.Count == 0,
+                "Use SGV.escaparHtml (Scripts/paginas/SiteMaster.js) en lugar de una copia propia:" +
+                Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
+        }
+
+        // confirm( y window.confirm(; SGV.confirmar( no coincide (después de "confirm" viene "a").
+        private static readonly Regex ConfirmNativo = new Regex(@"\bconfirm\s*\(");
+
+        [Fact]
+        public void Js_SinConfirmNativo()
+        {
+            Assert.Matches(ConfirmNativo, "OnClientClick=\"return confirm('¿Eliminar?');\"");
+            Assert.Matches(ConfirmNativo, "if (window.confirm ('x')) {");
+            Assert.DoesNotMatch(ConfirmNativo, "SGV.confirmar('¿Anular?', function () { });");
+            Assert.DoesNotMatch(ConfirmNativo, "data-confirmar=\"¿Quitar?\"");
+
+            string raiz = RaizWeb();
+            var archivos = ArchivosPropios(raiz, ".cs", ".js", ".aspx", ".ascx", ".master", ".asax", ".ashx");
+            Assert.Contains(archivos, f => Relativo(raiz, f).Equals("Global.asax.cs", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(archivos, f => Relativo(raiz, f).StartsWith("Services/", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(archivos, f => Relativo(raiz, f).StartsWith("Scripts/WebForms/", StringComparison.OrdinalIgnoreCase));
+
+            List<string> hallazgos = BuscarEnArchivos(raiz, archivos, ConfirmNativo);
+            Assert.True(hallazgos.Count == 0,
+                "El confirm() nativo detiene la página: use data-confirmar=\"texto\" en el botón o SGV.confirmar(...) en JS:" +
+                Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
+        }
+
+        /// <summary>"select2-4.0.13.min.js" → (select2, 4.0.13); "select2-4.1.0-rc.0" → (select2, 4.1.0-rc.0).</summary>
+        private static readonly Regex NombreConVersion = new Regex(
+            @"^(?<nombre>[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z][A-Za-z0-9]*)*)-(?<version>\d+(?:\.\d+)*(?:-(?:rc|alpha|beta|pre)[\w.]*?)?)(?=\.[A-Za-z]|$)",
+            RegexOptions.IgnoreCase);
+
+        [Fact]
+        public void Bibliotecas_UnaVersionPorBiblioteca()
+        {
+            Match m = NombreConVersion.Match("select2-4.1.0-rc.0.min.js");
+            Assert.Equal("select2", m.Groups["nombre"].Value);
+            Assert.Equal("4.1.0-rc.0", m.Groups["version"].Value);
+            Assert.Equal("4.1.0-rc.0", NombreConVersion.Match("select2-4.1.0-rc.0").Groups["version"].Value);
+            Assert.Equal("chart", NombreConVersion.Match("chart-4.4.0.umd.min.js").Groups["nombre"].Value);
+            Assert.Equal("jquery-ui", NombreConVersion.Match("jquery-ui-1.13.2").Groups["nombre"].Value);
+
+            string raiz = RaizWeb();
+            var hallazgos = new List<string>();
+            foreach (string carpeta in new[] { Path.Combine("Scripts", "lib"), Path.Combine("Content", "lib") })
+            {
+                string dir = Path.Combine(raiz, carpeta);
+                Assert.True(Directory.Exists(dir), $"No existe {carpeta}.");
+                var entradas = Directory.GetFileSystemEntries(dir).Select(Path.GetFileName);
+                foreach (var grupo in entradas
+                    .Select(e => NombreConVersion.Match(e))
+                    .Where(x => x.Success)
+                    .GroupBy(x => x.Groups["nombre"].Value.ToLowerInvariant()))
+                {
+                    var versiones = grupo.Select(x => x.Groups["version"].Value).Distinct().ToList();
+                    if (versiones.Count > 1)
+                        hallazgos.Add($"{carpeta.Replace('\\', '/')}: {grupo.Key} en {string.Join(", ", versiones)}");
+                }
+            }
+
+            Assert.True(hallazgos.Count == 0,
+                "Deje una sola versión de cada biblioteca (y quite la otra del csproj):" +
+                Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
+        }
+
+        [Fact]
+        public void ScriptsYContenido_PropiosEstanReferenciados()
+        {
+            string raiz = RaizWeb();
+            // Bibliotecas de terceros, scripts de WebForms y plantillas: no los referencia el código propio.
+            string[] excluidas = { "Scripts/WebForms/", "Scripts/lib/", "Content/lib/", "Content/Templates/" };
+            var propios = ArchivosDe(raiz, "Scripts", "*.js").Concat(ArchivosDe(raiz, "Content", "*.css"))
+                .Select(f => Relativo(raiz, f))
+                .Where(r => !excluidas.Any(e => r.StartsWith(e, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            Assert.True(propios.Count > 30, "No se encontraron los scripts y estilos propios.");
+
+            string[] extensiones = { ".aspx", ".ascx", ".master", ".cs", ".js", ".css", ".ashx", ".asax" };
+            var textos = Directory.GetFiles(raiz, "*.*", SearchOption.AllDirectories)
+                .Where(f => extensiones.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                .Where(f =>
+                {
+                    string r = Relativo(raiz, f);
+                    return !r.StartsWith("obj/", StringComparison.OrdinalIgnoreCase)
+                        && !r.StartsWith("bin/", StringComparison.OrdinalIgnoreCase)
+                        && !r.StartsWith("Scripts/lib/", StringComparison.OrdinalIgnoreCase)
+                        && !r.StartsWith("Content/lib/", StringComparison.OrdinalIgnoreCase)
+                        && !r.StartsWith("Scripts/WebForms/", StringComparison.OrdinalIgnoreCase);
+                })
+                .ToDictionary(f => Relativo(raiz, f), File.ReadAllText, StringComparer.OrdinalIgnoreCase);
+
+            // Un archivo no cuenta como referencia de sí mismo (p. ej. su propio nombre en la cabecera).
+            var sinUso = propios
+                .Where(p => !textos.Any(t => !t.Key.Equals(p, StringComparison.OrdinalIgnoreCase)
+                                             && t.Value.IndexOf(p, StringComparison.OrdinalIgnoreCase) >= 0))
+                .ToList();
+
+            Assert.True(sinUso.Count == 0,
+                "Archivos propios que nadie carga: bórrelos (y quítelos del csproj) o referéncielos con RecursoHelper.Url:" +
+                Environment.NewLine + string.Join(Environment.NewLine, sinUso));
+        }
+
+        private static readonly Regex EtiquetaBlank = new Regex(
+            @"<[A-Za-z][^<>]*?\btarget\s*=\s*[""']_blank[""'][^<>]*>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        private static readonly Regex RelNoopener = new Regex(
+            @"\brel\s*=\s*[""'][^""']*\bnoopener\b", RegexOptions.IgnoreCase);
+        private static readonly Regex BloqueAspNet = new Regex(@"<%.*?%>", RegexOptions.Singleline);
+
+        /// <summary>a.target = '_blank', target: "_blank", .attr('target', '_blank'), target='_blank' dentro de una cadena.</summary>
+        private static readonly Regex TargetBlankEnCodigo = new Regex(
+            @"\btarget\b\s*(?:\\?[""']\s*)?[=:,]\s*\\?[""']_blank\b", RegexOptions.IgnoreCase);
+
+        /// <summary>Números de línea (desde 1) con un target _blank sin "noopener" en esa línea ni en las 3 siguientes.</summary>
+        private static IEnumerable<int> TargetBlankSinNoopener(string[] lineas)
+        {
+            for (int i = 0; i < lineas.Length; i++)
+            {
+                if (lineas[i].TrimStart().StartsWith("//", StringComparison.Ordinal)) continue;
+                if (!TargetBlankEnCodigo.IsMatch(lineas[i])) continue;
+                bool conNoopener = lineas.Skip(i).Take(4).Any(l => l.IndexOf("noopener", StringComparison.OrdinalIgnoreCase) >= 0);
+                if (!conNoopener) yield return i + 1;
+            }
+        }
+
+        [Fact]
+        public void Marcado_TargetBlankConNoopener()
+        {
+            Assert.Matches(TargetBlankEnCodigo, "verPdf.target = '_blank';");
+            Assert.Matches(TargetBlankEnCodigo, "$(a).attr('target', '_blank');");
+            Assert.Matches(TargetBlankEnCodigo, "{ href: url, target: \"_blank\" }");
+            Assert.Matches(TargetBlankEnCodigo, "html += '<a href=\"' + u + '\" target=\"_blank\">';");
+            Assert.Matches(TargetBlankEnCodigo, "sb.Append($\"<a target=\\\"_blank\\\" href=...\");");
+            Assert.DoesNotMatch(TargetBlankEnCodigo, "window.open(url, '_blank');");
+            Assert.DoesNotMatch(TargetBlankEnCodigo, "var destino = e.target;");
+            Assert.Equal(new[] { 1 }, TargetBlankSinNoopener(new[] { "a.target = '_blank';", "a.href = x;", "b();", "c();", "a.rel = 'noopener';" }));
+            Assert.Empty(TargetBlankSinNoopener(new[] { "a.target = '_blank';", "a.rel = 'noopener';" }));
+            Assert.Empty(TargetBlankSinNoopener(new[] { "x = '<a target=\"_blank\" rel=\"noopener\">';" }));
+            Assert.Empty(TargetBlankSinNoopener(new[] { "// a.target = '_blank';" }));
+
+            Assert.Matches(EtiquetaBlank, "<a href='x' target=\"_blank\">");
+            Assert.DoesNotMatch(RelNoopener, "<a href='x' target=\"_blank\">");
+            Assert.Matches(RelNoopener, "<asp:HyperLink runat=\"server\" Target=\"_blank\" rel=\"noopener\" />");
+            Assert.Matches(RelNoopener, "<a target='_blank' rel='noopener noreferrer'>");
+
+            string raiz = RaizWeb();
+            var hallazgos = new List<string>();
+            var archivos = ArchivosDe(raiz, "Views", "*.aspx", "*.ascx").Concat(new[] { Path.Combine(raiz, "Site.Master") });
+            foreach (string archivo in archivos)
+            {
+                // Sin los bloques <% %>: su "%>" cortaría la etiqueta antes del rel.
+                string texto = BloqueAspNet.Replace(File.ReadAllText(archivo), m => new string('x', m.Length));
+                foreach (Match m in EtiquetaBlank.Matches(texto))
+                    if (!RelNoopener.IsMatch(m.Value))
+                        hallazgos.Add($"{Relativo(raiz, archivo)}:{NumeroDeLinea(texto, m.Index)}");
+            }
+
+            // JS propio y C# que arman enlaces: el noopener en la misma línea o en las 3 siguientes.
+            foreach (string archivo in ArchivosPropios(raiz, ".js", ".cs"))
+                hallazgos.AddRange(TargetBlankSinNoopener(File.ReadAllLines(archivo))
+                    .Select(n => $"{Relativo(raiz, archivo)}:{n}"));
+
+            Assert.True(hallazgos.Count == 0,
+                "Agregue rel=\"noopener\" a cada target=\"_blank\" (la pestaña nueva no debe poder tocar window.opener):" +
+                Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
+        }
     }
 }

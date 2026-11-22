@@ -46,7 +46,7 @@ function verDetalleOrden(idOrden) {
             $('#detalleOrdenContent').html(response.d);
         },
         error: function (xhr, status, error) {
-            $('#detalleOrdenContent').html('<div class="alert alert-danger"><i class="fas fa-exclamation-triangle mr-2"></i>Error al cargar el detalle: ' + error + '</div>');
+            $('#detalleOrdenContent').html('<div class="alert alert-danger"><i class="fas fa-exclamation-triangle mr-2"></i>Error al cargar el detalle: ' + SGV.escaparHtml(error) + '</div>');
         }
     });
 }

@@ -36,12 +36,6 @@
     function colorFase(f) { return css('--de-f-' + f) || '#2a78d6'; }
     function nombreFase(id) { var f = FASES.filter(function (x) { return x.id === id; })[0]; return f ? f.nombre : id; }
 
-    function esc(s) {
-        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-        });
-    }
-
     function num(v, dec) {
         return Number(v).toLocaleString('es-PE', { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 });
     }
@@ -109,8 +103,8 @@
     }
 
     function vacio(cont, cols, texto) {
-        if (cols) cont.innerHTML = '<tr><td colspan="' + cols + '" class="de-empty">' + esc(texto) + '</td></tr>';
-        else cont.innerHTML = '<div class="de-empty">' + esc(texto) + '</div>';
+        if (cols) cont.innerHTML = '<tr><td colspan="' + cols + '" class="de-empty">' + SGV.escaparHtml(texto) + '</td></tr>';
+        else cont.innerHTML = '<div class="de-empty">' + SGV.escaparHtml(texto) + '</div>';
     }
 
     // ================= Operación ahora =================
@@ -137,10 +131,10 @@
             // Cada estación abre el tablero en la pestaña de su fase (la frontera va con "Rumbo a Ecuador").
             var pestana = { carga: 'carga', base: 'base', frontera: 'ecuador', ecuador: 'ecuador', retorno: 'retorno' }[f.grupo];
             return '<a class="de-estacion' + (f.unidades ? '' : ' vacia') + '" href="RegistroSeguimiento.aspx' + (pestana ? '?fase=' + pestana : '') + '"' +
-                ' style="--fase:' + colorFase(f.grupo) + ';--tam:' + tam + 'px" title="' + esc(f.nombre) + ': ' + f.unidades + ' unidad(es)">' +
-                '<span class="grupo">' + (grupoNuevo ? esc(nombreFase(f.grupo)) : '&nbsp;') + '</span>' +
+                ' style="--fase:' + colorFase(f.grupo) + ';--tam:' + tam + 'px" title="' + SGV.escaparHtml(f.nombre) + ': ' + f.unidades + ' unidad(es)">' +
+                '<span class="grupo">' + (grupoNuevo ? SGV.escaparHtml(nombreFase(f.grupo)) : '&nbsp;') + '</span>' +
                 '<span class="punto"><span class="burbuja">' + (f.unidades || '') + '</span></span>' +
-                '<span class="t">' + esc(f.nombre) + '</span></a>';
+                '<span class="t">' + SGV.escaparHtml(f.nombre) + '</span></a>';
         }).join('');
 
         // Flota: la misma foto en una barra por fase.
@@ -150,10 +144,10 @@
         var total = op.unidades || 1;
         document.getElementById('opFlota').innerHTML = op.unidades
             ? '<div class="de-flota-barra">' + porGrupo.filter(function (x) { return x.n; }).map(function (x) {
-                return '<span style="flex:' + x.n + ';background:' + colorFase(x.g.id) + '" title="' + esc(x.g.nombre) + ': ' + x.n + '">' +
+                return '<span style="flex:' + x.n + ';background:' + colorFase(x.g.id) + '" title="' + SGV.escaparHtml(x.g.nombre) + ': ' + x.n + '">' +
                     (x.n / total >= 0.08 ? x.n : '') + '</span>';
             }).join('') + '</div><div class="de-legend">' + porGrupo.map(function (x) {
-                return '<span style="--fase:' + colorFase(x.g.id) + '"><i></i>' + esc(x.g.nombre) + ' <b>' + x.n + '</b></span>';
+                return '<span style="--fase:' + colorFase(x.g.id) + '"><i></i>' + SGV.escaparHtml(x.g.nombre) + ' <b>' + x.n + '</b></span>';
             }).join('') + '</div>'
             : '';
 
@@ -162,8 +156,8 @@
             ? '<div class="de-alertas"><div class="de-alertas-title"><i class="fas fa-exclamation-triangle"></i> ' +
                 op.alertas.length + ' espera(s) que siguen en curso</div><ul>' +
                 op.alertas.map(function (a) {
-                    return '<li><a href="' + SGV.urlViaje + '?id=' + a.id + '">' + esc(a.placa) + '</a>' +
-                        '<span>' + esc(a.texto) + (a.pedido ? ' · ' + esc(a.pedido) : '') + '</span></li>';
+                    return '<li><a href="' + SGV.urlViaje + '?id=' + a.id + '">' + SGV.escaparHtml(a.placa) + '</a>' +
+                        '<span>' + SGV.escaparHtml(a.texto) + (a.pedido ? ' · ' + SGV.escaparHtml(a.pedido) : '') + '</span></li>';
                 }).join('') + '</ul></div>'
             : '';
     }
@@ -172,10 +166,10 @@
     function renderKpis(p) {
         var k = p.kpi, serie = p.serie;
         document.getElementById('periodoNota').innerHTML =
-            'Per&iacute;odo: <b>' + esc(p.periodo) + '</b> &middot; comparado con ' + esc(p.periodoAnterior);
+            'Per&iacute;odo: <b>' + SGV.escaparHtml(p.periodo) + '</b> &middot; comparado con ' + SGV.escaparHtml(p.periodoAnterior);
         document.getElementById('thAnterior').textContent = 'vs. ' + p.periodoAnterior;
 
-        function vsAnt(html) { return html + ' <span>vs. ' + esc(p.periodoAnterior) + '</span>'; }
+        function vsAnt(html) { return html + ' <span>vs. ' + SGV.escaparHtml(p.periodoAnterior) + '</span>'; }
         function tile(o) {
             return '<div class="de-kpi' + (o.clic ? ' clic' : '') + '"' + (o.clic ? ' data-tramo="' + o.clic + '" title="Ver su evolución"' : '') + '>' +
                 '<div class="l">' + o.label + '</div><div class="v">' + o.valor + '</div>' +
@@ -324,7 +318,7 @@
             plugins: [textoCentro]
         });
         leyenda.innerHTML = FASES.map(function (f, i) {
-            return '<div class="fila" style="--fase:' + colorFase(f.id) + '"><i></i><span>' + esc(f.nombre) + '</span>' +
+            return '<div class="fila" style="--fase:' + colorFase(f.id) + '"><i></i><span>' + SGV.escaparHtml(f.nombre) + '</span>' +
                 '<b>' + dur(horas[i]) + '</b><span class="pct">' + num(100 * horas[i] / total, 0) + '%</span></div>';
         }).join('');
     }
@@ -413,7 +407,7 @@
         var chips = CHIPS.slice();
         if (!chips.some(function (c) { return c.id === tramoSel; })) chips.push({ id: tramoSel, nombre: nombreTramo(tramoSel) });
         document.getElementById('evolChips').innerHTML = chips.map(function (c) {
-            return '<button type="button" class="de-chip' + (c.id === tramoSel ? ' sel' : '') + '" data-tramo="' + c.id + '">' + esc(c.nombre) + '</button>';
+            return '<button type="button" class="de-chip' + (c.id === tramoSel ? ' sel' : '') + '" data-tramo="' + c.id + '">' + SGV.escaparHtml(c.nombre) + '</button>';
         }).join('');
 
         crear('chartEvolucion', {
@@ -499,7 +493,7 @@
         if (!plantas.length) { vacio(resumen, 0, 'Sin viajes con planta en el período.'); return; }
         var sinPlanta = p.plantas.filter(function (x) { return x.planta === 'Sin planta'; })[0];
         resumen.innerHTML = plantas.map(function (x, i) {
-            return '<div class="de-planta" style="--planta:' + PLANTA_COLOR[i] + '"><div class="nombre"><i></i>' + esc(x.planta) + '</div>' +
+            return '<div class="de-planta" style="--planta:' + PLANTA_COLOR[i] + '"><div class="nombre"><i></i>' + SGV.escaparHtml(x.planta) + '</div>' +
                 '<div class="cifra"><b>' + x.viajes + '</b> viajes &middot; ' + x.descargados + ' descargados</div>' +
                 '<div class="cifra">Tr&aacute;nsito <b>' + dur(x.transito) + '</b></div></div>';
         }).join('') + (sinPlanta ? '<div class="de-note">' + sinPlanta.viajes + ' viaje(s) a&uacute;n sin planta asignada.</div>' : '');
@@ -535,16 +529,16 @@
         cont.innerHTML = p.masLentos.map(function (v) {
             var segs = fases.map(function (f) {
                 var h = v.fases[f] || 0;
-                return h ? '<span style="width:' + (100 * h / max) + '%;background:' + colorFase(f) + '" title="' + esc(nombreFase(f)) + ': ' + dur(h) + '"></span>' : '';
+                return h ? '<span style="width:' + (100 * h / max) + '%;background:' + colorFase(f) + '" title="' + SGV.escaparHtml(nombreFase(f)) + ': ' + dur(h) + '"></span>' : '';
             }).join('');
             return '<a class="de-lento" href="' + SGV.urlViaje + '?id=' + v.id + '">' +
-                '<div class="info"><b>' + esc(v.pedido || 'Viaje ' + v.id) + '</b> <span class="muted">' + esc(v.carreta || '') + ' · ' + esc(v.tracto || '') +
-                ' · ' + fecha(v.programacion) + ' · ' + esc(v.planta) + '</span></div>' +
+                '<div class="info"><b>' + SGV.escaparHtml(v.pedido || 'Viaje ' + v.id) + '</b> <span class="muted">' + SGV.escaparHtml(v.carreta || '') + ' · ' + SGV.escaparHtml(v.tracto || '') +
+                ' · ' + fecha(v.programacion) + ' · ' + SGV.escaparHtml(v.planta) + '</span></div>' +
                 '<div class="barra">' + segs + (tipico ? '<em style="left:' + (100 * tipico / max) + '%" title="Tránsito típico ' + dur(tipico) + '"></em>' : '') + '</div>' +
                 '<div class="total"><b>' + dur(v.transito) + '</b>' +
-                (v.tramoCritico ? '<span class="critico">' + esc(v.tramoCritico) + ' +' + dur(v.exceso) + '</span>' : '') + '</div></a>';
+                (v.tramoCritico ? '<span class="critico">' + SGV.escaparHtml(v.tramoCritico) + ' +' + dur(v.exceso) + '</span>' : '') + '</div></a>';
         }).join('') + '<div class="de-legend de-legend-sm">' + fases.map(function (f) {
-            return '<span style="--fase:' + colorFase(f) + '"><i></i>' + esc(nombreFase(f)) + '</span>';
+            return '<span style="--fase:' + colorFase(f) + '"><i></i>' + SGV.escaparHtml(nombreFase(f)) + '</span>';
         }).join('') + '<span class="tipico"><em></em>Tránsito típico ' + dur(tipico) + '</span></div>';
     }
 
@@ -559,7 +553,7 @@
         tramos.forEach(function (t) {
             if (t.fase !== faseActual) {
                 faseActual = t.fase;
-                html += '<tr class="grupo"><td colspan="6">' + esc(nombreFase(t.fase)) + '</td></tr>';
+                html += '<tr class="grupo"><td colspan="6">' + SGV.escaparHtml(nombreFase(t.fase)) + '</td></tr>';
             }
             var a = t.actual;
             var rango = a.n
@@ -569,7 +563,7 @@
                   '<div class="p90" style="left:' + pos(a.p90) + '"></div></div>'
                 : '';
             html += '<tr data-tramo="' + t.id + '"' + (tramoSel === t.id ? ' class="sel"' : '') + '>' +
-                '<td><span class="nombre" style="--fase:' + colorFase(t.fase) + '"><i></i>' + esc(t.nombre) +
+                '<td><span class="nombre" style="--fase:' + colorFase(t.fase) + '"><i></i>' + SGV.escaparHtml(t.nombre) +
                 (t.espera ? '<span class="espera">espera</span>' : '') + '</span></td>' +
                 '<td class="num"><b>' + dur(a.mediana) + '</b></td>' +
                 '<td title="P25 ' + dur(a.p25) + ' · P75 ' + dur(a.p75) + '">' + rango + '</td>' +
@@ -585,7 +579,7 @@
 
         function filaTotal(id, nombre, e, ant) {
             return '<tr data-tramo="' + id + '"' + (tramoSel === id ? ' class="sel"' : '') + '>' +
-                '<td><b>' + esc(nombre) + '</b></td><td class="num"><b>' + dur(e.mediana) + '</b></td>' +
+                '<td><b>' + SGV.escaparHtml(nombre) + '</b></td><td class="num"><b>' + dur(e.mediana) + '</b></td>' +
                 '<td class="muted">P25 ' + dur(e.p25) + ' · P75 ' + dur(e.p75) + '</td>' +
                 '<td class="num muted">' + dur(e.p90) + '</td><td class="num muted">' + num(e.n) + '</td>' +
                 '<td class="num">' + (e.mediana == null ? '' : delta(e.mediana, ant, { menorEsMejor: true, formato: dur })) + '</td></tr>';
@@ -600,8 +594,8 @@
             var pct = x.viajes ? 100 * x.descargados / x.viajes : 0;
             var rango = fecha(x.desde) === fecha(x.hasta) ? fecha(x.desde) : fecha(x.desde) + ' – ' + fecha(x.hasta);
             return '<tr><td><a class="de-pedido-link" title="Ver las unidades de este pedido en el tablero" href="RegistroSeguimiento.aspx?fase=todos&amp;buscar=' +
-                encodeURIComponent(x.pedido) + '"><b>' + esc(x.pedido) + '</b></a></td>' +
-                '<td>' + esc(x.planta || '—') + '</td>' +
+                encodeURIComponent(x.pedido) + '"><b>' + SGV.escaparHtml(x.pedido) + '</b></a></td>' +
+                '<td>' + SGV.escaparHtml(x.planta || '—') + '</td>' +
                 '<td class="muted">' + rango + '</td>' +
                 '<td class="num">' + x.viajes + '</td>' +
                 '<td><div class="de-avance"><div class="barra"><span style="width:' + pct + '%"></span></div>' +

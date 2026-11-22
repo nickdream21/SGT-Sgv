@@ -480,17 +480,16 @@ namespace WebSGV.Views
         }
 
         /// <summary>
-        /// OnClientClick del botón Activar/Desactivar: "return confirm('...');" con el nombre del usuario y el
-        /// efecto del cambio. SGV.confirmar (SiteMaster.js) lo muestra como modal; el texto va codificado
-        /// como literal de JavaScript porque el nombre de usuario viene de la base de datos.
+        /// data-confirmar del botón Activar/Desactivar: el nombre del usuario y el efecto del cambio, en texto
+        /// plano ("\n" escrito como barra + n = salto de línea). El Button codifica el atributo y SGV.confirmar
+        /// (SiteMaster.js) lo muestra con .text(): el nombre que viene de la BD nunca se lee como HTML ni JS.
         /// </summary>
         protected string ConfirmarCambioEstado(object activo, object nombreUsuario)
         {
             string usuario = Convert.ToString(nombreUsuario);
-            string mensaje = Convert.ToBoolean(activo)
-                ? $"¿Desactivar al usuario {usuario}?\n\nNo podrá iniciar sesión hasta que lo vuelva a activar."
-                : $"¿Activar al usuario {usuario}?\n\nPodrá volver a iniciar sesión.";
-            return "return confirm('" + System.Web.HttpUtility.JavaScriptStringEncode(mensaje) + "');";
+            return Convert.ToBoolean(activo)
+                ? $"¿Desactivar al usuario {usuario}?\\n\\nNo podrá iniciar sesión hasta que lo vuelva a activar."
+                : $"¿Activar al usuario {usuario}?\\n\\nPodrá volver a iniciar sesión.";
         }
 
         private void MostrarMensajeModal(string mensaje, string tipo)

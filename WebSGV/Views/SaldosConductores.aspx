@@ -90,7 +90,7 @@
                                                     <input type="checkbox" class="sc-sel" checked value="<%#: Eval("IdOrdenViaje") %>" aria-label="Incluir" />
                                                 </asp:PlaceHolder>
                                             </td>
-                                            <td><a href='<%#: ResolveUrl("~/Views/DetalleOrdenViaje.aspx?id=" + Eval("IdOrdenViaje")) %>' target="_blank"><%#: Eval("Numero") %></a></td>
+                                            <td><a href='<%#: ResolveUrl("~/Views/DetalleOrdenViaje.aspx?id=" + Eval("IdOrdenViaje")) %>' target="_blank" rel="noopener"><%#: Eval("Numero") %></a></td>
                                             <td><%#: Eval("Aprobada") %></td>
                                             <td class="sgv-num"><%#: Eval("Entregado") %></td>
                                             <td class="sgv-num"><%#: Eval("Gastos") %></td>

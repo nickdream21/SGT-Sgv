@@ -80,7 +80,8 @@
                                 Text='<%# (bool)Eval("activo") ? "Desactivar" : "Activar" %>'
                                 CssClass='<%# (bool)Eval("activo") ? "btn btn-sm btn-warning mr-1" : "btn btn-sm btn-success mr-1" %>'
                                 CommandName="ToggleActivo" CommandArgument='<%# ArgumentoEstado(Eval("idUsuario"), Eval("activo")) %>'
-                                OnClientClick='<%# ConfirmarCambioEstado(Eval("activo"), Eval("nombreUsuario")) %>' />
+                                data-confirmar='<%# ConfirmarCambioEstado(Eval("activo"), Eval("nombreUsuario")) %>'
+                                data-confirmar-peligro='<%# (bool)Eval("activo") ? "true" : "false" %>' />
                             <asp:Button runat="server" Text="Contraseña" CssClass="btn btn-sm btn-secondary"
                                 CommandName="ResetPassword" CommandArgument='<%# Eval("idUsuario") %>' />
                         </ItemTemplate>

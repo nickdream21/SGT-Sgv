@@ -57,7 +57,7 @@
                     <div class="d-flex justify-content-end mt-3">
                         <asp:Button ID="btnCancelarLista" runat="server" CssClass="btn btn-secondary mr-2" Text="Cancelar" OnClick="btnCancelarLista_Click" />
                         <asp:Button ID="btnAplicarLista" runat="server" CssClass="btn btn-success" Text="Aplicar los cambios marcados"
-                            OnClick="btnAplicarLista_Click" OnClientClick="return confirm('¿Aplicar los cambios marcados a los conductores?');" />
+                            OnClick="btnAplicarLista_Click" data-confirmar="¿Aplicar los cambios marcados a los conductores?" />
                     </div>
                 </asp:Panel>
             </div>
@@ -187,7 +187,7 @@
                                                 CommandName="ToggleActivo"
                                                 CommandArgument='<%# ArgumentoEstado(Eval("idConductor"), Eval("activo")) %>'
                                                 CssClass='<%# ObtenerClaseBoton(Eval("activo")) %>'
-                                                OnClientClick="return confirm('&#xBF;Cambiar el estado de este conductor?');">
+                                                data-confirmar="¿Cambiar el estado de este conductor?">
                                                 <%#: ObtenerTextoBoton(Eval("activo")) %>
                                             </asp:LinkButton>
                                         </ItemTemplate>

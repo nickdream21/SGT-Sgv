@@ -52,7 +52,7 @@
                     <div class="d-flex justify-content-end mt-3">
                         <asp:Button ID="btnCancelar" runat="server" CssClass="btn btn-secondary mr-2" Text="Cancelar" OnClick="btnCancelar_Click" />
                         <asp:Button ID="btnAplicar" runat="server" CssClass="btn btn-success" Text="Aplicar"
-                            OnClick="btnAplicar_Click" OnClientClick="return confirm('¿Guardar los destinos de la lista?');" />
+                            OnClick="btnAplicar_Click" data-confirmar="¿Guardar los destinos de la lista?" />
                     </div>
                 </asp:Panel>
             </div>
@@ -117,7 +117,7 @@
                                     <asp:TemplateField>
                                         <ItemTemplate>
                                             <asp:LinkButton ID="btnQuitar" runat="server" CommandName="Quitar" CommandArgument='<%# Eval("idDestinoDescarga") %>'
-                                                CssClass="text-danger small" OnClientClick="return confirm('¿Quitar este destino? Queda en el historial.');">
+                                                CssClass="text-danger small" data-confirmar="¿Quitar este destino? Queda en el historial." data-confirmar-peligro="true">
                                                 <i class="fas fa-times"></i> Quitar
                                             </asp:LinkButton>
                                         </ItemTemplate>

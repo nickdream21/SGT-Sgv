@@ -118,7 +118,7 @@
             </asp:Panel>
 
             <div class="dv-acciones">
-                <asp:HyperLink ID="lnkPdf" runat="server" Visible="false" Target="_blank" CssClass="dc-btn dc-btn-linea dc-btn-bloque">
+                <asp:HyperLink ID="lnkPdf" runat="server" Visible="false" Target="_blank" rel="noopener" CssClass="dc-btn dc-btn-linea dc-btn-bloque">
                     <i class="fas fa-file-pdf"></i>Ver el documento firmado (PDF)
                 </asp:HyperLink>
                 <a class="dc-btn dc-btn-primario dc-btn-bloque" href="DashboardConductor.aspx">Volver a mi panel</a>

@@ -603,7 +603,7 @@
                                 <small class="text-danger d-none" id="avisoMovimientos"></small>
                             </div>
                             <div class="mt-2 sgv-suave" style="font-size:0.8rem;">
-                                <a href='<%= ResolveUrl("~/Views/MovimientosViaje.aspx") %>' target="_blank"><i class="fas fa-hand-holding-usd mr-1"></i>Registrar una entrega o un pago directo</a>
+                                <a href='<%= ResolveUrl("~/Views/MovimientosViaje.aspx") %>' target="_blank" rel="noopener"><i class="fas fa-hand-holding-usd mr-1"></i>Registrar una entrega o un pago directo</a>
                             </div>
                         </div>
                         <div class="alert-warning-light mb-3" style="font-size:0.85rem;padding:0.75rem;border:1px solid #fde68a;border-radius:0.375rem;background:#fffbeb;">

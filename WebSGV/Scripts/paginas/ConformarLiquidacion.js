@@ -170,6 +170,7 @@
         var verPdf = document.getElementById('okVerPdf');
         verPdf.href = 'DescargarPdfOrdenViaje.aspx?id=' + idOrden;
         verPdf.target = '_blank';
+        verPdf.rel = 'noopener';
         document.getElementById('pantallaExito').classList.add('show');
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }

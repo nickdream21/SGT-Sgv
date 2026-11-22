@@ -129,6 +129,7 @@
                 var verPdf = document.getElementById('okVerPdf');
                 verPdf.href = 'DescargarPdfOrdenViaje.aspx?id=' + idOrden;
                 verPdf.target = '_blank';
+                verPdf.rel = 'noopener';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
                 if (r && r.contrasenaIncorrecta) { txtClave.value = ''; txtClave.focus(); }

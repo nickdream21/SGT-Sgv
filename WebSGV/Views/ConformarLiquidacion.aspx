@@ -53,7 +53,7 @@
                         <tbody id="tbLiquidacion"></tbody>
                     </table>
                     <div class="cl-letras" id="vLetras"></div>
-                    <a id="lnkPdf" href="#" target="_blank" class="cl-pdf"><i class="fas fa-file-pdf mr-1"></i>Ver el documento completo (PDF)</a>
+                    <a id="lnkPdf" href="#" target="_blank" rel="noopener" class="cl-pdf"><i class="fas fa-file-pdf mr-1"></i>Ver el documento completo (PDF)</a>
                 </section>
 
                 <section class="fl-card" id="secEntregas" style="display:none;">

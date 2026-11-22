@@ -1,16 +1,8 @@
 ﻿var _urlPdfActual = '';
 
-// Escapa también comillas: se usa dentro de atributos (data-text="...").
-function htmlEncode(value) {
-    if (value === null || value === undefined) return '';
-    return String(value).replace(/[&<>"']/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-}
-
 function valorTexto(value) {
     var v = (value || '').toString().trim();
-    return v ? htmlEncode(v) : '—';
+    return v ? SGV.escaparHtml(v) : '—';
 }
 
 function money(value) {
@@ -19,7 +11,7 @@ function money(value) {
 
 function renderFilaConcepto(nombre, soles, dolares, detalle) {
     return '<tr>' +
-        '<td>' + htmlEncode(nombre) + '</td>' +
+        '<td>' + SGV.escaparHtml(nombre) + '</td>' +
         '<td class="text-right">' + money(soles) + '</td>' +
         '<td class="text-right">' + money(dolares) + '</td>' +
         '<td>' + valorTexto(detalle) + '</td>' +
@@ -166,9 +158,9 @@ function buscarLiquidaciones(forzarManual) {
             for (var i = 0; i < data.length; i++) {
                 var item = data[i];
                 html += '<tr>' +
-                    '<td><strong>' + htmlEncode(item.NumeroOrdenViaje) + '</strong></td>' +
-                    '<td>' + htmlEncode(item.NombreConductor) + '</td>' +
-                    '<td>' + htmlEncode(item.FechaSalida) + ' al ' + htmlEncode(item.FechaLlegada) + '</td>' +
+                    '<td><strong>' + SGV.escaparHtml(item.NumeroOrdenViaje) + '</strong></td>' +
+                    '<td>' + SGV.escaparHtml(item.NombreConductor) + '</td>' +
+                    '<td>' + SGV.escaparHtml(item.FechaSalida) + ' al ' + SGV.escaparHtml(item.FechaLlegada) + '</td>' +
                     '<td class="text-right">' + Number(item.BalanceSoles || 0).toFixed(2) + '</td>' +
                     '<td class="text-right">' + Number(item.BalanceDolares || 0).toFixed(2) + '</td>' +
                     '<td class="text-center">' +
@@ -294,7 +286,7 @@ $('#txtConductor').on('input', function () {
                 var html = '';
                 for (var i = 0; i < data.length; i++) {
                     var item = data[i];
-                    html += '<div class="autocomplete-item" data-id="' + item.IdConductor + '" data-text="' + htmlEncode(item.NombreCompleto) + '">' + htmlEncode(item.NombreCompleto) + '</div>';
+                    html += '<div class="autocomplete-item" data-id="' + item.IdConductor + '" data-text="' + SGV.escaparHtml(item.NombreCompleto) + '">' + SGV.escaparHtml(item.NombreCompleto) + '</div>';
                 }
                 $('#conductorSugg').html(html).show();
             }

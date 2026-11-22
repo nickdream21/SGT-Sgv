@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-037 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-040 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -50,6 +50,9 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-029** "Dinero y pagos del viaje" al reactivarla (U-040) — registrar una entrega SOBRE y un PAGO_DIRECTO y anular uno: `sp_LD_RegistrarMovimientoViaje` ya no tiene `@idConductorPortador` y la columna ya no existe (migración 59, DN-25). · C
 
 - [ ] **P-024** Respaldo diario de las 23:00 — confirmar que la tarea "SGV - Respaldo diario" corre: el 2026-11-20 no corrió a esa hora (¿PC apagada?) y el último `.bacpac` era el de las 11:50 de ese día. Mirar el historial del Programador de tareas y la fecha del último archivo. · B
+- [ ] **P-038** Borrador del conductor de punta a punta (E4-6) — con un conductor de prueba con viaje activo (D-035), en un celular real a 390 px: escribir en Liquidar, recargar y ver que vuelve; "Cerrar sesión" → cancelar el aviso → cambiar de app y volver: el borrador sigue; "Cerrar sesión" → aceptar: en Login ya no hay claves `sgv-borrador-liquidacion-*`; con la sesión vencida (`?error=sesion`) no se borra. · B
+- [ ] **P-039** select2 4.0.13 en los buscadores de la tabla de importación de RegistroDespacho (conductor, tracto, carreta tras "Leer documentos") y en ListaDespachos (conductor al editar un lote), a 1366 y 390 px, sin guardar. · C
+- [ ] **P-040** Lo de E4-6 que necesita datos en la BD de pruebas — enlaces `target="_blank"` de DetalleOrdenViaje, SaldosConductores, MovimientosViaje y LiquidacionesPendientes abren pestaña nueva con `window.opener` null; CargarExcel "eliminar carga" muestra el diálogo rojo y Cancelar no envía nada; Aceptar en un `data-confirmar` hace el postback real sobre un registro de prueba reversible. · C
 
 ## Reglas
 

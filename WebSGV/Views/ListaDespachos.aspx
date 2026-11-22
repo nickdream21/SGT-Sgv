@@ -1450,9 +1450,9 @@
 
 <asp:Content ID="Content2" ContentPlaceHolderID="ScriptsSection" runat="server">
     <!-- Select2 CSS -->
-    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/select2-4.1.0-rc.0/select2.min.css") %>" rel="stylesheet" />
+    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/select2-4.0.13/select2.min.css") %>" rel="stylesheet" />
     <!-- Select2 JS -->
-    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/select2-4.1.0-rc.0.min.js") %>"></script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/select2-4.0.13.min.js") %>"></script>
     
     <script>
         // Valores del servidor que usa el script de la página (ids de controles ASP.NET).

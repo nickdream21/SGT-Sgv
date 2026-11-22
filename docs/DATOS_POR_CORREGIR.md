@@ -4,7 +4,7 @@ Registros de la BD que hay que corregir, completar o cargar. Casi todos están e
 
 Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = menor.
 
-Último id usado: D-034 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: D-035 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Facturas
 
@@ -47,6 +47,7 @@ Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = meno
 - [ ] **D-026** Placa del tracto 75 con espacio final — `T4I-868 ` (0 despachos; confirmado el 2026-11-21). Con aprobación: `UPDATE Tracto SET placaTracto = RTRIM(placaTracto) WHERE idTracto = 75`. (De las decisiones del bloque 5: D1 ya resuelta, D4 obsoleta, D5 en U-017.) · C
 - [ ] **D-027** Productos 7530511 y 7530723 sin catálogo — vienen en 9 despachos de la carga histórica (código y descripción, sin `idProducto`; 0 filas en `Producto`). Aprobarlos en RegistroDespacho la próxima vez que salgan, o en el catálogo. · C
 - [ ] **D-028** Registrar correos de los usuarios — para que "Olvidé mi contraseña" sirva: 1 de 92 lo tiene; mientras tanto el administrador restablece desde Gestión de usuarios. · C
+- [ ] **D-035** Conductor ficticio de prueba con viaje activo en `sgvActualizada` — la cuenta CONDUCTOR de `privado/CREDENCIALES_USUARIOS.txt` corresponde a un conductor real y no tiene viaje; la BD de pruebas no tiene órdenes, así que no se pueden probar Liquidar, la firma ni los PDF (P-025, P-033, P-037, P-038, P-040). Crear un `Conductor` y un usuario ficticios (datos inventados) con un despacho y viaje `ABIERTO` de prueba, identificables para borrarlos. Control: `SELECT COUNT(*) FROM OrdenViaje; SELECT COUNT(*) FROM ViajesEnProgreso WHERE estadoViaje = 'ABIERTO';`. Solo con aprobación del usuario. · B
 
 ## Reglas
 

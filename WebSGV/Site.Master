@@ -258,6 +258,7 @@
                     <li class="nav-item">
                         <asp:LinkButton ID="btnCerrarSesion" runat="server"
                             CssClass="btn btn-outline-danger btn-sm"
+                            data-cerrar-sesion="true"
                             OnClick="btnCerrarSesion_Click">
                             <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                         </asp:LinkButton>

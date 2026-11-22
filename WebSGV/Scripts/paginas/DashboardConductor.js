@@ -2,16 +2,6 @@
 // Las fechas de salida y llegada las pone el servidor desde el GPS; el dinero entregado lo registra
 // la administración al revisar.
 
-function escHtml(str) {
-    if (str == null) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
 let contadorGastosAdicionales = 0;
 let liquidacionModificada = false;
 let formularioEnviandose = false;
@@ -356,9 +346,9 @@ function abrirRevision() {
     const salida = $fs.length ? formatoLocal($fs.val(), $hs.val()) : $('#' + SGV.lblSalidaGps).text() + ' (GPS)';
     const llegada = $fl.length ? formatoLocal($fl.val(), $hl.val()) : $('#' + SGV.lblLlegadaGps).text() + ' (GPS)';
     $('#revisionViaje').html(
-        '<div><dt>Viaje</dt><dd>' + escHtml($('#' + SGV.lblNumeroViaje).text()) + '</dd></div>' +
-        '<div><dt>Salida</dt><dd>' + escHtml(salida) + '</dd></div>' +
-        '<div><dt>Llegada</dt><dd>' + escHtml(llegada) + '</dd></div>');
+        '<div><dt>Viaje</dt><dd>' + SGV.escaparHtml($('#' + SGV.lblNumeroViaje).text()) + '</dd></div>' +
+        '<div><dt>Salida</dt><dd>' + SGV.escaparHtml(salida) + '</dd></div>' +
+        '<div><dt>Llegada</dt><dd>' + SGV.escaparHtml(llegada) + '</dd></div>');
 
     const intl = esInternacional();
     let html = '';
@@ -370,7 +360,7 @@ function abrirRevision() {
             ? $(this).find('.dc-concepto').val()
             : $(this).find('.dc-gasto-cab label').text();
         const montos = [s > 0 ? dinero(s, 'S/') : '', d > 0 ? dinero(d, '$') : ''].filter(Boolean).join(' · ');
-        html += '<li><span>' + escHtml(nombre) + '</span><strong>' + montos + '</strong></li>';
+        html += '<li><span>' + SGV.escaparHtml(nombre) + '</span><strong>' + montos + '</strong></li>';
     });
     const t = calcularTotales();
     if (!html) {

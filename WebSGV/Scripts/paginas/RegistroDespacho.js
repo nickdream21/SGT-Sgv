@@ -27,7 +27,6 @@ function initializeSelect2() {
             $sel.select2('destroy');
         }
         $sel.select2({
-            theme: 'bootstrap-5',
             placeholder: $sel.find('option:first-child').text(),
             allowClear: false,
             width: '100%',

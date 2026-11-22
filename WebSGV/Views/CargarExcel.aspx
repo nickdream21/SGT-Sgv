@@ -154,7 +154,7 @@
                             <asp:LinkButton ID="btnDeleteUpload" runat="server" CssClass="btn btn-sm btn-danger" 
                                 CommandName="DeleteUpload" CommandArgument='<%# Eval("UploadID") %>'
                                 OnCommand="btnDeleteUpload_Command" 
-                                OnClientClick="return confirm('¿Está seguro de que desea eliminar esta carga y todos sus registros asociados?');">
+                                data-confirmar="¿Está seguro de que desea eliminar esta carga y todos sus registros asociados?" data-confirmar-peligro="true">
                                 <i class="fas fa-trash-alt"></i> Eliminar
                             </asp:LinkButton>
                         </ItemTemplate>

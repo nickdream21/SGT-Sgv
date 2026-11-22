@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `a4ecb2b` — E4-5: CSP aplicada (marcos, `object`, `base`, formularios) y en modo informe, `Permissions-Policy`, COOP y CORP en `Web.config`; receptor `CspInforme.ashx` con deduplicación; E4-15 ajustada (MicrosoftAjax usa `eval` en cada página); nuevos P-036 y P-037. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `cc7d273` — E4-6: JS propio limpio (un solo `SGV.escaparHtml`, `data-confirmar` en vez de `confirm`, select2 solo 4.0.13, fuera 6 archivos sin uso, `noopener`, borradores del navegador fuera al cerrar sesión); nuevos M-116, M-117, P-038 a P-040 y D-035. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-115 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-117 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -146,6 +146,8 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-113** `LiquidacionesAprobadasContabilidad.aspx` sin sesión manda a `Login.aspx` sin `?error=sesion` — las demás páginas protegidas lo agregan (observado por el probador en E4-2); revisar su guarda y unificar el mensaje. · C
 - [ ] **M-114** Claves de cuenta de `IntentoAcceso` con HMAC — hoy son SHA-256 sin secreto (`ControlIntentosLogin.ClaveCuenta`): con la tabla en mano, un nombre de usuario corto se puede adivinar. Pasar a HMAC-SHA256 con una clave de `appSettings.Secrets.config` (las filas viejas vencen solas en 1 h). · C
 - [ ] **M-115** Detalles del login tras E4-4 — un usuario fuera de formato responde unos 125 ms antes que uno inexistente (no consulta `Usuarios`; solo depende de lo escrito, no revela cuentas); el aviso del log de la recuperación dice "(IP …)" aunque lo bloqueó la clave fija `RECUP_USR_invalido`; Auditoría corta "Inicio de sesión fallido" en el combo de Acción a 1366 px (`Content/paginas/Auditoria.css`). · C
+- [ ] **M-116** `DashboardConductor.aspx.cs` (~línea 676) muestra `ex.Message` de una `ErrorNegocioException` sin `MensajeErrorHelper.ParaUsuario` — pasar por el helper como manda CLAUDE.md. · C
+- [ ] **M-117** `RegistroDespacho.aspx` usa las clases `form-select` / `form-select-sm` de Bootstrap 5, que en Bootstrap 4 no hacen nada — cambiarlas a `form-control` / `custom-select` (`-sm`) y comprobar a 1366 y 390 px. · C
 - [ ] **M-064** Secciones de `TienePermiso` sin página — FACTURA, CPIC, CONSULTAS, INDICADORES, AUDITORIA… (`RolesHelper.cs:169-182`) y ADMIN con acceso a DASHBOARD_CONDUCTOR: depurarlas (cambia `RolesHelperTests` a propósito). · C
 - [ ] **M-065** ReportesOrdenesViaje: `ex.Message` de cualquier `ArgumentException` al usuario — `ResponderSolicitudInvalida(ex.Message)` (`ReportesOrdenesViaje.aspx.cs:~1123`): si ClosedXML/QuestPDF lanza una, su texto técnico llega al usuario. · C
 - [ ] **M-066** No quedarse sin administrador de sistema activo — impedir que dos se desactiven a la vez (`NOT EXISTS` de otro ADMINISTRADOR DE SISTEMA activo en el `WHERE`) y ocultar "Desactivar" en la fila propia (hoy el servidor lo rechaza con aviso). · C
