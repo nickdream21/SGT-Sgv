@@ -34,16 +34,5 @@
     });
     // El input cubre toda la zona: al soltar, el navegador pone los archivos en él.
     zona.addEventListener('drop', function () { setTimeout(mostrar, 0); });
-
-    function ocupado(selector, texto) {
-        var b = document.querySelector(selector);
-        if (!b) return;
-        b.form && b.form.addEventListener('submit', function (e) {
-            if (e.submitter && e.submitter !== b) return;
-            // Si otro manejador canceló el envío (p. ej. SiteMaster.js por el tamaño), el botón queda usable.
-            setTimeout(function () { if (e.defaultPrevented) return; b.disabled = true; b.value = texto; }, 0);
-        });
-    }
-    ocupado('.bd-btn-leer', 'Leyendo…');
-    ocupado('.bd-btn-registrar', 'Registrando…');
+    // "Leyendo…" / "Registrando…" mientras se envía: data-procesando en los botones (SiteMaster.js, E5-2).
 })();

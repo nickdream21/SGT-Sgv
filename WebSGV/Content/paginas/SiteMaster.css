@@ -197,3 +197,30 @@ table[border="1"] td .btn { white-space: nowrap; }
 /* Montos (E5-1): un [data-monto] que no se pudo leer (SGV.normalizarMonto en SiteMaster.js). */
 input[data-monto].is-invalid { border-color: #dc3545; }
 .sgv-monto-ayuda { display: block; margin-top: .25rem; font-size: .8125rem; line-height: 1.3; color: #b02a37; }
+
+/* Envío en curso (E5-2, SiteMaster.js): cursor de espera en toda la página y, a los 300 ms, el velo
+   "Procesando…". Queda debajo de los avisos (z-index 2000) y encima de los modales (1050-1060). */
+body.sgv-procesando, body.sgv-procesando * { cursor: wait !important; }
+.sgv-procesando-velo {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1990;
+    background: rgba(15, 23, 42, .35);
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+body.sgv-procesando-velo-visible .sgv-procesando-velo { display: flex; }
+.sgv-procesando-caja {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .9rem 1.25rem;
+    border-radius: .375rem;
+    background: #fff;
+    color: #1e293b;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .2);
+}
+.sgv-procesando-caja .spinner-border { color: #1d4ed8; }

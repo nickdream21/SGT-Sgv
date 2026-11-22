@@ -16,8 +16,8 @@
                     </div>
                     <div class="card-body">
                         <!-- gvManifiestosLote está declarado como PostBackTrigger (no Async) en <Triggers> más
-                             abajo: tiene FileUpload por fila y descarga de documentos vía Response.WriteFile,
-                             ninguno de los dos funciona en un postback parcial de UpdatePanel. -->
+                             abajo: tiene FileUpload por fila (un archivo no viaja en un postback parcial de UpdatePanel) y "Ver" abre el
+                             documento en otra pestaña al volver la página. -->
                         <asp:UpdatePanel ID="UpdatePanelMain" runat="server" UpdateMode="Conditional">
                             <ContentTemplate>
                                 
@@ -1430,20 +1430,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Loading Panel -->
-    <asp:UpdateProgress ID="UpdateProgress1" runat="server" AssociatedUpdatePanelID="UpdatePanelMain">
-        <ProgressTemplate>
-            <div class="loading-overlay">
-                <div class="loading-content">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Cargando...</span>
-                    </div>
-                    <div class="mt-2">Procesando...</div>
-                </div>
-            </div>
-        </ProgressTemplate>
-    </asp:UpdateProgress>
 
 </asp:Content>
 

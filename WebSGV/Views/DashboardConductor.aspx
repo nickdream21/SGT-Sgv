@@ -332,7 +332,7 @@
                                     <button type="button" class="dc-btn dc-btn-linea" data-dismiss="modal">Corregir</button>
                                     <asp:Button ID="btnEnviarLiquidacion" runat="server" Text="Enviar y firmar"
                                         CssClass="dc-btn dc-btn-primario" OnClick="btnEnviarLiquidacion_Click"
-                                        data-accion="confirmarEnvioLiquidacion" />
+                                        data-accion="confirmarEnvioLiquidacion" data-procesando="Enviando…" data-espera="120" />
                                 </div>
                             </div>
                         </div>

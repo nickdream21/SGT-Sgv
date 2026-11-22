@@ -264,6 +264,7 @@
                         <asp:LinkButton ID="btnCerrarSesion" runat="server"
                             CssClass="btn btn-outline-danger btn-sm"
                             data-cerrar-sesion="true"
+                            data-espera="2"
                             OnClick="btnCerrarSesion_Click">
                             <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                         </asp:LinkButton>

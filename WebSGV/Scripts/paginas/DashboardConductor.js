@@ -80,8 +80,14 @@ $(document).ready(function () {
     }, 5 * 60 * 1000);
 });
 
+// "¿Salir del sitio?" solo cuando el conductor se va de la página con cambios sin enviar. Un postback a
+// esta misma página (LinkButton, AutoPostBack: form.submit(), que no dispara el submit de jQuery) no
+// pregunta: el borrador ya está en localStorage (se guarda al escribir y en pagehide) y se recupera al
+// volver. Cerrar sesión sí pregunta (SGV.sesionCerrandose); si cancela, el "Procesando…" se libera a
+// los 2 s (data-espera del botón).
 window.addEventListener('beforeunload', function (event) {
     if (!liquidacionModificada || formularioEnviandose) return;
+    if (SGV.envioEnCurso && SGV.envioEnCurso() && !SGV.sesionCerrandose) return;
     event.preventDefault();
     event.returnValue = '';
 });
@@ -384,14 +390,11 @@ function formatoLocal(fecha, hora) {
     return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] + ' · ' + hora : fecha + ' ' + hora;
 }
 
-// data-accion="confirmarEnvioLiquidacion" del botón "Enviar y firmar" del resumen: arma los datos y evita el doble envío.
-function confirmarEnvioLiquidacion(btn) {
-    if (formularioEnviandose) return false;
+// data-accion="confirmarEnvioLiquidacion" del botón "Enviar y firmar" del resumen: arma los datos. El doble
+// envío lo frena SiteMaster.js (E5-2) y el texto "Enviando…" sale del data-procesando del botón.
+function confirmarEnvioLiquidacion() {
     prepararDatosFinancieros();
     formularioEnviandose = true;
-    setTimeout(function () {
-        $(btn).prop('disabled', true).val('Enviando...');
-    }, 0);
     return true;
 }
 
@@ -451,7 +454,7 @@ SGV.acciones = Object.assign(SGV.acciones || {}, {
     agregarGasto: function () { agregarGasto(); },
     eliminarGasto: function (el) { eliminarGasto(Number(el.getAttribute('data-id'))); },
     abrirRevision: function () { abrirRevision(); },
-    confirmarEnvioLiquidacion: function (el) { return confirmarEnvioLiquidacion(el); },
+    confirmarEnvioLiquidacion: function () { return confirmarEnvioLiquidacion(); },
     verDetalleLiquidacion: function (el) { verDetalleLiquidacion(Number(el.getAttribute('data-id'))); },
     abrirModalRetirar: function (el) { abrirModalRetirar(Number(el.getAttribute('data-id'))); },
     confirmarRetirar: function () { confirmarRetirar(); }

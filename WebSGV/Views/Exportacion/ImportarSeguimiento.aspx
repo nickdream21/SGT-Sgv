@@ -19,7 +19,7 @@
         <div class="sgv-panel">
             <div class="sgv-panel-cab">
                 <span class="sgv-panel-titulo">Archivo</span>
-                <asp:Button ID="btnDescargarPlantilla" runat="server" Text="Descargar plantilla" CssClass="sx-btn sx-btn-chico" CausesValidation="false" OnClick="btnDescargarPlantilla_Click" />
+                <asp:Button ID="btnDescargarPlantilla" runat="server" Text="Descargar plantilla" CssClass="sx-btn sx-btn-chico" CausesValidation="false" OnClick="btnDescargarPlantilla_Click" data-descarga="true" />
             </div>
             <div class="sgv-panel-cuerpo" style="display: flex; flex-direction: column; gap: 1rem;">
                 <div id="zonaArchivo" class="sx-zona-archivo" role="button" tabindex="0">
@@ -30,7 +30,7 @@
                     <div id="infoArchivo" class="sx-nota" style="margin-top: 0.75rem;">Ningún archivo seleccionado</div>
                 </div>
                 <div class="sx-barra-acciones">
-                    <asp:Button ID="btnImportar" runat="server" Text="Procesar archivo" CssClass="sx-btn sx-btn-primario" OnClick="btnImportar_Click" />
+                    <asp:Button ID="btnImportar" runat="server" Text="Procesar archivo" CssClass="sx-btn sx-btn-primario" OnClick="btnImportar_Click" data-espera="300" />
                 </div>
             </div>
         </div>

@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-058 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-060 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -71,6 +71,8 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-056** Línea base de las pantallas del conductor con un viaje — cuando exista el conductor de prueba con viaje activo (D-035) o en una BD de ensayo: medir con `privado/etapa5/medicion/medir.js` el panel con el formulario de liquidación, `FirmarLiquidacion`, `ConformarLiquidacion` y `DetalleOrdenViaje` (peso, ViewState, etiquetas, objetivos táctiles y textos a 390 px), antes de E5-1 si se puede y otra vez en el cierre (E5-23). · B
 - [ ] **P-057** Montos con coma en el panel del conductor con un viaje (E5-1) — cuando exista el conductor de prueba con viaje activo (D-035), a 390 px: "12,50" en los gastos se normaliza y suma bien, el borrador de `localStorage` guardado con "12,5" se recarga como "12.5", y "Revisar y enviar" frena "1.250,00" con aviso (hoy probado solo en un arnés con los JS reales). · B
 - [ ] **P-058** Montos con coma donde faltan datos en la BD de pruebas (E5-1) — el modal de revisión de LiquidacionesPendientes con una orden real (hoy armado con datos ficticios), "Registrar CPIC" de un lote internacional sin CPIC y MovimientosViaje con `Habilitado=true` (solo local): "12,50" se guarda como 12,50 y un monto ilegible no sale del navegador. · C
+- [ ] **P-059** Descarga por fila de ReporteGps con el bloqueo de envío (E5-2) — al generar un reporte real de una placa (consulta el GPS y registra auditoría), pulsar el Excel de una fila: llega el archivo y la página queda usable a los ~3 s; repetir con "Descargar todos (ZIP)". · C
+- [ ] **P-060** Bloqueo de envío en un navegador con ventana y en un celular (E5-2) — Cerrar sesión del conductor con cambios reales en la liquidación y "¿salir?" cancelado (se libera a ~2 s); una subida larga real en FacturasFlete o RegistroDespacho no acepta un segundo toque antes de terminar; un lector de pantalla (NVDA o TalkBack) anuncia "Procesando…". · C
 
 ## Reglas
 

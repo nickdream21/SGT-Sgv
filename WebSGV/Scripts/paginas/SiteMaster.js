@@ -98,6 +98,203 @@
     });
 })();
 
+// ── Un solo envío a la vez: "Procesando…" (E5-2) ────────────────────
+// Un doble clic en un botón de servidor mandaba dos postbacks (el servidor atendía los dos: dos
+// búsquedas, y en un alta, dos registros). Mientras un envío está en curso la página queda
+// "ocupada": body.sgv-procesando, aria-busy en el formulario (no en body: la región que anuncia
+// "Procesando…" está fuera del formulario), cursor de espera, se anulan todos los clics (salvo los
+// de los avisos de SGV.avisar, para poder cerrarlos) y el Enter, y a los 300 ms aparece el velo
+// "Procesando…" (lo rápido no parpadea). No se deshabilita el botón: un submit deshabilitado no
+// envía su nombre y el servidor perdería el evento.
+// Cuándo se bloquea:
+//   - submit del formulario que nadie canceló (validador que falla, archivo grande, monto ilegible
+//     y el postback parcial que intercepta el PageRequestManager ya lo cancelaron: no bloquean);
+//   - theForm.submit() (lo llaman __doPostBack, LinkButton, UseSubmitBehavior=false y AutoPostBack);
+//   - postback parcial (UpdatePanel): beginRequest. Un segundo postback parcial mientras corre el
+//     primero se cancela en initializeRequest (sin esto MS Ajax abortaba el primero y mandaba el otro).
+// Cuándo se libera (lo primero que ocurra):
+//   - endRequest del parcial (también con error o sin conexión: el aviso lo da SiteMaster-2.js);
+//   - pageshow desde la caché (Atrás);
+//   - data-espera="segundos" en el botón: ese tope (envíos largos: subidas, GPS, firma del conductor;
+//     y Cerrar sesión, 2 s, por si el usuario cancela el "¿salir del sitio?");
+//   - data-descarga en el botón (devuelve un archivo: la página no se recarga): 3 s;
+//   - postback completo con archivos elegidos en el formulario: 300 s (executionTimeout de las
+//     páginas de subida);
+//   - cualquier otro caso: 20 s (descarga sin marcar, "¿salir del sitio?" cancelado: el navegador no
+//     avisa a la página si el usuario se queda).
+// data-procesando="Leyendo…" en un botón cambia su texto mientras dura el envío.
+// SGV.envioEnCurso() dice si hay un envío en curso (lo usan los beforeunload de las páginas: un
+// LinkButton envía con form.submit(), que no dispara el evento submit).
+// No cubre fetch ni PageMethods ($.ajax): tienen su propio bloqueo y no pasan por aquí.
+// SGV.avisar sigue mostrándose encima del velo; SGV.confirmar no se abre por clic durante el envío
+// (los clics no llegan) y, si un script lo abre, queda detrás del velo hasta que se libere.
+(function () {
+    var SGV = window.SGV = window.SGV || {};
+    var RETRASO_VELO = 300, ESPERA_DESCARGA = 3000, ESPERA_SUBIDA = 300000, ESPERA_SEGURIDAD = 20000;
+    var TEXTO = 'Procesando…';
+    var bloqueado = false, temporizador = null, temporizadorVelo = null, velo = null, estado = null;
+    var ultimoElemento = null, ultimoMomento = 0;
+    var textoCambiado = null;
+
+    // El velo (visible, aria-hidden) y la región que lo anuncia (sr-only, role=status) están siempre en
+    // el documento: una región aria-live que aparece junto con su texto no siempre se anuncia. El texto
+    // de la región se pone a los 300 ms, con el velo.
+    function crear() {
+        if (velo || !document.body) return;
+        velo = document.createElement('div');
+        velo.id = 'sgvProcesando';
+        velo.className = 'sgv-procesando-velo';
+        velo.setAttribute('aria-hidden', 'true');
+        velo.innerHTML = '<div class="sgv-procesando-caja"><span class="spinner-border spinner-border-sm"></span>' +
+            '<span class="sgv-procesando-texto">' + TEXTO + '</span></div>';
+        estado = document.createElement('div');
+        estado.id = 'sgvProcesandoEstado';
+        estado.className = 'sr-only';
+        estado.setAttribute('role', 'status');
+        estado.setAttribute('aria-live', 'polite');
+        document.body.appendChild(velo);
+        document.body.appendChild(estado);
+    }
+    if (document.body) crear();
+    else document.addEventListener('DOMContentLoaded', crear);
+
+    function mostrarVelo() {
+        if (!bloqueado) return;
+        crear();
+        document.body.classList.add('sgv-procesando-velo-visible');
+        estado.textContent = TEXTO;
+    }
+
+    // Elemento que pidió el envío: el submitter, el último clic (menos de 1,5 s) o el __EVENTTARGET.
+    function origen(candidato, form) {
+        if (candidato && candidato.nodeType === 1) return candidato;
+        if (ultimoElemento && Date.now() - ultimoMomento < 1500) return ultimoElemento;
+        var destino = form && form.__EVENTTARGET ? form.__EVENTTARGET.value : '';
+        if (!destino) return null;
+        return document.getElementsByName(destino)[0] || document.getElementById(destino.replace(/\$/g, '_'));
+    }
+
+    function hayArchivos(form) {
+        var campos = form && form.querySelectorAll ? form.querySelectorAll('input[type=file]') : [];
+        for (var i = 0; i < campos.length; i++) if (campos[i].files && campos[i].files.length) return true;
+        return false;
+    }
+
+    function esperaDe(el, asincrono) {
+        var marcado = el && el.closest ? el.closest('[data-descarga], [data-espera]') : null;
+        var segundos = marcado ? parseFloat(marcado.getAttribute('data-espera')) : 0;
+        if (segundos > 0) return segundos * 1000;
+        if (marcado && marcado.hasAttribute('data-descarga')) return ESPERA_DESCARGA;
+        // Un postback parcial no lleva archivos (MS Ajax no los envía).
+        if (!asincrono && hayArchivos(document.forms[0])) return ESPERA_SUBIDA;
+        return ESPERA_SEGURIDAD;
+    }
+
+    function cambiarTexto(el) {
+        var boton = el && el.closest ? el.closest('[data-procesando]') : null;
+        if (!boton) return;
+        var nuevo = boton.getAttribute('data-procesando');
+        if (boton.tagName === 'INPUT') {
+            textoCambiado = { el: boton, valor: boton.value };
+            boton.value = nuevo;
+        } else {
+            textoCambiado = { el: boton, html: boton.innerHTML };
+            boton.textContent = nuevo;
+        }
+    }
+
+    function restaurarTexto() {
+        var t = textoCambiado;
+        textoCambiado = null;
+        if (!t) return;
+        if ('valor' in t) t.el.value = t.valor;
+        else t.el.innerHTML = t.html;
+    }
+
+    function bloquear(el, asincrono) {
+        if (bloqueado || !document.body) return;
+        bloqueado = true;
+        crear();
+        document.body.classList.add('sgv-procesando');
+        if (document.forms[0]) document.forms[0].setAttribute('aria-busy', 'true');
+        cambiarTexto(el);
+        temporizadorVelo = setTimeout(mostrarVelo, RETRASO_VELO);
+        temporizador = setTimeout(liberar, esperaDe(el, asincrono));
+    }
+
+    function liberar() {
+        if (!bloqueado) return;
+        bloqueado = false;
+        clearTimeout(temporizador);
+        clearTimeout(temporizadorVelo);
+        document.body.classList.remove('sgv-procesando', 'sgv-procesando-velo-visible');
+        if (document.forms[0]) document.forms[0].removeAttribute('aria-busy');
+        if (estado) estado.textContent = '';
+        restaurarTexto();
+    }
+
+    SGV.envioEnCurso = function () { return bloqueado; };
+
+    // Va antes que todos los demás listeners de clic (window, captura, registrado primero): durante el
+    // envío ningún clic llega a data-confirmar, data-accion, los montos, WebForms ni la página. Los
+    // avisos (#sgvAvisos, encima del velo) sí se pueden cerrar.
+    function anular(e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+    }
+    function enAvisos(e) {
+        return !!(e.target && e.target.closest && e.target.closest('#sgvAvisos'));
+    }
+    window.addEventListener('click', function (e) {
+        if (bloqueado) { if (!enAvisos(e)) anular(e); return; }
+        ultimoElemento = e.target && e.target.closest ? e.target.closest('input, button, a, [data-descarga]') : null;
+        ultimoMomento = Date.now();
+    }, true);
+    window.addEventListener('keydown', function (e) {
+        if (bloqueado && e.key === 'Enter' && !enAvisos(e)) anular(e);
+    }, true);
+    // Un requestSubmit() de un script durante el envío.
+    window.addEventListener('submit', function (e) {
+        if (bloqueado) anular(e);
+    }, true);
+
+    // Burbuja: corre después de los validadores (onsubmit), del PageRequestManager y de los avisos
+    // de tamaño y montos, que cancelan en captura o en el propio formulario.
+    document.addEventListener('submit', function (e) {
+        if (e.defaultPrevented) return;
+        bloquear(origen(e.submitter, e.target), false);
+        // Un listener de la página registrado después de este que cancele el envío: se libera.
+        setTimeout(function () { if (e.defaultPrevented) liberar(); }, 0);
+    });
+
+    // theForm.submit() no dispara el evento submit.
+    var form = document.forms[0];
+    if (form && typeof form.submit === 'function') {
+        var enviar = form.submit;
+        form.submit = function () {
+            if (bloqueado) return;   // segundo envío mientras corre el primero
+            bloquear(origen(null, form), false);
+            try { return enviar.apply(form, arguments); }
+            catch (err) { liberar(); throw err; }
+        };
+    }
+
+    if (window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager) {
+        var prm = Sys.WebForms.PageRequestManager.getInstance();
+        prm.add_initializeRequest(function (sender, args) {
+            if (prm.get_isInAsyncPostBack()) args.set_cancel(true);
+        });
+        prm.add_beginRequest(function (sender, args) {
+            bloquear(args && args.get_postBackElement ? args.get_postBackElement() : null, true);
+        });
+        prm.add_endRequest(function () {
+            if (!prm.get_isInAsyncPostBack()) liberar();
+        });
+    }
+
+    window.addEventListener('pageshow', function (e) { if (e.persisted) liberar(); });
+})();
+
 // ── Avisos no bloqueantes ───────────────────────────────────────────
 // Reemplazo de alert(): un alert() detiene la página hasta que se cierra (y bloquea la
 // automatización de pruebas). SGV.avisar(mensaje) muestra el aviso arriba a la derecha y se

@@ -20,7 +20,7 @@
                         </div>
                         <div class="mt-2 mt-md-0">
                             <asp:Button ID="btnExportarExcel" runat="server" Text="Exportar Excel"
-                                CssClass="btn btn-success btn-sm" OnClick="btnExportarExcel_Click" />
+                                CssClass="btn btn-success btn-sm" OnClick="btnExportarExcel_Click" data-descarga="true" />
                         </div>
                     </div>
                 </div>

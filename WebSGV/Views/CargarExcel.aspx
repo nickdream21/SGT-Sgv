@@ -88,7 +88,7 @@
         </div>
 
         <div class="action-buttons text-center">
-            <asp:Button ID="btnProcesar" runat="server" Text="Procesar archivo" CssClass="btn btn-primary" OnClick="btnProcesar_Click" Enabled="false" />
+            <asp:Button ID="btnProcesar" runat="server" Text="Procesar archivo" CssClass="btn btn-primary" OnClick="btnProcesar_Click" data-espera="120" Enabled="false" />
             <asp:Button ID="btnCancelar" runat="server" Text="Cancelar" CssClass="btn btn-secondary ml-2" OnClick="btnCancelar_Click" />
         </div>
 
@@ -179,7 +179,7 @@
                     <p>Las fórmulas automáticas convierten los datos de la hoja 2 al formato de la hoja 1.</p>
                 </div>
                 <div class="col-md-4 text-center mt-4">
-                    <asp:Button ID="btnDescargarPlantilla" runat="server" Text="Descargar plantilla de conversión" CssClass="btn btn-success" OnClick="btnDescargarPlantilla_Click" />
+                    <asp:Button ID="btnDescargarPlantilla" runat="server" Text="Descargar plantilla de conversión" CssClass="btn btn-success" OnClick="btnDescargarPlantilla_Click" data-descarga="true" />
                 </div>
             </div>
         </div>

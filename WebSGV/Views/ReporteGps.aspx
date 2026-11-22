@@ -61,7 +61,7 @@
                     </div>
                     <div class="col-lg-6 form-group text-lg-right">
                         <asp:Button ID="btnHoy" runat="server" CssClass="btn btn-outline-secondary mr-2" Text="Hoy" OnClick="btnHoy_Click" />
-                        <asp:Button ID="btnGenerar" runat="server" CssClass="btn btn-primary" Text="Generar reportes" OnClick="btnGenerar_Click" />
+                        <asp:Button ID="btnGenerar" runat="server" CssClass="btn btn-primary" Text="Generar reportes" OnClick="btnGenerar_Click" data-espera="600" />
                     </div>
                 </div>
                 <div id="avisoGenerando" class="alert alert-info mb-0 d-none">
@@ -75,7 +75,7 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap">
                     <h5 class="mb-0"><i class="fas fa-file-excel mr-2"></i><asp:Literal ID="litTituloResultados" runat="server" /></h5>
-                    <asp:Button ID="btnZip" runat="server" CssClass="btn btn-success btn-sm" Text="Descargar todos (ZIP)" OnClick="btnZip_Click" />
+                    <asp:Button ID="btnZip" runat="server" CssClass="btn btn-success btn-sm" Text="Descargar todos (ZIP)" OnClick="btnZip_Click" data-descarga="true" />
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -93,7 +93,7 @@
                                 </asp:TemplateField>
                                 <asp:TemplateField HeaderText="Excel">
                                     <ItemTemplate>
-                                        <asp:LinkButton ID="btnDescargar" runat="server" CommandName="Descargar" CommandArgument='<%# Container.DataItemIndex %>'
+                                        <asp:LinkButton ID="btnDescargar" runat="server" CommandName="Descargar" data-descarga="true" CommandArgument='<%# Container.DataItemIndex %>'
                                             Visible='<%# (bool)Eval("TieneArchivo") %>' CssClass="small">
                                             <i class="fas fa-download"></i> <%# HttpUtility.HtmlEncode(Eval("NombreArchivo")) %>
                                         </asp:LinkButton>

@@ -53,9 +53,9 @@
                     <asp:Button ID="btnMesActual" runat="server" CssClass="btn btn-outline-secondary" Text="Este mes" OnClick="btnMesActual_Click" />
                     <asp:Button ID="btnMesAnterior" runat="server" CssClass="btn btn-outline-secondary" Text="Mes anterior" OnClick="btnMesAnterior_Click" />
                     <asp:Button ID="btnBuscar" runat="server" CssClass="btn btn-primary" Text="Buscar" OnClick="btnBuscar_Click" />
-                    <asp:Button ID="btnExcel" runat="server" CssClass="btn btn-success" Text="Excel" OnClick="btnExcel_Click"
+                    <asp:Button ID="btnExcel" runat="server" CssClass="btn btn-success" Text="Excel" OnClick="btnExcel_Click" data-descarga="true"
                         ToolTip="Hojas de cargas, por cliente, por producto y detalle de cada lote" />
-                    <asp:Button ID="btnPdf" runat="server" CssClass="btn btn-outline-danger" Text="PDF" OnClick="btnPdf_Click" />
+                    <asp:Button ID="btnPdf" runat="server" CssClass="btn btn-outline-danger" Text="PDF" OnClick="btnPdf_Click" data-descarga="true" />
                 </div>
             </div>
         </div>

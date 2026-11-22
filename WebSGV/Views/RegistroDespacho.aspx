@@ -86,7 +86,7 @@
                                                     Text="Leer documentos"
                                                     CssClass="btn btn-primary rd-btn-leer"
                                                     CausesValidation="false"
-                                                    OnClick="btnLeerDocumentos_Click" />
+                                                    OnClick="btnLeerDocumentos_Click" data-espera="300" />
                                             </div>
                                         </asp:Panel>
 
@@ -476,7 +476,7 @@
                                                         Text="Leer programación"
                                                         CssClass="btn btn-outline-primary"
                                                         CausesValidation="false"
-                                                        OnClick="btnLeerProgramacionDescarga_Click" />
+                                                        OnClick="btnLeerProgramacionDescarga_Click" data-espera="300" />
                                                 </div>
                                             </div>
                                             <asp:Panel ID="pnlProgramacionLeida" runat="server" Visible="false" CssClass="rd-notice mb-3">
@@ -978,6 +978,7 @@
                                                             Text="Iniciar lote de despachos" 
                                                             CssClass="btn btn-primary rd-btn-leer"
                                                             OnClick="btnIniciarLote_Click"
+                                                            data-espera="300"
                                                             ValidationGroup="ConfiguracionBase" />
                                                     </div>
                                                 </div>
@@ -1501,20 +1502,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Loading Panel -->
-    <asp:UpdateProgress ID="UpdateProgress1" runat="server" AssociatedUpdatePanelID="UpdatePanelMain">
-        <ProgressTemplate>
-            <div class="loading-overlay">
-                <div class="loading-content">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="sr-only">Cargando...</span>
-                    </div>
-                    <div class="mt-2">Procesando...</div>
-                </div>
-            </div>
-        </ProgressTemplate>
-    </asp:UpdateProgress>
 
 </asp:Content>
 

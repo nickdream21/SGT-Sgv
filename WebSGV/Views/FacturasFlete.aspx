@@ -34,7 +34,7 @@
                         <div class="form-group">
                             <asp:FileUpload ID="fuFacturas" runat="server" AllowMultiple="true" accept=".pdf,application/pdf" CssClass="form-control-file" data-max-mb="45" />
                         </div>
-                        <asp:Button ID="btnSubir" runat="server" CssClass="btn btn-primary" Text="Leer y registrar" OnClick="btnSubir_Click" />
+                        <asp:Button ID="btnSubir" runat="server" CssClass="btn btn-primary" Text="Leer y registrar" OnClick="btnSubir_Click" data-espera="300" />
                     </div>
                 </div>
             </div>
@@ -64,7 +64,7 @@
                                     <asp:Button ID="btnMesActual" runat="server" CssClass="btn btn-outline-secondary" Text="Este mes" OnClick="btnMesActual_Click" />
                                     <asp:Button ID="btnMesAnterior" runat="server" CssClass="btn btn-outline-secondary" Text="Mes anterior" OnClick="btnMesAnterior_Click" />
                                     <asp:Button ID="btnBuscar" runat="server" CssClass="btn btn-primary" Text="Buscar" OnClick="btnBuscar_Click" />
-                                    <asp:Button ID="btnExcel" runat="server" CssClass="btn btn-success" Text="Excel" OnClick="btnExcel_Click"
+                                    <asp:Button ID="btnExcel" runat="server" CssClass="btn btn-success" Text="Excel" OnClick="btnExcel_Click" data-descarga="true"
                                         ToolTip="Hojas de conciliaci&#xF3;n y de facturas emitidas" />
                                 </div>
                             </div>

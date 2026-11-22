@@ -9,9 +9,9 @@
                    si puso de su plata, <strong>se le reintegra</strong>. Registra cómo se saldó para que no vuelva a salir pendiente.</p>
             </div>
             <div class="sgv-acciones">
-                <asp:LinkButton ID="btnExcel" runat="server" CssClass="btn btn-outline-success btn-sm" OnClick="btnExcel_Click">
+                <asp:LinkButton ID="btnExcel" runat="server" CssClass="btn btn-outline-success btn-sm" OnClick="btnExcel_Click" data-descarga="true">
                     <i class="fas fa-file-excel mr-1"></i>Excel</asp:LinkButton>
-                <asp:LinkButton ID="btnImagen" runat="server" CssClass="btn btn-outline-secondary btn-sm" OnClick="btnImagen_Click">
+                <asp:LinkButton ID="btnImagen" runat="server" CssClass="btn btn-outline-secondary btn-sm" OnClick="btnImagen_Click" data-descarga="true">
                     <i class="fas fa-image mr-1"></i>Imagen</asp:LinkButton>
             </div>
         </div>

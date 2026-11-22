@@ -4,10 +4,8 @@
 
     $(function () {
         $('#' + SGV.btnGenerar).on('click', function () {
+            // El doble envío lo frena SiteMaster.js (E5-2; data-espera en el botón: la consulta tarda).
             $('#avisoGenerando').removeClass('d-none');
-            // Se deshabilita después del envío para no cortar el postback.
-            var boton = this;
-            setTimeout(function () { boton.disabled = true; }, 0);
         });
 
         $('[data-copiar]').on('click', function () {

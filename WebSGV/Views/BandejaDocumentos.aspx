@@ -33,7 +33,7 @@
                 <asp:FileUpload ID="fuArchivos" runat="server" AllowMultiple="true" accept=".zip,.pdf" CssClass="bd-zona-input" data-max-mb="45" />
             </label>
             <div class="bd-subir-pie">
-                <asp:Button ID="btnLeer" runat="server" Text="Leer documentos" CssClass="btn btn-primary bd-btn-leer" OnClick="btnLeer_Click" />
+                <asp:Button ID="btnLeer" runat="server" Text="Leer documentos" CssClass="btn btn-primary bd-btn-leer" OnClick="btnLeer_Click" data-procesando="Leyendo…" data-espera="300" />
             </div>
         </asp:Panel>
 
@@ -46,7 +46,7 @@
                 </div>
                 <div class="bd-previa-acciones">
                     <asp:Button ID="btnDescartar" runat="server" Text="Descartar" CssClass="btn btn-outline-secondary" OnClick="btnDescartar_Click" CausesValidation="false" />
-                    <asp:Button ID="btnRegistrar" runat="server" Text="Registrar" CssClass="btn btn-success bd-btn-registrar" OnClick="btnRegistrar_Click" />
+                    <asp:Button ID="btnRegistrar" runat="server" Text="Registrar" CssClass="btn btn-success bd-btn-registrar" OnClick="btnRegistrar_Click" data-procesando="Registrando…" data-espera="300" />
                 </div>
             </div>
             <asp:Literal ID="litVistaPrevia" runat="server" EnableViewState="false" />

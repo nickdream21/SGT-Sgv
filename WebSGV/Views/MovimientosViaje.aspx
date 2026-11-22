@@ -96,7 +96,7 @@
                             <asp:FileUpload ID="fuAdjunto" runat="server" CssClass="form-control-file" accept=".pdf,.jpg,.jpeg,.png" />
                         </div>
 
-                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar" CssClass="btn btn-primary-custom btn-block" OnClick="btnRegistrar_Click" />
+                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar" CssClass="btn btn-primary-custom btn-block" OnClick="btnRegistrar_Click" data-espera="120" />
                     </div>
                 </div>
             </div>
