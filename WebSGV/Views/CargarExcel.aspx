@@ -30,13 +30,13 @@
 
         <div class="row">
             <div class="col-md-8">
-                <div id="dropZone" class="upload-container" onclick="document.getElementById('<%= fileUpload.ClientID %>').click();">
+                <div id="dropZone" class="upload-container" data-accion="elegirArchivo">
                     <div class="upload-icon">
                         <i class="fas fa-file-excel"></i>
                     </div>
                     <h4>Arrastra tu archivo Excel de conversión aquí o haz clic para seleccionar</h4>
                     <p>El sistema importará la hoja 1 (formato simplificado con 33 columnas)</p>
-                    <asp:FileUpload ID="fileUpload" runat="server" CssClass="d-none" onchange="updateFileName(this)" accept=".xlsx" />
+                    <asp:FileUpload ID="fileUpload" runat="server" CssClass="d-none" data-accion-change="mostrarArchivoElegido" accept=".xlsx" />
                     <div id="fileInfo" class="file-info">Ningún archivo seleccionado</div>
                 </div>
             </div>

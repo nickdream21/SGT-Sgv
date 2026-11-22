@@ -21,7 +21,7 @@
                 <label for="<%= txtPassword.ClientID %>">Contraseña:</label>
                 <div class="password-wrapper">
                     <asp:TextBox ID="txtPassword" runat="server" TextMode="Password" CssClass="form-control" placeholder="Ingrese su contraseña" autocomplete="current-password"></asp:TextBox>
-                    <button type="button" class="btn-toggle-pass" onclick="togglePassword()" title="Mostrar/ocultar contraseña" tabindex="-1" aria-label="Mostrar u ocultar contraseña">
+                    <button type="button" class="btn-toggle-pass" data-accion="togglePassword" title="Mostrar/ocultar contraseña" tabindex="-1" aria-label="Mostrar u ocultar contraseña">
                         <i id="iconTogglePass" class="fas fa-eye"></i>
                     </button>
                 </div>

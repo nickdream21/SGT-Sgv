@@ -113,7 +113,7 @@ function agregarGasto(datos) {
             <div class="dc-gasto-cab">
                 <input type="text" class="form-control dc-concepto" name="conceptoGasto_${n}" maxlength="100"
                        placeholder="¿En qué gastaste?" aria-label="Concepto del gasto">
-                <button type="button" class="dc-quitar" onclick="eliminarGasto(${n})" aria-label="Quitar gasto">
+                <button type="button" class="dc-quitar" data-accion="eliminarGasto" data-id="${n}" aria-label="Quitar gasto">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -377,7 +377,7 @@ function formatoLocal(fecha, hora) {
     return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] + ' · ' + hora : fecha + ' ' + hora;
 }
 
-// OnClientClick del botón "Enviar y firmar" del resumen: arma los datos y evita el doble envío.
+// data-accion="confirmarEnvioLiquidacion" del botón "Enviar y firmar" del resumen: arma los datos y evita el doble envío.
 function confirmarEnvioLiquidacion(btn) {
     if (formularioEnviandose) return false;
     prepararDatosFinancieros();
@@ -434,3 +434,18 @@ function confirmarRetirar() {
         }
     });
 }
+
+// Acciones del marcado (data-accion / data-accion-input / data-accion-change): las despacha
+// SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
+window.SGV = window.SGV || {};
+SGV.acciones = Object.assign(SGV.acciones || {}, {
+    irALiquidar: function () { irALiquidar(); },
+    toggleNota: function (el) { toggleNota(el); },
+    agregarGasto: function () { agregarGasto(); },
+    eliminarGasto: function (el) { eliminarGasto(Number(el.getAttribute('data-id'))); },
+    abrirRevision: function () { abrirRevision(); },
+    confirmarEnvioLiquidacion: function (el) { return confirmarEnvioLiquidacion(el); },
+    verDetalleLiquidacion: function (el) { verDetalleLiquidacion(Number(el.getAttribute('data-id'))); },
+    abrirModalRetirar: function (el) { abrirModalRetirar(Number(el.getAttribute('data-id'))); },
+    confirmarRetirar: function () { confirmarRetirar(); }
+});

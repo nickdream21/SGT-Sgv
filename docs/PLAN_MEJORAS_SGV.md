@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `00b1315` — E4-14: segundo factor (TOTP) en uso, apagado por interruptor (DN-27, opciones recomendadas de U-079): migración 62 y 8 SP `sp_US_*` (aplicados en pruebas), `SegundoFactor.aspx`, `MiSeguridad.aspx`, quitar el factor desde Gestión de usuarios y script de emergencia, QRCoder 1.8.1; nuevos U-091, U-092 y P-048. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `8d0eb60` — E4-15 (código): 0 manejadores inline propios (95 pasados a `data-accion` con delegación en `SiteMaster.js`), prueba que lo exige; aplicar la CSP de scripts queda en M-125; nuevos M-125 y P-049 a P-051. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-124 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-125 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -154,6 +154,7 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-122** Validar el certificado de somee — hoy la conexión cifrada necesita `TrustServerCertificate=True` (y `-C` en sqlcmd) porque el certificado no coincide con el nombre del servidor: si somee lo corrige (preguntarlo con U-083), quitarlos de la plantilla, los scripts y `respaldar-bd.ps1`. · C
 - [ ] **M-123** Aviso por correo de una FALLA del sello (E4-11) y del respaldo — hoy solo existe el gancho `SGV_SCRIPT_AVISO`: escribir el `.ps1` que envíe el correo con el SMTP de `appSettings.Secrets.config` (o decidir otro canal) y probarlo con una FALLA de ensayo. · B
 - [ ] **M-124** El menú de `Site.Master` no sale de la matriz y no coincide con las páginas — "Despacho" y "Catálogos" solo se muestran a administración, pero RegistroDespacho, BandejaDocumentos, ListaDespachos, DestinoDescarga y los catálogos de `REGISTRO`/`REGISTRO_CONDUCTORES` dejan entrar al SUPERVISOR por URL; según U-090, mostrar el menú o quitar el acceso, y que el menú se arme con `TienePermiso`. · C
+- [ ] **M-125** Aplicar la CSP de scripts (resto de E4-15) — tras publicar E4-5 y 7 días de informes sin nada fuera de `eval`/`inline` (P-031): pasar a la política aplicada `script-src 'self' 'unsafe-inline' 'unsafe-eval'` y las demás directivas de la Report-Only (`Web.config`), y comprobar 0 bloqueos `CSP (aplicada)`; quitar `'unsafe-inline'` exige antes quitar los `__doPostBack`/`WebForm_DoPostBackWithOptions` que genera WebForms (17 `AutoPostBack`, 32 `LinkButton`; Etapa 6). · B
 - [ ] **M-068** Ajustar `Seguridad.IteracionesContrasena` — con los ms de "Hash de contraseña … convertido" en `App_Data/logs` del servidor (tarea 7); no volver a un DLL anterior. · C
 - [ ] **M-111** Tablas ledger de SQL Server 2022 para `FirmaDigital` y `AuditoriaLog` — darían prueba criptográfica de que nadie alteró las filas aunque la app sea `db_owner`; hay que reconstruir las tablas con datos reales y comprobar en un ensayo que `sqlpackage` exporta e importa un `.bacpac` con tablas ledger. Mientras tanto, el sello externo diario de E4-11. · C
 

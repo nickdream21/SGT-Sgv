@@ -1,5 +1,5 @@
 ﻿function mostrarDetalle(id) {
-    var btn = $('[onclick="mostrarDetalle(' + id + ')"]');
+    var btn = $('[data-accion="mostrarDetalle"][data-id="' + id + '"]');
     // attr y no data(): jQuery convierte en objeto el texto que empieza por { o [ (los JSON de antes/después).
     var anterior = btn.attr('data-anterior') || '';
     var nuevo = btn.attr('data-nuevo') || '';
@@ -30,3 +30,10 @@
 
     $('#modalDetalle').modal('show');
 }
+
+// Acciones del marcado (data-accion / data-accion-input / data-accion-change): las despacha
+// SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
+window.SGV = window.SGV || {};
+SGV.acciones = Object.assign(SGV.acciones || {}, {
+    mostrarDetalle: function (el) { mostrarDetalle(Number(el.getAttribute('data-id'))); }
+});

@@ -30,8 +30,8 @@
                         <input type="text" id="txtNumeroLiquidacion" class="form-control" placeholder="Ej. OV-000123" maxlength="30" />
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
-                        <button type="button" id="btnBuscarLiquidaciones" class="btn btn-primary mr-2" onclick="buscarLiquidaciones(true)">Buscar</button>
-                        <button type="button" class="btn btn-secondary" onclick="limpiarFiltros()">Limpiar</button>
+                        <button type="button" id="btnBuscarLiquidaciones" class="btn btn-primary mr-2" data-accion="buscarLiquidaciones">Buscar</button>
+                        <button type="button" class="btn btn-secondary" data-accion="limpiarFiltros">Limpiar</button>
                     </div>
                 </div>
             </div>

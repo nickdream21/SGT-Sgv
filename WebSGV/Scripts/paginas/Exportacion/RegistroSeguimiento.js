@@ -207,3 +207,14 @@
         }
     });
 })();
+
+// Acciones del marcado (data-accion / data-accion-input / data-accion-change): las despacha
+// SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
+window.SGV = window.SGV || {};
+SGV.acciones = Object.assign(SGV.acciones || {}, {
+    // La consulta corre en segundo plano (SGV.actualizarGps) y el postback del botón no se hace.
+    actualizarGps: function (el) {
+        if (SGV.actualizarGps) { SGV.actualizarGps(el); return false; }
+        el.value = 'Consultando el GPS…';   // sin el script de arriba: postback como antes
+    }
+});

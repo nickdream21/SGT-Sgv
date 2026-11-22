@@ -69,10 +69,11 @@
 // PRIMER botón submit de la página (descargaba el Excel en vez de filtrar, o enviaba la
 // liquidación del conductor sin revisión). Ahora Enter nunca envía el formulario por su cuenta:
 //   - dentro de un contenedor con data-enter="<id de botón>" hace clic en ese botón (corren su
-//     OnClientClick, los validadores, __doPostBack y el UpdatePanel como con el mouse);
+//     data-accion, los validadores, __doPostBack y el UpdatePanel como con el mouse);
 //   - data-enter="" o fuera de toda zona, no hace nada (los formularios de alta se guardan
 //     solo con su botón);
-//   - los asp:Panel con DefaultButton (onkeypress="WebForm_FireDefaultButton") siguen igual;
+//   - los asp:Panel con DefaultButton (WebForms les genera un onkeypress con
+//     WebForm_FireDefaultButton) siguen igual;
 //   - si un script de la página ya atendió el Enter (sugerencias, autocompletar) y llamó a
 //     preventDefault, no se toca.
 (function () {
@@ -186,7 +187,7 @@
 // Botones de servidor: data-confirmar="texto" (\n = salto de línea), y opcionales
 // data-confirmar-titulo, data-confirmar-aceptar y data-confirmar-peligro="true". Se cancela el
 // clic, se pregunta y, al aceptar, se repite el mismo clic: su onclick (validación, postback) y el
-// UpdatePanel siguen igual. Úsalo en vez de un OnClientClick con el confirm nativo.
+// UpdatePanel siguen igual. Úsalo en vez de un data-accion que pregunte con el confirm nativo.
 (function () {
     var SGV = window.SGV = window.SGV || {};
     var $modal = null;
@@ -280,6 +281,56 @@
             peligro: esPeligro
         });
     }, true);
+})();
+
+// ── Acciones delegadas (sin onclick= ni otros on*= en el marcado) ──
+// Prepara la política de contenido (CSP) sin 'unsafe-inline': el marcado dice qué hacer y el
+// script de la página dice cómo, en vez de llevar JavaScript dentro de los atributos.
+//   <button type="button" data-accion="verDetalle" data-id="5">       → al hacer clic
+//   <input data-accion-input="filtrar" data-contenedor="tabla">       → al escribir (input)
+//   <select data-accion-change="mostrarCampo">                        → al cambiar (change)
+//   SGV.acciones = Object.assign(SGV.acciones || {}, { verDetalle: function (el, e) { ... } });
+// El manejador recibe el elemento que lleva el atributo (el antiguo "this") y el evento. Los
+// scripts de página pueden registrarse antes o después de este archivo: se buscan al disparar.
+// Clic: se atiende en captura desde document, después de data-confirmar (registrado arriba) y
+// antes del onclick que WebForms genera en sus botones (validación, __doPostBack). Si el manejador
+// devuelve false se cancela el clic y ese onclick ya no corre, como el antiguo
+// "return x();" de un OnClientClick. Diferencia con aquel "return false": aquí además se detiene la
+// propagación, así que los listeners de document en burbuja (los de clic de otras páginas o
+// bibliotecas) ya no reciben ese clic; hace falta para que no corra el onclick de WebForms.
+// Al ser delegado sirve para filas que llegan por UpdatePanel o se arman en JS.
+(function () {
+    var SGV = window.SGV = window.SGV || {};
+    SGV.acciones = SGV.acciones || {};
+
+    function despachar(e, atributo) {
+        var el = e.target && e.target.closest ? e.target.closest('[' + atributo + ']') : null;
+        if (!el || el.disabled) return;
+        var nombre = el.getAttribute(atributo);
+        var fn = SGV.acciones[nombre];
+        if (typeof fn !== 'function') {
+            if (window.console) console.warn('SGV: la acción "' + nombre + '" no tiene manejador.');
+            return;
+        }
+        if (fn.call(el, el, e) === false) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }
+
+    document.addEventListener('click', function (e) { despachar(e, 'data-accion'); }, true);
+    document.addEventListener('input', function (e) { despachar(e, 'data-accion-input'); });
+    document.addEventListener('change', function (e) { despachar(e, 'data-accion-change'); });
+
+    // Compartidas por varias páginas.
+    Object.assign(SGV.acciones, {
+        // X de un mensaje del servidor: oculta el bloque .mb-3 que lo envuelve.
+        cerrarBloqueMensaje: function (el) {
+            var bloque = el.closest('.mb-3');
+            if (bloque) bloque.style.display = 'none';
+        },
+        recargarPagina: function () { location.reload(); }
+    });
 })();
 
 // ── Cerrar sesión: borradores del navegador fuera ──────────────────

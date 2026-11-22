@@ -54,7 +54,7 @@
                 <textarea id="txtReporteLlegadas" hidden readonly><asp:Literal ID="litReporteLlegadas" runat="server" /></textarea>
                 <textarea id="txtReporteGrifo" hidden readonly><asp:Literal ID="litReporteGrifo" runat="server" /></textarea>
                 <asp:Button ID="btnActualizarGps" runat="server" Text="Actualizar GPS de viajes abiertos" CssClass="sx-btn sx-btn-primario" CausesValidation="false"
-                    OnClick="btnActualizarGps_Click" OnClientClick="if (window.SGV && SGV.actualizarGps) { SGV.actualizarGps(this); return false; } this.value='Consultando el GPS…';" UseSubmitBehavior="false" />
+                    OnClick="btnActualizarGps_Click" data-accion="actualizarGps" UseSubmitBehavior="false" />
             </div>
         </div>
 

@@ -64,7 +64,7 @@
                         <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Estaciones registradas</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
                             style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_peajes"
-                            oninput="filtrarTabla(this.value,'contenedorPeajes')">
+                            data-accion-input="filtrarTabla" data-contenedor="contenedorPeajes">
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive" id="contenedorPeajes">

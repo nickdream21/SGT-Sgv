@@ -164,8 +164,8 @@ function buscarLiquidaciones(forzarManual) {
                     '<td class="text-right">' + Number(item.BalanceSoles || 0).toFixed(2) + '</td>' +
                     '<td class="text-right">' + Number(item.BalanceDolares || 0).toFixed(2) + '</td>' +
                     '<td class="text-center">' +
-                        '<button type="button" class="btn btn-outline-primary btn-sm mr-1" onclick="verPdfLiquidacion(' + item.IdOrdenViaje + ')"><i class="fas fa-eye"></i> Ver</button>' +
-                        '<button type="button" class="btn btn-outline-secondary btn-sm" onclick="verDetalle(' + item.IdOrdenViaje + ')"><i class="fas fa-list"></i> Detalle</button>' +
+                        '<button type="button" class="btn btn-outline-primary btn-sm mr-1" data-accion="verPdfLiquidacion" data-id="' + item.IdOrdenViaje + '"><i class="fas fa-eye"></i> Ver</button>' +
+                        '<button type="button" class="btn btn-outline-secondary btn-sm" data-accion="verDetalle" data-id="' + item.IdOrdenViaje + '"><i class="fas fa-list"></i> Detalle</button>' +
                     '</td>' +
                     '</tr>';
             }
@@ -338,4 +338,14 @@ $(document).ready(function () {
     });
 
     buscarLiquidaciones(false);
+});
+
+// Acciones del marcado (data-accion / data-accion-input / data-accion-change): las despacha
+// SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
+window.SGV = window.SGV || {};
+SGV.acciones = Object.assign(SGV.acciones || {}, {
+    buscarLiquidaciones: function () { buscarLiquidaciones(true); },
+    limpiarFiltros: function () { limpiarFiltros(); },
+    verPdfLiquidacion: function (el) { verPdfLiquidacion(Number(el.getAttribute('data-id'))); },
+    verDetalle: function (el) { verDetalle(Number(el.getAttribute('data-id'))); }
 });

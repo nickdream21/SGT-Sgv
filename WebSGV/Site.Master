@@ -336,7 +336,7 @@
                             Text="Cambiar contraseña"
                             CssClass="btn btn-primary"
                             OnClick="btnCambiarContrasena_Click"
-                            OnClientClick="return validarFormContrasena();" />
+                            data-accion="validarFormContrasena" />
                     </div>
                 </div>
             </div>

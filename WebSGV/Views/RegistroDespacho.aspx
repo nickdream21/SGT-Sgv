@@ -52,7 +52,7 @@
                                     <div class="position-relative">
                                         <asp:Label ID="lblMensaje" runat="server" CssClass="alert d-block mb-0 pr-5"></asp:Label>
                                         <button type="button" class="close position-absolute" style="top:.65rem;right:.75rem;"
-                                            onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                                            data-accion="cerrarBloqueMensaje" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                                     </div>
                                 </asp:Panel>
 
@@ -1061,7 +1061,7 @@
                                                 <div class="position-relative">
                                                     <asp:Label ID="lblMensajeConductor" runat="server" CssClass="alert d-block mb-0 pr-5"></asp:Label>
                                                     <button type="button" class="close position-absolute" style="top:.65rem;right:.75rem;"
-                                                        onclick="this.closest('.mb-3').style.display='none'" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                                                        data-accion="cerrarBloqueMensaje" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                                                 </div>
                                             </asp:Panel>
 

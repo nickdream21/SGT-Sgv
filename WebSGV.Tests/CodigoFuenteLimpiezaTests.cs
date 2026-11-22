@@ -840,5 +840,268 @@ namespace WebSGV.Tests
                 "Agregue rel=\"noopener\" a cada target=\"_blank\" (la pestaña nueva no debe poder tocar window.opener):" +
                 Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
         }
+
+        // ---------- Sin manejadores inline propios (E4-15, 2026-11-22) ----------
+        // Ningún onclick=, oninput=, onchange=... ni OnClientClick= en el marcado, en las cadenas HTML
+        // que arma el JS o el C#, ni href="javascript:". El marcado lleva data-accion="nombre" (y
+        // data-accion-input / data-accion-change) y el script de la página registra el manejador en
+        // SGV.acciones; SiteMaster.js lo despacha por delegación. Prepara la CSP sin 'unsafe-inline'.
+        // Lo que WebForms genera solo (AutoPostBack, href="javascript:__doPostBack" de los LinkButton)
+        // no está en el código fuente y lo quita la Etapa 6.
+
+        // Marcado (fuera de <script>): cualquier atributo on* sin distinguir mayúsculas, con el valor
+        // entre comillas dobles, simples o sin comillas. Solo se aceptan los eventos de servidor:
+        // nombre en PascalCase (OnClick, OnRowCommand; no OnClient*) y valor que es un identificador
+        // (OnClick="btnGuardar_Click"). Además href="javascript:". Los <script> del marcado se revisan
+        // con las reglas de JS.
+        private static readonly Regex AtributoOnMarcado = new Regex(
+            @"(?<![\w.$:-])(?<nombre>on\w+)\s*=\s*(?:""(?<valor>[^""]*)""|'(?<valor>[^']*)'|(?<valor>[^\s>""']+))",
+            RegexOptions.IgnoreCase);
+        private static readonly Regex EventoDeServidor = new Regex(@"^On[A-Z]\w*$");
+        private static readonly Regex IdentificadorCs = new Regex(@"^[A-Za-z_]\w*$");
+        private static readonly Regex JavascriptEnHrefMarcado = new Regex(@"\bhref\s*=\s*[""']?\s*javascript:", RegexOptions.IgnoreCase);
+        private static readonly Regex BloqueScript = new Regex(@"<script\b[^>]*>(?<js>.*?)</script>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+        private static bool EsEventoDeServidor(Match atributo)
+        {
+            string nombre = atributo.Groups["nombre"].Value;
+            return EventoDeServidor.IsMatch(nombre)
+                && !nombre.StartsWith("OnClient", StringComparison.Ordinal)
+                && IdentificadorCs.IsMatch(atributo.Groups["valor"].Value);
+        }
+
+        /// <summary>Manejadores inline de un .aspx / .ascx / .Master: (línea, texto encontrado).</summary>
+        private static List<(int Linea, string Texto)> ManejadoresEnMarcado(string texto)
+        {
+            var hallados = new List<(int Linea, string Texto)>();
+            var scripts = BloqueScript.Matches(texto).Cast<Match>().Select(m => m.Groups["js"]).ToList();
+            bool EnScript(int i) => scripts.Any(g => i >= g.Index && i < g.Index + g.Length);
+
+            foreach (Match m in AtributoOnMarcado.Matches(texto))
+                if (!EnScript(m.Index) && !EsEventoDeServidor(m)) hallados.Add((NumeroDeLinea(texto, m.Index), m.Value));
+            foreach (Match m in JavascriptEnHrefMarcado.Matches(texto))
+                if (!EnScript(m.Index)) hallados.Add((NumeroDeLinea(texto, m.Index), m.Value));
+            foreach (Group g in scripts)
+            {
+                int primera = NumeroDeLinea(texto, g.Index);
+                string[] lineas = g.Value.Split('\n');
+                for (int i = 0; i < lineas.Length; i++)
+                {
+                    string linea = lineas[i].Trim();
+                    if (!linea.StartsWith("//", StringComparison.Ordinal) && ManejadorInlineJs.IsMatch(linea))
+                        hallados.Add((primera + i, linea));
+                }
+            }
+            return hallados;
+        }
+
+        private static bool EsManejadorInlineMarcado(string marcado) => ManejadoresEnMarcado(marcado).Count > 0;
+
+        // JS (sin distinguir mayúsculas): un on*= dentro de una etiqueta armada como cadena ('<button onclick=...',
+        // con o sin comillas en el valor), un fragmento de cadena que empieza por el atributo (' onclick="'),
+        // el selector [onclick="..."], setAttribute('onclick') / .attr('onclick') y href="javascript:".
+        // No coinciden la propiedad del DOM (boton.onclick = function), las variables (var once = 'x') ni el
+        // selector del atributo que genera WebForms ([onkeypress*="WebForm_FireDefaultButton"]).
+        private static readonly Regex ManejadorInlineJs = new Regex(
+            @"<[a-z][^<>]*?\son\w+\s*=(?!=)" +
+            @"|[""'`]\s*on\w+\s*=\s*\\?[""'`]" +
+            @"|\[\s*on\w+\s*=" +
+            @"|\b(setAttribute|attr)\(\s*[""'`]on\w+[""'`]" +
+            @"|\bhref\s*=\s*\\?[""']?\s*javascript:",
+            RegexOptions.IgnoreCase);
+
+        // C# (sin distinguir mayúsculas): on*= dentro de una etiqueta armada como cadena, un fragmento de
+        // cadena que empieza por el atributo, OnClientClick asignado, Attributes["onclick"] /
+        // Attributes.Add("onclick", ...) y href="javascript:".
+        private static readonly Regex ManejadorInlineCs = new Regex(
+            @"<[a-z][^<>]*?\son\w+\s*=(?!=)" +
+            @"|[""']\s*on\w+\s*=\s*(\\""|""""|'|\\')" +
+            @"|\bOnClientClick\s*=" +
+            @"|\bAttributes(\.Add\(|\[)\s*""on\w+""" +
+            @"|\bhref\s*=\s*(\\""|""""|'|\\')?\s*javascript:",
+            RegexOptions.IgnoreCase);
+
+        /// <summary>
+        /// Excepciones explícitas (archivo relativo a WebSGV → motivo). Error.aspx y Error404.aspx
+        /// deben verse aunque fallen los archivos estáticos (CLAUDE.md), por eso su "Volver" es
+        /// href="javascript:history.back()" sin script aparte.
+        /// </summary>
+        private static readonly Dictionary<string, string> ExcepcionesManejadoresInline =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Views/Error.aspx"] = "página de error autónoma: no depende de Scripts/ (CLAUDE.md)",
+                ["Views/Error404.aspx"] = "página de error autónoma: no depende de Scripts/ (CLAUDE.md)",
+            };
+
+        private static List<string> BuscarManejadoresInline(string raiz)
+        {
+            var hallazgos = new List<string>();
+            foreach (string archivo in ArchivosPropios(raiz, ".aspx", ".ascx", ".master", ".js", ".cs"))
+            {
+                string rel = Relativo(raiz, archivo);
+                if (ExcepcionesManejadoresInline.ContainsKey(rel)) continue;
+                if (rel.EndsWith(".min.js", StringComparison.OrdinalIgnoreCase)
+                    || rel.EndsWith(".designer.cs", StringComparison.OrdinalIgnoreCase)) continue;
+
+                string ext = Path.GetExtension(archivo).ToLowerInvariant();
+                if (ext != ".js" && ext != ".cs")
+                {
+                    foreach (var h in ManejadoresEnMarcado(File.ReadAllText(archivo)))
+                        hallazgos.Add($"{rel}:{h.Linea}: {h.Texto}");
+                    continue;
+                }
+
+                Regex patron = ext == ".js" ? ManejadorInlineJs : ManejadorInlineCs;
+                string[] lineas = File.ReadAllLines(archivo);
+                for (int i = 0; i < lineas.Length; i++)
+                {
+                    string linea = lineas[i].TrimStart();
+                    if (linea.StartsWith("//", StringComparison.Ordinal)) continue;
+                    if (patron.IsMatch(linea)) hallazgos.Add($"{rel}:{i + 1}: {linea.Trim()}");
+                }
+            }
+            return hallazgos;
+        }
+
+        [Fact]
+        public void ManejadoresInline_PatronesReconocenLosCasos()
+        {
+            // Marcado: propios, con cualquier mayúscula y comillas dobles, simples o sin comillas.
+            Assert.True(EsManejadorInlineMarcado("<button type=\"button\" onclick=\"cambiarTab('x')\">"));
+            Assert.True(EsManejadorInlineMarcado("<button onclick='verDetalle(<%#: Eval(\"Id\") %>)'>"));
+            Assert.True(EsManejadorInlineMarcado("<button onClick='verDetalle(1)'>"));
+            Assert.True(EsManejadorInlineMarcado("<button ONCLICK='x()'>"));
+            Assert.True(EsManejadorInlineMarcado("<button onclick=x()>"));
+            Assert.True(EsManejadorInlineMarcado("<input\r\n    oninput=\"filtrar(this.value)\">"));
+            Assert.True(EsManejadorInlineMarcado("<asp:Button ID=\"b\" runat=\"server\" OnClientClick=\"return validar();\" />"));
+            Assert.True(EsManejadorInlineMarcado("<asp:Button ID=\"b\" runat=\"server\" OnClientClick=\"validar\" />"));
+            Assert.True(EsManejadorInlineMarcado("<asp:Button ID=\"b\" runat=\"server\" OnClick=\"validar();\" />"));
+            Assert.True(EsManejadorInlineMarcado("<asp:DropDownList runat=\"server\" onchange=\"mostrar()\">"));
+            Assert.True(EsManejadorInlineMarcado("<a href=\"javascript:void(0)\">"));
+            Assert.True(EsManejadorInlineMarcado("<a href=\"JAVASCRIPT:x()\">"));
+            Assert.True(EsManejadorInlineMarcado("<a href=javascript:x()>"));
+            Assert.True(EsManejadorInlineMarcado("<script>\r\n    html += '<a onClick=\"x()\">';\r\n</script>"));
+            // Marcado: eventos de servidor, data-accion y código de un <script> que no arma HTML, no.
+            Assert.False(EsManejadorInlineMarcado("<asp:Button ID=\"b\" runat=\"server\" OnClick=\"btnGuardar_Click\" />"));
+            Assert.False(EsManejadorInlineMarcado("<asp:ScriptManager runat=\"server\" OnAsyncPostBackError=\"ScriptManager1_AsyncPostBackError\" />"));
+            Assert.False(EsManejadorInlineMarcado("<asp:GridView runat=\"server\" OnRowCommand=\"gv_RowCommand\" OnPageIndexChanging=\"gv_Pag\">"));
+            Assert.False(EsManejadorInlineMarcado("<button type=\"button\" data-accion=\"cambiarTab\" data-tab=\"x\">"));
+            Assert.False(EsManejadorInlineMarcado("<input data-accion-input=\"filtrar\" data-contenedor=\"t\">"));
+            Assert.False(EsManejadorInlineMarcado("<script>\r\n    var once = 'x';\r\n    boton.onclick = function () { };\r\n</script>"));
+            // JS: propios.
+            Assert.Matches(ManejadorInlineJs, "html += '<button onclick=\"ver(' + id + ')\">';");
+            Assert.Matches(ManejadorInlineJs, "html += '<button onClick=\"ver(1)\">';");
+            Assert.Matches(ManejadorInlineJs, "html += '<button ONCLICK=ver(1)>';");
+            Assert.Matches(ManejadorInlineJs, "html += '<button class=\"b\"' + ' onclick=\"ver(1)\">';");
+            Assert.Matches(ManejadorInlineJs, "`<button onclick=\"quitar(${n})\">`");
+            Assert.Matches(ManejadorInlineJs, "var b = $('[onclick=\"mostrar(' + id + ')\"]');");
+            Assert.Matches(ManejadorInlineJs, "el.setAttribute('onclick', 'x()');");
+            Assert.Matches(ManejadorInlineJs, "el.setAttribute('onClick', 'x()');");
+            Assert.Matches(ManejadorInlineJs, "$(el).attr(\"ONCHANGE\", 'x()');");
+            Assert.Matches(ManejadorInlineJs, "html += '<a href=\"JAVASCRIPT:x()\">';");
+            Assert.Matches(ManejadorInlineJs, "html += '<a href=javascript:x()>';");
+            // JS: no.
+            Assert.DoesNotMatch(ManejadorInlineJs, "cerrar.onclick = function () { aviso.remove(); };");
+            Assert.DoesNotMatch(ManejadorInlineJs, "lector.onload = function () { };");
+            Assert.DoesNotMatch(ManejadorInlineJs, "var once = 'x';");
+            Assert.DoesNotMatch(ManejadorInlineJs, "const onda = \"larga\";");
+            Assert.DoesNotMatch(ManejadorInlineJs, "if (i < n && once === 'x') { }");
+            Assert.DoesNotMatch(ManejadorInlineJs, "if (el.closest('[onkeypress*=\"WebForm_FireDefaultButton\"]')) return;");
+            Assert.DoesNotMatch(ManejadorInlineJs, "html += '<button data-accion=\"ver\" data-id=\"' + id + '\">';");
+            // C#: propios.
+            Assert.Matches(ManejadorInlineCs, "sb.Append(\"<a onclick=\\\"ver(1)\\\">\");");
+            Assert.Matches(ManejadorInlineCs, "sb.Append(\"<a onClick='ver(1)'>\");");
+            Assert.Matches(ManejadorInlineCs, "sb.Append(@\"<a ONCLICK=ver(1)>\");");
+            Assert.Matches(ManejadorInlineCs, "btn.OnClientClick = \"return false;\";");
+            Assert.Matches(ManejadorInlineCs, "btn.Attributes[\"onclick\"] = \"x()\";");
+            Assert.Matches(ManejadorInlineCs, "btn.Attributes.Add(\"onChange\", \"x()\");");
+            Assert.Matches(ManejadorInlineCs, "sb.Append(\"<a href='JAVASCRIPT:x()'>\");");
+            // C#: no.
+            Assert.DoesNotMatch(ManejadorInlineCs, "bool conError = true;");
+            Assert.DoesNotMatch(ManejadorInlineCs, "string once = \"x\";");
+            Assert.DoesNotMatch(ManejadorInlineCs, "var lista = new List<string> { onda };");
+            Assert.DoesNotMatch(ManejadorInlineCs, "protected void btnGuardar_Click(object sender, EventArgs e)");
+        }
+
+        [Fact]
+        public void SinManejadoresInlinePropios()
+        {
+            string raiz = RaizWeb();
+            var archivos = ArchivosPropios(raiz, ".aspx", ".master", ".js");
+            Assert.Contains(archivos, f => Relativo(raiz, f).Equals("Site.Master", StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(archivos, f => Relativo(raiz, f).Equals("Scripts/paginas/LiquidacionesPendientes.js", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(archivos, f => Relativo(raiz, f).StartsWith("Scripts/lib/", StringComparison.OrdinalIgnoreCase));
+
+            List<string> hallazgos = BuscarManejadoresInline(raiz);
+            Assert.True(hallazgos.Count == 0,
+                "Manejadores inline propios (la CSP sin 'unsafe-inline' los bloquearía). Use data-accion=\"nombre\" " +
+                "(o data-accion-input / data-accion-change) con data-* para los argumentos y registre el manejador en " +
+                "SGV.acciones en el script de la página (ver \"Acciones delegadas\" en Scripts/paginas/SiteMaster.js):" +
+                Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
+        }
+
+        // data-accion="x" en el marcado y data-accion=\"x\" o data-accion="x" dentro de una cadena JS.
+        private static readonly Regex UsoDeAccion = new Regex(@"data-accion(?:-input|-change)?=\\?[""'](\w+)");
+        // SGV.acciones = Object.assign(SGV.acciones || {}, { ... }); en las páginas y
+        // Object.assign(SGV.acciones, { ... }); en SiteMaster.js.
+        private static readonly Regex BloqueAcciones = new Regex(
+            @"Object\.assign\(\s*SGV\.acciones(?:\s*\|\|\s*\{\})?\s*,\s*\{(?<cuerpo>.*?)\r?\n\s*\}\);",
+            RegexOptions.Singleline);
+        private static readonly Regex NombreDeAccion = new Regex(@"^\s*(\w+)\s*:\s*function\b", RegexOptions.Multiline);
+        private static readonly Regex ScriptDePagina = new Regex(@"~/Scripts/paginas/([\w/.-]+\.js)");
+
+        /// <summary>El texto sin las líneas de comentario // (los ejemplos de los comentarios no cuentan).</summary>
+        private static string SinComentariosDeLinea(string texto) =>
+            string.Join("\n", texto.Replace("\r\n", "\n").Split('\n')
+                .Where(l => !l.TrimStart().StartsWith("//", StringComparison.Ordinal)));
+
+        private static HashSet<string> AccionesRegistradas(string raiz, string relativoJs)
+        {
+            string ruta = Path.Combine(raiz, relativoJs.Replace('/', Path.DirectorySeparatorChar));
+            var nombres = new HashSet<string>(StringComparer.Ordinal);
+            if (!File.Exists(ruta)) return nombres;
+            foreach (Match b in BloqueAcciones.Matches(SinComentariosDeLinea(File.ReadAllText(ruta))))
+                foreach (Match n in NombreDeAccion.Matches(b.Groups["cuerpo"].Value))
+                    nombres.Add(n.Groups[1].Value);
+            return nombres;
+        }
+
+        /// <summary>
+        /// Cada data-accion del marcado tiene manejador en SiteMaster.js / SiteMaster-2.js o en un script
+        /// que la misma página carga; cada data-accion armado en un .js, en ese mismo archivo o en los del
+        /// Site.Master. Sin esto, un nombre mal escrito deja el botón sin hacer nada (solo un aviso en la consola).
+        /// </summary>
+        [Fact]
+        public void DataAccion_TieneManejadorRegistrado()
+        {
+            string raiz = RaizWeb();
+            var comunes = AccionesRegistradas(raiz, "Scripts/paginas/SiteMaster.js");
+            comunes.UnionWith(AccionesRegistradas(raiz, "Scripts/paginas/SiteMaster-2.js"));
+            Assert.Contains("cerrarBloqueMensaje", comunes);
+            Assert.Contains("validarFormContrasena", comunes);
+
+            var faltan = new List<string>();
+            int usos = 0;
+            foreach (string archivo in ArchivosPropios(raiz, ".aspx", ".ascx", ".master", ".js"))
+            {
+                string rel = Relativo(raiz, archivo);
+                string texto = SinComentariosDeLinea(File.ReadAllText(archivo));
+                var registradas = new HashSet<string>(comunes, StringComparer.Ordinal);
+                if (rel.EndsWith(".js", StringComparison.OrdinalIgnoreCase))
+                    registradas.UnionWith(AccionesRegistradas(raiz, rel));
+                else
+                    foreach (Match s in ScriptDePagina.Matches(texto))
+                        registradas.UnionWith(AccionesRegistradas(raiz, "Scripts/paginas/" + s.Groups[1].Value));
+
+                foreach (Match u in UsoDeAccion.Matches(texto))
+                {
+                    usos++;
+                    if (!registradas.Contains(u.Groups[1].Value))
+                        faltan.Add(rel + ": data-accion \"" + u.Groups[1].Value + "\" sin manejador en SGV.acciones");
+                }
+            }
+            Assert.True(usos > 50, "No se encontraron los data-accion de las páginas.");
+            Assert.True(faltan.Count == 0, string.Join(Environment.NewLine, faltan));
+        }
     }
 }

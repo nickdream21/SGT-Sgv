@@ -41,7 +41,7 @@
                                 <div class="input-group">
                                     <asp:TextBox ID="txtRUC" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="11"></asp:TextBox>
                                     <div class="input-group-append">
-                                        <asp:Button ID="btnBuscarRUC" runat="server" CssClass="btn btn-secondary" Text="Verificar" OnClientClick="verificarRUC(); return false;" />
+                                        <asp:Button ID="btnBuscarRUC" runat="server" CssClass="btn btn-secondary" Text="Verificar" data-accion="verificarRUC" />
                                     </div>
                                 </div>
                                 <asp:RegularExpressionValidator ID="revRuc" runat="server" ControlToValidate="txtRUC" ValidationGroup="vgRegistroCliente"
@@ -121,7 +121,7 @@
                         <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Clientes registrados</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
                             style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_clientes"
-                            oninput="filtrarTabla(this.value,'contenedorClientes')">
+                            data-accion-input="filtrarTabla" data-contenedor="contenedorClientes">
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive" id="contenedorClientes">

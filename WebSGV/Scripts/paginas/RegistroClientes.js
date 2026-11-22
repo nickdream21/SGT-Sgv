@@ -72,3 +72,11 @@ function verificarRUC() {
         if (boton) boton.disabled = false;
     });
 }
+
+// Acciones del marcado (data-accion / data-accion-input / data-accion-change): las despacha
+// SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
+window.SGV = window.SGV || {};
+SGV.acciones = Object.assign(SGV.acciones || {}, {
+    filtrarTabla: function (el) { filtrarTabla(el.value, el.getAttribute('data-contenedor')); },
+    verificarRUC: function () { verificarRUC(); return false; }
+});

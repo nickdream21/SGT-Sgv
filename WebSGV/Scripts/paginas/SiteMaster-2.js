@@ -183,3 +183,10 @@ $(document).ready(function () {
         for (var i = 0; i < campos.length; i++) if (esTexto(campos[i])) limpiar(campos[i]);
     }, true);
 })();
+
+// Acciones del marcado (data-accion / data-accion-input / data-accion-change): las despacha
+// SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
+window.SGV = window.SGV || {};
+SGV.acciones = Object.assign(SGV.acciones || {}, {
+    validarFormContrasena: function () { return validarFormContrasena(); }
+});

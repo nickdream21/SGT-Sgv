@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-048 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-051 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -61,6 +61,9 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-046** Sesión de 12 h de E4-12 de verdad — una sesión de prueba abierta y con actividad más de 12 h (local o publicado): una página va a `Login.aspx?error=sesion_vencida` y un AJAX recibe 401 con `codigoLogin: sesion_vencida`; y una sesión abierta antes de publicar E4-12 se cierra en la primera petición tras publicar. · B
 - [ ] **P-047** Acciones de administración completas con la contraseña correcta (E4-12) — con una cuenta creada solo para la prueba: restablecer su contraseña, cambiarle el rol y devolverlo, desactivarla y activarla siendo de administración (pide la contraseña), un alta en la que la ventana de 5 min vence a mitad del formulario, y la auditoría `UPDATE`; borrar la cuenta al final. · C
 - [ ] **P-048** Alta obligatoria del segundo factor con cambio de contraseña pendiente, cambiándola de verdad (E4-14) — con una cuenta de prueba, el interruptor encendido solo en local y `requiereCambioContrasena = 1`: activar, "Ya los guardé", cambiar la contraseña a otra en el modal y comprobar que los códigos no reaparecen; luego devolver la contraseña original y `requiereCambioContrasena`, y quitar el factor. · C
+- [ ] **P-049** Conductor con viaje abierto, botones de E4-15 a 390 px — "Liquidar mi viaje", Nota, Agregar otro gasto, quitar (confirmación), "Revisar y enviar" abre el modal sin enviar, y "Ver"/"Retirar" del historial con filas reales; la cuenta de prueba no tiene viaje y la BD de pruebas no tiene órdenes (ver D-035). · B
+- [ ] **P-050** Movimientos del viaje con `MovimientosViaje.Habilitado=true` (solo local) — Anular abre el modal con el id de la fila y cancelar no envía (E4-15). · C
+- [ ] **P-051** Liquidaciones pendientes con filas reales del servidor (BD de ensayo o cuando haya órdenes) — ojo, aprobar, rechazar, por conformar y aprobadas con `data-accion`, incluido un número de orden con caracteres especiales en `data-numero` (E4-15 se probó con respuestas simuladas). · C
 
 ## Reglas
 

@@ -85,7 +85,7 @@ function buildSubTableGenerica(items) {
 function makeRow(icon, iconClass, label, soles, dolares, desc, subTable) {
     var hasDetail = (desc && desc.trim()) || (subTable && subTable.trim());
     var expandBtn = hasDetail
-        ? ' <button type="button" class="btn btn-expand ml-1" onclick="toggleDetail(this)" title="Ver detalle">' +
+        ? ' <button type="button" class="btn btn-expand ml-1" data-accion="toggleDetail" title="Ver detalle">' +
           '<i class="fas fa-chevron-down"></i></button>'
         : '';
 
@@ -394,7 +394,7 @@ function validarRechazo() {
         value: observaciones
     }).appendTo('form');
 
-    // OnClientClick="return validarRechazo();": se frena el envío mientras se muestra el modal y, al
+    // data-accion="validarRechazo" (devuelve false): se frena el envío mientras se muestra el modal y, al
     // aceptar, se repite el clic dejándolo pasar una vez.
     if (rechazoConfirmado) {
         rechazoConfirmado = false;
@@ -558,7 +558,7 @@ function cargarMovimientosRevision(idOrden) {
                 if (esPago && m.NombreProveedor) sub.push(m.NombreProveedor + (m.Comprobante ? ' · ' + m.Comprobante : ''));
                 if (m.Descripcion) sub.push(m.Descripcion);
                 html += '<tr class="' + (esPago ? 'mov-pago' : '') + '">';
-                html += '<td><input type="checkbox" class="chk-mov" data-id="' + m.IdMovimiento + '" checked onchange="aplicarEntregasALaTabla()"></td>';
+                html += '<td><input type="checkbox" class="chk-mov" data-id="' + m.IdMovimiento + '" checked data-accion-change="aplicarEntregasALaTabla"></td>';
                 html += '<td class="text-nowrap">' + SGV.escaparHtml(m.Fecha) + '</td>';
                 html += '<td>' + (esPago ? 'Pago directo' : 'Entrega') + '</td>';
                 html += '<td>' + SGV.escaparHtml(m.Concepto) + (sub.length ? '<span class="mov-sub">' + SGV.escaparHtml(sub.join(' · ')) + '</span>' : '') + '</td>';
@@ -832,9 +832,9 @@ function cargarLiquidacionesPorConformar(soloContador) {
                 html += celdaMontos(parseFloat(item.ReintegroSoles || 0), parseFloat(item.ReintegroDolares || 0), 'sgv-positivo');
                 html += celdaMontos(parseFloat(item.SaldoSoles || 0), parseFloat(item.SaldoDolares || 0));
                 html += '<td class="text-right"><div class="sgv-acciones">';
-                html += '<button type="button" class="sgv-btn-icono info" onclick="verDetalleLiquidacion(' + item.IdOrdenViaje + ')" title="Ver detalle"><i class="fas fa-eye"></i></button>';
-                html += '<button type="button" class="sgv-btn-icono" onclick="descargarPdfOrdenViaje(' + item.IdOrdenViaje + ')" title="PDF de la liquidación enviada"><i class="fas fa-file-pdf"></i></button>';
-                html += '<button type="button" class="sgv-btn-icono alerta" onclick="abrirModalRetirarEnvio(' + item.IdOrdenViaje + ')" title="Retirar envío (para corregir antes de que firme)"><i class="fas fa-undo"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono info" data-accion="verDetalleLiquidacion" data-id="' + item.IdOrdenViaje + '" title="Ver detalle"><i class="fas fa-eye"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono" data-accion="descargarPdfOrdenViaje" data-id="' + item.IdOrdenViaje + '" title="PDF de la liquidación enviada"><i class="fas fa-file-pdf"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono alerta" data-accion="abrirModalRetirarEnvio" data-id="' + item.IdOrdenViaje + '" title="Retirar envío (para corregir antes de que firme)"><i class="fas fa-undo"></i></button>';
                 html += '</div></td></tr>';
             });
             $('#tbodyPorConformar').html(html);
@@ -976,14 +976,14 @@ function cargarLiquidacionesAprobadas() {
 
                 // Acciones
                 html += '<td class="text-right"><div class="sgv-acciones">';
-                html += '<button type="button" class="sgv-btn-icono info" onclick="verDetalleLiquidacion(' + item.IdOrdenViaje + ')" title="Ver detalle"><i class="fas fa-eye"></i></button>';
-                html += '<button type="button" class="sgv-btn-icono" onclick="descargarPdfOrdenViaje(' + item.IdOrdenViaje + ')" title="Descargar PDF SGV-CDF-F-05"><i class="fas fa-file-pdf"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono info" data-accion="verDetalleLiquidacion" data-id="' + item.IdOrdenViaje + '" title="Ver detalle"><i class="fas fa-eye"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono" data-accion="descargarPdfOrdenViaje" data-id="' + item.IdOrdenViaje + '" title="Descargar PDF SGV-CDF-F-05"><i class="fas fa-file-pdf"></i></button>';
                 if (item.Pagada) {
                     // Un botón desactivado no muestra su title: el aviso va en el contenedor.
                     html += '<span class="lp-revertir-bloqueado" tabindex="0" title="Ya tiene su pago o descuento registrado: anúlelo primero en Saldos de conductores para poder revertir.">' +
                         '<button type="button" class="sgv-btn-icono peligro" disabled aria-label="Revertir aprobación (anule primero el pago en Saldos de conductores)"><i class="fas fa-undo"></i></button></span>';
                 } else {
-                    html += '<button type="button" class="sgv-btn-icono peligro" onclick="abrirModalRevertir(' + item.IdOrdenViaje + ')" title="Revertir aprobación"><i class="fas fa-undo"></i></button>';
+                    html += '<button type="button" class="sgv-btn-icono peligro" data-accion="abrirModalRevertir" data-id="' + item.IdOrdenViaje + '" title="Revertir aprobación"><i class="fas fa-undo"></i></button>';
                 }
                 html += '</div></td>';
 
@@ -1263,3 +1263,30 @@ function validarFiltrosAprobadasCliente() {
     }
     return true;
 }
+
+// Acciones del marcado (data-accion / data-accion-input / data-accion-change): las despacha
+// SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
+window.SGV = window.SGV || {};
+SGV.acciones = Object.assign(SGV.acciones || {}, {
+    cambiarTab: function (el) { cambiarTab(el.getAttribute('data-tab')); },
+    verDetalleLiquidacion: function (el) { verDetalleLiquidacion(Number(el.getAttribute('data-id'))); },
+    abrirModalAprobar: function (el) { abrirModalAprobar(Number(el.getAttribute('data-id'))); },
+    abrirModalRechazar: function (el) { abrirModalRechazar(Number(el.getAttribute('data-id')), el.getAttribute('data-numero') || ''); },
+    cargarLiquidacionesPorConformar: function () { cargarLiquidacionesPorConformar(); },
+    cargarLiquidacionesAprobadas: function () { cargarLiquidacionesAprobadas(); },
+    limpiarFiltrosAprobadas: function () { limpiarFiltrosAprobadas(); },
+    scrollToAjustes: function () { scrollToAjustes(); return false; },
+    toggleCorregirSalida: function () { toggleCorregirSalida(); },
+    corregirSalidaDesdeModal: function () { corregirSalidaDesdeModal(); },
+    actualizarBalanceAjustado: function () { actualizarBalanceAjustado(); },
+    imprimirDetalle: function () { imprimirDetalle(); },
+    aprobarDesdeModal: function () { aprobarDesdeModal(); },
+    validarRechazo: function () { return validarRechazo(); },
+    confirmarReversion: function () { confirmarReversion(); },
+    confirmarRetiroEnvio: function () { confirmarRetiroEnvio(); },
+    toggleDetail: function (el) { toggleDetail(el); },
+    aplicarEntregasALaTabla: function () { aplicarEntregasALaTabla(); },
+    descargarPdfOrdenViaje: function (el) { descargarPdfOrdenViaje(Number(el.getAttribute('data-id'))); },
+    abrirModalRetirarEnvio: function (el) { abrirModalRetirarEnvio(Number(el.getAttribute('data-id'))); },
+    abrirModalRevertir: function (el) { abrirModalRevertir(Number(el.getAttribute('data-id'))); }
+});

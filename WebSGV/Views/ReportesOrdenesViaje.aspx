@@ -30,15 +30,15 @@
         <div class="row mb-3">
             <div class="col-12">
                 <div class="tabs-navigation">
-                    <button type="button" class="tab-btn tab-btn-active" id="tabLiquidaciones" onclick="cambiarTab('liquidaciones')">
+                    <button type="button" class="tab-btn tab-btn-active" id="tabLiquidaciones" data-accion="cambiarTab" data-tab="liquidaciones">
                         Liquidaciones
                         <asp:Label ID="lblTotalRegistros" runat="server" CssClass="sgv-tab-contador" Text="0"></asp:Label>
                     </button>
-                    <button type="button" class="tab-btn" id="tabViajesActivos" onclick="cambiarTab('viajesActivos')">
+                    <button type="button" class="tab-btn" id="tabViajesActivos" data-accion="cambiarTab" data-tab="viajesActivos">
                         Viajes activos sin liquidar
                         <asp:Label ID="lblCountViajesActivos" runat="server" CssClass="sgv-tab-contador" Text="0"></asp:Label>
                     </button>
-                    <button type="button" class="tab-btn" id="tabPersonalizado" onclick="cambiarTab('personalizado')">
+                    <button type="button" class="tab-btn" id="tabPersonalizado" data-accion="cambiarTab" data-tab="personalizado">
                         Reporte personalizado
                     </button>
                 </div>
@@ -96,10 +96,10 @@
                     <div class="row mt-2">
                         <div class="col-md-12">
                             <div class="d-flex" style="gap:0.5rem;">
-                                <button type="button" class="btn btn-export btn-export-excel" onclick="exportarLiquidaciones()">
+                                <button type="button" class="btn btn-export btn-export-excel" data-accion="exportarLiquidaciones">
                                     <i class="fas fa-file-excel mr-1"></i>Exportar Excel
                                 </button>
-                                <button type="button" class="btn btn-export btn-export-pdf" onclick="generarPDFLiquidaciones()">
+                                <button type="button" class="btn btn-export btn-export-pdf" data-accion="generarPDFLiquidaciones">
                                     <i class="fas fa-file-pdf mr-1"></i>Exportar PDF
                                 </button>
                             </div>
@@ -223,7 +223,7 @@
                                 </asp:TemplateField>
                                 <asp:TemplateField HeaderText="ACCIONES">
                                     <ItemTemplate>
-                                        <button type="button" class="btn btn-info-action" onclick='verDetalleOrden(<%#: Eval("IdOrdenViaje") %>)' title="Ver detalle">
+                                        <button type="button" class="btn btn-info-action" data-accion="verDetalleOrden" data-id='<%#: Eval("IdOrdenViaje") %>' title="Ver detalle">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                     </ItemTemplate>
@@ -281,10 +281,10 @@
                     <div class="row mt-2">
                         <div class="col-md-12">
                             <div class="d-flex" style="gap:0.5rem;">
-                                <button type="button" class="btn btn-export btn-export-excel" onclick="exportarViajesActivos('excel')">
+                                <button type="button" class="btn btn-export btn-export-excel" data-accion="exportarViajesActivos" data-formato="excel">
                                     <i class="fas fa-file-excel mr-1"></i>Exportar Excel
                                 </button>
-                                <button type="button" class="btn btn-export btn-export-pdf" onclick="exportarViajesActivos('pdf')">
+                                <button type="button" class="btn btn-export btn-export-pdf" data-accion="exportarViajesActivos" data-formato="pdf">
                                     <i class="fas fa-file-pdf mr-1"></i>Exportar PDF
                                 </button>
                             </div>
@@ -478,10 +478,10 @@
                             <i class="fas fa-columns mr-2"></i>Columnas del Reporte
                         </h5>
                         <div>
-                            <button type="button" class="btn btn-sm btn-secondary-custom" onclick="marcarTodasColumnas(true)">
+                            <button type="button" class="btn btn-sm btn-secondary-custom" data-accion="marcarTodasColumnas" data-marcar="true">
                                 <i class="fas fa-check-square mr-1"></i>Marcar todas
                             </button>
-                            <button type="button" class="btn btn-sm btn-secondary-custom ml-1" onclick="marcarTodasColumnas(false)">
+                            <button type="button" class="btn btn-sm btn-secondary-custom ml-1" data-accion="marcarTodasColumnas" data-marcar="false">
                                 <i class="fas fa-square mr-1"></i>Desmarcar todas
                             </button>
                         </div>
@@ -606,10 +606,10 @@
                             Incluye las liquidaciones en el estado elegido (con "Todos", en cualquier estado).
                         </div>
                         <div class="d-flex" style="gap:0.5rem;">
-                            <button type="button" class="btn btn-export btn-export-excel" onclick="generarPersonalizado('excel')">
+                            <button type="button" class="btn btn-export btn-export-excel" data-accion="generarPersonalizado" data-formato="excel">
                                 <i class="fas fa-file-excel mr-1"></i>Generar Excel
                             </button>
-                            <button type="button" class="btn btn-export btn-export-pdf" onclick="generarPersonalizado('pdf')">
+                            <button type="button" class="btn btn-export btn-export-pdf" data-accion="generarPersonalizado" data-formato="pdf">
                                 <i class="fas fa-file-pdf mr-1"></i>Generar PDF
                             </button>
                         </div>

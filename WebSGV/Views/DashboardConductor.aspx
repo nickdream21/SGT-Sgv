@@ -86,7 +86,7 @@
                             <div><dt>Días en ruta</dt><dd><asp:Label ID="lblDiasRuta" runat="server"></asp:Label></dd></div>
                             <div><dt>Despachos</dt><dd><asp:Label ID="lblCantidadDespachos" runat="server"></asp:Label></dd></div>
                         </dl>
-                        <button type="button" class="dc-btn dc-btn-primario dc-btn-bloque" onclick="irALiquidar()">
+                        <button type="button" class="dc-btn dc-btn-primario dc-btn-bloque" data-accion="irALiquidar">
                             Liquidar mi viaje
                         </button>
                     </section>
@@ -187,7 +187,7 @@
                             <div class="dc-gasto">
                                 <div class="dc-gasto-cab">
                                     <label for="combustibleSoles">Combustible</label>
-                                    <button type="button" class="dc-nota-btn" onclick="toggleNota(this)">Nota</button>
+                                    <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
                                     <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="combustibleSoles" name="combustibleSoles"></div>
@@ -199,7 +199,7 @@
                             <div class="dc-gasto">
                                 <div class="dc-gasto-cab">
                                     <label for="alimentacionSoles">Alimentación</label>
-                                    <button type="button" class="dc-nota-btn" onclick="toggleNota(this)">Nota</button>
+                                    <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
                                     <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="alimentacionSoles" name="alimentacionSoles"></div>
@@ -211,7 +211,7 @@
                             <div class="dc-gasto solo-intl">
                                 <div class="dc-gasto-cab">
                                     <label for="peajesNacSoles">Peajes en Perú</label>
-                                    <button type="button" class="dc-nota-btn" onclick="toggleNota(this)">Nota</button>
+                                    <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
                                     <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="peajesNacSoles" name="peajesNacSoles"></div>
@@ -222,7 +222,7 @@
                             <div class="dc-gasto solo-intl">
                                 <div class="dc-gasto-cab">
                                     <label for="peajesExtDolares">Peajes en Ecuador</label>
-                                    <button type="button" class="dc-nota-btn" onclick="toggleNota(this)">Nota</button>
+                                    <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
                                     <div class="dc-monto"><span>$</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-dolares" id="peajesExtDolares" name="peajesExtDolares"></div>
@@ -233,7 +233,7 @@
                             <div class="dc-gasto">
                                 <div class="dc-gasto-cab">
                                     <label for="hospedajeSoles">Hospedaje</label>
-                                    <button type="button" class="dc-nota-btn" onclick="toggleNota(this)">Nota</button>
+                                    <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
                                     <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="hospedajeSoles" name="hospedajeSoles"></div>
@@ -245,7 +245,7 @@
                             <div class="dc-gasto">
                                 <div class="dc-gasto-cab">
                                     <label for="movilidadSoles">Movilidad</label>
-                                    <button type="button" class="dc-nota-btn" onclick="toggleNota(this)">Nota</button>
+                                    <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
                                     <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="movilidadSoles" name="movilidadSoles"></div>
@@ -257,7 +257,7 @@
                             <div class="dc-gasto">
                                 <div class="dc-gasto-cab">
                                     <label for="encapadaSoles">Encarpada / desencarpada</label>
-                                    <button type="button" class="dc-nota-btn" onclick="toggleNota(this)">Nota</button>
+                                    <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
                                     <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="encapadaSoles" name="encapadaSoles"></div>
@@ -269,7 +269,7 @@
                             <div class="dc-gasto">
                                 <div class="dc-gasto-cab">
                                     <label for="reparacionesSoles">Reparaciones y varios</label>
-                                    <button type="button" class="dc-nota-btn" onclick="toggleNota(this)">Nota</button>
+                                    <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
                                     <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="reparacionesSoles" name="reparacionesSoles"></div>
@@ -281,7 +281,7 @@
                             <div class="dc-gasto">
                                 <div class="dc-gasto-cab">
                                     <label for="apoyoSeguridadSoles">Apoyo / seguridad</label>
-                                    <button type="button" class="dc-nota-btn" onclick="toggleNota(this)">Nota</button>
+                                    <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
                                     <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="apoyoSeguridadSoles" name="apoyoSeguridadSoles"></div>
@@ -293,7 +293,7 @@
 
                         <div id="gastosAdicionalesBody"></div>
 
-                        <button type="button" class="dc-btn dc-btn-linea dc-btn-bloque" onclick="agregarGasto()">
+                        <button type="button" class="dc-btn dc-btn-linea dc-btn-bloque" data-accion="agregarGasto">
                             <i class="fas fa-plus"></i>Agregar otro gasto
                         </button>
                     </section>
@@ -311,7 +311,7 @@
                             <span class="dc-barra-lbl">Total gastos</span>
                             <span class="dc-barra-num"><span id="totalGastosSoles">S/ 0.00</span><span id="totalGastosDolares" class="solo-intl"> · $ 0.00</span></span>
                         </div>
-                        <button type="button" class="dc-btn dc-btn-primario" onclick="abrirRevision()">Revisar y enviar</button>
+                        <button type="button" class="dc-btn dc-btn-primario" data-accion="abrirRevision">Revisar y enviar</button>
                     </div>
 
                     <!-- Revisión antes de enviar -->
@@ -332,7 +332,7 @@
                                     <button type="button" class="dc-btn dc-btn-linea" data-dismiss="modal">Corregir</button>
                                     <asp:Button ID="btnEnviarLiquidacion" runat="server" Text="Enviar y firmar"
                                         CssClass="dc-btn dc-btn-primario" OnClick="btnEnviarLiquidacion_Click"
-                                        OnClientClick="return confirmarEnvioLiquidacion(this);" />
+                                        data-accion="confirmarEnvioLiquidacion" />
                                 </div>
                             </div>
                         </div>
@@ -390,12 +390,12 @@
                                 <asp:PlaceHolder runat="server" Visible='<%# (string)Eval("Estado") == "POR_CONFORMAR" %>'>
                                     <a class="dc-btn dc-btn-primario dc-btn-chico" href='ConformarLiquidacion.aspx?id=<%#: Eval("IdOrdenViaje") %>'>Revisar y firmar</a>
                                 </asp:PlaceHolder>
-                                <button type="button" class="dc-btn dc-btn-linea dc-btn-chico" onclick='verDetalleLiquidacion(<%#: Eval("IdOrdenViaje") %>)'>Ver</button>
+                                <button type="button" class="dc-btn dc-btn-linea dc-btn-chico" data-accion="verDetalleLiquidacion" data-id='<%#: Eval("IdOrdenViaje") %>'>Ver</button>
                                 <asp:PlaceHolder runat="server" Visible='<%# (bool)Eval("Firmada") %>'>
                                     <a class="dc-btn dc-btn-linea dc-btn-chico" target="_blank" rel="noopener" href='DescargarPdfOrdenViaje.aspx?id=<%#: Eval("IdOrdenViaje") %>' title="Documento firmado vigente">PDF</a>
                                 </asp:PlaceHolder>
                                 <asp:PlaceHolder runat="server" Visible='<%# (string)Eval("Estado") == "PENDIENTE" && !(bool)Eval("Revisada") %>'>
-                                    <button type="button" class="dc-btn dc-btn-alerta dc-btn-chico" onclick='abrirModalRetirar(<%#: Eval("IdOrdenViaje") %>)'>Retirar</button>
+                                    <button type="button" class="dc-btn dc-btn-alerta dc-btn-chico" data-accion="abrirModalRetirar" data-id='<%#: Eval("IdOrdenViaje") %>'>Retirar</button>
                                 </asp:PlaceHolder>
                             </div>
                         </article>
@@ -427,7 +427,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="dc-btn dc-btn-linea" data-dismiss="modal">Cancelar</button>
-                    <button type="button" id="btnConfirmarRetirar" class="dc-btn dc-btn-alerta" onclick="confirmarRetirar()">Sí, retirar</button>
+                    <button type="button" id="btnConfirmarRetirar" class="dc-btn dc-btn-alerta" data-accion="confirmarRetirar">Sí, retirar</button>
                 </div>
             </div>
         </div>

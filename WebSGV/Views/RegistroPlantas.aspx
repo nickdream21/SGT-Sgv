@@ -75,7 +75,7 @@
                         <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Plantas registradas</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
                             style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_plantas"
-                            oninput="filtrarTabla(this.value,'contenedorPlantas')">
+                            data-accion-input="filtrarTabla" data-contenedor="contenedorPlantas">
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive" id="contenedorPlantas">

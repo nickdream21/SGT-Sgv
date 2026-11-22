@@ -78,7 +78,7 @@
                             <div class="row align-items-end">
                                 <div class="col-md-4 form-group">
                                     <label class="font-weight-bold">Tipo documento:</label>
-                                    <asp:DropDownList ID="ddlTipoDocumento" runat="server" CssClass="form-control" onchange="mostrarCampoDocumento()">
+                                    <asp:DropDownList ID="ddlTipoDocumento" runat="server" CssClass="form-control" data-accion-change="mostrarCampoDocumento">
                                         <asp:ListItem>DNI</asp:ListItem>
                                         <asp:ListItem>Carnet de Extranjería</asp:ListItem>
                                     </asp:DropDownList>
@@ -88,7 +88,7 @@
                                     <div class="input-group" data-enter="<%= btnBuscarDNI.ClientID %>">
                                         <asp:TextBox ID="txtDNI" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="8" placeholder="8 dígitos"></asp:TextBox>
                                         <div class="input-group-append">
-                                            <asp:Button ID="btnBuscarDNI" runat="server" CssClass="btn btn-secondary" Text="Buscar" OnClientClick="buscarPorDNI(); return false;" />
+                                            <asp:Button ID="btnBuscarDNI" runat="server" CssClass="btn btn-secondary" Text="Buscar" data-accion="buscarPorDNI" />
                                         </div>
                                     </div>
                                 </div>
@@ -149,7 +149,7 @@
                         <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Conductores registrados</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
                             style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_conductores"
-                            oninput="filtrarTabla(this.value,'contenedorConductores')">
+                            data-accion-input="filtrarTabla" data-contenedor="contenedorConductores">
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive" id="contenedorConductores">

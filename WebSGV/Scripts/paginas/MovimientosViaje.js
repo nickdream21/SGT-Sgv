@@ -34,3 +34,10 @@
         $('#modalAnular').modal('show');
     };
 })();
+
+// Acciones del marcado (data-accion / data-accion-input / data-accion-change): las despacha
+// SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
+window.SGV = window.SGV || {};
+SGV.acciones = Object.assign(SGV.acciones || {}, {
+    abrirAnular: function (el) { window.abrirAnular(Number(el.getAttribute('data-id'))); }
+});

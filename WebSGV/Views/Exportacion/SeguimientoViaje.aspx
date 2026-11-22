@@ -16,7 +16,7 @@
                 <asp:Button ID="btnExportar" runat="server" Text="Exportar a STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click" />
                 <asp:Button ID="btnEstado" runat="server" CssClass="sx-btn" CausesValidation="false" OnClick="btnEstado_Click" />
                 <asp:Button ID="btnActualizarGps" runat="server" Text="Actualizar GPS" CssClass="sx-btn sx-btn-primario" CausesValidation="false"
-                    OnClick="btnActualizarGps_Click" OnClientClick="this.value='Consultando el GPS…';" UseSubmitBehavior="false" />
+                    OnClick="btnActualizarGps_Click" data-accion="avisarConsultaGps" UseSubmitBehavior="false" />
             </asp:Panel>
         </div>
 

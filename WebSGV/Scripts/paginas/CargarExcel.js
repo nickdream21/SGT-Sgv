@@ -36,3 +36,15 @@ dropZone.addEventListener('drop', function(e) {
     fileUpload.files = e.dataTransfer.files;
     updateFileName(fileUpload);
 });
+
+// Acciones del marcado (data-accion / data-accion-input / data-accion-change): las despacha
+// SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
+window.SGV = window.SGV || {};
+SGV.acciones = Object.assign(SGV.acciones || {}, {
+    // Clic en la zona: abre el selector. El clic que eso produce en el propio input no se repite.
+    elegirArchivo: function (el, e) {
+        var input = document.getElementById(SGV.fileUpload);
+        if (input && e.target !== input) input.click();
+    },
+    mostrarArchivoElegido: function (el) { updateFileName(el); }
+});

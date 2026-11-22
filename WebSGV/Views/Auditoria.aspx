@@ -215,7 +215,7 @@
                             <asp:TemplateField HeaderText="DETALLE" HeaderStyle-Width="80">
                                 <ItemTemplate>
                                     <button type="button" class="btn btn-outline-info btn-sm aud-btn-detalle"
-                                        onclick='mostrarDetalle(<%#: Eval("IdAuditoria") %>)'
+                                        data-accion="mostrarDetalle" data-id='<%#: Eval("IdAuditoria") %>'
                                         data-anterior='<%# Server.HtmlEncode(Eval("ValoresAnteriores")?.ToString() ?? "") %>'
                                         data-nuevo='<%# Server.HtmlEncode(Eval("ValoresNuevos")?.ToString() ?? "") %>'
                                         data-desc='<%# Server.HtmlEncode(Eval("Descripcion")?.ToString() ?? "") %>'

@@ -203,3 +203,16 @@ function validarFiltrosPersonalizados(fechaDesde, fechaHasta, estado, idConducto
     if (!titulo || titulo.trim().length < 5 || titulo.trim().length > 120) { mostrarErrorCampo('errPersTitulo', 'El título debe tener entre 5 y 120 caracteres.'); ok = false; }
     return ok;
 }
+
+// Acciones del marcado (data-accion / data-accion-input / data-accion-change): las despacha
+// SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
+window.SGV = window.SGV || {};
+SGV.acciones = Object.assign(SGV.acciones || {}, {
+    cambiarTab: function (el) { cambiarTab(el.getAttribute('data-tab')); },
+    exportarLiquidaciones: function () { exportarLiquidaciones(); },
+    generarPDFLiquidaciones: function () { generarPDFLiquidaciones(); },
+    verDetalleOrden: function (el) { verDetalleOrden(Number(el.getAttribute('data-id'))); },
+    exportarViajesActivos: function (el) { exportarViajesActivos(el.getAttribute('data-formato')); },
+    marcarTodasColumnas: function (el) { marcarTodasColumnas(el.getAttribute('data-marcar') === 'true'); },
+    generarPersonalizado: function (el) { generarPersonalizado(el.getAttribute('data-formato')); }
+});

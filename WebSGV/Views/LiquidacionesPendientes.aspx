@@ -21,17 +21,17 @@
 
         <!-- TABS DE NAVEGACIÓN -->
         <div class="sgv-tabs">
-            <button type="button" class="sgv-tab activo" id="tabPendientes" onclick="cambiarTab('pendientes')">
+            <button type="button" class="sgv-tab activo" id="tabPendientes" data-accion="cambiarTab" data-tab="pendientes">
                 Pendientes de aprobación
                 <asp:Label ID="lblTotalPendientes" runat="server" CssClass="sgv-tab-contador" Text="0"></asp:Label>
                 <asp:Label ID="lblTotalUrgentes" runat="server" CssClass="sgv-tab-alerta" ToolTip="Liquidaciones esperando más de 24 horas"></asp:Label>
             </button>
-            <button type="button" class="sgv-tab" id="tabPorConformar" onclick="cambiarTab('porConformar')"
+            <button type="button" class="sgv-tab" id="tabPorConformar" data-accion="cambiarTab" data-tab="porConformar"
                 title="Revisadas y enviadas al conductor: esperan que firme su conformidad">
                 Esperando conformidad
                 <span class="sgv-tab-contador" id="lblTotalPorConformar"></span>
             </button>
-            <button type="button" class="sgv-tab" id="tabAprobadas" onclick="cambiarTab('aprobadas')">
+            <button type="button" class="sgv-tab" id="tabAprobadas" data-accion="cambiarTab" data-tab="aprobadas">
                 Control de aprobadas
             </button>
         </div>
@@ -100,7 +100,7 @@
         <div class="sgv-panel sgv-panel-acento">
             <div class="sgv-panel-cab">
                 <h5>Liquidaciones pendientes</h5>
-                <button type="button" class="btn btn-sm btn-light border" onclick="location.reload()">
+                <button type="button" class="btn btn-sm btn-light border" data-accion="recargarPagina">
                     <i class="fas fa-sync-alt mr-1"></i>Actualizar
                 </button>
             </div>
@@ -169,19 +169,19 @@
                                 <ItemTemplate>
                                     <div class="sgv-acciones">
                                         <button type="button" class="sgv-btn-icono info"
-                                            onclick="verDetalleLiquidacion(<%#: Eval("IdOrdenViaje") %>)"
+                                            data-accion="verDetalleLiquidacion" data-id='<%#: Eval("IdOrdenViaje") %>'
                                             title="Ver detalle">
                                             <i class="fas fa-eye"></i>
                                         </button>
 
                                         <button type="button" class="sgv-btn-icono ok"
-                                            onclick="abrirModalAprobar(<%#: Eval("IdOrdenViaje") %>)"
+                                            data-accion="abrirModalAprobar" data-id='<%#: Eval("IdOrdenViaje") %>'
                                             title="Aprobar liquidación">
                                             <i class="fas fa-check"></i>
                                         </button>
 
                                         <button type="button" class="sgv-btn-icono peligro"
-                                            onclick="abrirModalRechazar(<%#: Eval("IdOrdenViaje") %>, '<%#: HttpUtility.JavaScriptStringEncode(Convert.ToString(Eval("NumeroOrdenViaje"))) %>')"
+                                            data-accion="abrirModalRechazar" data-id='<%#: Eval("IdOrdenViaje") %>' data-numero='<%#: Eval("NumeroOrdenViaje") %>'
                                             title="Rechazar liquidación">
                                             <i class="fas fa-times"></i>
                                         </button>
@@ -206,7 +206,7 @@
             <div class="sgv-panel sgv-panel-acento">
                 <div class="sgv-panel-cab">
                     <h5>Esperando la conformidad del conductor <span class="sgv-panel-nota ml-2"><span id="lblResultadosPorConformar">0</span> resultados</span></h5>
-                    <button type="button" class="btn btn-sm btn-light border" onclick="cargarLiquidacionesPorConformar()">
+                    <button type="button" class="btn btn-sm btn-light border" data-accion="cargarLiquidacionesPorConformar">
                         <i class="fas fa-sync-alt mr-1"></i>Actualizar
                     </button>
                 </div>
@@ -277,8 +277,8 @@
                             <div class="form-group">
                                 <label class="form-label">&nbsp;</label>
                                 <div class="d-flex">
-                                    <button type="button" id="btnBuscarAprobadas" class="btn btn-primary-custom btn-block mr-2" onclick="cargarLiquidacionesAprobadas()">Buscar</button>
-                                    <button type="button" class="btn btn-secondary-custom btn-block" onclick="limpiarFiltrosAprobadas()">Limpiar</button>
+                                    <button type="button" id="btnBuscarAprobadas" class="btn btn-primary-custom btn-block mr-2" data-accion="cargarLiquidacionesAprobadas">Buscar</button>
+                                    <button type="button" class="btn btn-secondary-custom btn-block" data-accion="limpiarFiltrosAprobadas">Limpiar</button>
                                 </div>
                             </div>
                         </div>
@@ -289,7 +289,7 @@
             <div class="sgv-panel sgv-panel-acento">
                 <div class="sgv-panel-cab">
                     <h5>Liquidaciones aprobadas <span class="sgv-panel-nota ml-2"><span id="lblTotalAprobadas">0</span> resultados</span></h5>
-                    <button type="button" class="btn btn-sm btn-light border" onclick="cargarLiquidacionesAprobadas()">
+                    <button type="button" class="btn btn-sm btn-light border" data-accion="cargarLiquidacionesAprobadas">
                         <i class="fas fa-sync-alt mr-1"></i>Actualizar
                     </button>
                 </div>
@@ -360,7 +360,7 @@
                         <div class="agb-content">
                             <div class="agb-text">
                                 <strong>Revisión para aprobación</strong>
-                                <span>Revise los gastos declarados por el conductor. Registre el <a href="#" onclick="scrollToAjustes(); return false;" class="agb-link">dinero que se le entregó</a> y, si aplica, descuentos o reintegros. Luego use <strong>Aprobar y enviar al conductor</strong>: el conductor revisará la liquidación final y firmará su conformidad.</span>
+                                <span>Revise los gastos declarados por el conductor. Registre el <a href="#" data-accion="scrollToAjustes" class="agb-link">dinero que se le entregó</a> y, si aplica, descuentos o reintegros. Luego use <strong>Aprobar y enviar al conductor</strong>: el conductor revisará la liquidación final y firmará su conformidad.</span>
                             </div>
                         </div>
                     </div>
@@ -418,7 +418,7 @@
                                     <span id="detalleSalidaValor">—</span>
                                 </span>
                             </div>
-                            <button type="button" class="btn-corregir-salida" onclick="toggleCorregirSalida()">
+                            <button type="button" class="btn-corregir-salida" data-accion="toggleCorregirSalida">
                                 <i class="fas fa-pen mr-1"></i>Corregir
                             </button>
                         </div>
@@ -440,8 +440,8 @@
                                 <small class="text-danger" id="errorCorregirSalidaMotivo" style="display:none;"></small>
                             </div>
                             <div class="salida-edit-actions">
-                                <button type="button" class="btn btn-sm btn-light" onclick="toggleCorregirSalida()">Cancelar</button>
-                                <button type="button" class="btn btn-sm btn-primary" id="btnGuardarCorregirSalida" onclick="corregirSalidaDesdeModal()">
+                                <button type="button" class="btn btn-sm btn-light" data-accion="toggleCorregirSalida">Cancelar</button>
+                                <button type="button" class="btn btn-sm btn-primary" id="btnGuardarCorregirSalida" data-accion="corregirSalidaDesdeModal">
                                     <i class="fas fa-save mr-1"></i>Guardar corrección
                                 </button>
                             </div>
@@ -562,26 +562,26 @@
                                     <tbody>
                                         <tr data-ingreso="Despacho">
                                             <td>Adelanto para el viaje</td>
-                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
-                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
+                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
                                             <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
                                         <tr data-ingreso="Mensualidad">
                                             <td>Mensualidad</td>
-                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
-                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
+                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
                                             <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
                                         <tr data-ingreso="Prestamo">
                                             <td>Préstamo</td>
-                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
-                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
+                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
                                             <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
                                         <tr data-ingreso="OtrosIngresos" data-ultima="1">
                                             <td>Otros autorizados</td>
-                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
-                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" oninput="actualizarBalanceAjustado()"></td>
+                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
                                             <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
                                     </tbody>
@@ -622,13 +622,13 @@
                                             <label class="form-label">Soles (S/)</label>
                                             <input type="number" id="ajusteDescuentoSoles" class="form-control form-control-sm"
                                                 placeholder="0.00" step="0.01" min="0" value=""
-                                                oninput="actualizarBalanceAjustado()">
+                                                data-accion-input="actualizarBalanceAjustado">
                                         </div>
                                         <div class="col-6">
                                             <label class="form-label">Dólares ($)</label>
                                             <input type="number" id="ajusteDescuentoDolares" class="form-control form-control-sm"
                                                 placeholder="0.00" step="0.01" min="0" value=""
-                                                oninput="actualizarBalanceAjustado()">
+                                                data-accion-input="actualizarBalanceAjustado">
                                         </div>
                                     </div>
                                     <div class="mt-2" id="grupoMotivoDescuento">
@@ -649,13 +649,13 @@
                                             <label class="form-label">Soles (S/)</label>
                                             <input type="number" id="ajusteReintegroSoles" class="form-control form-control-sm"
                                                 placeholder="0.00" step="0.01" min="0" value=""
-                                                oninput="actualizarBalanceAjustado()">
+                                                data-accion-input="actualizarBalanceAjustado">
                                         </div>
                                         <div class="col-6">
                                             <label class="form-label">Dólares ($)</label>
                                             <input type="number" id="ajusteReintegroDolares" class="form-control form-control-sm"
                                                 placeholder="0.00" step="0.01" min="0" value=""
-                                                oninput="actualizarBalanceAjustado()">
+                                                data-accion-input="actualizarBalanceAjustado">
                                         </div>
                                     </div>
                                     <div class="mt-2" id="grupoMotivoReintegro">
@@ -698,11 +698,11 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary-custom" onclick="imprimirDetalle()">
+                    <button type="button" class="btn btn-primary-custom" data-accion="imprimirDetalle">
                         <i class="fas fa-print mr-1"></i>Imprimir
                     </button>
                     <button type="button" id="btnAprobarDesdeModal" class="btn btn-success-custom"
-                        onclick="aprobarDesdeModal()" style="display:none;">
+                        data-accion="aprobarDesdeModal" style="display:none;">
                         <i class="fas fa-paper-plane mr-1"></i>Aprobar y enviar al conductor
                     </button>
                 </div>
@@ -747,7 +747,7 @@
                         CssClass="btn btn-danger-custom" 
                         Text="Rechazar liquidación"
                         OnClick="btnConfirmarRechazo_Click"
-                        OnClientClick="return validarRechazo();" />
+                        data-accion="validarRechazo" />
                 </div>
             </div>
         </div>
@@ -787,7 +787,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger-custom" id="btnConfirmarReversion" onclick="confirmarReversion()">
+                    <button type="button" class="btn btn-danger-custom" id="btnConfirmarReversion" data-accion="confirmarReversion">
                         <i class="fas fa-undo mr-1"></i>Confirmar reversión
                     </button>
                 </div>
@@ -823,7 +823,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary-custom" id="btnConfirmarRetiro" onclick="confirmarRetiroEnvio()">
+                    <button type="button" class="btn btn-primary-custom" id="btnConfirmarRetiro" data-accion="confirmarRetiroEnvio">
                         <i class="fas fa-undo mr-1"></i>Retirar envío
                     </button>
                 </div>
