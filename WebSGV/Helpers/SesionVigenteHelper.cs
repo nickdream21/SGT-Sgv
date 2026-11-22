@@ -113,6 +113,31 @@ namespace WebSGV.Helpers
         private static string NormalizarRol(string rol) => (rol ?? "").Trim().ToUpperInvariant();
 
         /// <summary>
+        /// Duración máxima de una sesión desde que se inició, aunque haya actividad (E4-12). La inactividad
+        /// la corta antes el <c>timeout</c> de 30 min de <c>sessionState</c>.
+        /// </summary>
+        public static readonly TimeSpan DuracionMaxima = TimeSpan.FromHours(12);
+
+        /// <summary>Código de <c>Login.aspx?error=</c> para una sesión cerrada por <see cref="DuracionMaxima"/>.</summary>
+        public const string CodigoSesionVencida = "sesion_vencida";
+
+        public const string MensajeDuracionMaxima =
+            "Tu sesión llegó a su duración máxima (12 horas). Vuelve a ingresar.";
+
+        /// <summary>
+        /// True si la sesión ya pasó <see cref="DuracionMaxima"/> desde <paramref name="inicioUtc"/>. Sin hora de
+        /// inicio (sesión abierta antes de este control) también: ante la duda, se cierra, como una sesión sin
+        /// sello. Un inicio en el futuro (reloj que volvió atrás) no la cierra: no hay cómo medirla mejor y la
+        /// inactividad de 30 min sigue valiendo. Lógica pura (reloj inyectado).
+        /// </summary>
+        public static bool SuperoDuracionMaxima(DateTime? inicioUtc, DateTime ahoraUtc)
+        {
+            if (!inicioUtc.HasValue)
+                return true;
+            return ahoraUtc - inicioUtc.Value >= DuracionMaxima;
+        }
+
+        /// <summary>
         /// Clave de sesión (<see cref="DateTime"/> UTC): cuándo <c>Login.aspx?error=sesion</c> mandó por última vez
         /// una sesión vigente a su inicio. Si vuelve a llegar antes de <see cref="VentanaReboteLogin"/>, el inicio
         /// la rechazó (bucle Login ↔ página protegida) y se cierra.

@@ -76,13 +76,15 @@
                         <ItemTemplate>
                             <asp:Button runat="server" Text="Editar" CssClass="btn btn-sm btn-info mr-1"
                                 CommandName="EditarUsuario" CommandArgument='<%# Eval("idUsuario") %>' />
-                            <asp:Button runat="server"
+                            <%-- Fila propia (E4-12): sin Desactivar ni Contraseña; el servidor también lo rechaza. --%>
+                            <asp:Button runat="server" Visible='<%# AccionesFila(Eval("idUsuario")).PuedeDesactivar %>'
                                 Text='<%# (bool)Eval("activo") ? "Desactivar" : "Activar" %>'
                                 CssClass='<%# (bool)Eval("activo") ? "btn btn-sm btn-warning mr-1" : "btn btn-sm btn-success mr-1" %>'
                                 CommandName="ToggleActivo" CommandArgument='<%# ArgumentoEstado(Eval("idUsuario"), Eval("activo")) %>'
                                 data-confirmar='<%# ConfirmarCambioEstado(Eval("activo"), Eval("nombreUsuario")) %>'
                                 data-confirmar-peligro='<%# (bool)Eval("activo") ? "true" : "false" %>' />
                             <asp:Button runat="server" Text="Contraseña" CssClass="btn btn-sm btn-secondary"
+                                Visible='<%# AccionesFila(Eval("idUsuario")).PuedeRestablecerContrasena %>'
                                 CommandName="ResetPassword" CommandArgument='<%# Eval("idUsuario") %>' />
                         </ItemTemplate>
                     </asp:TemplateField>
@@ -219,4 +221,52 @@
         </div>
     </div>
 
+    <!-- ======================================================
+         MODAL: Confirmar con la contraseña del administrador (E4-12)
+         ====================================================== -->
+    <div class="modal fade" id="modalReautenticar" tabindex="-1" role="dialog" aria-labelledby="modalReautenticarLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" data-enter="<%= btnConfirmarReaut.ClientID %>">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalReautenticarLabel">
+                        <i class="fas fa-user-shield mr-2"></i>Confirma que eres tú
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <asp:HiddenField ID="hfAccionReaut" runat="server" Value="" />
+                    <p class="mb-3">
+                        Para <asp:Label ID="lblAccionReaut" runat="server" />, escribe tu contraseña.
+                        <span class="text-muted d-block small mt-1">No se volverá a pedir durante <%: (int)WebSGV.Services.Usuarios.AdminUsuariosReglas.VentanaReautenticacion.TotalMinutes %> minutos.</span>
+                    </p>
+
+                    <asp:Panel ID="pnlMensajeReaut" runat="server" Visible="false" CssClass="mb-3">
+                        <asp:Label ID="lblMensajeReaut" runat="server" />
+                    </asp:Panel>
+
+                    <div class="form-group mb-0">
+                        <label for="<%= txtContrasenaAdmin.ClientID %>">Tu contraseña <span class="text-danger">*</span></label>
+                        <asp:TextBox ID="txtContrasenaAdmin" runat="server" CssClass="form-control"
+                            TextMode="Password" autocomplete="current-password" MaxLength="200" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <asp:Button ID="btnConfirmarReaut" runat="server" Text="Confirmar"
+                        CssClass="btn btn-primary" OnClick="btnConfirmarReaut_Click" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
+        var SGV = Object.assign(window.SGV || {}, {
+            hfAccionReaut: '<%= hfAccionReaut.ClientID %>'
+        });
+    </script>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/GestionUsuarios.js") %>"></script>
 </asp:Content>

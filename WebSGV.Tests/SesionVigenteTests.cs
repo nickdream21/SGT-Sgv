@@ -22,6 +22,50 @@ namespace WebSGV.Tests
                 IdConductor = idConductor
             };
 
+        // ── Duración máxima de la sesión (E4-12) ──────────────────────────
+
+        private static readonly DateTime InicioSesion = new DateTime(2026, 11, 22, 8, 0, 0, DateTimeKind.Utc);
+
+        [Fact]
+        public void DuracionMaxima_EsDeDoceHoras()
+        {
+            Assert.Equal(TimeSpan.FromHours(12), SesionVigenteHelper.DuracionMaxima);
+        }
+
+        [Theory]
+        [InlineData(0, false)]
+        [InlineData(11 * 60 + 59, false)]
+        [InlineData(12 * 60, true)]          // a las 12 h justas se cierra
+        [InlineData(30 * 60, true)]
+        [InlineData(-60, false)]             // inicio en el futuro (reloj que volvió atrás): no se mide
+        public void DuracionMaxima_CierraAlCumplirDoceHoras(int minutosDesdeInicio, bool esperado)
+        {
+            Assert.Equal(esperado, SesionVigenteHelper.SuperoDuracionMaxima(InicioSesion, InicioSesion.AddMinutes(minutosDesdeInicio)));
+        }
+
+        [Fact]
+        public void DuracionMaxima_SinHoraDeInicio_SeCierra()
+        {
+            Assert.True(SesionVigenteHelper.SuperoDuracionMaxima(null, InicioSesion));
+        }
+
+        [Fact]
+        public void DuracionMaxima_GlobalLaCompruebaAntesDelSelloYLoginMuestraSuMensaje()
+        {
+            var dir = new System.IO.DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+            while (dir != null && !System.IO.File.Exists(System.IO.Path.Combine(dir.FullName, "WebSGV.sln")))
+                dir = dir.Parent;
+            Assert.NotNull(dir);
+            string global = System.IO.File.ReadAllText(System.IO.Path.Combine(dir.FullName, "WebSGV", "Global.asax.cs"));
+            string login = System.IO.File.ReadAllText(System.IO.Path.Combine(dir.FullName, "WebSGV", "Views", "Login.aspx.cs"));
+
+            int duracion = global.IndexOf("SesionVigenteHelper.SuperoDuracionMaxima(SesionHelper.InicioSesionUtc(sesion), DateTime.UtcNow)", StringComparison.Ordinal);
+            int sello = global.IndexOf("SesionVigenteHelper.ObtenerEstado(", StringComparison.Ordinal);
+            Assert.True(duracion > 0 && duracion < sello, "Global.asax debe cerrar la sesión vencida antes de evaluar el sello.");
+            Assert.Contains("case SesionVigenteHelper.CodigoSesionVencida:", login);
+            Assert.Contains("MostrarMensaje(SesionVigenteHelper.MensajeDuracionMaxima)", login);
+        }
+
         [Fact]
         public void MismosDatos_SigueVigente()
         {

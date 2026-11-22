@@ -70,7 +70,7 @@ namespace WebSGV.Views
                     CerrarSesionActual();
                 }
             }
-            else if (errNormalizado == "sesion_cerrada")
+            else if (errNormalizado == "sesion_cerrada" || errNormalizado == SesionVigenteHelper.CodigoSesionVencida)
             {
                 // Global.asax ya la cerró; por si llega con una sesión, se limpia como antes.
                 if (SesionHelper.HaySesion(Session))
@@ -119,6 +119,9 @@ namespace WebSGV.Views
                             break;
                         case "sesion_cerrada":
                             MostrarMensaje(SesionVigenteHelper.MensajeSesionCerrada);
+                            break;
+                        case SesionVigenteHelper.CodigoSesionVencida:
+                            MostrarMensaje(SesionVigenteHelper.MensajeDuracionMaxima);
                             break;
                     }
                 }

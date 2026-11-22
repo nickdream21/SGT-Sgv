@@ -113,12 +113,25 @@ namespace WebSGV.Views
 
         protected void btnNuevoUsuario_Click(object sender, EventArgs e)
         {
+            // E4-12: un alta pide la contraseña del administrador. Se pide antes de abrir el formulario: la
+            // contraseña del usuario nuevo (campo password) no sobrevive a otro envío de la página.
+            if (!ReautenticacionVigente())
+            {
+                PedirReautenticacion(AccionReautNuevo, "crear un usuario nuevo");
+                return;
+            }
+            AbrirNuevoUsuario();
+        }
+
+        private void AbrirNuevoUsuario()
+        {
             hfIdUsuario.Value       = "0";
             lblTituloModal.Text     = "Nuevo usuario";
             txtNombreUsuario.Text   = "";
             txtNombreUsuario.Enabled = true;
             txtNombre.Text          = "";
             CargarRolesAsignables();   // descarta un rol retirado que dejó la última edición
+            ddlRol.Enabled          = true;
             if (ddlRol.Items.Count > 0)
                 ddlRol.SelectedIndex = 0;
             ddlConductor.SelectedIndex = 0;
@@ -146,9 +159,110 @@ namespace WebSGV.Views
                     CargarUsuarioEnModal(idUsuario);
                     break;
                 case "ResetPassword":
+                    if (AdminUsuariosReglas.EsFilaPropia(idUsuario, SesionHelper.IdUsuarioActual))
+                    {
+                        MostrarMensaje(AdminUsuariosReglas.MensajeRestablecerPropia, "warning");
+                        CargarUsuarios();
+                        break;
+                    }
+                    if (!ReautenticacionVigente())
+                    {
+                        PedirReautenticacion(AccionReautReset + idUsuario.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                            "restablecer la contraseña de otro usuario");
+                        break;
+                    }
                     PrepararResetPassword(idUsuario);
                     break;
             }
+        }
+
+        // ── Reautenticación del administrador (E4-12) ─────────────────────
+
+        /// <summary>Acción pendiente "RESET|id": tras la contraseña, abre el modal de restablecer de ese usuario.</summary>
+        private const string AccionReautReset = "RESET|";
+
+        /// <summary>Acción pendiente: tras la contraseña, vuelve a guardar el modal de usuario (alta o cambio de rol).</summary>
+        private const string AccionReautGuardar = "GUARDAR";
+
+        /// <summary>Acción pendiente: tras la contraseña, abre el formulario de usuario nuevo.</summary>
+        private const string AccionReautNuevo = "NUEVO";
+
+        /// <summary>Acción pendiente "ACTIVAR|id": tras la contraseña, activa esa cuenta de administración.</summary>
+        private const string AccionReautActivar = "ACTIVAR|";
+
+        /// <summary>
+        /// True mientras btnConfirmarReaut_Click retoma un guardado: si era un alta, la contraseña del usuario nuevo
+        /// llega vacía (un campo password no se vuelve a enviar) y se pide escribirla otra vez con ese motivo.
+        /// </summary>
+        private bool _retomandoTrasReautenticacion;
+
+        /// <summary>Acciones de la fila: sin Desactivar ni Contraseña en la del usuario conectado.</summary>
+        protected AccionesFilaUsuario AccionesFila(object idUsuario) =>
+            AdminUsuariosReglas.Decidir(Convert.ToInt32(idUsuario, System.Globalization.CultureInfo.InvariantCulture),
+                SesionHelper.IdUsuarioActual);
+
+        private bool ReautenticacionVigente() =>
+            AdminUsuariosReglas.ReautenticacionVigente(SesionHelper.ReautenticacionAdminUtc(Session), DateTime.UtcNow);
+
+        /// <summary>
+        /// Abre el modal de contraseña del administrador. <paramref name="accion"/> solo elige qué se continúa
+        /// después: esa acción vuelve a validar todo (fila propia, rol, ventana) en el servidor.
+        /// </summary>
+        private void PedirReautenticacion(string accion, string texto)
+        {
+            hfAccionReaut.Value     = accion;
+            lblAccionReaut.Text     = System.Web.HttpUtility.HtmlEncode(texto);
+            txtContrasenaAdmin.Text = "";
+            pnlMensajeReaut.Visible = false;
+            AbrirModal("modalReautenticar");
+        }
+
+        protected void btnConfirmarReaut_Click(object sender, EventArgs e)
+        {
+            int? idActual = SesionHelper.IdUsuarioActual;
+            string error = ReautenticacionHelper.Verificar(idActual ?? 0, txtContrasenaAdmin.Text,
+                PropositoReautenticacion.AdminUsuarios);
+            txtContrasenaAdmin.Text = "";
+            if (error != null)
+            {
+                lblMensajeReaut.Text     = MensajeHtml.Texto(error);
+                lblMensajeReaut.CssClass = "alert alert-danger d-block mb-0";
+                pnlMensajeReaut.Visible  = true;
+                AbrirModal("modalReautenticar");
+                return;
+            }
+
+            SesionHelper.MarcarReautenticacionAdmin(Session, DateTime.UtcNow);
+            string accion = hfAccionReaut.Value ?? "";
+            hfAccionReaut.Value = "";
+
+            if (accion == AccionReautGuardar)
+            {
+                _retomandoTrasReautenticacion = true;
+                btnGuardarUsuario_Click(sender, e);
+                return;
+            }
+            if (accion == AccionReautNuevo)
+            {
+                AbrirNuevoUsuario();
+                return;
+            }
+            if (accion.StartsWith(AccionReautActivar, StringComparison.Ordinal)
+                && int.TryParse(accion.Substring(AccionReautActivar.Length), System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out int idActivar) && idActivar > 0)
+            {
+                CambiarEstadoUsuario(idActivar.ToString(System.Globalization.CultureInfo.InvariantCulture) + "|1");
+                return;
+            }
+            if (accion.StartsWith(AccionReautReset, StringComparison.Ordinal)
+                && int.TryParse(accion.Substring(AccionReautReset.Length), System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out int idReset) && idReset > 0
+                && !AdminUsuariosReglas.EsFilaPropia(idReset, idActual))
+            {
+                PrepararResetPassword(idReset);
+                return;
+            }
+            MostrarMensaje("Contraseña confirmada. Vuelva a elegir la acción.", "info");
         }
 
         private void CargarUsuarioEnModal(int idUsuario)
@@ -174,6 +288,8 @@ namespace WebSGV.Views
             if (itemRol == null)
                 ddlRol.Items.Add(new ListItem(rolUsuario, rolUsuario));
             ddlRol.SelectedValue     = rolUsuario;
+            // Su propio rol no se cambia (E4-12): el servidor lo rechaza igual en btnGuardarUsuario_Click.
+            ddlRol.Enabled           = AdminUsuariosReglas.Decidir(idUsuario, SesionHelper.IdUsuarioActual).PuedeCambiarRol;
             ddlConductor.SelectedIndex = 0;
             if (r["idConductor"] != DBNull.Value)
             {
@@ -199,6 +315,20 @@ namespace WebSGV.Views
                 MostrarMensaje("No se pudo leer la fila; recargue la página.", "warning");
                 CargarUsuarios();
                 return;
+            }
+
+            // E4-12: activar una cuenta de administración pide la contraseña del administrador.
+            if (nuevoActivo && !ReautenticacionVigente())
+            {
+                DataTable dt = DbHelper.ConsultarTabla("SELECT nombreUsuario, rol FROM Usuarios WHERE idUsuario = @id",
+                    DbHelper.Param("@id", idUsuario));
+                if (dt.Rows.Count > 0 && AdminUsuariosReglas.RequiereReautenticacionAlActivar(Convert.ToString(dt.Rows[0]["rol"])))
+                {
+                    PedirReautenticacion(AccionReautActivar + idUsuario.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        "activar la cuenta de administración " + Convert.ToString(dt.Rows[0]["nombreUsuario"]).Trim());
+                    CargarUsuarios();
+                    return;
+                }
             }
 
             try
@@ -292,7 +422,10 @@ namespace WebSGV.Views
                 }
                 if (string.IsNullOrEmpty(contrasena))
                 {
-                    MostrarMensajeModal("Debe ingresar una contraseña para el nuevo usuario.", "danger");
+                    MostrarMensajeModal(_retomandoTrasReautenticacion
+                        ? "Contraseña confirmada. Vuelva a escribir la contraseña del nuevo usuario y pulse Guardar."
+                        : "Debe ingresar una contraseña para el nuevo usuario.",
+                        _retomandoTrasReautenticacion ? "info" : "danger");
                     AbrirModal("modalUsuario");
                     return;
                 }
@@ -344,6 +477,14 @@ namespace WebSGV.Views
                         return;
                     }
 
+                    // E4-12: toda alta exige la contraseña del administrador (vigente: se pidió al abrir el formulario).
+                    // Si venció mientras se llenaba, se pide y btnConfirmarReaut_Click retoma este guardado.
+                    if (AdminUsuariosReglas.RequiereReautenticacionAlGuardar(esAlta: true, cambiaRol: false) && !ReautenticacionVigente())
+                    {
+                        PedirReautenticacion(AccionReautGuardar, "crear el usuario " + nombreUsuario);
+                        return;
+                    }
+
                     string hash = PasswordHelper.HashPassword(contrasena);
                     int idNuevo = Convert.ToInt32(DbHelper.EjecutarEscalar(
                         @"INSERT INTO Usuarios
@@ -375,24 +516,24 @@ namespace WebSGV.Views
                     if (!RolesHelper.PuedeAsignarseRol(rol, rolAnterior))
                         throw new Services.Common.ErrorNegocioException(MensajeRolNoVigente(rol));
 
-                    // Nadie se cambia su propio rol (ni se quita ni se da permisos): lo hace otro administrador de sistema.
-                    if (idUsuario == SecurityHelper.ObtenerIdUsuario()
-                        && !string.Equals(rolAnterior, rol.Trim(), StringComparison.OrdinalIgnoreCase))
-                        throw new Services.Common.ErrorNegocioException("No puede cambiar su propio rol. Pídaselo a otro administrador de sistema.");
+                    bool cambiaRol = !string.Equals(rolAnterior, rol.Trim(), StringComparison.OrdinalIgnoreCase);
 
-                    DbHelper.EjecutarNonQuery(
-                        // Cambiar el rol o el conductor vinculado renueva el sello: cierra sus sesiones abiertas.
-                        @"UPDATE Usuarios
-                          SET selloSesion = CASE WHEN ISNULL(rol, '') <> @rol
-                                                   OR ISNULL(idConductor, -1) <> ISNULL(@idConductor, -1)
-                                                 THEN NEWID() ELSE selloSesion END,
-                              nombre = @nombre, rol = @rol, idConductor = @idConductor
-                          WHERE idUsuario = @id",
-                        DbHelper.Param("@nombre", nombre),
-                        DbHelper.Param("@rol",    rol),
-                        DbHelper.Param("@idConductor", tieneConductor ? (object)idConductor : DBNull.Value),
-                        DbHelper.Param("@id",     idUsuario));
-                    SesionVigenteHelper.InvalidarCache(idUsuario);
+                    // Nadie se cambia su propio rol (ni se quita ni se da permisos): lo hace otro administrador de sistema.
+                    if (cambiaRol && AdminUsuariosReglas.EsFilaPropia(idUsuario, SesionHelper.IdUsuarioActual))
+                        throw new Services.Common.ErrorNegocioException(AdminUsuariosReglas.MensajeCambiarRolPropio);
+
+                    // Cambiar un rol pide la contraseña del administrador (E4-12); los datos del modal siguen en el
+                    // formulario y btnConfirmarReaut_Click vuelve a llamar a este método.
+                    if (AdminUsuariosReglas.RequiereReautenticacionAlGuardar(esAlta: false, cambiaRol: cambiaRol) && !ReautenticacionVigente())
+                    {
+                        PedirReautenticacion(AccionReautGuardar, "cambiar el rol de " + txtNombreUsuario.Text.Trim());
+                        return;
+                    }
+
+                    // Con la guarda del último administrador de sistema (M-066). Cambiar el rol o el conductor
+                    // vinculado renueva el sello: cierra sus sesiones abiertas.
+                    UsuarioEstadoService.ActualizarDatos(idUsuario, nombre, rol,
+                        tieneConductor ? (int?)idConductor : null);
 
                     string Json(string n, string r, object idC) => Newtonsoft.Json.JsonConvert.SerializeObject(new
                     {
@@ -424,6 +565,21 @@ namespace WebSGV.Views
             // Recortadas las dos (se guarda recortada): una de solo espacios queda vacía y se rechaza.
             string nuevaPass     = (txtNuevaPass.Text ?? "").Trim();
             string confirmarPass = (txtConfirmarPass.Text ?? "").Trim();
+
+            // E4-12: el botón no aparece en la fila propia y la ventana se pidió al abrir el modal; se vuelve a
+            // comprobar aquí por si el envío llega igual (o la ventana venció mientras se escribía).
+            if (AdminUsuariosReglas.EsFilaPropia(idUsuario, SesionHelper.IdUsuarioActual))
+            {
+                MostrarMensaje(AdminUsuariosReglas.MensajeRestablecerPropia, "warning");
+                CargarUsuarios();
+                return;
+            }
+            if (!ReautenticacionVigente())
+            {
+                PedirReautenticacion(AccionReautReset + idUsuario.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    "restablecer la contraseña de otro usuario");
+                return;
+            }
 
             try
             {

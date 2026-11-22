@@ -373,6 +373,7 @@
     <Content Include="Content\paginas\SiteMaster.css" />
     <Content Include="Scripts\paginas\Auditoria.js" />
     <Content Include="Scripts\paginas\CargarExcel.js" />
+    <Content Include="Scripts\paginas\GestionUsuarios.js" />
     <Content Include="Scripts\paginas\CatalogoCliente.js" />
     <Content Include="Scripts\paginas\DashboardConductor.js" />
     <Content Include="Scripts\paginas\Exportacion\DashboardExportacion.js" />
@@ -830,6 +831,7 @@
     <Compile Include="Services\Consultas\ConsultaDocumentoService.cs" />
     <Compile Include="Services\Vehiculos\PlacaVehiculo.cs" />
     <Compile Include="Services\Vehiculos\VehiculoService.cs" />
+    <Compile Include="Services\Usuarios\AdminUsuariosReglas.cs" />
     <Compile Include="Services\Usuarios\UsuarioEstadoService.cs" />
     <Compile Include="Views\RegistroClientes.aspx.cs">
       <DependentUpon>RegistroClientes.aspx</DependentUpon>

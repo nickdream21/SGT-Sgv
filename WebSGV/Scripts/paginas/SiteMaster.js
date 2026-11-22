@@ -372,7 +372,8 @@
         if (xhr.status === 401 && r.sesionCerrada) {
             if (SGV.avisar) SGV.avisar(r.Message, { tipo: 'danger' });
             setTimeout(function () {
-                window.location.href = (SGV.urlLogin || '/Views/Login.aspx') + '?error=sesion_cerrada';
+                // codigoLogin: 'sesion_vencida' si llegó a su duración máxima (E4-12).
+                window.location.href = (SGV.urlLogin || '/Views/Login.aspx') + '?error=' + (r.codigoLogin === 'sesion_vencida' ? 'sesion_vencida' : 'sesion_cerrada');
             }, 2500);
         } else if (xhr.status === 403 && r.requiereCambioContrasena) {
             if (SGV.avisar) SGV.avisar(r.Message, { tipo: 'warning' });

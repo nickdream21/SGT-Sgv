@@ -121,6 +121,39 @@ namespace WebSGV.Tests
             }
         }
 
+        // E4-12: la hora de inicio (duración máxima de 12 h) y una sesión nueva sin reautenticación previa.
+        [Fact]
+        public void Iniciar_GuardaLaHoraDeInicioYBorraLaReautenticacionAnterior()
+        {
+            using (var c = new ContextoFalso())
+            {
+                SesionHelper.MarcarReautenticacionAdmin(c.Sesion, DateTime.UtcNow);
+                DateTime antes = DateTime.UtcNow;
+                SesionHelper.Iniciar(c.Sesion, 7, "ADMINISTRADOR DE SISTEMA", "Admin");
+                DateTime despues = DateTime.UtcNow;
+
+                DateTime? inicio = SesionHelper.InicioSesionUtc(c.Sesion);
+                Assert.True(inicio.HasValue && inicio.Value >= antes && inicio.Value <= despues);
+                Assert.Null(SesionHelper.ReautenticacionAdminUtc(c.Sesion));
+
+                DateTime marca = new DateTime(2026, 11, 22, 10, 0, 0, DateTimeKind.Utc);
+                SesionHelper.MarcarReautenticacionAdmin(c.Sesion, marca);
+                Assert.Equal(marca, SesionHelper.ReautenticacionAdminUtc(c.Sesion));
+            }
+        }
+
+        [Fact]
+        public void InicioYReautenticacion_SinSesionOConOtroTipo_SonNull()
+        {
+            Assert.Null(SesionHelper.InicioSesionUtc(null));
+            Assert.Null(SesionHelper.ReautenticacionAdminUtc(null));
+            using (var c = new ContextoFalso())
+            {
+                c.Sesion[SesionHelper.ClaveInicioSesionUtc] = "2026-11-22";
+                Assert.Null(SesionHelper.InicioSesionUtc(c.Sesion));
+            }
+        }
+
         [Fact]
         public void SecurityHelper_LeeElIdDeUsuarioID()
         {

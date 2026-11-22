@@ -68,7 +68,7 @@
                 if (r.sesionCerrada) {
                     SGV.avisar(r.Message, { tipo: 'danger' });
                     setTimeout(function () {
-                        window.location.href = (SGV.urlLogin || '/Views/Login.aspx') + '?error=sesion_cerrada';
+                        window.location.href = (SGV.urlLogin || '/Views/Login.aspx') + '?error=' + (r.codigoLogin === 'sesion_vencida' ? 'sesion_vencida' : 'sesion_cerrada');
                     }, 2500);
                 }
                 return;

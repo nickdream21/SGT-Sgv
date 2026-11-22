@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-045 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-047 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -58,6 +58,8 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-043** CI de E4-9 en GitHub — tras el push (con orden del usuario): el workflow pasa en `master`; en una rama de prueba con `Newtonsoft.Json 12.0.1` en `packages.config` el paso de restore falla con NU1903 (confirma que el NuGet de `windows-latest` audita `packages.config`), y se borra la rama; "Run workflow" manual funciona; con U-086 hecho, Dependabot abre sus PR agrupados de `nuget` y `github-actions`. · B
 - [ ] **P-044** Conexión cifrada tras U-084 — con `Encrypt=True;TrustServerCertificate=True` en cada `connectionStrings.config`: el sitio local y el publicado inician sesión y cargan datos, y `ensayar-migracion.ps1` y `ensayar-restauracion.ps1` funcionan en una PC con SQL Server local (en la laptop solo hay LocalDB). · B
 - [ ] **P-045** Sello de E4-11 en la PC de la oficina — tras U-088: la primera noche crea `<Carpeta>\sellos\sello-sgvActualizada_*.txt.gz` (con Google Drive de destino), la segunda dice OK en `sellos.log` y la tarea termina con `LastTaskResult 0`. · B
+- [ ] **P-046** Sesión de 12 h de E4-12 de verdad — una sesión de prueba abierta y con actividad más de 12 h (local o publicado): una página va a `Login.aspx?error=sesion_vencida` y un AJAX recibe 401 con `codigoLogin: sesion_vencida`; y una sesión abierta antes de publicar E4-12 se cierra en la primera petición tras publicar. · B
+- [ ] **P-047** Acciones de administración completas con la contraseña correcta (E4-12) — con una cuenta creada solo para la prueba: restablecer su contraseña, cambiarle el rol y devolverlo, desactivarla y activarla siendo de administración (pide la contraseña), un alta en la que la ventana de 5 min vence a mitad del formulario, y la auditoría `UPDATE`; borrar la cuenta al final. · C
 
 ## Reglas
 

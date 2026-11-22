@@ -48,7 +48,7 @@
         try { r = JSON.parse(xhr.responseText) || {}; } catch (e) { }
         if (xhr.status === 401 && r.sesionCerrada) {
             mostrarAlerta('error', r.Message);
-            setTimeout(function () { window.location.href = 'Login.aspx?error=sesion_cerrada'; }, 2500);
+            setTimeout(function () { window.location.href = 'Login.aspx?error=' + (r.codigoLogin === 'sesion_vencida' ? 'sesion_vencida' : 'sesion_cerrada'); }, 2500);
         } else if (xhr.status === 403 && r.requiereCambioContrasena) {
             mostrarAlerta('error', r.Message);
             // Al recargar, el servidor lleva al inicio, que pide cambiar la contraseña.

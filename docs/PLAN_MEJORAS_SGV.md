@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `ffddd56` — E4-11: sello diario externo de firmas y auditoría (`sellar-registros.ps1` en la tarea de respaldo; sección 7 de `PROCEDIMIENTO_RESPALDO.md`); nuevos M-123, U-088 y P-045. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `078ae17` — E4-12: no quedarse sin administrador de sistema, fila propia sin acciones peligrosas, contraseña del administrador para restablecer, cambiar rol, crear y activar cuentas de administración, sesión máxima de 12 h; cierra M-066; nuevos U-089, P-046 y P-047. No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-123 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
@@ -154,7 +154,6 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-122** Validar el certificado de somee — hoy la conexión cifrada necesita `TrustServerCertificate=True` (y `-C` en sqlcmd) porque el certificado no coincide con el nombre del servidor: si somee lo corrige (preguntarlo con U-083), quitarlos de la plantilla, los scripts y `respaldar-bd.ps1`. · C
 - [ ] **M-123** Aviso por correo de una FALLA del sello (E4-11) y del respaldo — hoy solo existe el gancho `SGV_SCRIPT_AVISO`: escribir el `.ps1` que envíe el correo con el SMTP de `appSettings.Secrets.config` (o decidir otro canal) y probarlo con una FALLA de ensayo. · B
 - [ ] **M-064** Secciones de `TienePermiso` sin página — FACTURA, CPIC, CONSULTAS, INDICADORES, AUDITORIA… (`RolesHelper.cs:169-182`) y ADMIN con acceso a DASHBOARD_CONDUCTOR: depurarlas (cambia `RolesHelperTests` a propósito). · C
-- [ ] **M-066** No quedarse sin administrador de sistema activo — impedir que dos se desactiven a la vez (`NOT EXISTS` de otro ADMINISTRADOR DE SISTEMA activo en el `WHERE`) y ocultar "Desactivar" en la fila propia (hoy el servidor lo rechaza con aviso). · C
 - [ ] **M-068** Ajustar `Seguridad.IteracionesContrasena` — con los ms de "Hash de contraseña … convertido" en `App_Data/logs` del servidor (tarea 7); no volver a un DLL anterior. · C
 - [ ] **M-111** Tablas ledger de SQL Server 2022 para `FirmaDigital` y `AuditoriaLog` — darían prueba criptográfica de que nadie alteró las filas aunque la app sea `db_owner`; hay que reconstruir las tablas con datos reales y comprobar en un ensayo que `sqlpackage` exporta e importa un `.bacpac` con tablas ledger. Mientras tanto, el sello externo diario de E4-11. · C
 

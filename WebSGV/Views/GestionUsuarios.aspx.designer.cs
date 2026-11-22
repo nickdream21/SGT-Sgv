@@ -29,5 +29,11 @@
         protected global::System.Web.UI.WebControls.TextBox txtNuevaPass;
         protected global::System.Web.UI.WebControls.TextBox txtConfirmarPass;
         protected global::System.Web.UI.WebControls.Button btnResetPass;
+        protected global::System.Web.UI.WebControls.HiddenField hfAccionReaut;
+        protected global::System.Web.UI.WebControls.Label lblAccionReaut;
+        protected global::System.Web.UI.WebControls.Panel pnlMensajeReaut;
+        protected global::System.Web.UI.WebControls.Label lblMensajeReaut;
+        protected global::System.Web.UI.WebControls.TextBox txtContrasenaAdmin;
+        protected global::System.Web.UI.WebControls.Button btnConfirmarReaut;
     }
 }

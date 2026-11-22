@@ -1,3 +1,4 @@
+using System;
 using System.Web;
 using System.Web.SessionState;
 
@@ -30,6 +31,18 @@ namespace WebSGV.Helpers
         /// </summary>
         public const string ClaveIdConductor = "IdConductor";
 
+        /// <summary>
+        /// Clave de la hora (UTC) en que se inició la sesión: Global.asax la cierra al pasar
+        /// <see cref="SesionVigenteHelper.DuracionMaxima"/> aunque haya actividad (E4-12).
+        /// </summary>
+        public const string ClaveInicioSesionUtc = "InicioSesionUtc";
+
+        /// <summary>
+        /// Clave de la hora (UTC) de la última contraseña correcta del administrador en Gestión de usuarios
+        /// (<see cref="WebSGV.Services.Usuarios.AdminUsuariosReglas.ReautenticacionVigente"/>, E4-12).
+        /// </summary>
+        public const string ClaveReautenticacionAdminUtc = "ReautenticacionAdminUtc";
+
         // ── Escritura ──────────────────────────────────────────────────────
 
         /// <summary>
@@ -46,6 +59,15 @@ namespace WebSGV.Helpers
                 sesion[ClaveIdConductor] = idConductor.Value;
             else
                 sesion.Remove(ClaveIdConductor);
+            sesion[ClaveInicioSesionUtc] = DateTime.UtcNow;
+            sesion.Remove(ClaveReautenticacionAdminUtc);
+        }
+
+        /// <summary>Guarda la hora (UTC) de una contraseña del administrador correcta en Gestión de usuarios.</summary>
+        public static void MarcarReautenticacionAdmin(HttpSessionState sesion, DateTime ahoraUtc)
+        {
+            if (sesion != null)
+                sesion[ClaveReautenticacionAdminUtc] = ahoraUtc;
         }
 
         // ── Lectura ────────────────────────────────────────────────────────
@@ -65,6 +87,14 @@ namespace WebSGV.Helpers
         /// <summary>Id del conductor vinculado a la sesión, o null si no hay o no es un entero.</summary>
         public static int? IdConductor(HttpSessionState sesion) =>
             sesion == null ? null : SesionVigenteHelper.EnteroDeSesion(sesion[ClaveIdConductor]);
+
+        /// <summary>Hora (UTC) en que se inició la sesión, o null (sesión sin ese dato o sin sesión).</summary>
+        public static DateTime? InicioSesionUtc(HttpSessionState sesion) =>
+            sesion?[ClaveInicioSesionUtc] as DateTime?;
+
+        /// <summary>Hora (UTC) de la última reautenticación correcta en Gestión de usuarios, o null.</summary>
+        public static DateTime? ReautenticacionAdminUtc(HttpSessionState sesion) =>
+            sesion?[ClaveReautenticacionAdminUtc] as DateTime?;
 
         /// <summary>True si la sesión tiene un ID de usuario entero válido.</summary>
         public static bool HaySesion(HttpSessionState sesion) => IdUsuario(sesion).HasValue;

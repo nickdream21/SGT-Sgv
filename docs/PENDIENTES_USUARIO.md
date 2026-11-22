@@ -4,7 +4,7 @@ Lo que **solo puede hacer el usuario** (o la oficina, a pedido suyo): decisiones
 
 Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = valor claro; C = menor. Las mejoras de código están en `docs/PLAN_MEJORAS_SGV.md` (`M-`), los datos por corregir en `docs/DATOS_POR_CORREGIR.md` (`D-`) y las pruebas en `docs/PRUEBAS_PENDIENTES.md` (`P-`).
 
-Último id usado: U-088 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: U-089 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Credenciales y paneles externos
 
@@ -28,6 +28,7 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-085** Respaldos: cifrarlos y revisar quién los ve — los `.bacpac` (datos personales y hashes de contraseñas) están sin cifrar en la unidad compartida de Drive y en la laptop: decidir si se guardan en un 7z con clave (guardada fuera de Drive), revisar quién tiene acceso a la unidad y si el disco de la laptop está cifrado. · B
 - [ ] **U-086** GitHub: activar las alertas de Dependabot y proteger `master` — Settings → Code security → Dependabot alerts y security updates (gratis); va con E4-9. Opcional: exigir el CI en verde antes de fusionar a `master`. · B
 - [ ] **U-088** Volver a registrar la tarea de respaldo en la PC de la oficina — tras actualizar el repo allí: `.\herramientas\respaldo\programar-respaldo.ps1 -Carpeta <la de siempre>` (sin esto la tarea diaria no sella firmas ni auditoría, E4-11). Luego, P-045. · B
+- [ ] **U-089** Cambiar las contraseñas de las cuentas de `privado/CREDENCIALES_USUARIOS.txt` (sobre todo las de producción) — el 2026-11-22, durante E4-12, un script de prueba las imprimió por error en la salida de una sesión de Claude Code: no llegaron al repositorio, pero quedaron en el registro de esa sesión. Hacerlo junto con las rotaciones U-001 a U-004 y actualizar el archivo. · B
 - [ ] **U-076** Crear (o reactivar) un usuario SUPERVISOR de prueba — en GestionUsuarios de la BD de pruebas, con su clave en `privado/CREDENCIALES_USUARIOS.txt`, para la prueba P-028. · C
 
 ## Decisiones de negocio

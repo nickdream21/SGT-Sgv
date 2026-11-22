@@ -70,19 +70,9 @@ namespace WebSGV.Tests.Integracion
             }
         }
 
-        /// <summary>Misma condición que GestionUsuarios al editar: solo rol o conductor renuevan el sello.</summary>
+        /// <summary>Lo mismo que GestionUsuarios al editar (E4-12: el UPDATE vive en UsuarioEstadoService).</summary>
         private static void EditarComoGestionUsuarios(int id, string nombre, string rol, int? idConductor) =>
-            DbHelper.EjecutarNonQuery(
-                @"UPDATE Usuarios
-                  SET selloSesion = CASE WHEN ISNULL(rol, '') <> @rol
-                                           OR ISNULL(idConductor, -1) <> ISNULL(@idConductor, -1)
-                                         THEN NEWID() ELSE selloSesion END,
-                      nombre = @nombre, rol = @rol, idConductor = @idConductor
-                  WHERE idUsuario = @id",
-                DbHelper.Param("@nombre", nombre),
-                DbHelper.Param("@rol", rol),
-                DbHelper.Param("@idConductor", (object)idConductor ?? DBNull.Value),
-                DbHelper.Param("@id", id));
+            WebSGV.Services.Usuarios.UsuarioEstadoService.ActualizarDatos(id, nombre, rol, idConductor);
 
         [FactBD]
         public void EditarUsuario_SoloRolOConductorRenuevanElSello()

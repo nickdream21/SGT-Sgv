@@ -82,6 +82,22 @@ namespace WebSGV
             bool publica = SesionVigenteHelper.EsRutaPublica(System.IO.Path.GetFileName(req.FilePath));
             bool ajax = SesionVigenteHelper.EsLlamadaAjax(req, ctx.Handler);
 
+            // Duración máxima (E4-12): 12 h desde el inicio de sesión aunque haya actividad. Se cierra aquí, también
+            // en las páginas públicas: Login llega ya sin sesión y no la confunde con una vigente (rompe-bucles E4-8).
+            if (SesionVigenteHelper.SuperoDuracionMaxima(SesionHelper.InicioSesionUtc(sesion), DateTime.UtcNow))
+            {
+                LogSGV.Info("Sesión cerrada: llegó a su duración máxima (usuario {IdUsuario}, {Ruta})",
+                    idUsuario.Value, req.FilePath);
+                CerrarSesionActual(ctx);
+                if (publica)
+                    return;
+                if (ajax)
+                    ResponderJson(ctx, 401, "{\"Message\":\"" + SesionVigenteHelper.MensajeDuracionMaxima + "\",\"sesionCerrada\":true,\"codigoLogin\":\"" + SesionVigenteHelper.CodigoSesionVencida + "\"}");
+                else
+                    Redirigir(ctx, "~/Views/Login.aspx?error=" + SesionVigenteHelper.CodigoSesionVencida);
+                return;
+            }
+
             Guid? selloSesion = SesionVigenteHelper.SelloDeSesion(sesion[SesionVigenteHelper.ClaveSello]);
             EstadoSesionUsuario estado = SesionVigenteHelper.ObtenerEstado(idUsuario.Value, selloSesion);
             if (estado != null)

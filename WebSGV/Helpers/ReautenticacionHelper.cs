@@ -8,7 +8,12 @@ namespace WebSGV.Helpers
         /// <summary>Firmar una declaración o conformidad.</summary>
         Firma,
         /// <summary>Confirmar la contraseña actual antes de cambiarla.</summary>
-        CambioContrasena
+        CambioContrasena,
+        /// <summary>
+        /// El administrador de sistema confirma su contraseña antes de restablecer la de otro usuario o
+        /// cambiarle el rol en GestionUsuarios (E4-12).
+        /// </summary>
+        AdminUsuarios
     }
 
     /// <summary>
@@ -30,6 +35,9 @@ namespace WebSGV.Helpers
 
         /// <summary>Mismo tope que el inicio de sesión: más largo no se verifica (no se gasta PBKDF2).</summary>
         public const int LargoMaximoIngresada = 200;
+
+        /// <summary>Acción de auditoría de una contraseña incorrecta del administrador en Gestión de usuarios.</summary>
+        public const string AccionAdminUsuariosIncorrecta = "ADMIN_USUARIOS_CONTRASENA_INCORRECTA";
 
         /// <summary>Contadores en la tabla IntentoAcceso (sobreviven al reciclaje), con el mismo almacén del login.</summary>
         private static readonly ControlIntentosLogin Control = new ControlIntentosLogin(
@@ -82,14 +90,17 @@ namespace WebSGV.Helpers
             if (auditar == null) auditar = (accion, tabla, id, descripcion) => AuditoriaHelper.Registrar(accion, tabla, id, descripcion);
 
             bool esFirma = proposito == PropositoReautenticacion.Firma;
-            string msjIncorrecta = esFirma ? "La contraseña no es correcta." : "La contraseña actual es incorrecta.";
+            bool esAdmin = proposito == PropositoReautenticacion.AdminUsuarios;
+            string msjIncorrecta = esFirma || esAdmin ? "La contraseña no es correcta." : "La contraseña actual es incorrecta.";
 
             if (idUsuario <= 0)
                 return "Sesión no válida. Inicie sesión nuevamente.";
             if (string.IsNullOrEmpty(contrasena))
                 return esFirma
                     ? "Escribe tu contraseña para confirmar que eres tú quien firma."
-                    : "Escribe tu contraseña actual.";
+                    : esAdmin
+                        ? "Escribe tu contraseña para confirmar el cambio."
+                        : "Escribe tu contraseña actual.";
             if (contrasena.Length > LargoMaximoIngresada)
                 return msjIncorrecta;
 
@@ -112,7 +123,9 @@ namespace WebSGV.Helpers
                 control.ErrorAlValidar(reserva);
                 LogSGV.Error(ex, esFirma
                     ? "No se pudo verificar la contraseña al firmar (usuario {IdUsuario})"
-                    : "No se pudo verificar la contraseña actual al cambiarla (usuario {IdUsuario})", idUsuario);
+                    : esAdmin
+                        ? "No se pudo verificar la contraseña del administrador en Gestión de usuarios (usuario {IdUsuario})"
+                        : "No se pudo verificar la contraseña actual al cambiarla (usuario {IdUsuario})", idUsuario);
                 return "No se pudo verificar tu contraseña en este momento. Inténtalo de nuevo en unos minutos.";
             }
 
@@ -126,15 +139,22 @@ namespace WebSGV.Helpers
             if (esFirma)
                 auditar("FIRMA_CONTRASENA_INCORRECTA", "Usuarios", idUsuario,
                     bloqueado ? "Contraseña incorrecta al firmar: firma bloqueada temporalmente" : "Contraseña incorrecta al firmar");
+            else if (esAdmin)
+                auditar(AccionAdminUsuariosIncorrecta, "Usuarios", idUsuario,
+                    bloqueado
+                        ? "Contraseña incorrecta al confirmar un cambio en Gestión de usuarios: bloqueada temporalmente"
+                        : "Contraseña incorrecta al confirmar un cambio en Gestión de usuarios");
             else
                 auditar("CAMBIO_CONTRASENA_INCORRECTA", "Usuarios", idUsuario,
                     bloqueado ? "Contraseña actual incorrecta al cambiarla: bloqueada temporalmente" : "Contraseña actual incorrecta al cambiarla");
 
             if (!bloqueado)
                 return msjIncorrecta;
-            return esFirma
-                ? "Demasiadas contraseñas incorrectas. La firma quedó bloqueada por " + (int)Bloqueo.TotalMinutes + " minutos."
-                : "Demasiadas contraseñas incorrectas. El cambio de contraseña y la firma quedaron bloqueados por " + (int)Bloqueo.TotalMinutes + " minutos.";
+            if (esFirma)
+                return "Demasiadas contraseñas incorrectas. La firma quedó bloqueada por " + (int)Bloqueo.TotalMinutes + " minutos.";
+            if (esAdmin)
+                return "Demasiadas contraseñas incorrectas. La confirmación, el cambio de contraseña y la firma quedaron bloqueados por " + (int)Bloqueo.TotalMinutes + " minutos.";
+            return "Demasiadas contraseñas incorrectas. El cambio de contraseña y la firma quedaron bloqueados por " + (int)Bloqueo.TotalMinutes + " minutos.";
         }
 
         private static string LeerHashBd(int idUsuario)

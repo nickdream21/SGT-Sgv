@@ -215,6 +215,34 @@ namespace WebSGV.Tests
             Assert.Equal("Demasiadas contraseñas incorrectas. Podrá volver a firmar en 15 minuto(s).", Verificar(Correcta));
         }
 
+        // ── Administración de usuarios (E4-12, mismo contador) ───────────────
+
+        private string VerificarAdmin(string contrasena, Func<int, string> leerHash = null) =>
+            ReautenticacionHelper.Verificar(IdUsuario, contrasena, PropositoReautenticacion.AdminUsuarios,
+                leerHash ?? (_ => Hash), _control, Auditar);
+
+        [Fact]
+        public void AdminUsuarios_MensajesPropiosYAuditoria()
+        {
+            Assert.Null(VerificarAdmin(Correcta));
+            Assert.Equal("Escribe tu contraseña para confirmar el cambio.", VerificarAdmin(""));
+            Assert.Equal(MsjIncorrecta, VerificarAdmin("mala"));
+            Assert.Equal(MsjBdCaida, VerificarAdmin(Correcta, _ => throw new InvalidOperationException("BD caída")));
+            Assert.Equal(new[] { ReautenticacionHelper.AccionAdminUsuariosIncorrecta + "|Usuarios|42" }, _auditorias);
+        }
+
+        [Fact]
+        public void AdminUsuarios_CincoIncorrectas_BloqueanTambienLaFirma()
+        {
+            for (int i = 1; i <= 4; i++)
+                Assert.Equal(MsjIncorrecta, VerificarAdmin("mala" + i));
+            Assert.Equal("Demasiadas contraseñas incorrectas. La confirmación, el cambio de contraseña y la firma quedaron bloqueados por 15 minutos.",
+                VerificarAdmin("mala5"));
+            Assert.Equal("Demasiadas contraseñas incorrectas. Podrá volver a intentarlo en 15 minuto(s).", VerificarAdmin(Correcta));
+            Assert.Equal("Demasiadas contraseñas incorrectas. Podrá volver a firmar en 15 minuto(s).", Verificar(Correcta));
+            Assert.Equal(5, _auditorias.Count(a => a.StartsWith(ReautenticacionHelper.AccionAdminUsuariosIncorrecta + "|", StringComparison.Ordinal)));
+        }
+
         [Fact]
         public void AciertoEnElCambio_LimpiaElContadorDeLaFirma()
         {
