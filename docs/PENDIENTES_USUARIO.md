@@ -4,7 +4,7 @@ Lo que **solo puede hacer el usuario** (o la oficina, a pedido suyo): decisiones
 
 Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = valor claro; C = menor. Las mejoras de código están en `docs/PLAN_MEJORAS_SGV.md` (`M-`), los datos por corregir en `docs/DATOS_POR_CORREGIR.md` (`D-`) y las pruebas en `docs/PRUEBAS_PENDIENTES.md` (`P-`).
 
-Último id usado: U-076 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: U-077 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Credenciales y paneles externos
 
@@ -19,6 +19,7 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-010** somee: factura del plan Premium — en noviembre había una factura pendiente del plan Premium de 6 meses (US$ 51,90); si no se paga, se cae el sitio. Confirmar que está pagada. · B
 
 - [ ] **U-073** Panel de somee: ¿permite un segundo usuario de BD con permisos limitados? — hoy la aplicación entra como `db_owner` y desde SQL no se pueden crear logins; con un usuario limitado nadie podría saltarse la protección de firmas y auditoría. · B
+- [ ] **U-077** Panel de somee: ¿modelo de recuperación FULL o respaldo del log (restaurar a un punto en el tiempo)? — hoy la BD está en SIMPLE y solo hay el `.bacpac` diario: un error de datos a media tarde se pierde hasta el respaldo de la noche anterior. Ver si el plan lo permite y qué cuesta. · B
 - [ ] **U-075** Quitar de `privado/CREDENCIALES_USUARIOS.txt` los usuarios desactivados `admin.grifo`, `admin.maquinaria` y `operador` y su nota (*) — en esta máquina y en la laptop (el archivo está fuera de git). Además, cambiar ya la contraseña de `operador` (quedó expuesta en la salida de una herramienta) y, si se conserva su línea, dejarla con el mismo formato que las demás; si alguno se reactiva, cambiar antes su contraseña. · C
 - [ ] **U-076** Crear (o reactivar) un usuario SUPERVISOR de prueba — en GestionUsuarios de la BD de pruebas, con su clave en `privado/CREDENCIALES_USUARIOS.txt`, para la prueba P-028. · C
 

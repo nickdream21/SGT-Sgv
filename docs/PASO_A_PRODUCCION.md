@@ -79,6 +79,8 @@ WHERE idDespachoOrigen IS NULL AND idDespachoDestino IS NULL AND estado = 'COMPL
 
 215 → correr ese script con `-Entorno produccion -ConfirmoProduccion`; 0 → nada que hacer; otro número → revisar a mano (el script no borrará).
 
+**Datos de E3-5 (antes de las migraciones 54 y 55, cuyos CHECK y FK fallarían):** en pruebas se corrigieron el 2026-11-21 con `WebSGV/Database/Scripts/corregir_datos_etapa3_2026-11-21.sql`, que solo corre en `sgvActualizada` o en un ensayo y espera los conteos de pruebas. En `sgvTransporte` medir los mismos controles: `SELECT COUNT(*) FROM Despachos WHERE activo = 0 AND ISNULL(estadoDespacho, '') <> 'ANULADO'`, `SELECT COUNT(*) FROM SeguimientoExportacion WHERE estado = 'COMPLETADO'`, `SELECT COUNT(*) FROM SeguimientoExportacion s WHERE idUsuarioModificacion IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Usuarios u WHERE u.idUsuario = s.idUsuarioModificacion)` y los usuarios de roles retirados, activos e inactivos (`SELECT idUsuario, rol, activo FROM Usuarios WHERE rol IN ('ADMINISTRADOR DE GRIFO', 'ADMINISTRADOR DE MAQUINARIA', 'OPERADOR')`): el CHECK de rol de la migración 54 acepta los inactivos con rol retirado, pero los activos hay que desactivarlos antes (como U-015 en pruebas). Lo que no dé 0 (o salga activo) se anota como `D-`/`U-` nuevo y se corrige con un script propio para producción, con la aprobación del usuario.
+
 ## 4. Migraciones
 
 ```powershell
@@ -88,11 +90,11 @@ WHERE idDespachoOrigen IS NULL AND idDespachoDestino IS NULL AND estado = 'COMPL
 
 Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–58) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
 
-**Migración 52** (`52_TriggersAuditoriaHeredados.sql`, E3-1): crea los 11 triggers `TR_<tabla>_Auditoria` heredados (llenan `Auditoria`; `sp_DC_GenerarNumeroOrden` la lee) solo si faltan; donde ya existen no hace nada y solo queda registrada. Ensayada antes con `herramientas/respaldo/ensayar-migracion.ps1`. Control después (solo SELECT): `SELECT name, is_disabled FROM sys.triggers WHERE name LIKE 'TR[_]%[_]Auditoria'` → los 11 de la migración (más `TR_AbastecimientoCombustible_Auditoria` si existe, que se borra en E3-8) con `is_disabled = 0`. Si `aplicar-migraciones.ps1 -SoloListar` avisa de un hash distinto en `16_HoraPeru.sql`, comparar `dbo.fn_AhoraPeru` con el archivo antes de aceptarlo en `$HashesAceptados` (el de pruebas ya está aceptado, revisado el 2026-11-21).
+**Migración 52** (`52_TriggersAuditoriaHeredados.sql`, E3-1): crea los 11 triggers `TR_<tabla>_Auditoria` heredados (llenan `Auditoria`; `sp_DC_GenerarNumeroOrden` la lee) solo si faltan; donde ya existen no hace nada y solo queda registrada. Ensayada antes con `herramientas/respaldo/ensayar-migracion.ps1`. Control después (solo SELECT): `SELECT name, is_disabled FROM sys.triggers WHERE name LIKE 'TR[_]%[_]Auditoria'` → los 11 de la migración con `is_disabled = 0` (10 después de la 58, que borra `CPIC_Productos` con su trigger), más `TR_AbastecimientoCombustible_Auditoria` si existe: no se borró en E3-8 y queda para M-106. Si `aplicar-migraciones.ps1 -SoloListar` avisa de un hash distinto en `16_HoraPeru.sql`, comparar `dbo.fn_AhoraPeru` con el archivo antes de aceptarlo en `$HashesAceptados` (el de pruebas ya está aceptado, revisado el 2026-11-21).
 
 **Migración 53** (`53_CorrelativoViaje.sql`, E3-3): crea `Correlativo` y la siembra con el número `VP-AAAA-NNN` más alto de cada año de `sgvTransporte` (excluye formatos como `VP-SIM-*`); se detiene con `THROW 51000` si un año queda por debajo. **Debe ir antes que los SP del paso 5** (`sp_CrearDespacho`, `sp_CrearViajeProgreso` y `sp_LD_ReubicarDespachoEnViajeDelConductor` llaman a `sp_SiguienteNumeroViaje`, que usa la tabla). Control después: `SELECT serie, anio, ultimo FROM Correlativo` contra el número más alto de cada año (`MAX(TRY_CAST(SUBSTRING(numeroViajeProgreso, 9, 20) AS INT))` agrupado por `SUBSTRING(numeroViajeProgreso, 4, 4)`, solo filas `LIKE 'VP-[0-9][0-9][0-9][0-9]-%'`): `ultimo` nunca menor.
 
-**Migraciones 54 y 55** (`54_RestriccionesDominio.sql`, `55_LlavesEIndices.sql`, E3-6): CHECK de dominio y montos, `OrdenViaje.estadoAprobacion` NOT NULL con DEFAULT `PENDIENTE` (fuera el `APROBADO`), 10 FK nuevas, documentos sin cascada, FK e índices repetidos fuera. Cada regla cuenta antes y se detiene (THROW 54001/54002 o 55001) con la tabla, la regla y el conteo; no corrigen datos. **Orden: `sp_SE_ImportarLote` → 54 → 55.** Antes de `aplicar-migraciones.ps1` de este paso, aplicar solo ese SP (`.\WebSGV\Database\sql.ps1 -Entorno produccion -ConfirmoProduccion -Archivo WebSGV\Database\StoredProcedures\sp_SE_ImportarLote.sql`, como se hizo en pruebas el 2026-11-21); el resto de los SP, en el paso 5. No importar el STATUS GENERAL entre medio: la pantalla ImportarSeguimiento de la versión publicada `60853e8` manda COMPLETADO y PENDIENTE, que la 54 rechaza; ese SP los normaliza (COMPLETADO → FINALIZADO, lo demás → EN_CURSO). **Antes**, en `sgvTransporte`, correr los controles de datos de E3-5 (paso 5) y estos (solo SELECT; todos deben dar 0 filas o conteo 0):
+**Migraciones 54 y 55** (`54_RestriccionesDominio.sql`, `55_LlavesEIndices.sql`, E3-6): CHECK de dominio y montos, `OrdenViaje.estadoAprobacion` NOT NULL con DEFAULT `PENDIENTE` (fuera el `APROBADO`), 10 FK nuevas, documentos sin cascada, FK e índices repetidos fuera. Cada regla cuenta antes y se detiene (THROW 54001/54002 o 55001) con la tabla, la regla y el conteo; no corrigen datos. **Orden: 01–53 → `sp_SE_ImportarLote` → 54 → 55, automático:** `aplicar-migraciones.ps1` aplica ese SP justo antes de la 54 (mapa `$SpRequeridosPorMigracion` del script; `-SoloListar` lo muestra como "antes aplica el SP sp_SE_ImportarLote.sql"; ensayado el 2026-11-21 desde un `.bacpac` anterior a la 54). El resto de los SP va en el paso 5. No importar el STATUS GENERAL durante el paso: la pantalla ImportarSeguimiento de la versión publicada `60853e8` manda COMPLETADO y PENDIENTE, que la 54 rechaza; ese SP los normaliza (COMPLETADO → FINALIZADO, lo demás → EN_CURSO). **Antes**, en `sgvTransporte`, correr los controles de datos de E3-5 (paso 3) y estos (solo SELECT; todos deben dar 0 filas o conteo 0):
 
 ```sql
 SELECT estadoDespacho, tipoOperacion, activo, COUNT(*) FROM Despachos
@@ -147,7 +149,64 @@ SELECT COUNT(*) AS usuariosConOperador FROM Usuarios WHERE idOperador IS NOT NUL
 SELECT COUNT(*) AS ordenesConTipoViaje FROM OrdenViaje WHERE tipoViaje IS NOT NULL;
 ```
 
-Control después: `IntegridadBdTests.Lo_borrado_en_E3_8_ya_no_existe` (o `SELECT OBJECT_ID('dbo.Operadores')`, etc.: NULL). Las tablas de Grifo y `sp_DC_RevocarFirma` no se borran aquí (M-054, M-106).
+**Antes de la 57, medir qué existe en `sgvTransporte`** (solo SELECT; lo que dé NULL ya no está y la 57 lo salta):
+
+```sql
+SELECT v.n AS objeto, OBJECT_ID('dbo.' + v.n) AS id FROM (VALUES
+ ('sp_InsertarAbastecimientoCombustible'),('sp_InsertarDespachoObra'),('sp_InsertarIngresoEcuador'),('sp_InsertarIndicador'),
+ ('sp_MQ_InsertarParteDiario'),('sp_MQ_GenerarNumeroParte'),('sp_MQ_ObtenerAsignacionActiva'),('sp_MQ_ObtenerDatosOperador'),
+ ('sp_MQ_ObtenerHistorialPartes'),('sp_SE_BuscarDespachosDisponibles'),('sp_SE_Dashboard_Graficos'),('sp_SE_Dashboard_KPIs'),
+ ('sp_SE_Insertar'),('sp_SE_ListarEnCurso'),('sp_SE_Listar'),('sp_SE_ObtenerDespachoPorId'),('sp_SE_ObtenerPorId'),
+ ('sp_LD_ActualizarConductorDominanteViajes'),('vw_DespachosCompletos'),('vw_Auditoria'),('vw_IndicadoresExcelCompatible'),
+ ('VW_OperacionesConPlantas'),('vw_SegmentosCompletos'),('fn_ValidarDisponibilidadRecursos')) v(n);
+```
+
+**Controles después de las migraciones 54 a 58** (solo SELECT; con `.\WebSGV\Database\sql.ps1 -Entorno produccion -ConfirmoProduccion -Archivo <archivo>.sql`, o cada consulta entre comillas). Cada uno dice lo que debe dar:
+
+```sql
+-- 54: los 26 CHECK que quedan tras la 58 (los 4 de DetalleAlimentacion, DetalleApoyoSeguridad, DetalleEncapada
+-- y DetalleMovilidad se van con sus tablas). Debe dar 26 filas, todas con is_not_trusted = 0 e is_disabled = 0.
+SELECT name, is_not_trusted, is_disabled FROM sys.check_constraints WHERE name IN (
+ 'CK_Despachos_Estado','CK_Despachos_TipoOperacion','CK_Despachos_AnuladoInactivo','CK_ViajesEnProgreso_Estado',
+ 'CK_OrdenViaje_EstadoAprobacion','CK_OrdenViaje_EstadoViaje','CK_SeguimientoExportacion_Estado','CK_SeguimientoExportacion_Origen',
+ 'CK_FirmaDigital_Etapa','CK_FirmaDigital_EstadoFirma','CK_Usuarios_Rol','CK_FacturaFlete_Moneda',
+ 'CK_DetalleCombustible_Montos','CK_DetalleHospedaje_Montos','CK_DetallePeajes_Montos','CK_DetalleReparacionesVarios_Montos',
+ 'CK_Egresos_Montos','CK_Ingresos_Montos','CK_IngresosAdicionales_Montos','CK_CategoriasAdicionales_Montos',
+ 'CK_DescuentosReintegros_Montos','CK_Factura_ValorTotal','CK_CPIC_Montos','CK_FacturaFlete_Montos','CK_FacturaFleteItem_Montos',
+ 'CK_DespachoCarga_Pesos') ORDER BY name;
+-- 54: estadoAprobacion NOT NULL con DEFAULT PENDIENTE (M-050). Debe dar is_nullable = 0 y ('PENDIENTE').
+SELECT c.is_nullable, dc.definition FROM sys.columns c
+LEFT JOIN sys.default_constraints dc ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id
+WHERE c.object_id = OBJECT_ID('dbo.OrdenViaje') AND c.name = 'estadoAprobacion';
+-- 55: las 12 FK (10 nuevas y las 2 de documentos sin cascada). Debe dar 12 filas, NO_ACTION, is_not_trusted = 0.
+SELECT name, delete_referential_action_desc, is_not_trusted, is_disabled FROM sys.foreign_keys WHERE name IN (
+ 'FK_FirmaDigital_UsuarioFirmante','FK_MovimientoDineroViaje_ViajeProgreso','FK_MovimientoDineroViaje_UsuarioRegistro',
+ 'FK_MovimientoDineroViaje_UsuarioAnulacion','FK_OrdenViajeAjuste_UsuarioAdmin','FK_SeguimientoExportacion_DespachoOrigen',
+ 'FK_SeguimientoExportacion_DespachoDestino','FK_SeguimientoExportacion_UsuarioRegistro','FK_SeguimientoExportacion_UsuarioModificacion',
+ 'FK_SeguimientoHito_UsuarioCorreccion','FK_DocumentosFactura_Factura','FK_DocumentosCPIC_CPIC') ORDER BY name;
+-- 54 y 55: nada sin validar. Debe dar 0 filas.
+SELECT 'CHECK ' + name FROM sys.check_constraints WHERE is_not_trusted = 1 OR is_disabled = 1
+UNION ALL SELECT 'FK ' + name FROM sys.foreign_keys WHERE is_not_trusted = 1 OR is_disabled = 1;
+-- 57 y 58: las 24 piezas, las 18 tablas y el trigger de CPIC_Productos ya no existen. Debe dar 0 filas.
+SELECT v.n FROM (VALUES
+ ('sp_InsertarAbastecimientoCombustible'),('sp_InsertarDespachoObra'),('sp_InsertarIngresoEcuador'),('sp_InsertarIndicador'),
+ ('sp_MQ_InsertarParteDiario'),('sp_MQ_GenerarNumeroParte'),('sp_MQ_ObtenerAsignacionActiva'),('sp_MQ_ObtenerDatosOperador'),
+ ('sp_MQ_ObtenerHistorialPartes'),('sp_SE_BuscarDespachosDisponibles'),('sp_SE_Dashboard_Graficos'),('sp_SE_Dashboard_KPIs'),
+ ('sp_SE_Insertar'),('sp_SE_ListarEnCurso'),('sp_SE_Listar'),('sp_SE_ObtenerDespachoPorId'),('sp_SE_ObtenerPorId'),
+ ('sp_LD_ActualizarConductorDominanteViajes'),('vw_DespachosCompletos'),('vw_Auditoria'),('vw_IndicadoresExcelCompatible'),
+ ('VW_OperacionesConPlantas'),('vw_SegmentosCompletos'),('fn_ValidarDisponibilidadRecursos'),
+ ('PartesDiariosTrabajo'),('AsignacionesMaquinaria'),('Operadores'),('EquiposMaquinaria'),('Distrito'),('Provincia'),
+ ('Departamento'),('Pais'),('CPIC_Productos'),('DetalleAlimentacion'),('DetalleApoyoSeguridad'),('DetalleEncapada'),
+ ('DetalleMovilidad'),('DetalleSegmento'),('SegmentosOrdenViaje'),('ProductosOperacion'),('OperacionesSubTramo'),('SubTramos'),
+ ('TR_CPIC_Productos_Auditoria')) v(n)
+WHERE OBJECT_ID('dbo.' + v.n) IS NOT NULL;
+-- 58: columnas. Debe dar NULL, NULL y nvarchar -1.
+SELECT COL_LENGTH('dbo.Usuarios', 'idOperador') AS idOperador, COL_LENGTH('dbo.OrdenViaje', 'tipoViaje') AS tipoViaje,
+       (SELECT TYPE_NAME(user_type_id) FROM sys.columns WHERE object_id = OBJECT_ID('dbo.ViajesEnProgreso') AND name = 'observaciones') AS tipoObservaciones,
+       (SELECT max_length FROM sys.columns WHERE object_id = OBJECT_ID('dbo.ViajesEnProgreso') AND name = 'observaciones') AS largo;
+```
+
+La lista exacta que sostienen las pruebas está en `WebSGV.Tests/Integracion/IntegridadBdTests.cs` (`Los_CHECK_son_exactamente_los_esperados`, `Las_FK_de_la_migracion_55_existen_sin_cascada`, `Lo_borrado_en_E3_8_ya_no_existe`). Las tablas de Grifo, su trigger `TR_AbastecimientoCombustible_Auditoria` y `sp_DC_RevocarFirma` no se borran aquí (M-054, M-106).
 
 ## 5. Procedimientos almacenados
 
@@ -175,8 +234,6 @@ WHERE ty.name IN ('float','real') AND OBJECT_NAME(p.object_id) IN
 Las dos deben devolver 0 filas.
 
 **Controles de E3-2 (solo SELECT):** `SELECT COUNT(*) FROM Despachos WHERE estadoDespacho = 'EN_PROCESO'` y `SELECT estado, COUNT(*) FROM SeguimientoExportacion GROUP BY estado`. Desde E3-2 los SP dejan los despachos rechazados en `PROGRAMADO` y el seguimiento solo en `EN_CURSO`/`FINALIZADO`/`CANCELADO`; si salen `EN_PROCESO`, `COMPLETADO` o `PENDIENTE`, anotarlos como un `D-` nuevo (la corrección de pruebas es D-030).
-
-**Datos de E3-5 (antes de las migraciones 54 y 55, cuyos CHECK y FK fallarían):** en pruebas se corrigieron el 2026-11-21 con `WebSGV/Database/Scripts/corregir_datos_etapa3_2026-11-21.sql`, que solo corre en `sgvActualizada` o en un ensayo y espera los conteos de pruebas. En `sgvTransporte` medir los mismos controles: `SELECT COUNT(*) FROM Despachos WHERE activo = 0 AND ISNULL(estadoDespacho, '') <> 'ANULADO'`, `SELECT COUNT(*) FROM SeguimientoExportacion WHERE estado = 'COMPLETADO'`, `SELECT COUNT(*) FROM SeguimientoExportacion s WHERE idUsuarioModificacion IS NOT NULL AND NOT EXISTS (SELECT 1 FROM Usuarios u WHERE u.idUsuario = s.idUsuarioModificacion)` y los usuarios de roles retirados, activos e inactivos (`SELECT idUsuario, rol, activo FROM Usuarios WHERE rol IN ('ADMINISTRADOR DE GRIFO', 'ADMINISTRADOR DE MAQUINARIA', 'OPERADOR')`): el CHECK de rol de la migración 54 acepta los inactivos con rol retirado, pero los activos hay que desactivarlos antes (como U-015 en pruebas). Lo que no dé 0 (o salga activo) se anota como `D-`/`U-` nuevo y se corrige con un script propio para producción, con la aprobación del usuario.
 
 ## 6. SP retirados
 

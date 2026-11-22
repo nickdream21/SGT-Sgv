@@ -13,7 +13,8 @@
     - Los scripts son idempotentes (IF COL_LENGTH/OBJECT_ID ...), así que registrar una
       BD donde ya se aplicaron a mano es seguro: se re-ejecutan sin efecto y se anotan.
     - Una migración que dependa de un SP nuevo lo declara en su cabecera con una línea
-      "-- Requiere SP: sp_X.sql": ese archivo de StoredProcedures se aplica justo antes que ella.
+      "-- Requiere SP: sp_X.sql": ese archivo de StoredProcedures se aplica justo antes que ella. Para
+      migraciones ya aplicadas, cuyo archivo no se toca, va en $SpRequeridosPorMigracion (la 54).
     - Si un script ya registrado cambió después (hash distinto) solo se avisa; no se
       vuelve a ejecutar. Para cambios de esquema, crear un script NUEVO con el siguiente número.
     - $HashesAceptados: registros antiguos con un hash que no es el del archivo, revisados a mano
@@ -73,6 +74,23 @@ function Invoke-ScriptSql([string]$ruta) {
 # Clave "<entorno>|<archivo>": lo revisado en una BD no vale para otra (producción no se revisó). Un
 # ensayo es la copia de un .bacpac, así que acepta la entrada de cualquier entorno si el hash
 # registrado coincide (la copia trae el SchemaVersion de su origen).
+# SP que una migración necesita aplicados antes de ella. Lo normal es declararlo en su cabecera con una
+# línea "-- Requiere SP: sp_X.sql"; este mapa es para migraciones ya aplicadas en pruebas, cuyo archivo no
+# se puede tocar (cambiaría su hash). Se aplican justo antes de la migración, igual que los de la cabecera.
+#   54_RestriccionesDominio.sql: la pantalla ImportarSeguimiento publicada (60853e8) manda COMPLETADO y
+#   PENDIENTE, que CK_SeguimientoExportacion_Estado rechaza; sp_SE_ImportarLote los normaliza (E3-6).
+$SpRequeridosPorMigracion = @{
+    '54_RestriccionesDominio.sql' = @('sp_SE_ImportarLote.sql')
+}
+function Get-SpRequeridos($archivo) {
+    $lista = New-Object System.Collections.Generic.List[string]
+    if ($SpRequeridosPorMigracion.ContainsKey($archivo.Name)) { $SpRequeridosPorMigracion[$archivo.Name] | ForEach-Object { $lista.Add($_) } }
+    foreach ($m in [regex]::Matches((Get-TextoLf $archivo.FullName), '(?m)^--\s*Requiere SP:\s*(\S+\.sql)\s*$')) {
+        if (-not $lista.Contains($m.Groups[1].Value)) { $lista.Add($m.Groups[1].Value) }
+    }
+    return ,$lista.ToArray()
+}
+
 $HashesAceptados = @{
     'pruebas|16_HoraPeru.sql' = @{
         Registrado = 'da4ce86308f3395298090b7ae9f627ee573e57e7144f6e53d801778d803fbbfb'
@@ -138,9 +156,7 @@ if (-not $existeTabla) { Write-Host "La tabla dbo.SchemaVersion no existe todav�
 Write-Host "Registrados: $($registrados.Count)   Pendientes: $($pendientes.Count)"
 $pendientes | ForEach-Object {
     Write-Host "  pendiente  $($_.Name)"
-    foreach ($m in [regex]::Matches((Get-TextoLf $_.FullName), '(?m)^--\s*Requiere SP:\s*(\S+\.sql)\s*$')) {
-        Write-Host "             antes aplica el SP $($m.Groups[1].Value)"
-    }
+    foreach ($sp in (Get-SpRequeridos $_)) { Write-Host "             antes aplica el SP $sp" }
 }
 $aceptados | ForEach-Object { Write-Host "  $_ conserva un hash anterior ya revisado (ver `$HashesAceptados en este script)." -ForegroundColor DarkGray }
 $modificados | ForEach-Object { Write-Host "  AVISO: $_ cambió después de aplicarse (no se re-ejecuta; cree un script nuevo)." -ForegroundColor Yellow }
@@ -151,13 +167,12 @@ if ($SoloListar) { return }
 if ($control) { Invoke-ScriptSql $control.FullName }
 
 foreach ($s in $pendientes) {
-    # Una migración puede declarar en su cabecera los SP que deben estar aplicados antes de ella
-    # ("-- Requiere SP: sp_X.sql", archivo de Database/StoredProcedures): se aplican aquí primero, en
-    # cualquier entorno, para que el orden SP -> migración no dependa de acordarse (E3-8).
-    foreach ($m in [regex]::Matches((Get-TextoLf $s.FullName), '(?m)^--\s*Requiere SP:\s*(\S+\.sql)\s*$')) {
-        $rutaSp = Join-Path (Join-Path $dirDatabase 'StoredProcedures') $m.Groups[1].Value
-        if (-not (Test-Path $rutaSp -PathType Leaf)) { throw "$($s.Name) requiere $($m.Groups[1].Value), que no está en Database/StoredProcedures." }
-        Write-Host "  Antes, el SP que requiere: $($m.Groups[1].Value)" -ForegroundColor Cyan
+    # Los SP que la migración requiere (Get-SpRequeridos) se aplican aquí primero, en cualquier entorno,
+    # para que el orden SP -> migración no dependa de acordarse (E3-8, E3-9).
+    foreach ($sp in (Get-SpRequeridos $s)) {
+        $rutaSp = Join-Path (Join-Path $dirDatabase 'StoredProcedures') $sp
+        if (-not (Test-Path $rutaSp -PathType Leaf)) { throw "$($s.Name) requiere $sp, que no está en Database/StoredProcedures." }
+        Write-Host "  Antes, el SP que requiere: $sp" -ForegroundColor Cyan
         Invoke-ScriptSql $rutaSp
     }
     Write-Host "Aplicando $($s.Name) ..." -ForegroundColor Cyan

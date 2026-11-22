@@ -23,7 +23,6 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-010** GPS automático: cuánto tarda en el sitio publicado — local: 1.ª corrida 49 viajes en 122 s; con viajes quietos, 20 s. Si somee corta las corridas largas, bajar `Presupuesto` en `ActualizacionGpsAutomatica`. Medir también "Actualizar GPS" con los viajes abiertos (cuántos alcanza por clic con la caché). · B
 - [ ] **P-011** Envío de más de 25 MB — en somee podría salir "conexión restablecida" en vez del aviso. · C
 - [ ] **P-023** Cronometrar una firma real en el hosting — para confirmar que las idas y vueltas a la BD desde somee son menores que desde la oficina (el arranque en frío ya lo evita UptimeRobot). · C
-- [ ] **P-026** Query Store de la BD del sitio tras la migración 56 — quedó con 96 de 100 MB (2026-11-21): en unos días, `SELECT actual_state_desc, readonly_reason, current_storage_size_mb, max_storage_size_mb FROM sys.database_query_store_options` debe dar READ_WRITE y unos 80 MB (la limpieza por tamaño corre al pasar del 90 %). Si queda READ_ONLY, volver a correr `56_QueryStoreAcotado.sql` y anotar un M- nuevo. · C
 
 ## En el sitio local (probador)
 
