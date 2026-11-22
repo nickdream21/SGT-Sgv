@@ -349,7 +349,8 @@ namespace WebSGV.Views
                 return;
             }
 
-            SesionHelper.Iniciar(Session, datos.IdUsuario, datos.Rol, datos.Nombre);
+            // El id del conductor solo queda si el rol es conductor (SesionHelper.Iniciar).
+            SesionHelper.Iniciar(Session, datos.IdUsuario, datos.Rol, datos.Nombre, datos.IdConductor);
             Session["NombreUsuario"] = datos.NombreUsuario;
             // Leído por varias páginas (RegistroDespacho...) para
             // registrar quién sube o edita.
@@ -364,8 +365,6 @@ namespace WebSGV.Views
             SesionVigenteHelper.InvalidarCache(datos.IdUsuario);
 
             string rol = (datos.Rol ?? "").Trim().ToUpper();
-            if (RolesHelper.EsRolConductor(rol) && datos.IdConductor.HasValue)
-                Session["IdConductor"] = datos.IdConductor.Value;
 
             AuditoriaHelper.Registrar("LOGIN", "Usuarios", datos.IdUsuario.ToString(),
                 $"Inicio de sesión - Usuario: {datos.NombreUsuario}, Rol: {datos.Rol}");

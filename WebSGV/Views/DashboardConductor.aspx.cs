@@ -72,17 +72,7 @@ namespace WebSGV.Views
         #region Variables Globales
 
 
-        private int IdConductorActual
-        {
-            get
-            {
-                if (Session["IdConductor"] != null)
-                {
-                    return Convert.ToInt32(Session["IdConductor"]);
-                }
-                return 0;
-            }
-        }
+        private int IdConductorActual => SesionHelper.IdConductor(Session) ?? 0;
 
         private int IdUsuarioActual => SesionHelper.IdUsuario(Session) ?? 0;
 
@@ -92,22 +82,19 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            // Guarda fuera de cualquier try: sin sesión va al login; con otro rol (un administrador
+            // que abre un enlace viejo), al inicio de su rol sin cerrarle la sesión.
+            SecurityHelper.ExigirRolConductor();
+
             if (!IsPostBack)
             {
-                if (!VerificarSesion())
-                {
-                    return; // VerificarSesion ya emitió el redirect; no inicializar nada
-                }
+                ExigirConductorVinculado();
                 InicializarDashboard();
             }
-            else
+            else if (IdConductorActual == 0)
             {
-                // En PostBack, verificar que la sesión siga activa
-                if (Session["IdConductor"] == null || IdConductorActual == 0)
-                {
-                    Response.Redirect("~/Views/Login.aspx?error=sesion", true);
-                    return;
-                }
+                // En PostBack, verificar que la sesión siga teniendo su conductor
+                Response.Redirect("~/Views/Login.aspx?error=sesion", true);
             }
         }
 
@@ -115,61 +102,18 @@ namespace WebSGV.Views
 
         #region Métodos de Inicialización
 
-        private bool VerificarSesion()
+        /// <summary>
+        /// Usuario CONDUCTOR sin idConductor vinculado en BD: limpia la sesión para evitar el bucle
+        /// con Login.aspx (que lleva al panel a quien tiene sesión de conductor) y lo envía con un
+        /// código de error que el Login muestra. Termina la respuesta.
+        /// </summary>
+        private void ExigirConductorVinculado()
         {
-            try
-            {
-                // Sin sesión activa => al login
-                if (!RolesHelper.TieneSesionActiva())
-                {
-                    Response.Redirect("~/Views/Login.aspx?error=sesion", false);
-                    Context.ApplicationInstance.CompleteRequest();
-                    return false;
-                }
+            if (IdConductorActual != 0) return;
 
-                // Rol no autorizado para esta sección => redirige según su rol
-                if (!RolesHelper.TienePermiso("DASHBOARD_CONDUCTOR"))
-                {
-                    RolesHelper.RedirigirSegunRol();
-                    Context.ApplicationInstance.CompleteRequest();
-                    return false;
-                }
-
-                if ((Session["IdConductor"] == null || IdConductorActual == 0) && !RolesHelper.EsConductor())
-                {
-                    // Un administrador que abre el panel del conductor (un enlace viejo, la dirección escrita a mano)
-                    // no tiene conductor vinculado: antes caía en el caso de abajo y se le cerraba la sesión.
-                    RolesHelper.RedirigirSegunRol();
-                    Context.ApplicationInstance.CompleteRequest();
-                    return false;
-                }
-
-                if (Session["IdConductor"] == null || IdConductorActual == 0)
-                {
-                    // Usuario CONDUCTOR sin idConductor vinculado en BD.
-                    // Limpiamos la sesión para evitar loop con Login.aspx (que auto-redirige al
-                    // dashboard si encuentra Session["UsuarioID"] con rol CONDUCTOR) y enviamos
-                    // un código de error que el Login mostrará al usuario.
-                    Session.Clear();
-                    Session.Abandon();
-                    Response.Redirect("~/Views/Login.aspx?error=sin_conductor", false);
-                    Context.ApplicationInstance.CompleteRequest();
-                    return false;
-                }
-
-                return true;
-            }
-            catch (System.Threading.ThreadAbortException)
-            {
-                return false;
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Error al verificar la sesión en DashboardConductor");
-                Response.Redirect("~/Views/Login.aspx?error=sesion", false);
-                Context.ApplicationInstance.CompleteRequest();
-                return false;
-            }
+            Session.Clear();
+            Session.Abandon();
+            Response.Redirect("~/Views/Login.aspx?error=sin_conductor", true);
         }
 
         private void InicializarDashboard()
@@ -553,7 +497,7 @@ namespace WebSGV.Views
             try
             {
                 // Verificar sesión activa antes de proceder
-                if (Session["IdConductor"] == null || IdConductorActual == 0)
+                if (IdConductorActual == 0)
                 {
                     MostrarMensaje("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.", "warning");
                     return;
@@ -1254,7 +1198,8 @@ namespace WebSGV.Views
             {
                 // Validar sesión activa
                 var session = HttpContext.Current.Session;
-                if (session["IdConductor"] == null)
+                int? idConductorSesion = SesionHelper.IdConductor(session);
+                if (idConductorSesion == null)
                 {
                     LogSGV.Advertencia("DashboardConductor.RetirarLiquidacion: llamada sin sesión de conductor (orden {IdOrdenViaje})", idOrdenViaje);
                     return new { success = false, message = "Sesión no válida" };
@@ -1268,7 +1213,7 @@ namespace WebSGV.Views
                     return new { success = false, message = "Sesión no válida" };
                 }
 
-                int idConductorActual = Convert.ToInt32(session["IdConductor"]);
+                int idConductorActual = idConductorSesion.Value;
 
                 var r = DashboardConductorService.RetirarLiquidacion(idOrdenViaje, idConductorActual);
                 int resultado = r.Resultado;

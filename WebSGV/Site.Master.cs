@@ -53,6 +53,11 @@ namespace WebSGV
         /// </summary>
         protected void Page_Init(object sender, EventArgs e)
         {
+            // Sin caché (no-store) en toda página con master, con o sin sesión: tras cerrar sesión,
+            // el botón Atrás no vuelve a mostrar datos de la sesión anterior. El Init del master
+            // corre antes del Page_Load de la página, así que cubre también sus redirecciones.
+            SecurityHelper.AgregarHeadersSeguridad();
+
             // Postback sin sesión en una página protegida: al Login antes de validar el ViewState
             // (si no, la validación MAC falla primero y el usuario no ve nada). En un postback
             // parcial el ScriptManager convierte el redirect en "pageRedirect".

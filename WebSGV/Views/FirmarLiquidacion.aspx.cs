@@ -28,9 +28,7 @@ namespace WebSGV.Views
                 return;
             }
 
-            int idConductorActual = 0;
-            if (Session["IdConductor"] != null)
-                int.TryParse(Session["IdConductor"].ToString(), out idConductorActual);
+            int idConductorActual = SesionHelper.IdConductor(Session) ?? 0;
 
             if (idConductorActual == 0 || !OrdenPendienteDeFirma(idOrdenViaje, idConductorActual))
             {

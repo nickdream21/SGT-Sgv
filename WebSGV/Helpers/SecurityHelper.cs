@@ -107,7 +107,8 @@ namespace WebSGV.Helpers
 
         /// <summary>
         /// Evita que el navegador o un proxy guarden en caché la página protegida actual.
-        /// Llamar desde Page_Load de cada página protegida. Las cabeceras de seguridad
+        /// Site.Master la llama en su Page_Init (toda página con master); las páginas sin master
+        /// la llaman en su Page_Load (prueba GuardasAccesoTests). Las cabeceras de seguridad
         /// (anti-clickjacking, nosniff, Referrer-Policy, HSTS) se envían a todo el sitio
         /// desde Web.config / Web.Release.config (system.webServer/httpProtocol), no desde aquí.
         /// </summary>

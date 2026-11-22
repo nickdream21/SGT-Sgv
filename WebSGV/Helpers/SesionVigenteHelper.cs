@@ -91,7 +91,7 @@ namespace WebSGV.Helpers
             if (NormalizarRol(rolSesion) != NormalizarRol(bd.Rol))
                 return ResultadoSesion.Cerrada;
 
-            // El login solo guarda Session["IdConductor"] si el rol es conductor.
+            // El login solo guarda el id del conductor (SesionHelper.IdConductor) si el rol es conductor.
             int? idConductorBd = RolesHelper.EsRolConductor(bd.Rol) ? bd.IdConductor : null;
             if (idConductorBd != idConductorSesion)
                 return ResultadoSesion.Cerrada;

@@ -76,19 +76,20 @@ namespace WebSGV.Tests
 
         /// <summary>
         /// Acceso directo a las claves de sesión de autenticación (UsuarioID, el antiguo IdUsuario,
-        /// Rol y Nombre; sin importar mayúsculas): <c>Session["UsuarioID"]</c>, <c>ctx.Session?["Rol"]</c>,
-        /// <c>sesion["Nombre"]</c>, <c>Session.Contents["Rol"]</c>, <c>Session.Add("Rol", ..)</c>,
-        /// <c>Session.Remove("UsuarioID")</c> y las constantes <c>SesionHelper.Clave*</c> como índice o
-        /// argumento. Otras claves ("NombreUsuario", "Usuario", "IdConductor"...) quedan fuera.
+        /// Rol, Nombre e IdConductor (E4-2); sin importar mayúsculas): <c>Session["UsuarioID"]</c>,
+        /// <c>ctx.Session?["Rol"]</c>, <c>sesion["Nombre"]</c>, <c>Session.Contents["Rol"]</c>,
+        /// <c>Session.Add("Rol", ..)</c>, <c>Session.Remove("UsuarioID")</c> y las constantes
+        /// <c>SesionHelper.Clave*</c> como índice o argumento. Otras claves ("NombreUsuario",
+        /// "Usuario"...) quedan fuera.
         /// </summary>
         private const string ObjetoSesion = @"\b\w*ses+ion\??(\.Contents)?\??";
         private const string ClaveSesion =
-            @"(""(UsuarioID|IdUsuario|Rol|Nombre)""|(SesionHelper\.)?Clave(UsuarioId|Rol|Nombre)\b)";
+            @"(""(UsuarioID|IdUsuario|Rol|Nombre|IdConductor)""|(SesionHelper\.)?Clave(UsuarioId|Rol|Nombre|IdConductor)\b)";
 
         private static readonly Regex AccesoClaveSesion = new Regex(
             ObjetoSesion + @"\s*\[\s*" + ClaveSesion +                         // Session["Rol"], Session.Contents["Rol"]
             "|" + ObjetoSesion + @"\.(Add|Remove)\s*\(\s*" + ClaveSesion +      // Session.Add("Rol", ..), Session.Remove("Rol")
-            @"|\[\s*(SesionHelper\.)?Clave(UsuarioId|Rol|Nombre)\s*\]",          // x[SesionHelper.ClaveRol]
+            @"|\[\s*(SesionHelper\.)?Clave(UsuarioId|Rol|Nombre|IdConductor)\s*\]", // x[SesionHelper.ClaveRol]
             RegexOptions.IgnoreCase);
 
         private static readonly Dictionary<string, string> ExcepcionesClavesSesion =
@@ -112,16 +113,20 @@ namespace WebSGV.Tests
             Assert.Matches(AccesoClaveSesion, "x = Session[SesionHelper.ClaveRol];");
             Assert.Matches(AccesoClaveSesion, "Session.Remove(SesionHelper.ClaveUsuarioId);");
             Assert.Matches(AccesoClaveSesion, "x = ctx.Session?[SesionHelper.ClaveNombre];");
+            // E4-2: el id del conductor también va solo por SesionHelper (IdConductor, Iniciar).
+            Assert.Matches(AccesoClaveSesion, "x = Session[\"IdConductor\"];");
+            Assert.Matches(AccesoClaveSesion, "if (session[\"IdConductor\"] == null)");
+            Assert.Matches(AccesoClaveSesion, "Session.Remove(SesionHelper.ClaveIdConductor);");
             // Otras claves de sesión no son de autenticación.
             Assert.DoesNotMatch(AccesoClaveSesion, "x = Session[\"NombreUsuario\"];");
             Assert.DoesNotMatch(AccesoClaveSesion, "x = Session[\"Usuario\"];");
-            Assert.DoesNotMatch(AccesoClaveSesion, "x = Session[\"IdConductor\"];");
+            Assert.DoesNotMatch(AccesoClaveSesion, "x = Session[\"IdConductorPrevio\"];");
             Assert.DoesNotMatch(AccesoClaveSesion, "x = fila[\"rol\"];");
 
             List<string> hallazgos = Buscar(raiz, AccesoClaveSesion, ExcepcionesClavesSesion);
 
             Assert.True(hallazgos.Count == 0,
-                "Lee y escribe UsuarioID/Rol/Nombre con SesionHelper (IdUsuario, Rol, Nombre, HaySesion, Iniciar), " +
+                "Lee y escribe UsuarioID/Rol/Nombre/IdConductor con SesionHelper (IdUsuario, Rol, Nombre, IdConductor, HaySesion, Iniciar), " +
                 "no con la sesión directamente (auditoría de seguridad, 8D-2):" +
                 Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
         }

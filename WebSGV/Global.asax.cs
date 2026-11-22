@@ -89,7 +89,7 @@ namespace WebSGV
                 ResultadoSesion resultado = SesionVigenteHelper.EvaluarSesion(
                     selloSesion,
                     SesionHelper.Rol(sesion),
-                    SesionVigenteHelper.EnteroDeSesion(sesion["IdConductor"]),
+                    SesionHelper.IdConductor(sesion),
                     estado);
 
                 if (resultado == ResultadoSesion.Cerrada)

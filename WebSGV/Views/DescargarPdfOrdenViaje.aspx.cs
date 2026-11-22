@@ -24,17 +24,12 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            // 1) Autenticación (fuera de cualquier try: sin sesión termina la respuesta en el Login)
+            SecurityHelper.ExigirSesion();
+            int idUsuario = SecurityHelper.ObtenerIdUsuario();
+
             Response.Clear();
             Response.ContentEncoding = System.Text.Encoding.UTF8;
-
-            // 1) Autenticación
-            int idUsuario = SecurityHelper.ObtenerIdUsuario();
-            if (!SecurityHelper.TieneSesionActiva() || idUsuario == 0)
-            {
-                Response.Redirect(ResolveUrl("~/Views/Login.aspx?returnUrl=" +
-                    Server.UrlEncode(Request.RawUrl)), true);
-                return;
-            }
 
             // 2) Parámetros
             if (!int.TryParse(Request.QueryString["id"], out int idOrdenViaje) || idOrdenViaje <= 0)

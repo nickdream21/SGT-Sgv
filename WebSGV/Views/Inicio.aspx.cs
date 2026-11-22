@@ -10,8 +10,8 @@ namespace WebSGV.Views
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            SecurityHelper.AgregarHeadersSeguridad();
             SecurityHelper.ExigirRolAdminOSupervisor();
+            SecurityHelper.AgregarHeadersSeguridad();
 
             if (!IsPostBack)
                 MostrarDocumentosPendientes();

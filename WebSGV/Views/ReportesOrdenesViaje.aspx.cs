@@ -26,8 +26,8 @@ namespace WebSGV.Views
         protected void Page_Load(object sender, EventArgs e)
         {
             // Verificar acceso antes de cualquier operación (incluidas exportaciones)
-            SecurityHelper.AgregarHeadersSeguridad();
             SecurityHelper.ExigirRolAdminOSupervisor();
+            SecurityHelper.AgregarHeadersSeguridad();
 
             // ✅ PROCESAR EXPORTACIONES ANTES DE CUALQUIER COSA
             string action = Request.QueryString["action"];

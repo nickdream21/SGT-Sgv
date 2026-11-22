@@ -134,5 +134,38 @@ namespace WebSGV.Tests
                 Assert.True(SecurityHelper.EsAdmin());
             }
         }
+
+        // E4-2: el id del conductor también pasa solo por SesionHelper.
+        [Theory]
+        [InlineData("CONDUCTOR", 15, 15)]
+        [InlineData(" chofer ", 15, 15)]
+        [InlineData("CONDUCTOR", null, null)]
+        [InlineData("ADMIN", 15, null)]       // otro rol nunca deja id de conductor
+        public void Iniciar_IdConductorSoloSiElRolEsConductor(string rol, int? idConductor, int? esperado)
+        {
+            using (var c = new ContextoFalso())
+            {
+                c.Sesion[SesionHelper.ClaveIdConductor] = 99; // valor de una sesión anterior
+                SesionHelper.Iniciar(c.Sesion, 7, rol, "Usuario", idConductor);
+
+                Assert.Equal(esperado, SesionHelper.IdConductor(c.Sesion));
+                Assert.Equal(esperado, SesionHelper.IdConductorActual);
+            }
+        }
+
+        [Theory]
+        [InlineData(null, null)]
+        [InlineData(15, 15)]
+        [InlineData("15", 15)]   // sesión antigua guardada como texto
+        [InlineData("x", null)]
+        public void IdConductor_ToleraNuloYOtrosTipos(object guardado, int? esperado)
+        {
+            using (var c = new ContextoFalso())
+            {
+                c.Sesion[SesionHelper.ClaveIdConductor] = guardado;
+                Assert.Equal(esperado, SesionHelper.IdConductor(c.Sesion));
+            }
+            Assert.Null(SesionHelper.IdConductor(null));
+        }
     }
 }
