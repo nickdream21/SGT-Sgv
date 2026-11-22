@@ -69,6 +69,7 @@ $cs = ($xml.connectionStrings.add | Where-Object { $_.name -eq 'ConexionSGV' } |
 $b = New-Object System.Data.SqlClient.SqlConnectionStringBuilder($cs)
 if ($b.InitialCatalog -ne $bdEsperada) { throw "$archivoConexion apunta a '$($b.InitialCatalog)', se esperaba '$bdEsperada'." }
 $b.ApplicationIntent = 'ReadOnly'
+$b['Encrypt'] = $true   # somee siempre cifrado (E4-10); TrustServerCertificate como venga
 
 # --- Registros de la BD (solo SELECT) --------------------------------------------------------------
 $consulta = @"

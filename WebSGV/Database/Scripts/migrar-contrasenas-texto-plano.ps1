@@ -46,6 +46,8 @@ Add-Type -Path $dll
 $cs = ($xml.connectionStrings.add | Where-Object { $_.name -eq 'ConexionSGV' } | Select-Object -First 1).connectionString
 $b = New-Object System.Data.SqlClient.SqlConnectionStringBuilder($cs)
 if ($b.InitialCatalog -ne $bdEsperada) { throw "$archivoConexion apunta a '$($b.InitialCatalog)', se esperaba '$bdEsperada'." }
+$b['Encrypt'] = $true   # somee siempre cifrado (E4-10); TrustServerCertificate como venga
+$cs = $b.ConnectionString
 
 Write-Host "Entorno: $Entorno  ->  $($b.DataSource) / $($b.InitialCatalog)" -ForegroundColor Cyan
 

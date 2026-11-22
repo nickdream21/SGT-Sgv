@@ -1,4 +1,6 @@
 using System;
+using System.Data.SqlClient;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -244,6 +246,100 @@ namespace WebSGV.Tests
                          || i.StartsWith("Uploads\\", StringComparison.OrdinalIgnoreCase))
                 .ToList();
             Assert.Empty(contenidoDeDatos);
+        }
+
+        // ---- E4-10: conexión cifrada a la BD -----------------------------------------------------
+
+        private static string RaizRepo() => Path.GetDirectoryName(RaizWeb());
+
+        [Fact]
+        public void PlantillaDeConexion_LlevaEncryptTrue()
+        {
+            string cs = Cargar("connectionStrings.config.example").Descendants("add")
+                .Where(e => (string)e.Attribute("name") == "ConexionSGV")
+                .Select(e => (string)e.Attribute("connectionString"))
+                .Single();
+            var b = new SqlConnectionStringBuilder(cs.Replace("<", "").Replace(">", ""));
+            Assert.True(b.Encrypt, "La plantilla debe llevar Encrypt=True.");
+            // El certificado de somee no coincide con el nombre del servidor: sin esto no conecta.
+            Assert.True(b.TrustServerCertificate);
+        }
+
+        [Fact]
+        public void RespaldarBd_ExportaConConexionCifrada()
+        {
+            string texto = File.ReadAllText(Path.Combine(RaizRepo(), "herramientas", "respaldo", "respaldar-bd.ps1"));
+            Assert.Contains("'/SourceEncryptConnection:True'", texto);
+            Assert.Contains("'/SourceTrustServerCertificate:True'", texto);
+        }
+
+        /// <summary>
+        /// Ejecuta conexion-bd.ps1 de verdad (Windows PowerShell) con un connectionStrings.config
+        /// falso en una carpeta temporal: no se conecta a nada. Pruebas y producción salen con
+        /// Encrypt=True (también si el archivo decía False o no decía nada), TrustServerCertificate
+        /// como venía y -N en sqlcmd; ensayo (SQL local) no cambia.
+        /// </summary>
+        [Theory]
+        [InlineData("Encrypt=False;TrustServerCertificate=True;", true)]
+        [InlineData("TrustServerCertificate=True;", false)]
+        [InlineData("Encrypt=True;", false)]
+        public void ConexionBd_FuerzaEncryptTrueEnSomee(string extra, bool avisa)
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "sgv-e410-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                File.WriteAllText(Path.Combine(dir, "connectionStrings.config"),
+                    "<connectionStrings><add name=\"ConexionSGV\" connectionString=\"Data Source=ejemplo.mssql.somee.com;" +
+                    "Initial Catalog=sgvActualizada;User ID=u;Password=p;" + extra + "\" /></connectionStrings>");
+                string script = Path.Combine(RaizWeb(), "Database", "conexion-bd.ps1").Replace("'", "''");
+                string comando =
+                    "$ErrorActionPreference='Stop'; . '" + script + "'; " +
+                    "$c = Get-ConexionSgv -Entorno pruebas -DirWeb '" + dir.Replace("'", "''") + "' 3>&1 | ForEach-Object { if ($_ -is [System.Management.Automation.WarningRecord]) { 'AVISO ' + $_.Message } else { $_ } }; " +
+                    "$c | Where-Object { $_ -is [string] }; $con = $c | Where-Object { $_ -isnot [string] }; " +
+                    "'CADENA ' + $con.Cadena; 'SQLCMD ' + ((Get-ArgumentosSqlcmd $con) -join ' '); " +
+                    "$e = Get-ConexionSgv -Entorno ensayo -BaseDeDatos sgvEnsayo_x -DirWeb '" + dir.Replace("'", "''") + "'; " +
+                    "'ENSAYO ' + $e.Cadena; 'SQLCMDENSAYO ' + ((Get-ArgumentosSqlcmd $e) -join ' ')";
+                string salida = EjecutarPowerShell(comando);
+                string[] lineas = salida.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                string Linea(string prefijo) => lineas.Single(l => l.StartsWith(prefijo + " ", StringComparison.Ordinal)).Substring(prefijo.Length + 1);
+
+                var b = new SqlConnectionStringBuilder(Linea("CADENA"));
+                Assert.True(b.Encrypt, salida);
+                Assert.True(b.TrustServerCertificate == extra.Contains("TrustServerCertificate=True"), salida);
+                Assert.Equal("sgvActualizada", b.InitialCatalog);
+                Assert.Contains(" -N", " " + Linea("SQLCMD"));
+                Assert.Equal(avisa, lineas.Any(l => l.StartsWith("AVISO ", StringComparison.Ordinal) && l.Contains("Encrypt=False")));
+
+                var e = new SqlConnectionStringBuilder(Linea("ENSAYO"));
+                Assert.False(e.Encrypt, salida);
+                Assert.DoesNotContain(" -N", " " + Linea("SQLCMDENSAYO"));
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }
+
+        private static string EjecutarPowerShell(string comando)
+        {
+            string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"WindowsPowerShell\v1.0\powershell.exe");
+            var info = new ProcessStartInfo(ps, "-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " +
+                    Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(comando)))
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            using (var proceso = Process.Start(info))
+            {
+                var salida = proceso.StandardOutput.ReadToEndAsync();
+                var errores = proceso.StandardError.ReadToEndAsync();
+                Assert.True(proceso.WaitForExit(60000), "powershell.exe no terminó en 60 s.");
+                Assert.True(proceso.ExitCode == 0, "powershell.exe salió con " + proceso.ExitCode + ": " + errores.Result + salida.Result);
+                return salida.Result;
+            }
         }
     }
 }

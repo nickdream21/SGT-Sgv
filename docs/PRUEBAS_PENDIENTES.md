@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-043 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-044 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -56,6 +56,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-041** Subir un Excel real en CargarExcel (Indicadores) e ImportarSeguimiento con E4-7 — el camino bueno escribe en la BD, así que en local solo se probaron los rechazos: con orden del usuario, cargar un archivo real de cada uno y comprobar que se procesa como antes. · C
 - [ ] **P-042** "Actualizar GPS" de verdad tras E4-8 — escribe en la BD y consulta el GPS: con orden del usuario, pulsarlo una vez en RegistroSeguimiento y comprobar que el POST con `application/json` lanza la consulta y el tablero se refresca (en local solo se probó con la respuesta simulada). Publicar DLL, JS y `Web.config` juntos: con la DLL nueva y el JS viejo el botón daría 415. · C
 - [ ] **P-043** CI de E4-9 en GitHub — tras el push (con orden del usuario): el workflow pasa en `master`; en una rama de prueba con `Newtonsoft.Json 12.0.1` en `packages.config` el paso de restore falla con NU1903 (confirma que el NuGet de `windows-latest` audita `packages.config`), y se borra la rama; "Run workflow" manual funciona; con U-086 hecho, Dependabot abre sus PR agrupados de `nuget` y `github-actions`. · B
+- [ ] **P-044** Conexión cifrada tras U-084 — con `Encrypt=True;TrustServerCertificate=True` en cada `connectionStrings.config`: el sitio local y el publicado inician sesión y cargan datos, y `ensayar-migracion.ps1` y `ensayar-restauracion.ps1` funcionan en una PC con SQL Server local (en la laptop solo hay LocalDB). · B
 
 ## Reglas
 

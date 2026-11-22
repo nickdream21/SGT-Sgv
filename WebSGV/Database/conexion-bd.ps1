@@ -31,7 +31,25 @@ function Test-NombreBdEnsayo([string]$Nombre) {
 }
 
 <#
-    Devuelve un objeto con: Entorno, Cadena (SqlClient), Servidor, Bd, Integrada, Usuario, Clave.
+    Devuelve la cadena con Encrypt=True (E4-10): la conexión a somee viaja cifrada aunque el archivo
+    de configuración no lo diga. Si el archivo trae Encrypt=False, avisa una línea y lo cambia.
+    TrustServerCertificate se deja como venga: el certificado de somee no coincide con el nombre del
+    servidor y sin TrustServerCertificate=True la conexión cifrada falla ("El nombre de entidad de
+    seguridad de destino es incorrecto", probado el 2026-11-22).
+#>
+function ConvertTo-CadenaCifrada([string]$Cadena, [string]$Origen = 'la cadena de conexión') {
+    $b = New-Object System.Data.SqlClient.SqlConnectionStringBuilder($Cadena)
+    if ($b.ShouldSerialize('Encrypt') -and -not $b.Encrypt) {
+        Write-Warning "$Origen trae Encrypt=False; se usa Encrypt=True (corríjalo en el archivo, ver U-084)."
+    }
+    $b['Encrypt'] = $true
+    return $b.ConnectionString
+}
+
+<#
+    Devuelve un objeto con: Entorno, Cadena (SqlClient), Servidor, Bd, Integrada, Usuario, Clave, Cifrada.
+    Cifrada: pruebas y produccion (somee) siempre; ensayo no (el SQL local, p. ej. LocalDB, puede no
+    admitir cifrado).
     Clave es $null con la autenticación de Windows. Lanza un error si algo no cuadra.
 #>
 function Get-ConexionSgv {
@@ -59,7 +77,7 @@ function Get-ConexionSgv {
         $b['Connect Timeout'] = 15
         return [pscustomobject]@{
             Entorno = $Entorno; Cadena = $b.ConnectionString; Servidor = $Servidor; Bd = $BaseDeDatos
-            Integrada = $true; Usuario = $null; Clave = $null
+            Integrada = $true; Usuario = $null; Clave = $null; Cifrada = $false
         }
     }
 
@@ -78,15 +96,18 @@ function Get-ConexionSgv {
         throw "$archivoConexion apunta a '$($b.InitialCatalog)', se esperaba '$bdEsperada'. Revise la configuración."
     }
     return [pscustomobject]@{
-        Entorno = $Entorno; Cadena = $cs; Servidor = $b.DataSource; Bd = $b.InitialCatalog
-        Integrada = [bool]$b.IntegratedSecurity; Usuario = $b.UserID; Clave = $b.Password
+        Entorno = $Entorno; Cadena = (ConvertTo-CadenaCifrada $cs $archivoConexion); Servidor = $b.DataSource; Bd = $b.InitialCatalog
+        Integrada = [bool]$b.IntegratedSecurity; Usuario = $b.UserID; Clave = $b.Password; Cifrada = $true
     }
 }
 
 # Argumentos de sqlcmd para la conexión (sin la clave: va en $env:SQLCMDPASSWORD, ver Invoke-SqlcmdSgv).
+# -N cifra la conexión (somee); los llamadores agregan -C porque el certificado de somee no coincide
+# con el nombre del servidor.
 function Get-ArgumentosSqlcmd($Conexion) {
     $a = @('-S', $Conexion.Servidor, '-d', $Conexion.Bd)
     if ($Conexion.Integrada) { $a += '-E' } else { $a += @('-U', $Conexion.Usuario) }
+    if ($Conexion.Cifrada) { $a += '-N' }
     return $a
 }
 

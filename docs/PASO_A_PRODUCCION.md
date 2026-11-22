@@ -349,7 +349,7 @@ Lo que se cargó con scripts o herramientas únicamente en `sgvActualizada` y ha
 
 ## 9. Cambiar la cadena del servidor
 
-1. Con un cliente FTP, subir a la raíz del sitio (`/www.sgvtransporte.somee.com/`) el contenido de `connectionStrings.Production.config` **con el nombre `connectionStrings.config`** (el `Web.config` lee `configSource="connectionStrings.config"`). Hacerlo desde una copia fuera del repo y borrarla después. `publicar.ps1` nunca sube este archivo.
+1. Con un cliente FTP, subir a la raíz del sitio (`/www.sgvtransporte.somee.com/`) el contenido de `connectionStrings.Production.config` **con el nombre `connectionStrings.config`** (con `Encrypt=True;TrustServerCertificate=True`, U-084) (el `Web.config` lee `configSource="connectionStrings.config"`). Hacerlo desde una copia fuera del repo y borrarla después. `publicar.ps1` nunca sube este archivo.
 2. El sitio se reinicia solo al cambiar ese archivo (todas las sesiones se cierran).
 3. Vuelta atrás: subir otra vez la copia guardada en el paso 1.2.
 

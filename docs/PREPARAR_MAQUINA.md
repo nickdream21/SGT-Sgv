@@ -18,7 +18,7 @@ Copiarlos a mano desde la otra PC (p. ej. con la transferencia de archivos de An
 
 | Archivo | Para qué | Cómo |
 |---|---|---|
-| `WebSGV/connectionStrings.config` | BD de pruebas `sgvActualizada` (sitio local, `sql.ps1`, respaldos y pruebas de integración) | Copiarlo, o crearlo desde `WebSGV/connectionStrings.config.example` |
+| `WebSGV/connectionStrings.config` | BD de pruebas `sgvActualizada` (sitio local, `sql.ps1`, respaldos y pruebas de integración) | Copiarlo, o crearlo desde `WebSGV/connectionStrings.config.example`; con `Encrypt=True;TrustServerCertificate=True` (U-084: sin el segundo, somee no conecta) |
 | `WebSGV/connectionStrings.Production.config` | BD `sgvTransporte` (`-Entorno produccion`). Solo en la PC que vaya a hacer el [paso a producción](PASO_A_PRODUCCION.md) | Copiarlo (mismo formato que el anterior) |
 | `WebSGV/appSettings.Secrets.config` | GPS (Onway), clave del cron del GPS, apisperu y SMTP | Copiarlo, o crearlo desde `WebSGV/appSettings.Secrets.config.example` (un comentario por clave). Para publicar desde esta PC debe tener `GpsAutomaticoClave` (ver `herramientas/publicar/README.md`) |
 | `privado/` | Credenciales por rol de pruebas (`CREDENCIALES_USUARIOS.txt`), scripts con datos de personas, tablas de trabajo | Copiar la carpeta **menos** `ftp-respaldo.xml` |

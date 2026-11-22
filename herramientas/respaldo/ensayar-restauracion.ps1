@@ -309,6 +309,8 @@ try {
         $cadenaSomee = ($xml.connectionStrings.add | Where-Object { $_.name -eq 'ConexionSGV' } | Select-Object -First 1).connectionString
         $bs = New-Object System.Data.SqlClient.SqlConnectionStringBuilder($cadenaSomee)
         if ($bs.InitialCatalog -ne $bdEsperada) { throw "$archivoConexion apunta a '$($bs.InitialCatalog)', se esperaba '$bdEsperada'." }
+        $bs['Encrypt'] = $true   # somee siempre cifrado (E4-10); TrustServerCertificate como venga
+        $cadenaSomee = $bs.ConnectionString
         try {
             $objSomee = Invoke-Consulta $cadenaSomee $sqlObjetos
             $setSomee = New-Object 'System.Collections.Generic.HashSet[string]' ([string[]]@($objSomee.Rows | ForEach-Object { '{0}|{1}' -f $_.tipo, $_.nombre })), ([StringComparer]::OrdinalIgnoreCase)

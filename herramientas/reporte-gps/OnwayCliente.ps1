@@ -47,7 +47,9 @@ function Get-Secretos {
 
 function Get-ConnString([string]$archivo = "connectionStrings.config") {
     $xml = [xml](Get-Content (Join-Path $script:CarpetaWeb $archivo) -Raw)
-    return $xml.connectionStrings.add.connectionString
+    $b = New-Object System.Data.SqlClient.SqlConnectionStringBuilder($xml.connectionStrings.add.connectionString)
+    $b['Encrypt'] = $true   # somee siempre cifrado (E4-10); TrustServerCertificate como venga
+    return $b.ConnectionString
 }
 
 function Invoke-Sql([string]$query, [hashtable]$parametros = @{}, [string]$archivoConn = "connectionStrings.config") {

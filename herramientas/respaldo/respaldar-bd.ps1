@@ -160,6 +160,8 @@ $lineas = @(
     "/SourceDatabaseName:`"$($b.InitialCatalog)`""
     "/SourceUser:`"$($b.UserID)`""
     "/SourcePassword:`"$($b.Password)`""
+    # La exportación viaja cifrada siempre (E4-10), diga lo que diga la cadena del archivo.
+    '/SourceEncryptConnection:True'
     # Necesario: el certificado TLS de somee no coincide con el nombre del servidor (*.mssql.somee.com)
     # y la validación falla ("El nombre de entidad de seguridad de destino es incorrecto", probado el
     # 2026-11-19). La propia cadena de la app usa TrustServerCertificate=True. Quitarlo si somee lo corrige.
