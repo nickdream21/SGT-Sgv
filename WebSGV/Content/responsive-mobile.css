@@ -16,23 +16,6 @@
         position: relative;
     }
 
-    /* Filas de totales en contenedores <div>. Nunca en <tr>: un display:flex
-       en un tfoot desarma los anchos de las columnas de la tabla.
-       :where(div) no suma especificidad: el CSS de la página sigue mandando como antes. */
-    :where(div).total-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid #b3d9ff;
-    }
-
-        :where(div).total-row:last-child {
-            border-bottom: none;
-            font-weight: 700;
-            font-size: 1.1rem;
-            padding-top: 0.75rem;
-        }
-
     /* Mejorar contraste de textos en pantallas pequeñas */
     .text-muted {
         color: #495057 !important;

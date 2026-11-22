@@ -86,7 +86,7 @@ WHERE idDespachoOrigen IS NULL AND idDespachoDestino IS NULL AND estado = 'COMPL
 .\WebSGV\Database\aplicar-migraciones.ps1 -Entorno produccion -ConfirmoProduccion
 ```
 
-Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–56) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
+Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–58) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
 
 **Migración 52** (`52_TriggersAuditoriaHeredados.sql`, E3-1): crea los 11 triggers `TR_<tabla>_Auditoria` heredados (llenan `Auditoria`; `sp_DC_GenerarNumeroOrden` la lee) solo si faltan; donde ya existen no hace nada y solo queda registrada. Ensayada antes con `herramientas/respaldo/ensayar-migracion.ps1`. Control después (solo SELECT): `SELECT name, is_disabled FROM sys.triggers WHERE name LIKE 'TR[_]%[_]Auditoria'` → los 11 de la migración (más `TR_AbastecimientoCombustible_Auditoria` si existe, que se borra en E3-8) con `is_disabled = 0`. Si `aplicar-migraciones.ps1 -SoloListar` avisa de un hash distinto en `16_HoraPeru.sql`, comparar `dbo.fn_AhoraPeru` con el archivo antes de aceptarlo en `$HashesAceptados` (el de pruebas ya está aceptado, revisado el 2026-11-21).
 
@@ -135,6 +135,20 @@ Lo que salga se anota como `D-` nuevo y se corrige (con aprobación del usuario)
 
 **Migración 56** (`56_QueryStoreAcotado.sql`, E3-7): Query Store de la BD actual con tope de 100 MB, captura y limpieza por tamaño `AUTO` y `READ_WRITE` (`sgvTransporte` tiene hoy 2000 MB de tope). Es un `ALTER DATABASE` (no va en transacción; `aplicar-migraciones.ps1` no la envuelve) y necesita permiso ALTER sobre la BD: si falta, se detiene con THROW 56001 y hay que hacerlo desde el panel de somee. Control antes y después: `SELECT actual_state_desc, readonly_reason, max_storage_size_mb, current_storage_size_mb, query_capture_mode_desc, size_based_cleanup_mode_desc FROM sys.database_query_store_options` → después `READ_WRITE`, 100, `AUTO`, `AUTO` (si lo usado pasa de 90 MB, la limpieza lo baja al 80 % en las horas siguientes).
 
+**Migraciones 57 y 58** (`57_BorrarObjetosRetirados.sql`, `58_BorrarTablasRetiradas.sql`, E3-8): borran 24 SP, vistas y función retirados y 18 tablas retiradas, `Usuarios.idOperador` y `OrdenViaje.tipoViaje`, y pasan `ViajesEnProgreso.observaciones` a nvarchar(max). **Orden: 57 → `sp_DC_InsertarOrdenViajeConductor` → 58** (ese SP deja de escribir `tipoViaje`). `aplicar-migraciones.ps1` aplica el SP solo, justo antes de la 58, por su línea `-- Requiere SP:`; la 58 además se detiene (THROW 58005) si un objeto que se queda todavía nombra una tabla o columna que borra. La 58 cuenta las filas de cada tabla y se detiene (THROW 58001) si hay más que en pruebas el 2026-11-21 (`Operadores` y `EquiposMaquinaria` 1, las demás 0); también si llega una FK desde una tabla que se queda (58002) o si algún usuario tiene `idOperador` (58003). La 57 se detiene (57001) si otro objeto nombra a uno de los que borra. **Antes, medir en `sgvTransporte`** (solo SELECT) y guardar el resultado: si algo no está vacío, decidir con el usuario si se respalda o se conserva:
+
+```sql
+SELECT t.name, SUM(p.rows) AS filas FROM sys.tables t JOIN sys.partitions p ON p.object_id = t.object_id AND p.index_id < 2
+ WHERE t.name IN ('PartesDiariosTrabajo','AsignacionesMaquinaria','Operadores','EquiposMaquinaria','Distrito','Provincia','Departamento',
+                  'Pais','CPIC_Productos','DetalleAlimentacion','DetalleApoyoSeguridad','DetalleEncapada','DetalleMovilidad',
+                  'DetalleSegmento','SegmentosOrdenViaje','ProductosOperacion','OperacionesSubTramo','SubTramos')
+ GROUP BY t.name ORDER BY t.name;
+SELECT COUNT(*) AS usuariosConOperador FROM Usuarios WHERE idOperador IS NOT NULL;
+SELECT COUNT(*) AS ordenesConTipoViaje FROM OrdenViaje WHERE tipoViaje IS NOT NULL;
+```
+
+Control después: `IntegridadBdTests.Lo_borrado_en_E3_8_ya_no_existe` (o `SELECT OBJECT_ID('dbo.Operadores')`, etc.: NULL). Las tablas de Grifo y `sp_DC_RevocarFirma` no se borran aquí (M-054, M-106).
+
 ## 5. Procedimientos almacenados
 
 **Obligatorio antes de este paso y del 4:** ensayar el mismo commit sobre el `.bacpac` más reciente con `.\herramientas\respaldo\ensayar-migracion.ps1` (migraciones, SP, ejecución de humo y `[FactBD]` en una copia local) y tener `RESULTADO: OK`. `aplicar-procedimientos.ps1` vuelve a hacer el humo al terminar, pero en producción eso llega tarde: el SP ya quedó aplicado.
@@ -166,19 +180,11 @@ Las dos deben devolver 0 filas.
 
 ## 6. SP retirados
 
-Ninguno de los dos los llama el código publicado.
+Ninguno los llama el código publicado. Los 8 `sp_SE_*` sin uso que borraba `borrar-sp-se-sin-uso.sql` los borra ahora la migración 57 (paso 4); el script se quitó del repo.
 
-1. `WebSGV/Database/Scripts/borrar-sp-se-sin-uso.sql` (8 `DROP PROCEDURE IF EXISTS sp_SE_*`). Antes, confirmar que nada de la BD los llama (los jobs del Agente SQL de somee no se pueden revisar):
-
-   ```sql
-   SELECT OBJECT_NAME(object_id) AS objeto FROM sys.sql_modules WHERE definition LIKE '%sp[_]SE[_]%'
-   ```
-
-   Solo deben salir los propios `sp_SE_*` que siguen en el repo y los 8 que se borran (y comentarios). En `sgvActualizada` los 8 siguen existiendo al 2026-11-21: correrlo también allí (primero allí).
-2. `WebSGV/Database/Scripts/borrar_sp_AprobarLiquidacion.sql` (`DROP PROCEDURE IF EXISTS sp_AprobarLiquidacion`). En `sgvActualizada` ya no existe y su archivo ya no está en `StoredProcedures/`.
+1. `WebSGV/Database/Scripts/borrar_sp_AprobarLiquidacion.sql` (`DROP PROCEDURE IF EXISTS sp_AprobarLiquidacion`). En `sgvActualizada` ya no existe y su archivo ya no está en `StoredProcedures/`.
 
 ```powershell
-.\WebSGV\Database\sql.ps1 -Entorno produccion -ConfirmoProduccion -Archivo WebSGV\Database\Scripts\borrar-sp-se-sin-uso.sql
 .\WebSGV\Database\sql.ps1 -Entorno produccion -ConfirmoProduccion -Archivo WebSGV\Database\Scripts\borrar_sp_AprobarLiquidacion.sql
 ```
 

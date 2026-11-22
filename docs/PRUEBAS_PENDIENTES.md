@@ -4,12 +4,12 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-026 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-028 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
 - [ ] **P-001** Prueba de punta a punta con un pedido real — correo + Word → carga → descarga → viaje → liquidación y firma → aprobación → PDF → contabilidad, en pruebas. · A
-- [ ] **P-002** Ciclo de la liquidación con un conductor real — enviar (redirige a la firma y la auditoría `GUARDAR_LIQUIDACION` lo registra) → rechazar → reenviar (pide firma nueva; el PDF viejo sale ANULADO) → retirar una firmada. Después, M-014. · B
+- [ ] **P-002** Ciclo de la liquidación con un conductor real — enviar (redirige a la firma y la auditoría `GUARDAR_LIQUIDACION` lo registra) → rechazar → reenviar (pide firma nueva; el PDF viejo sale ANULADO) → retirar una firmada. Después, M-014. Mientras `Liquidaciones.ConductoresEnSistema` sea false, `CierreViajesSinLiquidacion` (cron del GPS, también el del sitio publicado sobre la misma BD) cierra el viaje de prueba en 5 minutos o menos: reabrirlo y liquidar dentro de ese margen. · B
 - [ ] **P-003** Celular real — Login, panel del conductor, Liquidaciones pendientes y Verificar documento; teclado numérico, coma decimal (M-069), barra fija del total, hoja de resumen y firma con el dedo en un equipo de gama baja; borrador de la liquidación (cerrar el navegador a mitad y volver); FirmarLiquidacion con una orden pendiente y la pestaña Liquidar con viaje activo (fechas `.dc-par`, que el aviso no tape `.dc-barra`); en Edge, el Buscar de Seguimiento no ofrece contraseñas y Enter filtra. · B
 - [ ] **P-004** Destino de descarga con un pedido real — repartido entre Milagro y Jave: el lote se registra con una planta por tracto y `ListaDespachos` lo muestra como dos lotes. · C
 - [ ] **P-005** Caso "por elegir" con programados reales — en la Bandeja y en RegistroDespacho (hoy hay 0 programados esperando documentos). · C
@@ -34,10 +34,12 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-016** Despacho en dos momentos — la vista previa (select2, avisos) y "Completa el despacho" al leer el ZIP. · C
 - [ ] **P-017** Tablero del seguimiento con las cargas de mañana — y el formulario manual de RegistroDespacho plegado (probado solo por HTTP). · C
 - [ ] **P-018** Bandeja: "La lectura venció" y reemplazo de un manifiesto — cubiertos por pruebas unitarias; faltaban datos para hacerlo sin escribir. · C
-- [ ] **P-019** Diálogos de RegistroDespacho — Finalizar/Cancelar lote, Quitar y Reabrir con un lote de prueba en curso. · C
+- [ ] **P-019** Diálogos de RegistroDespacho: "Quitar" — con un lote de prueba en curso (Finalizar, Cancelar, Reabrir y Anular ya se probaron el 2026-11-21). · C
 - [ ] **P-021** Cambio de contraseña con espacio final — por el modal del menú: nueva = actual + espacio → debe entrar escribiéndola sin el espacio; restaurarla después. · C
 - [ ] **P-022** `Seguridad.ExigirPoliticaAlIngresar` en true — con una cuenta de prueba de contraseña débil (escribe datos de prueba). Cubierto por xUnit (`ExigeCambioAlIngresar`). · C
-- [ ] **P-025** Firmas y conformidad de una liquidación de punta a punta con `XACT_ABORT ON` (E3-4) — declaración del conductor, revisión del admin y conformidad: el camino feliz y una contraseña errónea (debe mostrar el aviso y no dejar nada a medias). En `sgvActualizada` `OrdenViaje` no tiene filas: hacerlo cuando haya una orden de prueba, o en el sitio local tras crear una. · B
+- [ ] **P-025** Firmas y conformidad de una liquidación de punta a punta con `XACT_ABORT ON` (E3-4) — declaración del conductor, revisión del admin y conformidad: el camino feliz y una contraseña errónea (debe mostrar el aviso y no dejar nada a medias). En `sgvActualizada` `OrdenViaje` no tiene filas: hacerlo cuando haya una orden de prueba, o en el sitio local tras crear una. Mientras `Liquidaciones.ConductoresEnSistema` sea false, `CierreViajesSinLiquidacion` (cron del GPS, también el del sitio publicado sobre la misma BD) cierra el viaje de prueba en 5 minutos o menos: reabrirlo y liquidar dentro de ese margen. · B
+- [ ] **P-027** Bloqueo de la placa en el servidor — con un tracto o carreta de prueba que tenga un despacho de prueba: intentar cambiarle la placa (también saltándose el aviso de la página) y comprobar que el servidor lo rechaza (`VehiculoService`, historial del vehículo). · C
+- [ ] **P-028** Menús del rol SUPERVISOR — entrar como supervisor y revisar menú, páginas permitidas y las que no (`RolesHelper`); hoy no hay un usuario SUPERVISOR activo de prueba (U-076). · C
 
 - [ ] **P-024** Respaldo diario de las 23:00 — confirmar que la tarea "SGV - Respaldo diario" corre: el 2026-11-20 no corrió a esa hora (¿PC apagada?) y el último `.bacpac` era el de las 11:50 de ese día. Mirar el historial del Programador de tareas y la fecha del último archivo. · B
 

@@ -68,24 +68,22 @@ namespace WebSGV.Services.Vehiculos
         // B5-4 (decisión D2): qué cuenta como "historial" de un vehículo. Si tiene alguno, su placa no se puede
         // cambiar (sí la marca y el modelo). Revisado en la BD el 2026-11-17 (INFORMATION_SCHEMA y sys.sql_modules):
         //   Por id (FK a Tracto/Carreta):
-        //     Despachos.idTracto/idCarreta, OrdenViaje.idTracto/idCarreta,
-        //     AbastecimientoCombustible.idTracto/idCarreta, DespachoCombustibleObra.idTracto,
-        //     IngresoCombustibleEcuador.idTracto.
+        //     Despachos.idTracto/idCarreta, OrdenViaje.idTracto/idCarreta.
+        //     (E3-8, 2026-11-21: fuera las tablas de Grifo AbastecimientoCombustible, DespachoCombustibleObra e
+        //     IngresoCombustibleEcuador, vacías y de un módulo retirado; así se podrán borrar cuando el sitio
+        //     publicado deje de consultarlas.)
         //   Por texto de la placa (se desengancharían si la placa cambia):
         //     SeguimientoExportacion.tracto1/tracto2/carreta (copia del despacho; sp_SE_SincronizarDespachos y el
         //       GPS emparejan por placa), DestinoDescarga.placaTracto/placaCarreta (lista de plantas por pedido y
         //       carreta, sin guion), Indicadores.tracto1/tracto2/carreta (histórico importado del Excel).
         //   No cuentan: SeguimientoExportacion.ultimaPlacaGps (siempre es uno de tracto1/tracto2/carreta del mismo
-        //     viaje), camionetas/volquetes/EquiposMaquinaria (otras flotas). Las guías, órdenes de viaje y PDFs
+        //     viaje), camionetas/volquetes (otras flotas). Las guías, órdenes de viaje y PDFs
         //     firmados llevan la placa impresa, pero cuelgan de un despacho u orden de viaje, que ya cuenta.
         //   Se cuentan también los registros anulados o inactivos: siguen siendo historial.
         private static readonly Referencia[] ReferenciasTracto =
         {
             PorId("Despachos", "idTracto", "despacho(s)", esDespacho: true),
             PorId("OrdenViaje", "idTracto", "orden(es) de viaje"),
-            PorId("AbastecimientoCombustible", "idTracto", "abastecimiento(s) de combustible"),
-            PorId("DespachoCombustibleObra", "idTracto", "despacho(s) de combustible a obra"),
-            PorId("IngresoCombustibleEcuador", "idTracto", "ingreso(s) de combustible en Ecuador"),
             PorTexto("SeguimientoExportacion", "viaje(s) del seguimiento de exportación", "tracto1", "tracto2"),
             PorTexto("DestinoDescarga", "destino(s) de descarga", "placaTracto"),
             PorTexto("Indicadores", "registro(s) de indicadores", "tracto1", "tracto2")
@@ -95,7 +93,6 @@ namespace WebSGV.Services.Vehiculos
         {
             PorId("Despachos", "idCarreta", "despacho(s)", esDespacho: true),
             PorId("OrdenViaje", "idCarreta", "orden(es) de viaje"),
-            PorId("AbastecimientoCombustible", "idCarreta", "abastecimiento(s) de combustible"),
             PorTexto("SeguimientoExportacion", "viaje(s) del seguimiento de exportación", "carreta"),
             PorTexto("DestinoDescarga", "destino(s) de descarga", "placaCarreta"),
             PorTexto("Indicadores", "registro(s) de indicadores", "carreta")

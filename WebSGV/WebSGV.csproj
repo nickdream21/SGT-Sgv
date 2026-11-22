@@ -174,10 +174,7 @@
     <Content Include="Database\Scripts\diagnostico_OnwayAuthCache_TokenActivoUnico.sql" />
     <Content Include="Database\Scripts\fix_EstadoSeguimientoExportacion.sql" />
     <Content Include="Database\Scripts\reset_SeguimientoExportacion.sql" />
-    <Content Include="Database\Scripts\script_AgregarColumnaRutaDescripcion.sql" />
     <Content Include="Database\Scripts\script_AjustarRadioTrujilloIngreso.sql" />
-    <Content Include="Database\Scripts\script_AgregarColumnaTipoAbastecimiento.sql" />
-    <Content Include="Database\Scripts\script_AgregarPdfAbastecimiento.sql" />
     <Content Include="Database\Scripts\script_CrearUsuarioAdminSistema.sql" />
     <Content Include="Database\Schema\13_Despachos_IdPlanta.sql" />
     <Content Include="Database\Schema\14_Cliente_DatosComerciales.sql" />
@@ -193,12 +190,10 @@
     <Content Include="Database\Schema\54_RestriccionesDominio.sql" />
     <Content Include="Database\Schema\55_LlavesEIndices.sql" />
     <Content Include="Database\Schema\56_QueryStoreAcotado.sql" />
+    <Content Include="Database\Schema\57_BorrarObjetosRetirados.sql" />
+    <Content Include="Database\Schema\58_BorrarTablasRetiradas.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
-    <Content Include="Database\Scripts\script_CrearTablasDespachoObra.sql" />
-    <Content Include="Database\Scripts\script_CrearTablasIngresoEcuador.sql" />
-    <Content Include="Database\Scripts\script_CrearTablasMaquinaria.sql" />
-    <Content Include="Database\Scripts\script_TrazabilidadVolqueteCamioneta.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearCPIC.sql" />
     <Content Include="Database\StoredProcedures\sp_ActualizarLicenciaConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_US_ObtenerEstadoSesion.sql" />
@@ -248,7 +243,6 @@
     <Content Include="Database\StoredProcedures\sp_DC_RetirarLiquidacion.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_RevocarFirma.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_VerificarObservacionesRechazo.sql" />
-    <Content Include="Database\StoredProcedures\sp_LD_ActualizarConductorDominanteViajes.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ActualizarDespachoEnLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_AnularLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_AsignarDocumentosDespachos.sql" />

@@ -12,6 +12,8 @@
     - 00_ControlMigraciones.sql (crea SchemaVersion) se ejecuta siempre primero.
     - Los scripts son idempotentes (IF COL_LENGTH/OBJECT_ID ...), así que registrar una
       BD donde ya se aplicaron a mano es seguro: se re-ejecutan sin efecto y se anotan.
+    - Una migración que dependa de un SP nuevo lo declara en su cabecera con una línea
+      "-- Requiere SP: sp_X.sql": ese archivo de StoredProcedures se aplica justo antes que ella.
     - Si un script ya registrado cambió después (hash distinto) solo se avisa; no se
       vuelve a ejecutar. Para cambios de esquema, crear un script NUEVO con el siguiente número.
     - $HashesAceptados: registros antiguos con un hash que no es el del archivo, revisados a mano
@@ -134,7 +136,12 @@ foreach ($s in $scripts) {
 
 if (-not $existeTabla) { Write-Host "La tabla dbo.SchemaVersion no existe todavía (se creará)." -ForegroundColor Yellow }
 Write-Host "Registrados: $($registrados.Count)   Pendientes: $($pendientes.Count)"
-$pendientes | ForEach-Object { Write-Host "  pendiente  $($_.Name)" }
+$pendientes | ForEach-Object {
+    Write-Host "  pendiente  $($_.Name)"
+    foreach ($m in [regex]::Matches((Get-TextoLf $_.FullName), '(?m)^--\s*Requiere SP:\s*(\S+\.sql)\s*$')) {
+        Write-Host "             antes aplica el SP $($m.Groups[1].Value)"
+    }
+}
 $aceptados | ForEach-Object { Write-Host "  $_ conserva un hash anterior ya revisado (ver `$HashesAceptados en este script)." -ForegroundColor DarkGray }
 $modificados | ForEach-Object { Write-Host "  AVISO: $_ cambió después de aplicarse (no se re-ejecuta; cree un script nuevo)." -ForegroundColor Yellow }
 
@@ -144,6 +151,15 @@ if ($SoloListar) { return }
 if ($control) { Invoke-ScriptSql $control.FullName }
 
 foreach ($s in $pendientes) {
+    # Una migración puede declarar en su cabecera los SP que deben estar aplicados antes de ella
+    # ("-- Requiere SP: sp_X.sql", archivo de Database/StoredProcedures): se aplican aquí primero, en
+    # cualquier entorno, para que el orden SP -> migración no dependa de acordarse (E3-8).
+    foreach ($m in [regex]::Matches((Get-TextoLf $s.FullName), '(?m)^--\s*Requiere SP:\s*(\S+\.sql)\s*$')) {
+        $rutaSp = Join-Path (Join-Path $dirDatabase 'StoredProcedures') $m.Groups[1].Value
+        if (-not (Test-Path $rutaSp -PathType Leaf)) { throw "$($s.Name) requiere $($m.Groups[1].Value), que no está en Database/StoredProcedures." }
+        Write-Host "  Antes, el SP que requiere: $($m.Groups[1].Value)" -ForegroundColor Cyan
+        Invoke-ScriptSql $rutaSp
+    }
     Write-Host "Aplicando $($s.Name) ..." -ForegroundColor Cyan
     Invoke-ScriptSql $s.FullName
 

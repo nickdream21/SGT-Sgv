@@ -18,27 +18,37 @@ namespace WebSGV.Tests.Integracion
     {
         public IntegridadBdTests() => BaseDePruebas.Preparar();
 
-        /// <summary>Tablas sin PK aceptadas por ahora (vacías; E3-6 o E3-8 deciden).</summary>
-        private static readonly string[] TablasSinPkPermitidas = { "CPIC_Productos" };
+        /// <summary>Tablas sin PK aceptadas (CPIC_Productos, la única que había, se borró en E3-8).</summary>
+        private static readonly string[] TablasSinPkPermitidas = { };
 
         /// <summary>
-        /// Objetos de la BD sin archivo en el repo que se borran en E3-8 (migración 57; Grifo y
-        /// Maquinaria, M-048 y M-049). No añadir nada nuevo: un objeto nuevo va con su archivo.
+        /// Objetos de la BD sin archivo en el repo que se quedan a propósito hasta que el usuario decida (E3-8):
+        /// el trigger de la tabla de Grifo AbastecimientoCombustible, que el sitio publicado (60853e8) todavía
+        /// consulta. No añadir nada nuevo: un objeto nuevo va con su archivo.
         /// </summary>
         private static readonly string[] PorRetirarEnE3_8 =
         {
-            // 17 procedimientos
-            "sp_InsertarAbastecimientoCombustible", "sp_InsertarDespachoObra", "sp_InsertarIndicador",
-            "sp_InsertarIngresoEcuador", "sp_MQ_GenerarNumeroParte", "sp_MQ_InsertarParteDiario",
-            "sp_MQ_ObtenerAsignacionActiva", "sp_MQ_ObtenerDatosOperador", "sp_MQ_ObtenerHistorialPartes",
-            "sp_SE_BuscarDespachosDisponibles", "sp_SE_Dashboard_Graficos", "sp_SE_Dashboard_KPIs",
-            "sp_SE_Insertar", "sp_SE_Listar", "sp_SE_ListarEnCurso", "sp_SE_ObtenerDespachoPorId",
-            "sp_SE_ObtenerPorId",
-            // 5 vistas y 1 función
-            "vw_DespachosCompletos", "vw_Auditoria", "vw_IndicadoresExcelCompatible",
-            "VW_OperacionesConPlantas", "vw_SegmentosCompletos", "fn_ValidarDisponibilidadRecursos",
-            // Trigger de la tabla de Grifo AbastecimientoCombustible (fuera de la migración 52 a propósito)
             "TR_AbastecimientoCombustible_Auditoria",
+        };
+
+        /// <summary>Lo que borran las migraciones 57 y 58 (E3-8): no debe volver a existir.</summary>
+        private static readonly string[] ObjetosBorradosEnE3_8 =
+        {
+            // 57: 18 procedimientos, 5 vistas y 1 función
+            "sp_InsertarAbastecimientoCombustible", "sp_InsertarDespachoObra", "sp_InsertarIngresoEcuador", "sp_InsertarIndicador",
+            "sp_MQ_GenerarNumeroParte", "sp_MQ_InsertarParteDiario", "sp_MQ_ObtenerAsignacionActiva",
+            "sp_MQ_ObtenerDatosOperador", "sp_MQ_ObtenerHistorialPartes",
+            "sp_SE_BuscarDespachosDisponibles", "sp_SE_Dashboard_Graficos", "sp_SE_Dashboard_KPIs", "sp_SE_Insertar",
+            "sp_SE_Listar", "sp_SE_ListarEnCurso", "sp_SE_ObtenerDespachoPorId", "sp_SE_ObtenerPorId",
+            "sp_LD_ActualizarConductorDominanteViajes",
+            "vw_DespachosCompletos", "vw_Auditoria", "vw_IndicadoresExcelCompatible", "VW_OperacionesConPlantas",
+            "vw_SegmentosCompletos", "fn_ValidarDisponibilidadRecursos",
+            // 58: 18 tablas (con sus triggers, p. ej. TR_CPIC_Productos_Auditoria)
+            "PartesDiariosTrabajo", "AsignacionesMaquinaria", "Operadores", "EquiposMaquinaria",
+            "Distrito", "Provincia", "Departamento", "Pais", "CPIC_Productos",
+            "DetalleAlimentacion", "DetalleApoyoSeguridad", "DetalleEncapada", "DetalleMovilidad",
+            "DetalleSegmento", "SegmentosOrdenViaje", "ProductosOperacion", "OperacionesSubTramo", "SubTramos",
+            "TR_CPIC_Productos_Auditoria",
         };
 
         private static readonly Regex CreacionDeObjeto = new Regex(
@@ -106,6 +116,30 @@ namespace WebSGV.Tests.Integracion
         }
 
         [FactBD]
+        public void Lo_borrado_en_E3_8_ya_no_existe()
+        {
+            var siguen = ObjetosBorradosEnE3_8.Where(o => DbHelper.EjecutarEscalar("SELECT OBJECT_ID(@o)",
+                DbHelper.Param("@o", "dbo." + o)) != DBNull.Value).ToList();
+            Assert.True(siguen.Count == 0, "Objetos que E3-8 borró y siguen en la BD: " + string.Join(", ", siguen));
+
+            var columnas = Nombres(@"SELECT OBJECT_NAME(object_id) + '.' + name FROM sys.columns
+                                     WHERE (object_id = OBJECT_ID('dbo.Usuarios') AND name = 'idOperador')
+                                        OR (object_id = OBJECT_ID('dbo.OrdenViaje') AND name = 'tipoViaje')
+                                        OR (object_id = OBJECT_ID('dbo.ViajesEnProgreso') AND name = 'observaciones'
+                                            AND TYPE_NAME(user_type_id) = 'ntext')");
+            Assert.True(columnas.Count == 0, "Columnas que E3-8 quitó o cambió y siguen igual: " + string.Join(", ", columnas));
+        }
+
+        [FactBD]
+        public void Ninguna_tabla_usa_ntext_text_ni_image()
+        {
+            var viejas = Nombres(@"SELECT OBJECT_NAME(c.object_id) + '.' + c.name FROM sys.columns c
+                                   JOIN sys.tables t ON t.object_id = c.object_id
+                                   WHERE t.is_ms_shipped = 0 AND TYPE_NAME(c.user_type_id) IN ('ntext', 'text', 'image')");
+            Assert.True(viejas.Count == 0, "Columnas con tipos obsoletos: " + string.Join(", ", viejas));
+        }
+
+        [FactBD]
         public void FirmaDigital_TieneSusTriggersDeSoloInsercionHabilitados()
         {
             var habilitados = Nombres(@"SELECT name FROM sys.triggers
@@ -124,7 +158,7 @@ namespace WebSGV.Tests.Integracion
             var habilitados = Nombres("SELECT name FROM sys.triggers WHERE parent_class = 1 AND is_disabled = 0");
             var esperados = new[]
             {
-                "TR_Carreta_Auditoria", "TR_Conductor_Auditoria", "TR_CPIC_Auditoria", "TR_CPIC_Productos_Auditoria",
+                "TR_Carreta_Auditoria", "TR_Conductor_Auditoria", "TR_CPIC_Auditoria",   // el de CPIC_Productos se fue con su tabla (E3-8)
                 "TR_Factura_Auditoria", "TR_GuiasTransportista_Auditoria", "TR_Indicadores_Auditoria",
                 "TR_Liquidaciones_Auditoria", "TR_OrdenViaje_Auditoria", "TR_Tracto_Auditoria", "TR_UploadHistory_Auditoria",
             };
@@ -139,8 +173,9 @@ namespace WebSGV.Tests.Integracion
             "CK_ViajesEnProgreso_Estado", "CK_OrdenViaje_EstadoAprobacion", "CK_OrdenViaje_EstadoViaje",
             "CK_SeguimientoExportacion_Estado", "CK_SeguimientoExportacion_Origen",
             "CK_FirmaDigital_Etapa", "CK_FirmaDigital_EstadoFirma", "CK_Usuarios_Rol", "CK_FacturaFlete_Moneda",
-            "CK_DetalleAlimentacion_Montos", "CK_DetalleApoyoSeguridad_Montos", "CK_DetalleCombustible_Montos",
-            "CK_DetalleEncapada_Montos", "CK_DetalleHospedaje_Montos", "CK_DetalleMovilidad_Montos",
+            // Los de DetalleAlimentacion, DetalleApoyoSeguridad, DetalleEncapada y DetalleMovilidad se fueron con
+            // sus tablas (migración 58, E3-8).
+            "CK_DetalleCombustible_Montos", "CK_DetalleHospedaje_Montos",
             "CK_DetallePeajes_Montos", "CK_DetalleReparacionesVarios_Montos", "CK_Egresos_Montos", "CK_Ingresos_Montos",
             "CK_IngresosAdicionales_Montos", "CK_CategoriasAdicionales_Montos", "CK_DescuentosReintegros_Montos",
             "CK_Factura_ValorTotal", "CK_CPIC_Montos", "CK_FacturaFlete_Montos", "CK_FacturaFleteItem_Montos",

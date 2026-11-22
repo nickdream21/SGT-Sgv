@@ -132,8 +132,8 @@ namespace WebSGV.Tests
             Assert.Contains("Ó", css);   // guardado en UTF-8 (antes estaba en Windows-1252)
             // .total-row también puede ser un <tr> en un tfoot: un display:flex sin acotar
             // a <div> desarmaba los anchos de la tabla de ingresos y gastos.
+            // La regla :where(div).total-row se quitó en E3-8 (M-057): ninguna página usa ya esa clase.
             Assert.DoesNotMatch(new Regex(@"(^|[\s,}])\.total-row[^{,]*\{", RegexOptions.Multiline), css);
-            Assert.Contains(":where(div).total-row", css);
         }
 
         private static bool TieneClase(string clases, string buscada) =>

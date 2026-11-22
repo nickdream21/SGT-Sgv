@@ -1,3 +1,5 @@
+-- 2026-11-21 (E3-8): ya no escribe la columna del tipo de viaje de OrdenViaje (siempre 'NACIONAL', nadie la leía; la
+-- migración 58 la borra). Este SP se aplica ANTES que la 58.
 CREATE OR ALTER PROCEDURE sp_DC_InsertarOrdenViajeConductor
     @numeroOrdenViaje  VARCHAR(50),
     @fechaSalida       DATE,
@@ -18,13 +20,13 @@ BEGIN
     INSERT INTO OrdenViaje (
         numeroOrdenViaje, fechaSalida, horaSalida, fechaLlegada, horaLlegada, horaLlegadaDeclarada,
         idConductor, idTracto, idCarreta, observaciones,
-        estadoViaje, tipoViaje, idViajeProgreso,
+        estadoViaje, idViajeProgreso,
         registradoPor, idUsuarioRegistro, estadoAprobacion, fechaRegistro
     )
     VALUES (
         @numeroOrdenViaje, @fechaSalida, @horaSalida, @fechaLlegada, @horaLlegada, @horaLlegadaDeclarada,
         @idConductor, @idTracto, @idCarreta, @observaciones,
-        'PENDIENTE', 'NACIONAL', @idViajeProgreso,
+        'PENDIENTE', @idViajeProgreso,
         'CONDUCTOR', @idUsuarioRegistro, 'PENDIENTE', dbo.fn_AhoraPeru()
     );
 
