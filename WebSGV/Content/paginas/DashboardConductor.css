@@ -87,7 +87,7 @@
     border-radius: 9px;
     background: var(--dc-primario);
     color: #fff;
-    font-size: 0.7rem;
+    font-size: 0.75rem; /* mínimo 12 px (E5-4) */
     line-height: 18px;
     text-align: center;
 }
@@ -160,7 +160,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.72rem;
+    font-size: 0.75rem; /* mínimo 12 px (E5-4) */
     font-weight: 600;
     color: var(--dc-ok);
     background: var(--dc-ok-claro);
@@ -187,8 +187,9 @@
     background: none;
     color: var(--dc-suave);
     font-size: 0.8rem;
-    padding: 6px 4px;
-    min-height: 32px;
+    padding: 6px 8px;
+    min-height: 44px; /* blanco táctil (E5-4) */
+    min-width: 44px;
 }
 .dc-nota-btn.activo { color: var(--dc-primario); font-weight: 600; }
 .dc-nota { margin-top: 8px; }
@@ -289,7 +290,7 @@ body.dc-nacional .solo-intl { display: none !important; }
 body.dc-con-barra .dc-barra { display: flex; }
 body.dc-con-barra { padding-bottom: 84px; }
 .dc-barra-total { display: flex; flex-direction: column; min-width: 0; }
-.dc-barra-lbl { font-size: 0.72rem; color: var(--dc-suave); }
+.dc-barra-lbl { font-size: 0.75rem; color: var(--dc-suave); }
 .dc-barra-num { font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (min-width: 672px) {
     .dc-barra { left: 50%; right: auto; width: 640px; transform: translateX(-50%); border: 1px solid var(--dc-borde); border-bottom: 0; border-radius: var(--dc-radio) var(--dc-radio) 0 0; }
@@ -339,7 +340,7 @@ body.dc-con-barra { padding-bottom: 84px; }
 
 .dc-pill {
     flex-shrink: 0;
-    font-size: 0.72rem;
+    font-size: 0.75rem; /* mínimo 12 px (E5-4) */
     font-weight: 600;
     padding: 2px 9px;
     border-radius: 999px;

@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-062 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-063 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -75,6 +75,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-060** Bloqueo de envío en un navegador con ventana y en un celular (E5-2) — Cerrar sesión del conductor con cambios reales en la liquidación y "¿salir?" cancelado (se libera a ~2 s); una subida larga real en FacturasFlete o RegistroDespacho no acepta un segundo toque antes de terminar; un lector de pantalla (NVDA o TalkBack) anuncia "Procesando…". · C
 - [ ] **P-061** "Crear nuevo viaje" con envío único (E5-3) — con un conductor de 2 o más viajes abiertos en RegistroDespacho: sale la confirmación y se crea un solo viaje; con la página en dos pestañas, la segunda responde "Ya se registró"; un segundo registro legítimo en la misma pestaña funciona (el token nuevo llega por el UpdatePanel). · B
 - [ ] **P-062** MovimientosViaje con envío único (E5-3) — con `MovimientosViaje.Habilitado` encendido (solo local o al activarlo): registrar, pulsar F5 y aceptar el reenvío: 1 sola fila, aviso "Ya se registró" y el formulario vacío. · B
+- [ ] **P-063** Firma y estructura con una orden real (E5-4) — abrir FirmarLiquidacion y ConformarLiquidacion con una orden por firmar (la BD de pruebas no tiene ninguna; se probó en un arnés): el trazo con el dedo no desplaza la página, fuera del canvas se amplía con dos dedos, TalkBack o VoiceOver leen "Área de firma"; en el panel del conductor con un viaje, el botón "Nota" de cada gasto es cómodo de tocar y "Saltar al contenido" aparece con un teclado. · B
 
 ## Reglas
 

@@ -224,3 +224,20 @@ body.sgv-procesando-velo-visible .sgv-procesando-velo { display: flex; }
     box-shadow: 0 8px 24px rgba(15, 23, 42, .2);
 }
 .sgv-procesando-caja .spinner-border { color: #1d4ed8; }
+
+/* Saltar al contenido (E5-4): primer foco con Tab; fuera de la pantalla hasta recibir el foco. */
+.sgv-saltar {
+    position: absolute;
+    left: 8px;
+    top: -60px;
+    z-index: 2100;
+    padding: .6rem 1rem;
+    border-radius: .375rem;
+    background: #1d4ed8;
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+}
+.sgv-saltar:focus { top: 8px; color: #fff; text-decoration: none; outline: 3px solid #93c5fd; outline-offset: 2px; }
+/* #contenido recibe el foco del enlace (tabindex="-1"): no es un control, sin anillo. */
+#contenido:focus { outline: none; }

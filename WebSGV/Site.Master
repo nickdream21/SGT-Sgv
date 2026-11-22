@@ -29,6 +29,9 @@
 </head>
 
 <body>
+    <!-- Primer foco con Tab: salta el menú. Va fuera del <form> para que el submit deshabilitado
+         siga siendo su primer elemento. Solo se ve al recibir el foco (SiteMaster.css). -->
+    <a class="sgv-saltar" href="#contenido">Saltar al contenido</a>
     <form runat="server" autocomplete="off">
         <!-- Botón por defecto deshabilitado: el navegador no envía el formulario con Enter aunque
              SiteMaster.js no cargue o el teclado del celular no avise (si no, Enter usaría el primer
@@ -45,7 +48,7 @@
                 <i class="fas fa-truck-moving"></i>Sistema SGV
             </a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Abrir menú">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
@@ -274,9 +277,9 @@
         </nav>
 
         <!-- Contenido principal -->
-        <div class="container mt-4">
+        <main id="contenido" tabindex="-1" class="container mt-4">
             <asp:ContentPlaceHolder ID="MainContent" runat="server" />
-        </div>
+        </main>
 
         <!-- Footer -->
         <footer class="footer text-center py-3 mt-5 bg-light">

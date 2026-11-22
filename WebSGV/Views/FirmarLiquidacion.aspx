@@ -4,7 +4,7 @@
 <head runat="server">
     <meta charset="utf-8" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f8f9fa" />
     <title>Firmar Liquidación · SGV</title>
 
@@ -90,7 +90,7 @@
                 </div>
                 <div class="fl-canvas-baseline"></div>
                 <div class="fl-canvas-x">&times;</div>
-                <canvas id="canvasFirma"></canvas>
+                <canvas id="canvasFirma" role="img" aria-label="Área de firma: dibuje su firma con el dedo o el mouse"></canvas>
             </div>
 
             <div class="fl-canvas-actions">
@@ -126,13 +126,13 @@
             <p>Tu declaración fue firmada y enviada a la administración. Cuando la revise, recibirás la
                liquidación final para dar tu conformidad.</p>
             <div style="margin: 18px 0 8px;">
-                <div style="font-size: 11px; color: var(--gris-600); text-transform: uppercase; margin-bottom: 6px;">
+                <div class="fl-ok-etiqueta">
                     Código de verificación del documento
                 </div>
                 <div class="hash" id="okCodigo" style="font-size: 16px; letter-spacing: 1px;">-</div>
             </div>
             <div style="margin: 8px 0 18px;">
-                <div style="font-size: 11px; color: var(--gris-600); text-transform: uppercase; margin-bottom: 6px;">
+                <div class="fl-ok-etiqueta">
                     Hash SHA-256 del documento
                 </div>
                 <div class="hash" id="okHash">-</div>

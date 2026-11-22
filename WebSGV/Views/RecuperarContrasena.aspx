@@ -12,7 +12,7 @@
 
         <div class="form-group">
             <label for="txtUsuarioEmail">Usuario o correo electrónico:</label>
-            <asp:TextBox ID="txtUsuarioEmail" runat="server" CssClass="form-control" placeholder="usuario o email@ejemplo.com"></asp:TextBox>
+            <asp:TextBox ID="txtUsuarioEmail" runat="server" CssClass="form-control" placeholder="usuario o email@ejemplo.com" autocomplete="username"></asp:TextBox>
         </div>
 
         <asp:Button ID="btnEnviar" runat="server" CssClass="btn btn-primary" Text="Enviar enlace de recuperación" OnClick="btnEnviar_Click" />

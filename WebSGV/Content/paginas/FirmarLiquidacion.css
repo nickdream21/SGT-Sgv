@@ -50,7 +50,7 @@ h1, h2, h3, h4 { margin: 0; }
 }
 .fl-format-chip {
     margin-left: auto;
-    font-size: 0.7rem;
+    font-size: 0.75rem; /* mínimo 12 px (E5-4) */
     color: var(--gris-600);
     background: #fff;
     border: 1px solid var(--gris-300);
@@ -149,6 +149,7 @@ h1, h2, h3, h4 { margin: 0; }
     width: 100%;
     height: 100%;
     cursor: crosshair;
+    touch-action: none; /* con el zoom permitido (E5-4), el dedo dibuja y no mueve ni amplía la página */
 }
 .fl-canvas-hint {
     position: absolute;
@@ -251,6 +252,8 @@ a.fl-btn { display: inline-flex; align-items: center; justify-content: center; }
 }
 .fl-success-screen h3 { color: #166534; font-size: 1.15rem; font-weight: 600; margin-bottom: 8px; }
 .fl-success-screen p { color: var(--gris-600); font-size: 0.9rem; margin-bottom: 20px; }
+/* Etiquetas del código y del hash tras firmar (antes 11 px en línea; mínimo 12 px, E5-4). */
+.fl-ok-etiqueta { font-size: 12px; color: var(--gris-600); text-transform: uppercase; margin-bottom: 6px; }
 .fl-success-screen .hash {
     display: inline-block;
     font-family: 'Courier New', monospace;

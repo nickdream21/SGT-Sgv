@@ -99,7 +99,7 @@
                     </div>
                     <div class="fl-canvas-baseline"></div>
                     <div class="fl-canvas-x">&times;</div>
-                    <canvas id="canvasFirma"></canvas>
+                    <canvas id="canvasFirma" role="img" aria-label="Área de firma: dibuje su firma con el dedo o el mouse"></canvas>
                 </div>
                 <div class="fl-canvas-actions">
                     <button type="button" class="fl-btn" id="btnLimpiar"><i class="fas fa-eraser"></i>Limpiar</button>
@@ -143,7 +143,7 @@
             <h3 id="okTitulo">Conformidad registrada</h3>
             <p id="okTexto">Tu liquidación quedó aprobada y el viaje, completado.</p>
             <div id="okCodigoBloque" style="margin: 18px 0;">
-                <div style="font-size: 11px; color: var(--gris-600); text-transform: uppercase; margin-bottom: 6px;">
+                <div class="fl-ok-etiqueta">
                     Código de verificación del documento
                 </div>
                 <div class="hash" id="okCodigo" style="font-size: 16px; letter-spacing: 1px;">-</div>

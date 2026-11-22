@@ -1,8 +1,9 @@
 <%@ Page Title="Error del Sistema" Language="C#" AutoEventWireup="true" CodeBehind="Error.aspx.cs" Inherits="WebSGV.Views.Error" %>
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head runat="server">
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Error del sistema</title>
     <style>
         body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; margin: 0; padding: 0; color: #1e293b; }
