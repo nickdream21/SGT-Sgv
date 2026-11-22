@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `c08ca75` — E4-8: Actualizar GPS solo por POST JSON, Login `?error=sesion` sin cerrar una sesión vigente, sin `ex.Message` al usuario en reportes, GPS y panel del conductor, log partido a 20 MB, `publicar.ps1` rechaza un `Web.config` de depuración; cierra M-065 y M-116; nuevos M-119, M-120 y P-042. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `824fa0d` — E4-9: CI con auditoría NuGet y retire, permisos mínimos, acciones fijadas por SHA, corrida semanal; `dependabot.yml`; nuevos M-121 y P-043. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-120 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-121 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -150,6 +150,7 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-118** El Word de la programación (`.docx`, `LectorProgramacionWord` en RegistroDespacho) también es un ZIP y solo tiene el tope de 5 MB del archivo — darle el mismo control que los Excel (generalizar `ExcelSubidoHelper` a un `ZipSubidoHelper` con extensión `.docx`) y su prueba con un docx inflado. · B
 - [ ] **M-119** Exportaciones de ReportesOrdenesViaje con `<` o `>` en la URL (`buscarConductor`, `cols`) dan 500 y un ERR con traza (`HttpRequestValidationException`, `ReportesOrdenesViaje.aspx.cs` ~417 y ~976) — atraparla y responder 400 "El filtro contiene caracteres no permitidos" sin ERR. Desde la pantalla no se llega (lo frena el JS). · C
 - [ ] **M-120** `/trace.axd` responde 500 y deja un ERR con traza en cada petición — quitar el handler de trace en `Web.config` (`system.webServer/handlers`) para que dé 404 sin entrada en el log (un escáner llena el log). · C
+- [ ] **M-121** Revisar a mano lo que Dependabot no ve del CI — antes del 2027-05-22: la versión fija de `retire` en `build.yml` (6.1.0; Dependabot no sigue lo que corre con `npx`) y la excepción de Bootstrap 4.6.2 en `.retireignore.json`; de paso, subir `actions/checkout` y `actions/setup-node` a la versión mayor que ya no use Node 20 si Dependabot no lo propuso. · C
 - [ ] **M-064** Secciones de `TienePermiso` sin página — FACTURA, CPIC, CONSULTAS, INDICADORES, AUDITORIA… (`RolesHelper.cs:169-182`) y ADMIN con acceso a DASHBOARD_CONDUCTOR: depurarlas (cambia `RolesHelperTests` a propósito). · C
 - [ ] **M-066** No quedarse sin administrador de sistema activo — impedir que dos se desactiven a la vez (`NOT EXISTS` de otro ADMINISTRADOR DE SISTEMA activo en el `WHERE`) y ocultar "Desactivar" en la fila propia (hoy el servidor lo rechaza con aviso). · C
 - [ ] **M-068** Ajustar `Seguridad.IteracionesContrasena` — con los ms de "Hash de contraseña … convertido" en `App_Data/logs` del servidor (tarea 7); no volver a un DLL anterior. · C

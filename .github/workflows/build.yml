@@ -5,15 +5,29 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  # Corrida semanal: avisa de vulnerabilidades nuevas aunque nadie toque el repo.
+  schedule:
+    - cron: '0 11 * * 1'
+  workflow_dispatch:
+
+# El token del workflow solo puede leer el repo.
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      # Acciones fijadas por SHA completo (el tag va en el comentario; Dependabot las actualiza).
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Configurar MSBuild
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2.0.0
+
+      - name: Configurar Node (para retire.js)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
 
       - name: Crear archivos de configuracion locales (stubs para compilar)
         shell: pwsh
@@ -21,8 +35,18 @@ jobs:
           Set-Content WebSGV/connectionStrings.config '<connectionStrings><add name="ConexionSGV" connectionString="Data Source=stub;Initial Catalog=stub;" providerName="System.Data.SqlClient" /></connectionStrings>'
           Set-Content WebSGV/appSettings.Secrets.config '<appSettings></appSettings>'
 
-      - name: Restaurar paquetes NuGet
-        run: nuget restore WebSGV.sln
+      # Restaura packages.config (a packages/, incluido el .targets de QuestPDF) y los PackageReference
+      # de las pruebas, y audita ambos: alta (NU1903) y critica (NU1904) fallan; moderada y baja avisan.
+      - name: Restaurar y auditar paquetes NuGet
+        run: msbuild WebSGV.sln /t:Restore /p:RestorePackagesConfig=true /p:NuGetAudit=true /p:NuGetAuditMode=all /p:NuGetAuditLevel=low /warnaserror:NU1903,NU1904 /nologo /verbosity:minimal
+
+      # retire.js solo usa el ultimo --path, por eso una corrida por carpeta.
+      # Excepciones justificadas en .retireignore.json.
+      - name: Auditar JS de terceros (Scripts/lib)
+        run: npx --yes retire@6.1.0 --path WebSGV/Scripts/lib --ignorefile .retireignore.json
+
+      - name: Auditar JS de terceros (Content/lib)
+        run: npx --yes retire@6.1.0 --path WebSGV/Content/lib --ignorefile .retireignore.json
 
       - name: Compilar
         run: msbuild WebSGV.sln /t:Build /p:Configuration=Release /nologo /verbosity:minimal

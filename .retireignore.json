@@ -1,0 +1,8 @@
+[
+  {
+    "component": "bootstrap",
+    "version": "4.6.2",
+    "identifiers": { "CVE": "CVE-2024-6531" },
+    "justification": "XSS del carrusel de Bootstrap 4 (GHSA-vc8w-jr9v-vj7f): solo afecta a data-slide/data-slide-to/href del componente carousel. SGV no usa el carrusel (grep de 'carousel', 'data-slide' y 'data-ride' fuera de lib/ sin resultados, 2026-11-22) ni pone datos del usuario en atributos data-* de Bootstrap (data-target/-parent/-content/-title/-template/-container sin <%= %> ni concatenacion en JS; no se usan tooltip, popover ni scrollspy). Bootstrap 4 ya no tiene version corregida. retire 6.1.0 no lo reporta hoy (su base solo marca bootstrap < 4.3.1): la entrada queda por si lo anade. Revisar antes del 2027-05-22 o si se empieza a usar el carrusel."
+  }
+]
