@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-051 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-056 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -13,6 +13,8 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-003** Celular real — Login, panel del conductor, Liquidaciones pendientes y Verificar documento; teclado numérico, coma decimal (M-069), barra fija del total, hoja de resumen y firma con el dedo en un equipo de gama baja; borrador de la liquidación (cerrar el navegador a mitad y volver); FirmarLiquidacion con una orden pendiente y la pestaña Liquidar con viaje activo (fechas `.dc-par`, que el aviso no tape `.dc-barra`); en Edge, el Buscar de Seguimiento no ofrece contraseñas y Enter filtra. · B
 - [ ] **P-004** Destino de descarga con un pedido real — repartido entre Milagro y Jave: el lote se registra con una planta por tracto y `ListaDespachos` lo muestra como dos lotes. · C
 - [ ] **P-005** Caso "por elegir" con programados reales — en la Bandeja y en RegistroDespacho (hoy hay 0 programados esperando documentos). · C
+- [ ] **P-052** Zoom y firma en un celular real — tras E5-4: en `FirmarLiquidacion` se amplía con dos dedos el texto legal y la orden, y al firmar dentro del recuadro la página no se mueve ni se amplía (Android y iPhone si hay). · A
+- [ ] **P-055** Ayuda y manual del conductor en un celular real — tras E5-21: el "?" abre el tema de la pantalla, se lee sin ampliar y el PDF del manual se abre desde el enlace. · B
 
 ## En el sitio publicado (lo que escribe, con orden del usuario)
 
@@ -31,6 +33,8 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-030** Segundo factor con un celular real — tras publicar E4-14: alta con Google Authenticator o Microsoft Authenticator, entrada con código, un código de recuperación y "Quitar segundo factor" desde Gestión de usuarios, con una cuenta de prueba. · B
 - [ ] **P-031** Política de contenido en modo informe en el sitio publicado — tras publicar E4-5, abrir por **https** con cada rol a 1366 y 390 px y revisar en `App_Data/logs` lo que anota `CspInforme` unos minutos después; solo se espera `script-src` por `eval` (MicrosoftAjax en todas las páginas, validadores, `AutoPostBack`) y 0 `CSP (aplicada)`. Comprobar que somee no duplica las cabeceras. En local ya pasó (E4-5) salvo la cámara de Movimientos (apagada por configuración), el PDF en el iframe real de contabilidad (U-087; probado en una réplica) y el canvas de firma (P-037). Condición de E4-15. · B
 - [ ] **P-032** Comprobaciones por HTTP en el sitio publicado — un POST de formulario a un PageMethod no ejecuta nada; `GpsAutomatico.ashx?iniciar=1` sin sesión da 403; la cookie `SGV_SessionId` sale con `Secure` tras iniciar sesión; `/trace.axd` y `/Web.config` no dan 200. · C
+- [ ] **P-053** Compresión en el sitio publicado — tras publicar E5-7, solo con GET: `Login.aspx`, un `ScriptResource.axd` y un postback de UpdatePanel llegan con `Content-Encoding: gzip`, `sgv-base.css?v=` con `max-age` de un año, y el primer ingreso a Login con caché vacía pesa menos de 400 KB (hoy ≈ 1,35 MB); si el HTML sigue sin gzip, activar el filtro propio de E5-7. · B
+- [ ] **P-054** Bloqueo de doble envío con la latencia real — tras publicar E5-2, sin guardar datos: doble toque en "Buscar" desde un celular da una sola respuesta con "Procesando…", y tras descargar un Excel y un PDF la página queda usable (no pegada 20 s). · B
 
 ## En el sitio local (probador)
 
@@ -64,6 +68,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-049** Conductor con viaje abierto, botones de E4-15 a 390 px — "Liquidar mi viaje", Nota, Agregar otro gasto, quitar (confirmación), "Revisar y enviar" abre el modal sin enviar, y "Ver"/"Retirar" del historial con filas reales; la cuenta de prueba no tiene viaje y la BD de pruebas no tiene órdenes (ver D-035). · B
 - [ ] **P-050** Movimientos del viaje con `MovimientosViaje.Habilitado=true` (solo local) — Anular abre el modal con el id de la fila y cancelar no envía (E4-15). · C
 - [ ] **P-051** Liquidaciones pendientes con filas reales del servidor (BD de ensayo o cuando haya órdenes) — ojo, aprobar, rechazar, por conformar y aprobadas con `data-accion`, incluido un número de orden con caracteres especiales en `data-numero` (E4-15 se probó con respuestas simuladas). · C
+- [ ] **P-056** Línea base de las pantallas del conductor con un viaje — cuando exista el conductor de prueba con viaje activo (D-035) o en una BD de ensayo: medir con `privado/etapa5/medicion/medir.js` el panel con el formulario de liquidación, `FirmarLiquidacion`, `ConformarLiquidacion` y `DetalleOrdenViaje` (peso, ViewState, etiquetas, objetivos táctiles y textos a 390 px), antes de E5-1 si se puede y otra vez en el cierre (E5-23). · B
 
 ## Reglas
 

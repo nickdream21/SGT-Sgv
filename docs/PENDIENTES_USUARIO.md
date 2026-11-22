@@ -4,7 +4,7 @@ Lo que **solo puede hacer el usuario** (o la oficina, a pedido suyo): decisiones
 
 Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = valor claro; C = menor. Las mejoras de código están en `docs/PLAN_MEJORAS_SGV.md` (`M-`), los datos por corregir en `docs/DATOS_POR_CORREGIR.md` (`D-`) y las pruebas en `docs/PRUEBAS_PENDIENTES.md` (`P-`).
 
-Último id usado: U-092 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: U-097 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Credenciales y paneles externos
 
@@ -85,6 +85,10 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-058** Dashboards e indicadores — el usuario tiene temas que comentar antes (al final). · C
 - [ ] **U-080** Crear un segundo usuario ADMINISTRADOR DE SISTEMA para otra persona — hoy hay uno solo activo y sin correo: si pierde la contraseña (o el celular, con el segundo factor) nadie puede restablecerle el acceso desde el sistema. Como mínimo, registrar su correo para la recuperación. Antes de E4-14. · A
 - [ ] **U-082** Qué muestra la verificación pública de documentos — cualquiera con un código ve el nombre completo de cada firmante, el motivo de anulación (texto libre) y los códigos de las demás firmas de la orden. Recomendado: mantener nombre, fecha, estado y huella; quitar el motivo de anulación y los otros códigos. Entra en E4-8. · C
+- [ ] **U-094** CargarExcel (Indicadores), Productos y Rutas no tienen enlace en el menú (E5-19) — solo se llega escribiendo la dirección: decidir cuáles se usan (se enlazan en Catálogos) y cuáles se retiran. · C
+- [ ] **U-095** Liquidaciones aprobadas de contabilidad: cuánto se muestra al abrir (E5-10) — hoy trae toda la historia sin paginar. Recomendado: los últimos 90 días por fecha de salida, 50 por página y un botón "Todo el historial". · C
+- [ ] **U-096** Videos de uso (E5-22): voz y reparto — ¿sirve la voz sintética en español de Perú del video del conductor que ya existe, y por dónde se entregan (recomendado: enlace por WhatsApp y desde la ayuda del sistema)? · B
+- [ ] **U-097** Revisar el texto de la ayuda y del manual por rol (E5-21) — Claude escribe los unos 30 temas y saca las capturas; el usuario confirma que cada paso es como se trabaja de verdad antes de repartir el manual. · B
 
 ## Datos o documentos por conseguir
 

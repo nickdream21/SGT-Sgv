@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-27 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-28 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -47,6 +47,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-25 | Se borra el portador del sobre aunque la pantalla de dinero siga apagada |
 | DN-26 | Permisos del SUPERVISOR y del administrador como funcionan hoy (opción recomendada, a confirmar) |
 | DN-27 | Segundo factor: quién lo lleva, apagado por interruptor y cómo se recupera (opción recomendada, a confirmar) |
+| DN-28 | Aspecto del sistema: dirección "Expediente", iconos solo en acciones y avisos, sin emojis |
 
 ---
 
@@ -305,6 +306,21 @@ que no suman el flete, peso bruto mal escrito y nombres de producto mal copiados
 - Desde: 2026-10-23, `991d44b`.
 - En el código: solo procedimiento.
 - Estado: a confirmar con la administradora (U-023 en `docs/PENDIENTES_USUARIO.md`).
+
+## 6. Interfaz
+
+### DN-28 — Aspecto del sistema: dirección "Expediente", iconos solo en acciones y avisos, sin emojis
+El sistema es formal y no debe parecer una plantilla ni algo generado: aspecto de documento administrativo (hoja blanca
+sobre gris, un solo azul tinta, tablas tipo planilla con los montos alineados, estados como sello rectangular con texto),
+con una tipografía propia servida desde el sitio. Cero emojis y exclamaciones en los mensajes. Los iconos se quedan solo
+en los botones compactos de acción de las tablas y en los avisos de error o advertencia (más los funcionales: cerrar, menú
+del celular, desplegable); nunca en títulos, etiquetas de campo, menú, pestañas ni botones con texto. Sin tarjetas grandes
+de totales: los contadores van en las pestañas. Se conservan los colores suaves de estado y los montos en verde o rojo.
+- Desde: 2026-11-22. El usuario eligió "A y 1" entre tres direcciones (Expediente, Sobrio de sistema, Tablero operativo)
+  y tres reglas de iconos, mostradas sobre la pantalla de Gestión de liquidaciones y la del conductor en el celular.
+- En el código: todavía no; lo aplican E5-12 (paleta y tipografía en `WebSGV/Content/sgv-base.css`) y E5-24 (iconos y
+  redacción, con `WebSGV.Tests/InterfazFormalTests.cs`) de `docs/HOJA_DE_RUTA_CALIDAD.md`.
+- Estado: vigente.
 
 ## Reglas
 
