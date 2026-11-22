@@ -4,7 +4,7 @@
 
 Última actualización: **2026-11-21**, commit anterior `7e1e21d` — E3-9: Etapa 3 cerrada con nota 8; `aplicar-migraciones.ps1` aplica el SP que necesita la 54; `PASO_A_PRODUCCION.md` con los controles de las migraciones 52 a 58. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-107 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-108 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -68,6 +68,7 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 - [ ] **M-012** Alias de choferes — recordar la corrección cuando se elige a mano un nombre del Word no reconocido (tabla de alias por conductor, migración). Hoy no hace falta: 64/64 nombres reales se reconocen. · C
 - [ ] **M-013** Finalizar lote: copias huérfanas tras un commit en duda — si el lote en realidad no se guardó, las copias definitivas del primer intento quedan sueltas en `~/Uploads` (rutas en `App_Data/logs`). Sin riesgo para los datos; limpiar a mano si pasa o automatizar la limpieza. · C
 - [ ] **M-105** ListaDespachos: el filtro "Estado del lote: Todos" no incluye los anulados — `sp_LD_ObtenerLotesRegistrados` solo los devuelve con "Anulados"; renombrar a "Todos (sin anulados)" o incluirlos. · C
+- [ ] **M-108** ListaDespachos: el subtítulo dice "Gestión de Viajes Activos - 0 viajes" en la pestaña "Lotes registrados" — el contador no corresponde a esa pestaña (visto por el probador en el sitio publicado el 2026-11-21). · C
 
 ### Liquidaciones y saldos
 
@@ -168,7 +169,7 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 - [ ] **M-084** Registro de clientes: celda de contacto — el texto sale más bajo que el resto de la fila. · C
 - [ ] **M-085** Expediente completo muestra igual "Para completar, suba…" — ocultar esa ayuda cuando no falta nada (`BandejaDocumentos.aspx.cs:770`). · C
 - [ ] **M-086** Registro de despacho: tira de pasos y "Ver lotes pendientes" — "1 Word → 2 ZIP → 3 Revisar pendientes" y el botón al terminar de programar. · C
-- [ ] **M-103** Auditoría: no volcar `ValoresAnteriores`/`ValoresNuevos` enteros en la página — `Auditoria.aspx:218` los pone completos en `data-anterior` de cada fila (la fila de D-030 del script de E3-5 pesa 137 KB); recortarlos en la lista y traer el detalle al abrirlo. · C
+- [ ] **M-103** Auditoría: no volcar `ValoresAnteriores`/`ValoresNuevos` enteros en la página — `Auditoria.aspx:218` los pone completos en `data-anterior` de cada fila (la fila de D-030 del script de E3-5 pesa 274 KB y viaja dos veces, en `data-anterior` y en el ViewState: en el sitio publicado su página pesa 569 KB y cada postback ~290 KB, unos 5 s); recortarlos en la lista y traer el detalle al abrirlo. · C
 
 ### Etapa 6 — Arquitectura y medición
 
