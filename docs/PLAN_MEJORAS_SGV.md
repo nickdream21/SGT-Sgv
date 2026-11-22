@@ -2,13 +2,13 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `7e1e21d` — E3-9: Etapa 3 cerrada con nota 8; `aplicar-migraciones.ps1` aplica el SP que necesita la 54; `PASO_A_PRODUCCION.md` con los controles de las migraciones 52 a 58. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `1e8eb1c` — limpieza tras publicar `92d4dc6`: migración 59 (fuera `sp_DC_RevocarFirma`, `FirmaService.RevocarFirma` y `MovimientoDineroViaje.idConductorPortador`; `sp_LD_RegistrarMovimientoViaje` sin ese parámetro) y 60 (8 tablas de Grifo, `GuiasTransportista` y `OrdenViajeAjuste` con sus 2 triggers); cierra M-054, M-056 y M-106; quedan M-109 y M-110. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-108 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-110 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
-- El sitio publicado (`https://sgvtransporte.somee.com`, publicación `20261120_1311_60853e8`) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
+- El sitio publicado (`https://sgvtransporte.somee.com`, publicado el commit `92d4dc6` el 2026-11-21) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
 - Producción (`sgvTransporte`) no está al día: el paso a producción es `docs/PASO_A_PRODUCCION.md`, en orden, tras la decisión U-011.
 - Etapa 1 (operación) cerrada: respaldo diario de la BD y de los archivos en Google Drive, restauración ensayada, publicación con vuelta atrás (`herramientas/publicar/publicar.ps1`), monitores de UptimeRobot y cron del GPS activos.
 - Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 (integridad de la BD) cerrada el 2026-11-21 con nota 8**; **Etapa 4 (seguridad) en análisis**. Las etapas 4 a 6 (seguridad, interfaz, arquitectura) están en la hoja de ruta.
@@ -129,10 +129,9 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 
 ### Etapa 3 — Integridad de la BD
 
-- [ ] **M-054** `sp_DC_RevocarFirma` y `FirmaService.RevocarFirma` sin uso — siguen en el repo (`sp_DC_RevocarFirma.sql`, `FirmaService.cs:229`) y en la BD: borrarlos. · C
-- [ ] **M-106** Tablas de Grifo y restos que el sitio publicado todavía nombra — `AbastecimientoCombustible`, `DespachoCombustibleObra` e `IngresoCombustibleEcuador` (las consulta `VehiculoService` de `60853e8`; en HEAD ya no), `DetalleTicketEcuador`, `camionetas` (23 filas), `volquetes` (40), `LugarAbastecimiento`, `TipoCarro`, `Obras`, `ClientesObra` y el trigger `TR_AbastecimientoCombustible_Auditoria`; además `GuiasTransportista` (FK desde `DetalleOrdenViaje` y `Manifiesto`) y `OrdenViajeAjuste` (sin uso en el código). Borrarlos en una migración nueva tras publicar HEAD, con la decisión del usuario. · C
+- [ ] **M-109** Tablas de Grifo con datos que no borró la migración 60 — `camionetas` (23 filas: placa, marca, motor, chasis), `volquetes` (40: placa, marca, serie, ubicación), `Obras` (1, una obra ACTIVA) y `ClientesObra` (1, su cliente). Ningún código ni objeto de la BD las usa y desde la 60 no reciben FK; el usuario decide si son datos de otras flotas que conviene guardar (exportar a Excel) antes de borrarlas en una migración nueva con tope de filas. · C
+- [ ] **M-110** `DetalleOrdenViaje` y `Manifiesto` vacías y sin uso — 0 filas (2026-11-21) y ningún C# ni SP las usa (la página `DetalleOrdenViaje.aspx` es otra cosa: lee `OrdenViaje`); desde la migración 60 sus columnas `idGuia` ya no tienen FK (se borró `GuiasTransportista`). Borrarlas en una migración nueva (`Manifiesto` tiene `UC_NumeroManifiesto`; no confundir con `DocumentosManifiesto`, que sí se usa). · C
 - [ ] **M-107** CHECK que faltan en tipos de documento — `FirmaDigital.tipoDocumento IN ('ORDEN_VIAJE')`, `Auditoria.TipoOperacion IN ('INSERT', 'UPDATE', 'DELETE')` y `tipoArchivo = '.pdf'` en `DocumentosCPIC`, `DocumentosFactura` y `DocumentosManifiesto`; los datos ya cumplen (2026-11-21). Migración nueva con el patrón de la 54. · C
-- [ ] **M-056** Borrar `MovimientoDineroViaje.idConductorPortador` — y su FK, con una migración nueva; aún lo usa `sp_LD_RegistrarMovimientoViaje.sql:21`. No antes de decidir si se retoma "Dinero y pagos del viaje" (U-040) y volver a probar la pantalla. · C
 - [ ] **M-059** FacturasFlete: PDF anterior huérfano al corregir — al corregir una factura (ACTUALIZADA) el PDF anterior queda en `Uploads/FacturasFlete` sin fila que lo apunte; limpieza de huérfanos. · C
 - [ ] **M-060** Tabla `PuntoControlGps` de exportación casi sin uso — "Verificar GPS" ya no usa sus 20 puntos, pero `HoraLlegadaGpsService.cs:52` usa el punto `BASE`: no borrar la tabla entera. · C
 

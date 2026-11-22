@@ -251,7 +251,7 @@ PDF firmado generado y archivado en ~/App_Data/OrdenesViaje
 | Tabla | Descripción |
 |-------|-------------|
 | `FirmaDigital` | Append-only. Imagen PNG del trazo + hash SHA-256 + metadatos |
-| `DescuentosReintegros` | Descuentos/reintegros de la aprobación (una fila por orden). `OrdenViajeAjuste` existe (migración 03) pero hoy no se usa |
+| `DescuentosReintegros` | Descuentos/reintegros de la aprobación (una fila por orden). `OrdenViajeAjuste` (migración 03, nunca usada) se borró en la migración 60 |
 | `FormatoControlado` | Catálogo ISO 9001/14001/45001/BASC para encabezados de documentos |
 
 **Columnas en `OrdenViaje`:**

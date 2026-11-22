@@ -88,9 +88,9 @@ WHERE idDespachoOrigen IS NULL AND idDespachoDestino IS NULL AND estado = 'COMPL
 .\WebSGV\Database\aplicar-migraciones.ps1 -Entorno produccion -ConfirmoProduccion
 ```
 
-Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–58) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
+Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–60) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
 
-**Migración 52** (`52_TriggersAuditoriaHeredados.sql`, E3-1): crea los 11 triggers `TR_<tabla>_Auditoria` heredados (llenan `Auditoria`; `sp_DC_GenerarNumeroOrden` la lee) solo si faltan; donde ya existen no hace nada y solo queda registrada. Ensayada antes con `herramientas/respaldo/ensayar-migracion.ps1`. Control después (solo SELECT): `SELECT name, is_disabled FROM sys.triggers WHERE name LIKE 'TR[_]%[_]Auditoria'` → los 11 de la migración con `is_disabled = 0` (10 después de la 58, que borra `CPIC_Productos` con su trigger), más `TR_AbastecimientoCombustible_Auditoria` si existe: no se borró en E3-8 y queda para M-106. Si `aplicar-migraciones.ps1 -SoloListar` avisa de un hash distinto en `16_HoraPeru.sql`, comparar `dbo.fn_AhoraPeru` con el archivo antes de aceptarlo en `$HashesAceptados` (el de pruebas ya está aceptado, revisado el 2026-11-21).
+**Migración 52** (`52_TriggersAuditoriaHeredados.sql`, E3-1): crea los 11 triggers `TR_<tabla>_Auditoria` heredados (llenan `Auditoria`; `sp_DC_GenerarNumeroOrden` la lee) solo si faltan; donde ya existen no hace nada y solo queda registrada. Ensayada antes con `herramientas/respaldo/ensayar-migracion.ps1`. Control después (solo SELECT): `SELECT name, is_disabled FROM sys.triggers WHERE name LIKE 'TR[_]%[_]Auditoria'` → los 11 de la migración con `is_disabled = 0` (10 después de la 58, que borra `CPIC_Productos` con su trigger), y 9 después de la 60, que borra `GuiasTransportista` con el suyo; `TR_AbastecimientoCombustible_Auditoria` (sin archivo) también se va con su tabla en la 60. Si `aplicar-migraciones.ps1 -SoloListar` avisa de un hash distinto en `16_HoraPeru.sql`, comparar `dbo.fn_AhoraPeru` con el archivo antes de aceptarlo en `$HashesAceptados` (el de pruebas ya está aceptado, revisado el 2026-11-21).
 
 **Migración 53** (`53_CorrelativoViaje.sql`, E3-3): crea `Correlativo` y la siembra con el número `VP-AAAA-NNN` más alto de cada año de `sgvTransporte` (excluye formatos como `VP-SIM-*`); se detiene con `THROW 51000` si un año queda por debajo. **Debe ir antes que los SP del paso 5** (`sp_CrearDespacho`, `sp_CrearViajeProgreso` y `sp_LD_ReubicarDespachoEnViajeDelConductor` llaman a `sp_SiguienteNumeroViaje`, que usa la tabla). Control después: `SELECT serie, anio, ultimo FROM Correlativo` contra el número más alto de cada año (`MAX(TRY_CAST(SUBSTRING(numeroViajeProgreso, 9, 20) AS INT))` agrupado por `SUBSTRING(numeroViajeProgreso, 4, 4)`, solo filas `LIKE 'VP-[0-9][0-9][0-9][0-9]-%'`): `ultimo` nunca menor.
 
@@ -206,7 +206,51 @@ SELECT COL_LENGTH('dbo.Usuarios', 'idOperador') AS idOperador, COL_LENGTH('dbo.O
        (SELECT max_length FROM sys.columns WHERE object_id = OBJECT_ID('dbo.ViajesEnProgreso') AND name = 'observaciones') AS largo;
 ```
 
-La lista exacta que sostienen las pruebas está en `WebSGV.Tests/Integracion/IntegridadBdTests.cs` (`Los_CHECK_son_exactamente_los_esperados`, `Las_FK_de_la_migracion_55_existen_sin_cascada`, `Lo_borrado_en_E3_8_ya_no_existe`). Las tablas de Grifo, su trigger `TR_AbastecimientoCombustible_Auditoria` y `sp_DC_RevocarFirma` no se borran aquí (M-054, M-106).
+La lista exacta que sostienen las pruebas está en `WebSGV.Tests/Integracion/IntegridadBdTests.cs` (`Los_CHECK_son_exactamente_los_esperados`, `Las_FK_de_la_migracion_55_existen_sin_cascada`, `Lo_borrado_en_E3_8_ya_no_existe`). Tras la 60 la FK `FK_OrdenViajeAjuste_UsuarioAdmin` de la 55 ya no existe (se va con su tabla): el control de la 55 da 11 filas.
+
+**Migraciones 59 y 60** (`59_BorrarRevocarFirmaYPortador.sql`, `60_BorrarTablasGrifoYGuias.sql`, tras publicar `92d4dc6`): la 59 borra `sp_DC_RevocarFirma` y `MovimientoDineroViaje.idConductorPortador` con su FK; la 60 borra 8 tablas (`DetalleTicketEcuador`, `IngresoCombustibleEcuador`, `DespachoCombustibleObra`, `AbastecimientoCombustible` con su trigger sin archivo, `LugarAbastecimiento`, `TipoCarro`, `GuiasTransportista` con `TR_GuiasTransportista_Auditoria` y `OrdenViajeAjuste`) y las FK de `DetalleOrdenViaje.idGuia` y `Manifiesto.idGuia` (las columnas se quedan, M-110). **Orden: `sp_LD_RegistrarMovimientoViaje` → 59 → 60** (ese SP deja de aceptar `@idConductorPortador`; `aplicar-migraciones.ps1` lo aplica solo por la línea `-- Requiere SP:` de la 59, y la 59 se detiene con 59002 si el SP viejo sigue). Necesita publicado un código igual o posterior a `92d4dc6` (el de antes de la migración 43 enviaba `@idConductorPortador`). Se detienen sin borrar nada si: otro objeto nombra el SP o la columna (59001/59002); hay más de 1 movimiento con portador o alguno activo (59003); hay más filas que en pruebas el 2026-11-21 (60001: `LugarAbastecimiento` 2, `TipoCarro` 6, las demás 0); llega otra FK desde una tabla que se queda (60002); `DetalleOrdenViaje` o `Manifiesto` tienen filas con `idGuia` (60003); o un objeto que se queda nombra una tabla de la lista (60005). No se tocan `camionetas`, `volquetes`, `Obras` ni `ClientesObra` (M-109). **Antes, medir en `sgvTransporte`** (solo SELECT) y guardar el resultado; si algo pasa de lo medido, decidir con el usuario si se respalda o se conserva:
+
+```sql
+-- Filas de las tablas que borra la 60 y de las que se quedan (NULL = no existe).
+SELECT v.n AS tabla, (SELECT SUM(p.rows) FROM sys.partitions p WHERE p.object_id = OBJECT_ID('dbo.' + v.n) AND p.index_id < 2) AS filas
+FROM (VALUES ('DetalleTicketEcuador'),('IngresoCombustibleEcuador'),('DespachoCombustibleObra'),('AbastecimientoCombustible'),
+             ('LugarAbastecimiento'),('TipoCarro'),('GuiasTransportista'),('OrdenViajeAjuste'),
+             ('camionetas'),('volquetes'),('Obras'),('ClientesObra'),('DetalleOrdenViaje'),('Manifiesto')) v(n);
+-- FK que llegan a las tablas de la 60 desde otras. Solo deben salir las 6 entre ellas mismas y DetalleOrdenViaje/Manifiesto.idGuia.
+SELECT OBJECT_NAME(f.parent_object_id) AS desde, f.name, OBJECT_NAME(f.referenced_object_id) AS hacia FROM sys.foreign_keys f
+WHERE OBJECT_NAME(f.referenced_object_id) IN ('DetalleTicketEcuador','IngresoCombustibleEcuador','DespachoCombustibleObra',
+      'AbastecimientoCombustible','LugarAbastecimiento','TipoCarro','GuiasTransportista','OrdenViajeAjuste') ORDER BY hacia, desde;
+-- 59: movimientos con portador (en pruebas: 1, anulado) y si el SP sigue.
+SELECT COUNT(*) AS conPortador, SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END) AS activos
+FROM dbo.MovimientoDineroViaje WHERE idConductorPortador IS NOT NULL;
+SELECT OBJECT_ID('dbo.sp_DC_RevocarFirma') AS spRevocarFirma;
+```
+
+**Controles después de las migraciones 59 y 60** (solo SELECT; mismo modo que los de arriba):
+
+```sql
+-- El SP, las 8 tablas y sus 2 triggers ya no existen. Debe dar 0 filas.
+SELECT v.n AS sigue FROM (VALUES
+ ('sp_DC_RevocarFirma'),('DetalleTicketEcuador'),('IngresoCombustibleEcuador'),('DespachoCombustibleObra'),
+ ('AbastecimientoCombustible'),('LugarAbastecimiento'),('TipoCarro'),('GuiasTransportista'),('OrdenViajeAjuste'),
+ ('TR_AbastecimientoCombustible_Auditoria'),('TR_GuiasTransportista_Auditoria')) v(n)
+WHERE OBJECT_ID('dbo.' + v.n) IS NOT NULL;
+-- 59: columna y su FK. Debe dar NULL y 0.
+SELECT COL_LENGTH('dbo.MovimientoDineroViaje', 'idConductorPortador') AS idConductorPortador,
+       (SELECT COUNT(*) FROM sys.foreign_keys WHERE name = 'FK_MovimientoDineroViaje_Portador') AS fkPortador;
+-- 59: sp_LD_RegistrarMovimientoViaje sin @idConductorPortador. Debe dar 0.
+SELECT COUNT(*) AS parametroPortador FROM sys.parameters
+WHERE object_id = OBJECT_ID('dbo.sp_LD_RegistrarMovimientoViaje') AND name = '@idConductorPortador';
+-- 60: camionetas, volquetes, Obras y ClientesObra siguen con las filas medidas antes; las 2 columnas idGuia, con 0 FK.
+SELECT t.name, SUM(p.rows) AS filas FROM sys.tables t JOIN sys.partitions p ON p.object_id = t.object_id AND p.index_id < 2
+ WHERE t.name IN ('camionetas','volquetes','Obras','ClientesObra') GROUP BY t.name ORDER BY t.name;
+SELECT OBJECT_NAME(c.object_id) AS tabla, c.name,
+       (SELECT COUNT(*) FROM sys.foreign_key_columns fc WHERE fc.parent_object_id = c.object_id AND fc.parent_column_id = c.column_id) AS fks
+FROM sys.columns c WHERE c.name = 'idGuia' AND c.object_id IN (OBJECT_ID('dbo.DetalleOrdenViaje'), OBJECT_ID('dbo.Manifiesto'));
+-- Registradas. Debe dar 2 filas.
+SELECT archivo, fechaAplicacion FROM dbo.SchemaVersion
+WHERE archivo IN ('59_BorrarRevocarFirmaYPortador.sql', '60_BorrarTablasGrifoYGuias.sql');
+```
 
 ## 5. Procedimientos almacenados
 

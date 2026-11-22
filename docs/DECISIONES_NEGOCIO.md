@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-24 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-25 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -44,6 +44,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-22 | Vitapro (ida): todo sale de la factura F222 y el packing list (observada, a confirmar) |
 | DN-23 | Cargas y flete por camión de los demás clientes (observada, a confirmar) |
 | DN-24 | En qué columna va el flete (observada, a confirmar) |
+| DN-25 | Se borra el portador del sobre aunque la pantalla de dinero siga apagada |
 
 ---
 
@@ -113,9 +114,16 @@ reactiva, valen las decisiones del 2026-11-11, a confirmar antes con el usuario:
 - Desde: 2026-11-11, `56c0d81` (decisiones) y `1e3652d` (sobre sin portador); apagada 2026-11-13, `f2e77ab`.
 - En el código: `WebSGV/Web.config:33` (`MovimientosViaje.Habilitado` = `false`);
   `WebSGV/Services/Liquidaciones/MovimientosViajeService.cs:61-67`.
-- Estado: pendiente de reactivar (U-040 en `docs/PENDIENTES_USUARIO.md`). Mientras siga
-  apagada, no aplicar la migración que borra `MovimientoDineroViaje.idConductorPortador` sin volver a probar la
-  pantalla.
+- Estado: pendiente de reactivar (U-040 en `docs/PENDIENTES_USUARIO.md`). La condición de no borrar
+  `MovimientoDineroViaje.idConductorPortador` mientras siga apagada fue reemplazada por DN-25.
+
+### DN-25 — Se borra el portador del sobre aunque la pantalla de dinero siga apagada
+El usuario aprobó el 2026-11-21 borrar `MovimientoDineroViaje.idConductorPortador` sin esperar a reactivar "Dinero y
+pagos del viaje": desde la migración 43 la pantalla ya no registra portador (DN-07) y solo un movimiento de prueba
+anulado lo tenía. Al reactivarla se prueba la pantalla de nuevo (P-029).
+- Desde: 2026-11-21, migración `59_BorrarRevocarFirmaYPortador.sql`.
+- En el código: `WebSGV/Database/StoredProcedures/sp_LD_RegistrarMovimientoViaje.sql` (sin `@idConductorPortador`).
+- Estado: aplicada en pruebas (`sgvActualizada`); en producción con `docs/PASO_A_PRODUCCION.md`.
 
 ## 2. Usuarios y acceso
 

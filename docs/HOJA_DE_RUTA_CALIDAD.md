@@ -22,7 +22,7 @@ Reparto de modelos: Fable 5.2 analiza y planifica; Opus 5.5 ejecuta.
 **Qué sigue (para retomar en otra máquina):**
 - **Etapa 4, analizar y planificar (no ejecutar)**: Fable 5.2 mide y escribe el plan detallado de la Etapa 4 (tareas E4-n, aceptación, riesgos), como se hizo en la Etapa 3. Lo que falta medir está en la sección "Etapa 4" de abajo.
 - **Decisiones del usuario**: TOTP (qué roles y cómo se recupera el acceso) entra en el análisis de la Etapa 4; siguen U-073 (usuario de BD de mínimo privilegio), U-077 (respaldo a un punto en el tiempo), U-017 (`Indicadores`/`CargarExcel`), U-011 (paso a producción) y las rotaciones de credenciales de la Etapa 1.
-- **Abierto de la Etapa 3** (no frena la 4): M-054 y M-106 (borrar lo que el sitio publicado todavía nombra, tras publicar HEAD), M-107; datos de prueba D-032, D-033 y D-034; pruebas P-024, P-025, P-027 y P-028; U-075 y U-076.
+- **Abierto de la Etapa 3** (no frena la 4): M-107, M-109 y M-110 (lo que no borraron las migraciones 59 y 60); datos de prueba D-032, D-033 y D-034; pruebas P-024, P-025, P-027 y P-028; U-075 y U-076.
 - **Ensayo en la laptop**: ya funciona (2026-11-21) con LocalDB, `sqlpackage` como herramienta de dotnet y sin Google Drive: `.\herramientas\respaldo\ensayar-migracion.ps1 -Carpeta C:\RespaldosSGV -RespaldoNuevo` (exporta un `.bacpac` nuevo a esa carpeta, fuera del repo).
 
 | # | Etapa | Nota hoy | Meta | Estado |
@@ -244,14 +244,13 @@ decidir y `sgvTransporte` no tendrá estas reglas hasta el paso a producción (U
 `FirmaDigital.idDocumento` (auditoría polimórfica; las firmas sobreviven al retiro de la orden, DN-04 y
 DN-06); el CHECK de `FirmaDigital.etapa` acepta NULL; sin CHECK en `tipoRuta` (crece con cada tercero);
 no se pasa a `nvarchar`; `SYSUTCDATETIME` en las firmas se queda; el correlativo va en tabla y no en
-`SEQUENCE`; de los 12 triggers heredados, 11 se versionan (migración 52) y no se borran; el de Grifo no se borró en E3-8 (el sitio publicado aún consulta su tabla) y queda para M-106.
+`SEQUENCE`; de los 12 triggers heredados, 11 se versionan (migración 52) y no se borran; el de Grifo no se borró en E3-8 (el sitio publicado aún consulta su tabla) y se fue con su tabla en la migración 60.
 
 **Decisiones del usuario** (2026-11-21): aprobadas D-029 a D-031 y U-015 (aplicadas en E3-5) y
 autorizado U-074 (borrado de E3-8). Las migraciones 54 a 58 se aplican en cuanto pasen el ensayo y la
 revisión, de preferencia fuera del horario de uso.
 
-Fuera de la etapa: usuario de mínimo privilegio (depende del panel de somee: U-073), M-056 (espera a
-U-040), M-059 y M-060.
+Fuera de la etapa: usuario de mínimo privilegio (depende del panel de somee: U-073), M-059 y M-060.
 
 Riesgos: la BD de pruebas es la del sitio (por eso el ensayo local primero y respaldo antes de E3-5,
 E3-6 y E3-8); un CHECK nuevo hace fallar un INSERT que antes pasaba (por eso E3-2 va antes y el
@@ -271,7 +270,7 @@ E3-6 y E3-8); un CHECK nuevo hace fallar un INSERT que antes pasaba (por eso E3-
 - Cada `[WebMethod]` y cada descarga: que compruebe sesión y rol por su cuenta.
 - Bloqueo de login: hoy en memoria (se pierde al reciclar el sitio); pasarlo a la BD y registrar `LOGIN_FALLIDO` (M-062).
 - Dependencias NuGet y JS con vulnerabilidades conocidas; la versión duplicada de select2.
-- U-073 (usuario de BD de mínimo privilegio), las rotaciones de credenciales pendientes de la Etapa 1 y M-054.
+- U-073 (usuario de BD de mínimo privilegio) y las rotaciones de credenciales pendientes de la Etapa 1.
 
 ### Etapa 5 — Interfaz y usabilidad (6,5 → 8)
 

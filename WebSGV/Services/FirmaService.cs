@@ -224,38 +224,6 @@ namespace WebSGV.Services
         }
 
         // ---------------------------------------------------------------------
-        // Revocar firma (append-only: se inserta una nueva fila con estado 'A')
-        // ---------------------------------------------------------------------
-        public ResultadoFirma RevocarFirma(
-            int idFirmaOriginal,
-            int idUsuarioRevocador,
-            string nombreRevocador,
-            string motivoAnulacion,
-            string ipOrigen,
-            string userAgent)
-        {
-            var pIdFirma = Salida("@idFirmaRevocacion", SqlDbType.Int);
-            var pResultado = Salida("@resultado", SqlDbType.Int);
-            var pMensaje = Salida("@mensaje", SqlDbType.VarChar, 500);
-
-            DbHelper.EjecutarNonQuerySp("sp_DC_RevocarFirma",
-                DbHelper.Param("@idFirmaOriginal", idFirmaOriginal),
-                DbHelper.Param("@idUsuarioRevocador", idUsuarioRevocador),
-                DbHelper.Param("@nombreRevocador", nombreRevocador ?? ""),
-                DbHelper.Param("@motivoAnulacion", motivoAnulacion ?? ""),
-                DbHelper.Param("@ipOrigen", ipOrigen),
-                DbHelper.Param("@userAgent", Recortar(userAgent, 500)),
-                pIdFirma, pResultado, pMensaje);
-
-            return new ResultadoFirma
-            {
-                Exito = pResultado.Value != DBNull.Value && Convert.ToInt32(pResultado.Value) == 1,
-                Mensaje = pMensaje.Value == DBNull.Value ? "" : pMensaje.Value.ToString(),
-                IdFirma = pIdFirma.Value == DBNull.Value ? 0 : Convert.ToInt32(pIdFirma.Value)
-            };
-        }
-
-        // ---------------------------------------------------------------------
         // Lecturas
         // ---------------------------------------------------------------------
 

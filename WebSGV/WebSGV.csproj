@@ -192,6 +192,8 @@
     <Content Include="Database\Schema\56_QueryStoreAcotado.sql" />
     <Content Include="Database\Schema\57_BorrarObjetosRetirados.sql" />
     <Content Include="Database\Schema\58_BorrarTablasRetiradas.sql" />
+    <Content Include="Database\Schema\59_BorrarRevocarFirmaYPortador.sql" />
+    <Content Include="Database\Schema\60_BorrarTablasGrifoYGuias.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\StoredProcedures\sp_CrearCPIC.sql" />
@@ -241,7 +243,6 @@
     <Content Include="Database\StoredProcedures\sp_DC_RegistrarFirmaAdmin.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_RegistrarFirmaConductor.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_RetirarLiquidacion.sql" />
-    <Content Include="Database\StoredProcedures\sp_DC_RevocarFirma.sql" />
     <Content Include="Database\StoredProcedures\sp_DC_VerificarObservacionesRechazo.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ActualizarDespachoEnLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_AnularLote.sql" />

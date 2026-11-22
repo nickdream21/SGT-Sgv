@@ -22,16 +22,13 @@ namespace WebSGV.Tests.Integracion
         private static readonly string[] TablasSinPkPermitidas = { };
 
         /// <summary>
-        /// Objetos de la BD sin archivo en el repo que se quedan a propósito hasta que el usuario decida (E3-8):
-        /// el trigger de la tabla de Grifo AbastecimientoCombustible, que el sitio publicado (60853e8) todavía
-        /// consulta. No añadir nada nuevo: un objeto nuevo va con su archivo.
+        /// Objetos de la BD sin archivo en el repo que se quedan a propósito hasta que el usuario decida. Vacía
+        /// desde la migración 60 (el trigger de Grifo TR_AbastecimientoCombustible_Auditoria se fue con su tabla).
+        /// No añadir nada nuevo: un objeto nuevo va con su archivo.
         /// </summary>
-        private static readonly string[] PorRetirarEnE3_8 =
-        {
-            "TR_AbastecimientoCombustible_Auditoria",
-        };
+        private static readonly string[] PorRetirarEnE3_8 = { };
 
-        /// <summary>Lo que borran las migraciones 57 y 58 (E3-8): no debe volver a existir.</summary>
+        /// <summary>Lo que borran las migraciones 57 y 58 (E3-8), 59 y 60: no debe volver a existir.</summary>
         private static readonly string[] ObjetosBorradosEnE3_8 =
         {
             // 57: 18 procedimientos, 5 vistas y 1 función
@@ -49,6 +46,12 @@ namespace WebSGV.Tests.Integracion
             "DetalleAlimentacion", "DetalleApoyoSeguridad", "DetalleEncapada", "DetalleMovilidad",
             "DetalleSegmento", "SegmentosOrdenViaje", "ProductosOperacion", "OperacionesSubTramo", "SubTramos",
             "TR_CPIC_Productos_Auditoria",
+            // 59: sp_DC_RevocarFirma (la columna MovimientoDineroViaje.idConductorPortador va abajo)
+            "sp_DC_RevocarFirma",
+            // 60: 8 tablas de Grifo, guías y ajustes (con sus triggers)
+            "DetalleTicketEcuador", "IngresoCombustibleEcuador", "DespachoCombustibleObra", "AbastecimientoCombustible",
+            "LugarAbastecimiento", "TipoCarro", "GuiasTransportista", "OrdenViajeAjuste",
+            "TR_AbastecimientoCombustible_Auditoria", "TR_GuiasTransportista_Auditoria",
         };
 
         private static readonly Regex CreacionDeObjeto = new Regex(
@@ -125,6 +128,7 @@ namespace WebSGV.Tests.Integracion
             var columnas = Nombres(@"SELECT OBJECT_NAME(object_id) + '.' + name FROM sys.columns
                                      WHERE (object_id = OBJECT_ID('dbo.Usuarios') AND name = 'idOperador')
                                         OR (object_id = OBJECT_ID('dbo.OrdenViaje') AND name = 'tipoViaje')
+                                        OR (object_id = OBJECT_ID('dbo.MovimientoDineroViaje') AND name = 'idConductorPortador')
                                         OR (object_id = OBJECT_ID('dbo.ViajesEnProgreso') AND name = 'observaciones'
                                             AND TYPE_NAME(user_type_id) = 'ntext')");
             Assert.True(columnas.Count == 0, "Columnas que E3-8 quitó o cambió y siguen igual: " + string.Join(", ", columnas));
@@ -159,7 +163,7 @@ namespace WebSGV.Tests.Integracion
             var esperados = new[]
             {
                 "TR_Carreta_Auditoria", "TR_Conductor_Auditoria", "TR_CPIC_Auditoria",   // el de CPIC_Productos se fue con su tabla (E3-8)
-                "TR_Factura_Auditoria", "TR_GuiasTransportista_Auditoria", "TR_Indicadores_Auditoria",
+                "TR_Factura_Auditoria", "TR_Indicadores_Auditoria",   // el de GuiasTransportista se fue con su tabla (migración 60)
                 "TR_Liquidaciones_Auditoria", "TR_OrdenViaje_Auditoria", "TR_Tracto_Auditoria", "TR_UploadHistory_Auditoria",
             };
             var faltan = esperados.Where(t => !habilitados.Contains(t, StringComparer.OrdinalIgnoreCase)).ToList();
@@ -191,12 +195,15 @@ namespace WebSGV.Tests.Integracion
             "CK_PagoSaldoConductor_Medio",
         };
 
-        /// <summary>Las 10 FK de la migración 55 y las dos de documentos rehechas sin cascada.</summary>
+        /// <summary>
+        /// Las FK de la migración 55 (menos FK_OrdenViajeAjuste_UsuarioAdmin, que se fue con su tabla en la 60) y las
+        /// dos de documentos rehechas sin cascada.
+        /// </summary>
         private static readonly string[] FksMigracion55 =
         {
             "FK_FirmaDigital_UsuarioFirmante", "FK_MovimientoDineroViaje_ViajeProgreso",
             "FK_MovimientoDineroViaje_UsuarioRegistro", "FK_MovimientoDineroViaje_UsuarioAnulacion",
-            "FK_OrdenViajeAjuste_UsuarioAdmin", "FK_SeguimientoExportacion_DespachoOrigen",
+            "FK_SeguimientoExportacion_DespachoOrigen",
             "FK_SeguimientoExportacion_DespachoDestino", "FK_SeguimientoExportacion_UsuarioRegistro",
             "FK_SeguimientoExportacion_UsuarioModificacion", "FK_SeguimientoHito_UsuarioCorreccion",
             "FK_DocumentosFactura_Factura", "FK_DocumentosCPIC_CPIC",

@@ -70,8 +70,7 @@ namespace WebSGV.Services.Vehiculos
         //   Por id (FK a Tracto/Carreta):
         //     Despachos.idTracto/idCarreta, OrdenViaje.idTracto/idCarreta.
         //     (E3-8, 2026-11-21: fuera las tablas de Grifo AbastecimientoCombustible, DespachoCombustibleObra e
-        //     IngresoCombustibleEcuador, vacías y de un módulo retirado; así se podrán borrar cuando el sitio
-        //     publicado deje de consultarlas.)
+        //     IngresoCombustibleEcuador, vacías y de un módulo retirado; borradas en la migración 60.)
         //   Por texto de la placa (se desengancharían si la placa cambia):
         //     SeguimientoExportacion.tracto1/tracto2/carreta (copia del despacho; sp_SE_SincronizarDespachos y el
         //       GPS emparejan por placa), DestinoDescarga.placaTracto/placaCarreta (lista de plantas por pedido y

@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-028 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-029 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -39,6 +39,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-025** Firmas y conformidad de una liquidación de punta a punta con `XACT_ABORT ON` (E3-4) — declaración del conductor, revisión del admin y conformidad: el camino feliz y una contraseña errónea (debe mostrar el aviso y no dejar nada a medias). En `sgvActualizada` `OrdenViaje` no tiene filas: hacerlo cuando haya una orden de prueba, o en el sitio local tras crear una. Mientras `Liquidaciones.ConductoresEnSistema` sea false, `CierreViajesSinLiquidacion` (cron del GPS, también el del sitio publicado sobre la misma BD) cierra el viaje de prueba en 5 minutos o menos: reabrirlo y liquidar dentro de ese margen. · B
 - [ ] **P-027** Bloqueo de la placa en el servidor — con un tracto o carreta de prueba que tenga un despacho de prueba: intentar cambiarle la placa (también saltándose el aviso de la página) y comprobar que el servidor lo rechaza (`VehiculoService`, historial del vehículo). · C
 - [ ] **P-028** Menús del rol SUPERVISOR — entrar como supervisor y revisar menú, páginas permitidas y las que no (`RolesHelper`); hoy no hay un usuario SUPERVISOR activo de prueba (U-076). · C
+- [ ] **P-029** "Dinero y pagos del viaje" al reactivarla (U-040) — registrar una entrega SOBRE y un PAGO_DIRECTO y anular uno: `sp_LD_RegistrarMovimientoViaje` ya no tiene `@idConductorPortador` y la columna ya no existe (migración 59, DN-25). · C
 
 - [ ] **P-024** Respaldo diario de las 23:00 — confirmar que la tarea "SGV - Respaldo diario" corre: el 2026-11-20 no corrió a esa hora (¿PC apagada?) y el último `.bacpac` era el de las 11:50 de ese día. Mirar el historial del Programador de tareas y la fecha del último archivo. · B
 

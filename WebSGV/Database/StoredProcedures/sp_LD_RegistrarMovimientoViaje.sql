@@ -8,7 +8,8 @@
 --              Las validaciones de forma (montos, medio, proveedor)
 --              las hace también el servicio; aquí van las que
 --              dependen de la BD. Devuelve Resultado/Mensaje/idMovimiento.
---              El medio SOBRE no registra quién lo llevó (migración 43).
+--              El medio SOBRE no registra quién lo llevó (migración 43;
+--              la columna se borró en la migración 59).
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_RegistrarMovimientoViaje
     @tipo                VARCHAR(15),
@@ -18,7 +19,6 @@ CREATE OR ALTER PROCEDURE sp_LD_RegistrarMovimientoViaje
     @montoSoles          DECIMAL(18,2),
     @montoDolares        DECIMAL(18,2),
     @medio               VARCHAR(20),
-    @idConductorPortador INT          = NULL,   -- ya no se usa: se acepta y se ignora (lo envía el código publicado antes de la migración 43)
     @numeroOperacion     VARCHAR(50)  = NULL,
     @rucProveedor        VARCHAR(11)  = NULL,
     @nombreProveedor     VARCHAR(150) = NULL,
