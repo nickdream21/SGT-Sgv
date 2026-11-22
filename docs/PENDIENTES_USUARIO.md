@@ -4,7 +4,7 @@ Lo que **solo puede hacer el usuario** (o la oficina, a pedido suyo): decisiones
 
 Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = valor claro; C = menor. Las mejoras de código están en `docs/PLAN_MEJORAS_SGV.md` (`M-`), los datos por corregir en `docs/DATOS_POR_CORREGIR.md` (`D-`) y las pruebas en `docs/PRUEBAS_PENDIENTES.md` (`P-`).
 
-Último id usado: U-087 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: U-088 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Credenciales y paneles externos
 
@@ -27,6 +27,7 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-084** Poner `Encrypt=True` en la cadena de conexión — en `connectionStrings.config` de cada PC y del servidor (y en `connectionStrings.Production.config`): añadir `Encrypt=True` y dejar `TrustServerCertificate=True` (sin él somee no conecta: su certificado no coincide con el nombre del servidor). Los scripts de BD y el respaldo ya cifran desde E4-10; la app y el sitio publicado no, hasta hacer esto. Luego, P-044. · B
 - [ ] **U-085** Respaldos: cifrarlos y revisar quién los ve — los `.bacpac` (datos personales y hashes de contraseñas) están sin cifrar en la unidad compartida de Drive y en la laptop: decidir si se guardan en un 7z con clave (guardada fuera de Drive), revisar quién tiene acceso a la unidad y si el disco de la laptop está cifrado. · B
 - [ ] **U-086** GitHub: activar las alertas de Dependabot y proteger `master` — Settings → Code security → Dependabot alerts y security updates (gratis); va con E4-9. Opcional: exigir el CI en verde antes de fusionar a `master`. · B
+- [ ] **U-088** Volver a registrar la tarea de respaldo en la PC de la oficina — tras actualizar el repo allí: `.\herramientas\respaldo\programar-respaldo.ps1 -Carpeta <la de siempre>` (sin esto la tarea diaria no sella firmas ni auditoría, E4-11). Luego, P-045. · B
 - [ ] **U-076** Crear (o reactivar) un usuario SUPERVISOR de prueba — en GestionUsuarios de la BD de pruebas, con su clave en `privado/CREDENCIALES_USUARIOS.txt`, para la prueba P-028. · C
 
 ## Decisiones de negocio

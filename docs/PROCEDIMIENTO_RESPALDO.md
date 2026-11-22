@@ -84,3 +84,29 @@ Compara el SHA-256 de cada PDF con el guardado en la BD (`FirmaDigital` y `Orden
 - [ ] Comprobar que la carpeta de respaldos está copiada fuera de la PC (OneDrive/Drive/disco externo).
 - [ ] Si se rotó la contraseña FTP o de la BD: repetir `respaldar-archivos.ps1 -GuardarCredencial` o actualizar `connectionStrings.config`.
 - [ ] Confirmar que en el SQL local no quedó ninguna BD `sgvRestaurada_*` (el ensayo la borra salvo con `-Conservar`).
+- [ ] `<Carpeta>\sellos\sellos.log` dice `OK` en las últimas noches, y `.\herramientas\respaldo\probar-sellar.ps1` termina en "Todos los casos OK." (sección 7).
+
+## 7. Sello de firmas y auditoría
+
+**Qué es.** El usuario de la app en somee es `db_owner`: con él se pueden desactivar los triggers que impiden modificar o borrar `FirmaDigital`, `AuditoriaLog` y `Auditoria`, y la BD no lo registraría. Por eso, cada noche, la tarea "SGV - Respaldo diario" corre `herramientas\respaldo\sellar-registros.ps1` después del `.bacpac`: lee (solo SELECT) cada fila de las tres tablas, calcula su SHA-256 sobre todas las columnas, guarda el estado y la definición de sus triggers y lo compara con el último sello bueno. Es una prueba **fuera de la BD** de que lo ya firmado o auditado no se tocó. Tras actualizar el repo en la PC de la oficina hay que volver a registrar la tarea (`programar-respaldo.ps1 -Carpeta <la de siempre>`); sin eso no sella.
+
+**Dónde queda.** En `<Carpeta>\sellos\`:
+- un `sello-<bd>_aaaaMMdd_HHmm.txt.gz` por noche, solo con ids y hashes (ningún dato de las filas); se conservan como los `.bacpac` (los últimos 30 y el primero de cada mes durante un año), sin borrar nunca el sello que sirve de base;
+- `sellos.log`: una línea por noche con OK / FALLA / FALLA ACEPTADA / ERROR, las filas por tabla y cuántas son nuevas.
+
+La salida completa de la última noche está en `<Carpeta>\tarea-ultima-ejecucion.log`; la tarea termina en 11 si el sello dio FALLA y en 12 si no se pudo sellar. Conviene copiar `sellos\` también a un sitio al que no llegue quien administra la BD.
+
+**Qué significa cada resultado.**
+- **OK:** ninguna fila que ya existía cambió ni falta, y los seis triggers de solo inserción (`trg_<tabla>_NoUpdate` / `_NoDelete`) están activos y con la misma definición. Las filas nuevas son normales.
+- **AVISO** (no es falla): columna nueva (una migración), trigger nuevo, una fila nueva con un id menor que el máximo anterior (normalmente una transacción que terminó tarde; si se repite, revisar) o una cadena de sellos que no cuadra.
+- **FALLA:** una fila CAMBIADA o BORRADA (con sus ids), una columna que desapareció, un trigger DESACTIVADO, desaparecido o con la definición cambiada, una tabla sin un trigger activo que bloquee UPDATE o DELETE, o un sello anterior dañado. La FALLA se repite cada noche (se compara siempre con el último sello bueno) hasta que se acepte.
+- **ERROR (12):** no se pudo leer la BD o guardar el sello. Se repite al día siguiente; si persiste, revisar la conexión.
+
+**Qué hacer ante una FALLA.**
+1. No borrar ni editar ningún sello ni `.bacpac`: son la evidencia.
+2. Anotar los ids y los motivos del mensaje (`sellos.log` y `tarea-ultima-ejecucion.log`).
+3. Ver si los triggers están activos (solo SELECT): `.\WebSGV\Database\sql.ps1 "SELECT OBJECT_NAME(parent_id) tabla, name, is_disabled FROM sys.triggers WHERE parent_id IN (OBJECT_ID('dbo.FirmaDigital'), OBJECT_ID('dbo.AuditoriaLog'), OBJECT_ID('dbo.Auditoria'))"`. Si alguno está desactivado, avisar al responsable antes de reactivarlo.
+4. Recuperar el contenido original de las filas afectadas: restaurar en local el `.bacpac` del día del sello bueno (`ensayar-restauracion.ps1 -Bacpac … -Conservar` o `ensayar-migracion.ps1 -Bacpac … -Conservar -SinPruebas`) y compararlas con las actuales. Para una firma, comprobar además el PDF con `verificar-pdf-firmados.ps1` y `Views/VerificarDocumento.aspx`.
+5. Decidir con el responsable de la empresa. Si fue una alteración indebida: conservar la evidencia, cambiar las credenciales de la BD y reponer lo alterado desde el respaldo. Si el cambio es legítimo y está documentado (p. ej. una migración aprobada que reescribió datos): aceptarlo como nueva base con `.\herramientas\respaldo\sellar-registros.ps1 -Carpeta <Carpeta> -AceptarCambios -Motivo "<qué y por qué, con la referencia del cambio>"`. El motivo y el usuario de Windows quedan en el sello y en `sellos.log`.
+
+**Aviso por correo.** Todavía no hay envío de correo (M-123). Si se define la variable de entorno `SGV_SCRIPT_AVISO` con la ruta de un `.ps1` que acepte `-Asunto` y `-Cuerpo`, el sello lo llama ante cada FALLA. Sin ella, revisar `sellos.log` en el ensayo mensual y cada vez que la tarea no termine en 0.

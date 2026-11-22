@@ -137,7 +137,7 @@ El procedimiento completo para personas (qué se respalda, cómo restaurar en un
 .\herramientas\respaldo\programar-respaldo.ps1 -Quitar
 ```
 
-Registra "SGV - Respaldo diario" (23:00, `-Hora` para cambiarla): `respaldar-bd.ps1` y luego `respaldar-archivos.ps1` con la misma carpeta. Corre con el usuario actual **solo con la sesión iniciada** (puede estar bloqueada) para no guardar la contraseña de Windows; sin sesión (S4U) no podría descifrar la credencial FTP de DPAPI. Si se perdió una ejecución, corre apenas sea posible. La salida queda en `<Carpeta>\tarea-ultima-ejecucion.log`.
+Registra "SGV - Respaldo diario" (23:00, `-Hora` para cambiarla): `respaldar-bd.ps1`, `sellar-registros.ps1` (E4-11) y `respaldar-archivos.ps1` con la misma carpeta. Corre con el usuario actual **solo con la sesión iniciada** (puede estar bloqueada) para no guardar la contraseña de Windows; sin sesión (S4U) no podría descifrar la credencial FTP de DPAPI. Si se perdió una ejecución, corre apenas sea posible. La salida queda en `<Carpeta>\tarea-ultima-ejecucion.log`.
 
 ## Ensayar migraciones y procedimientos antes de la BD viva (E3-1)
 
@@ -162,6 +162,22 @@ Registra "SGV - Respaldo diario" (23:00, `-Hora` para cambiarla): `respaldar-bd.
 - **Log**: la salida completa en `<Carpeta>\ensayos\ensayo-migracion_aaaaMMdd_HHmm.log` y una línea por ensayo en `<Carpeta>\ensayos\ensayos.log`. Va junto a los respaldos (fuera del repo, ya tiene datos reales y está en la unidad compartida) en vez de `C:\PublicacionesSGV`, que es de las publicaciones; no contiene claves (la conexión local no usa contraseña y nunca se lee `connectionStrings.config`).
 - Código de salida: `0` todo en verde; `1` falló la importación, una migración, un SP, el humo, una prueba, el control o el borrado.
 - **Obligatorio** antes de aplicar migraciones o SP a `sgvActualizada` (la BD del sitio; `herramientas/publicar/README.md`, "Antes") o a producción (`docs/PASO_A_PRODUCCION.md`, pasos 4 y 5): el humo de `aplicar-procedimientos.ps1` sobre la BD viva avisa, pero después de aplicar. Requisitos de la PC: `docs/PREPARAR_MAQUINA.md`, sección 5.1.
+
+## Sello de firmas y auditoría (E4-11)
+
+```powershell
+.\herramientas\respaldo\sellar-registros.ps1 -Carpeta D:\RespaldosSGV                     # pruebas (sgvActualizada)
+.\herramientas\respaldo\sellar-registros.ps1 -Entorno ensayo -BaseDeDatos sgvEnsayo_20261122_1000 -Carpeta C:\temp\sellos
+.\herramientas\respaldo\sellar-registros.ps1 -Carpeta D:\RespaldosSGV -AceptarCambios -Motivo 'por qué es legítimo'
+.\herramientas\respaldo\probar-sellar.ps1                                                  # funciones puras, sin BD
+```
+
+- Mientras la app sea `db_owner`, los triggers de solo inserción de `FirmaDigital`, `AuditoriaLog` y `Auditoria` se pueden desactivar. El sello deja la prueba **fuera de la BD**: SHA-256 de cada fila (todas las columnas, descubiertas en `sys.columns` y ordenadas por nombre; fechas ISO con 7 decimales, números invariantes, binarios en hex, NULL distinto de `''`) y el estado y el SHA-256 de la definición de sus triggers. Solo `SELECT`, fila por fila.
+- Queda en `<Carpeta>\sellos\sello-<bd>_aaaaMMdd_HHmm.txt.gz` (texto con tabuladores comprimido; ~256 KB hoy), con una línea por ejecución en `<Carpeta>\sellos\sellos.log`. Carpeta hermana de `bd\` y no dentro: no tiene datos de las filas (solo ids y hashes), así que se puede copiar aparte, y no se mezcla con los `.bacpac` que buscan los ensayos. Cada sello lleva el nombre y el hash global del sello base (cadena) y su propio hash global en la última línea.
+- Compara con el sello **base**: el más reciente con estado OK. **FALLA** (código 1) si una fila que existía cambió o falta, si falta una columna, si un trigger falta, está desactivado o cambió su definición, o si una tabla no tiene un trigger activo para `UPDATE` y otro para `DELETE`. Filas y columnas nuevas son normales (con una columna nueva, las filas viejas se comparan con las columnas del base). Una FALLA sigue saliendo cada día hasta que alguien la revise y la acepte con `-AceptarCambios -Motivo`. Código 2: no se pudo sellar.
+- Aviso: no hay correo en las herramientas. `-ScriptAviso` (o `$env:SGV_SCRIPT_AVISO`) es un `.ps1` que recibe `-Asunto` y `-Cuerpo`; sin él, el aviso es la salida de la tarea y `sellos.log`.
+- Retención: la de los `.bacpac` (30 + el primero de cada mes de 12), sin borrar nunca el sello base.
+- La tarea diaria lo corre después de `respaldar-bd.ps1` (también si la exportación falló); su FALLA no afecta al respaldo. Resultado de la tarea: 11 = FALLA del sello, 12 = no se pudo sellar. **Tras actualizar el repo hay que volver a registrar la tarea** (`programar-respaldo.ps1 -Carpeta ...`).
 
 ## Qué NO cubre todavía
 

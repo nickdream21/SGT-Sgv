@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `70412db` — E4-10: scripts de BD, respaldo y herramientas conectan a somee con `Encrypt=True` (la app, con U-084); nuevos M-122 y P-044. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `ffddd56` — E4-11: sello diario externo de firmas y auditoría (`sellar-registros.ps1` en la tarea de respaldo; sección 7 de `PROCEDIMIENTO_RESPALDO.md`); nuevos M-123, U-088 y P-045. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-122 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-123 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -152,6 +152,7 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-120** `/trace.axd` responde 500 y deja un ERR con traza en cada petición — quitar el handler de trace en `Web.config` (`system.webServer/handlers`) para que dé 404 sin entrada en el log (un escáner llena el log). · C
 - [ ] **M-121** Revisar a mano lo que Dependabot no ve del CI — antes del 2027-05-22: la versión fija de `retire` en `build.yml` (6.1.0; Dependabot no sigue lo que corre con `npx`) y la excepción de Bootstrap 4.6.2 en `.retireignore.json`; de paso, subir `actions/checkout` y `actions/setup-node` a la versión mayor que ya no use Node 20 si Dependabot no lo propuso. · C
 - [ ] **M-122** Validar el certificado de somee — hoy la conexión cifrada necesita `TrustServerCertificate=True` (y `-C` en sqlcmd) porque el certificado no coincide con el nombre del servidor: si somee lo corrige (preguntarlo con U-083), quitarlos de la plantilla, los scripts y `respaldar-bd.ps1`. · C
+- [ ] **M-123** Aviso por correo de una FALLA del sello (E4-11) y del respaldo — hoy solo existe el gancho `SGV_SCRIPT_AVISO`: escribir el `.ps1` que envíe el correo con el SMTP de `appSettings.Secrets.config` (o decidir otro canal) y probarlo con una FALLA de ensayo. · B
 - [ ] **M-064** Secciones de `TienePermiso` sin página — FACTURA, CPIC, CONSULTAS, INDICADORES, AUDITORIA… (`RolesHelper.cs:169-182`) y ADMIN con acceso a DASHBOARD_CONDUCTOR: depurarlas (cambia `RolesHelperTests` a propósito). · C
 - [ ] **M-066** No quedarse sin administrador de sistema activo — impedir que dos se desactiven a la vez (`NOT EXISTS` de otro ADMINISTRADOR DE SISTEMA activo en el `WHERE`) y ocultar "Desactivar" en la fila propia (hoy el servidor lo rechaza con aviso). · C
 - [ ] **M-068** Ajustar `Seguridad.IteracionesContrasena` — con los ms de "Hash de contraseña … convertido" en `App_Data/logs` del servidor (tarea 7); no volver a un DLL anterior. · C

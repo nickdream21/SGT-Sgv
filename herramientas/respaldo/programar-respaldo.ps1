@@ -1,7 +1,8 @@
 ﻿<#
 .SYNOPSIS
-    Registra (o quita) la tarea de Windows "SGV - Respaldo diario": respaldar-bd.ps1 y luego
-    respaldar-archivos.ps1 todos los días a las 23:00.
+    Registra (o quita) la tarea de Windows "SGV - Respaldo diario": respaldar-bd.ps1,
+    sellar-registros.ps1 (sello de firmas y auditoría, E4-11) y respaldar-archivos.ps1 todos los días
+    a las 23:00.
 
 .DESCRIPTION
     La tarea corre con el usuario de Windows actual y SOLO CUANDO ESE USUARIO TIENE LA SESIÓN INICIADA
@@ -62,7 +63,8 @@ if (-not [datetime]::TryParseExact($Hora, 'HH:mm', [Globalization.CultureInfo]::
 
 $scriptBd       = Join-Path $PSScriptRoot 'respaldar-bd.ps1'
 $scriptArchivos = Join-Path $PSScriptRoot 'respaldar-archivos.ps1'
-foreach ($s in @($scriptBd, $scriptArchivos)) { if (-not (Test-Path $s)) { throw "No se encontró $s." } }
+$scriptSello    = Join-Path $PSScriptRoot 'sellar-registros.ps1'
+foreach ($s in @($scriptBd, $scriptSello, $scriptArchivos)) { if (-not (Test-Path $s)) { throw "No se encontró $s." } }
 
 # sqlpackage es una herramienta global de dotnet: se asegura su carpeta en el PATH de la tarea.
 $sqlpackage = (Get-Command sqlpackage -ErrorAction SilentlyContinue).Source
@@ -76,9 +78,13 @@ $comando = @(
     "Start-Transcript -Path $(ConvertTo-Literal $log) -Force | Out-Null"
     # try/catch: si el respaldo de la BD lanza un error, igual se intenta el de archivos.
     "try { & $(ConvertTo-Literal $scriptBd) -Carpeta $(ConvertTo-Literal $carpetaCompleta); `$cBd = `$LASTEXITCODE } catch { `$_; `$cBd = 1 }"
+    # E4-11: sello de FirmaDigital/AuditoriaLog/Auditoria. No depende del .bacpac (corre aunque la
+    # exportación haya fallado) y su FALLA no toca el respaldo, que ya quedó guardado.
+    "try { & $(ConvertTo-Literal $scriptSello) -Carpeta $(ConvertTo-Literal $carpetaCompleta); `$cSe = `$LASTEXITCODE } catch { `$_; `$cSe = 2 }"
     "try { & $(ConvertTo-Literal $scriptArchivos) -Carpeta $(ConvertTo-Literal $carpetaCompleta); `$cAr = `$LASTEXITCODE } catch { `$_; `$cAr = 1 }"
     "Stop-Transcript | Out-Null"
-    "if (`$cBd -ne 0) { exit `$cBd }; exit `$cAr"
+    # Resultado de la tarea: el primer paso que falló (sello: 11 = FALLA de integridad, 12 = no se pudo sellar).
+    "if (`$cBd -ne 0) { exit `$cBd }; if (`$cSe -ne 0) { exit (10 + `$cSe) }; exit `$cAr"
 ) -join '; '
 $argumentos = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "' + $comando.Replace('"', '\"') + '"'
 
@@ -89,7 +95,7 @@ $principal = New-ScheduledTaskPrincipal -UserId $usuario -LogonType Interactive 
 $ajustes   = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 2) `
                  -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 $tarea     = New-ScheduledTask -Action $accion -Trigger $disparo -Principal $principal -Settings $ajustes `
-                 -Description "SGV: respaldo diario de la BD (.bacpac) y espejo de archivos por FTP en $carpetaCompleta. Creada por herramientas\respaldo\programar-respaldo.ps1."
+                 -Description "SGV: respaldo diario de la BD (.bacpac), sello de firmas y auditoría y espejo de archivos por FTP en $carpetaCompleta. Creada por herramientas\respaldo\programar-respaldo.ps1."
 
 "Tarea      : $nombreTarea"
 "Cuándo     : todos los días a las $($horaInicio.ToString('HH:mm')); si se perdió (PC apagada o sin sesión), apenas sea posible"
