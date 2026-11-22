@@ -18,9 +18,9 @@ namespace WebSGV.Tests
         // ── Normalización ───────────────────────────────────────────────
 
         [Theory]
-        [InlineData("2719446", "002719446")]       // sin los ceros (Excel lo guardó como número)
-        [InlineData("002719446", "002719446")]
-        [InlineData(" 0027 19446 ", "002719446")]  // espacios
+        [InlineData("8800123", "008800123")]       // sin los ceros (Excel lo guardó como número)
+        [InlineData("008800123", "008800123")]
+        [InlineData(" 0088 00123 ", "008800123")]  // espacios
         [InlineData("123456", "000123456")]
         [InlineData("1234567890", "1234567890")]   // más de 9 dígitos: tal cual
         [InlineData("ab-12345", "AB-12345")]       // con letras: solo mayúsculas
@@ -30,10 +30,10 @@ namespace WebSGV.Tests
             Assert.Equal(esperado, DocumentoConductor.NormalizarCarnet(entrada));
 
         [Theory]
-        [InlineData("03620726", "03620726")]
-        [InlineData("3620726", "03620726")]        // 7 dígitos: recupera el cero
-        [InlineData(" 0362 0726 ", "03620726")]
-        [InlineData("03620726 ", "03620726")]      // char(8) de la BD con relleno
+        [InlineData("09999001", "09999001")]
+        [InlineData("9999001", "09999001")]        // 7 dígitos: recupera el cero
+        [InlineData(" 0999 9001 ", "09999001")]
+        [InlineData("09999001 ", "09999001")]      // char(8) de la BD con relleno
         [InlineData("123456", null)]
         [InlineData("123456789", null)]
         [InlineData("1234567A", null)]
@@ -42,8 +42,8 @@ namespace WebSGV.Tests
             Assert.Equal(esperado, DocumentoConductor.NormalizarDni(entrada));
 
         [Theory]
-        [InlineData("2719446", true)]
-        [InlineData("002719446", true)]
+        [InlineData("8800123", true)]
+        [InlineData("008800123", true)]
         [InlineData("AB-12345", true)]
         [InlineData("12345678901", true)]          // 11 = char(11)
         [InlineData("123456789012", false)]        // 12 no cabe
@@ -57,12 +57,12 @@ namespace WebSGV.Tests
         public void ListaDeChoferes_conserva_la_misma_normalizacion()
         {
             var filas = ListaChoferesService.LeerTexto(
-                "1\tJUAN PEREZ GOMEZ\tVENEZOLANA\tB-12345678\t2719446\n" +
-                "2\tANA RUIZ PAZ\tPERUANA\tA-87654321\t3620726\n");
+                "1\tJUAN PEREZ GOMEZ\tVENEZOLANA\tB-12345678\t8800123\n" +
+                "2\tANA RUIZ PAZ\tPERUANA\tA-87654321\t9999001\n");
 
-            Assert.Equal("002719446", filas[0].Carnet);
+            Assert.Equal("008800123", filas[0].Carnet);
             Assert.Null(filas[0].Dni);
-            Assert.Equal("03620726", filas[1].Dni);
+            Assert.Equal("09999001", filas[1].Dni);
             Assert.Null(filas[1].Carnet);
         }
 
@@ -71,21 +71,21 @@ namespace WebSGV.Tests
         [Fact]
         public void ValidarDocumento_carnet_se_guarda_con_ceros()
         {
-            R.ValidarDocumento(R.TipoCarnet, " 2719446 ", out string dni, out string carnet);
+            R.ValidarDocumento(R.TipoCarnet, " 8800123 ", out string dni, out string carnet);
             Assert.Null(dni);
-            Assert.Equal("002719446", carnet);
+            Assert.Equal("008800123", carnet);
         }
 
         [Fact]
         public void ValidarDocumento_dni_de_8_digitos()
         {
-            R.ValidarDocumento(R.TipoDni, "03620726", out string dni, out string carnet);
-            Assert.Equal("03620726", dni);
+            R.ValidarDocumento(R.TipoDni, "09999001", out string dni, out string carnet);
+            Assert.Equal("09999001", dni);
             Assert.Null(carnet);
         }
 
         [Theory]
-        [InlineData("DNI", "3620726")]                 // el alta pide los 8 dígitos
+        [InlineData("DNI", "9999001")]                 // el alta pide los 8 dígitos
         [InlineData("DNI", "1234567A")]
         [InlineData("Carnet de Extranjería", "123")]
         [InlineData("Carnet de Extranjería", "123456789012")]
@@ -98,36 +98,36 @@ namespace WebSGV.Tests
 
         private static readonly List<G> Guardados = new List<G>
         {
-            new G { IdConductor = 1, Carnet = "002719446  ", NombreCompleto = "JUAN PEREZ" },   // char(11) con relleno
-            new G { IdConductor = 2, Carnet = "6792476", NombreCompleto = "LUIS SOTO" },        // guardado sin ceros
-            new G { IdConductor = 3, Dni = "3620726 ", NombreCompleto = "ANA RUIZ" }            // DNI sin el cero
+            new G { IdConductor = 1, Carnet = "008800123  ", NombreCompleto = "JUAN PEREZ" },   // char(11) con relleno
+            new G { IdConductor = 2, Carnet = "8800456", NombreCompleto = "LUIS SOTO" },        // guardado sin ceros
+            new G { IdConductor = 3, Dni = "9999001 ", NombreCompleto = "ANA RUIZ" }            // DNI sin el cero
         };
 
         [Fact]
         public void Duplicado_carnet_sin_ceros_contra_guardado_con_ceros()
         {
-            string m = R.BuscarDuplicado(null, DocumentoConductor.NormalizarCarnet("2719446"), Guardados);
-            Assert.Equal("Ya existe un conductor con el carnet de extranjería 002719446: JUAN PEREZ.", m);
+            string m = R.BuscarDuplicado(null, DocumentoConductor.NormalizarCarnet("8800123"), Guardados);
+            Assert.Equal("Ya existe un conductor con el carnet de extranjería 008800123: JUAN PEREZ.", m);
         }
 
         [Fact]
         public void Duplicado_carnet_contra_guardado_sin_ceros()
         {
-            string m = R.BuscarDuplicado(null, "006792476", Guardados);
-            Assert.Equal("Ya existe un conductor con el carnet de extranjería 006792476 (registrado como 6792476): LUIS SOTO.", m);
+            string m = R.BuscarDuplicado(null, "008800456", Guardados);
+            Assert.Equal("Ya existe un conductor con el carnet de extranjería 008800456 (registrado como 8800456): LUIS SOTO.", m);
         }
 
         [Fact]
         public void Duplicado_dni_contra_guardado_sin_el_cero()
         {
-            Assert.Contains("ANA RUIZ", R.BuscarDuplicado("03620726", null, Guardados));
+            Assert.Contains("ANA RUIZ", R.BuscarDuplicado("09999001", null, Guardados));
         }
 
         [Fact]
         public void Duplicado_excluye_al_propio_conductor_y_documentos_libres()
         {
-            Assert.Null(R.BuscarDuplicado(null, "002719446", Guardados, idPropio: 1));
-            Assert.Null(R.BuscarDuplicado(null, "002719447", Guardados));
+            Assert.Null(R.BuscarDuplicado(null, "008800123", Guardados, idPropio: 1));
+            Assert.Null(R.BuscarDuplicado(null, "008800124", Guardados));
             Assert.Null(R.BuscarDuplicado("12345678", null, Guardados));
         }
 

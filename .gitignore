@@ -426,3 +426,12 @@ herramientas/cuadro-status-general/salida/
 
 # Salidas de las herramientas del correo (nombres, placas y guías)
 herramientas/carga-historica-correo/*.txt
+
+# Documentos sueltos de trabajo en docs/ (Word, PDF, comprimidos, videos): pueden traer datos
+# personales reales y el repositorio es publico (E4-1). Los .md de docs/ si se versionan.
+/docs/*.docx
+/docs/*.rar
+/docs/*.zip
+/docs/*.pdf
+/docs/video/
+/docs/TRABAJO DE INVESTIGACION/

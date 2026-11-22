@@ -124,14 +124,14 @@ namespace WebSGV.Tests
         [Fact]
         public void LeerGuia_SacaIdentidadDelTractoYSuCarga()
         {
-            var g = LectorDocumentosPedido.LeerGuia(Guia("T660 - 00016349", "PEREZ GOMEZ JUAN", "B43347960", "C6K799",
+            var g = LectorDocumentosPedido.LeerGuia(Guia("T660 - 00016349", "PEREZ GOMEZ JUAN", "B99990001", "C6K799",
                 "85921827", "1288126", "29818.800", Bien1A, Bien1B));
 
             Assert.Equal("T660-00016349", g.NumeroGuia);
             Assert.Equal(new DateTime(2026, 10, 7), g.FechaTraslado);
             Assert.Equal("PEREZ GOMEZ JUAN", g.NombreChofer);
-            Assert.Equal("B43347960", g.Licencia);
-            Assert.Equal("43347960", g.DniSegunLicencia);
+            Assert.Equal("B99990001", g.Licencia);
+            Assert.Equal("99990001", g.DniSegunLicencia);
             Assert.Equal("C6K799", g.Placa);
             Assert.Equal("4400000001", g.NumeroPedido);
             Assert.Equal("85921827", g.NumeroEntrega);
@@ -339,10 +339,10 @@ namespace WebSGV.Tests
         // ── Utilidades ────────────────────────────────────────────────────────
 
         [Theory]
-        [InlineData("B43347960", "43347960")]
-        [InlineData("q16592594", "16592594")]
-        [InlineData("43347960", null)]
-        [InlineData("BB4334796", null)]
+        [InlineData("B99990001", "99990001")]
+        [InlineData("q99990002", "99990002")]
+        [InlineData("99990001", null)]
+        [InlineData("BB9999000", null)]
         [InlineData(null, null)]
         public void LicenciaConducir_ExtraeElDni(string licencia, string dni) =>
             Assert.Equal(dni, LicenciaConducir.ExtraerDni(licencia));

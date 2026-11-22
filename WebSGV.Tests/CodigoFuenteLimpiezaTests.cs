@@ -550,8 +550,8 @@ namespace WebSGV.Tests
         public void NumeroConFormaDeDni_NoConfundeComprobantesFechasNiRuc()
         {
             Assert.Matches(NumeroConFormaDeDni, "DNI 12345678");
-            Assert.Matches(NumeroConFormaDeDni, "dni: 03497777, carnet");
-            Assert.Matches(NumeroConFormaDeDni, "(41117532)");
+            Assert.Matches(NumeroConFormaDeDni, "dni: 99990003, carnet");
+            Assert.Matches(NumeroConFormaDeDni, "(99990004)");
             Assert.Matches(NumeroConFormaDeDni, "DNI-12345678");
             Assert.Matches(NumeroConFormaDeDni, "DNI #12345678");
             Assert.Matches(NumeroConFormaDeDni, "DNI 12.345.678");

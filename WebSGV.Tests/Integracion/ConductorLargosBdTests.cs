@@ -74,7 +74,7 @@ namespace WebSGV.Tests.Integracion
         {
             using (new TransaccionDePrueba())
             {
-                // Como el 002719446 que dejó la Lista de choferes
+                // Carnet ficticio guardado con ceros, como los que deja la Lista de choferes
                 int id = RegistroConductorService.Registrar(RegistroConductorService.TipoCarnet, "009990001",
                     "PRUEBA", "CARNET", "", "");
                 Assert.Equal("009990001", CarnetDe(id));
@@ -82,13 +82,6 @@ namespace WebSGV.Tests.Integracion
                 var ex = Assert.Throws<ErrorNegocioException>(() => RegistroConductorService.Registrar(
                     RegistroConductorService.TipoCarnet, "9990001", "PRUEBA", "OTRO", "", ""));
                 Assert.Contains("carnet de extranjería 009990001", ex.Message);
-
-                // El caso real del análisis: 002719446 ya está en la BD de pruebas (si sigue ahí)
-                bool existeReal = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM Conductor WHERE carnetExtranjeria = '002719446'")) > 0;
-                if (existeReal)
-                    Assert.Throws<ErrorNegocioException>(() => RegistroConductorService.Registrar(
-                        RegistroConductorService.TipoCarnet, "2719446", "PRUEBA", "REAL", "", ""));
             }
         }
 

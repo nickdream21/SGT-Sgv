@@ -89,7 +89,7 @@ namespace WebSGV.Services.Conductor
             public string ApPaterno { get; set; }
             public string ApMaterno { get; set; }
             public string Licencia { get; set; }
-            /// <summary>Qué cambia, en palabras ("B03620726 → B-03620726").</summary>
+            /// <summary>Qué cambia, en palabras ("B09999001 → B-09999001").</summary>
             public string Detalle { get; set; }
             public bool MarcadoPorDefecto { get; set; }
         }
@@ -140,7 +140,7 @@ namespace WebSGV.Services.Conductor
 
         private static string TextoCelda(IXLCell celda)
         {
-            // Un DNI guardado como número pierde el cero inicial (03620726 → 3620726): se
+            // Un DNI guardado como número pierde el cero inicial (09999001 → 9999001): se
             // completa en InterpretarCeldas. El formato visible lo conserva si la celda lo tiene.
             string texto = celda.GetFormattedString();
             return string.IsNullOrWhiteSpace(texto) ? celda.GetString() : texto;
@@ -232,7 +232,7 @@ namespace WebSGV.Services.Conductor
             }
 
             if (licencia != null)
-                fila.Licencia = licencia.Substring(0, 1) + Regex.Replace(licencia, @"\D", "");   // como la guarda la importación de guías ("B03620726")
+                fila.Licencia = licencia.Substring(0, 1) + Regex.Replace(licencia, @"\D", "");   // como la guarda la importación de guías ("B09999001")
             return fila;
         }
 
@@ -305,7 +305,7 @@ namespace WebSGV.Services.Conductor
                 {
                     enLista.Add(homonimo.Id);
                     // Un carnet de extranjería guardado como DNI sin los ceros iniciales
-                    // (006792476 → 06792476): es la misma persona, se corrige el documento.
+                    // (008800456 → 08800456): es la misma persona, se corrige el documento.
                     bool carnetComoDni = f.Carnet != null && !string.IsNullOrWhiteSpace(homonimo.Dni)
                         && f.Carnet.TrimStart('0') == homonimo.Dni.Trim().TrimStart('0');
                     if (carnetComoDni)

@@ -166,7 +166,7 @@ namespace WebSGV.Models.Despachos
         public decimal? PesoNetoTotalKg => Lineas.All(l => l.PesoNetoKg.HasValue) && Lineas.Count > 0
             ? Lineas.Sum(l => l.PesoNetoKg.Value) : (decimal?)null;
 
-        /// <summary>DNI que va dentro de la licencia (B43347960 → 43347960), o null.</summary>
+        /// <summary>DNI que va dentro de la licencia (B99990001 → 99990001), o null.</summary>
         public string DniSegunLicencia => LicenciaConducir.ExtraerDni(Licencia);
     }
 
@@ -191,7 +191,7 @@ namespace WebSGV.Models.Despachos
     public static class LicenciaConducir
     {
         /// <summary>
-        /// La licencia peruana es una letra seguida del DNI del titular (B43347960). Devuelve
+        /// La licencia peruana es una letra seguida del DNI del titular (B99990001). Devuelve
         /// los 8 dígitos, o null si el formato no es ese (licencias de extranjeros, etc.).
         /// </summary>
         public static string ExtraerDni(string licencia)

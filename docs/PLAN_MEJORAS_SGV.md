@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `9705543` — análisis y plan de la Etapa 4 (seguridad): tareas E4-1 a E4-16 en `docs/HOJA_DE_RUTA_CALIDAD.md`; nuevos M-111, U-078 a U-086 y P-030 a P-032; sin cambios de código. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `c958390` — E4-1: datos personales fuera del árbol (script de choferes de 2026-10-24 pasado a `privado/`, números ficticios en código y pruebas, `.gitignore` para documentos sueltos de `docs/`, prueba `DatosPersonalesRepoTests`); cierra M-061; nuevo M-112. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-111 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-112 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -142,7 +142,7 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 
 Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; aquí, los pendientes con id que cierran o que quedan fuera.
 
-- [ ] **M-061** Cambiar el carnet de extranjería real del ejemplo por uno ficticio — en `Services/Conductor/DocumentoConductor.cs`, `Services/Conductor/RegistroConductorService.cs`, `WebSGV.Tests/DocumentoConductorTests.cs` y `WebSGV.Tests/Integracion/ConductorLargosBdTests.cs` (que la prueba inserte su propio conductor dentro de `TransaccionDePrueba`). Es de un conductor real (conductor 218). · B
+- [ ] **M-112** Nombres de conductores reales en el árbol — 44 líneas en 12 archivos (encontradas en la revisión de E4-1): datos de prueba (`WebSGV.Tests/Datos/Trazabilidad/casos.json`, `LectorDocumentosPedidoTests`, `ListaChoferesTests`, `LlegadaEstimadaTests`, `PdfOrdenViajeTests`, `ProgramacionCargaTests`), 2 scripts de `Database/Scripts/` ya aplicados, comentarios de `LectorDocumentosPedido.cs` y `LiquidacionesContabilidadService.cs`, y `docs/archivo/Documentacion_Tecnica_PBI_SGV_MARZO2025.md`. Cambiarlos por ficticios y ampliar `DatosPersonalesRepoTests` a nombres, teléfonos con separadores o `+51` y `Usuarios`/`FirmaDigital`. `docs/archivo/HISTORIAL_2026.md` (13 líneas) está congelado: queda para la purga del historial (U-033/U-078). · B
 - [ ] **M-062** Login de una cuenta inactiva no deja `LOGIN_FALLIDO` — en AuditoriaLog (observado en B5-8). Va con "registrar LOGIN_FALLIDO y bloqueos" de la etapa 4. · B
 - [ ] **M-064** Secciones de `TienePermiso` sin página — FACTURA, CPIC, CONSULTAS, INDICADORES, AUDITORIA… (`RolesHelper.cs:169-182`) y ADMIN con acceso a DASHBOARD_CONDUCTOR: depurarlas (cambia `RolesHelperTests` a propósito). · C
 - [ ] **M-065** ReportesOrdenesViaje: `ex.Message` de cualquier `ArgumentException` al usuario — `ResponderSolicitudInvalida(ex.Message)` (`ReportesOrdenesViaje.aspx.cs:~1123`): si ClosedXML/QuestPDF lanza una, su texto técnico llega al usuario. · C

@@ -13,7 +13,7 @@ namespace WebSGV.Services.Conductor
     /// Alta y edición manual de conductores (<c>RegistroChoferes.aspx</c>; bloque 5, B5-2).
     /// El documento se guarda en la forma de <see cref="DocumentoConductor"/> (la misma que usa la Lista de
     /// choferes) y el duplicado se busca contra los documentos ya guardados también normalizados: un carnet
-    /// "2719446" es el mismo que "002719446". Los largos son los de las columnas de <c>Conductor</c>.
+    /// "8800123" es el mismo que "008800123". Los largos son los de las columnas de <c>Conductor</c>.
     /// Los errores para el usuario salen como <see cref="ErrorNegocioException"/>.
     /// </summary>
     public static class RegistroConductorService

@@ -7,7 +7,12 @@ import fs from 'node:fs';
 import { Grabacion, abrirNavegador, claveDe, espera, RAIZ } from './comun.mjs';
 
 const SITIO = process.argv[2] || 'http://localhost:50291';
-const USUARIO = process.argv[3] || '03497777';
+// Usuario del conductor de pruebas: argumento o SGV_VIDEO_USUARIO (no va en el código: es un DNI real).
+const USUARIO = process.argv[3] || process.env.SGV_VIDEO_USUARIO;
+if (!USUARIO) {
+  console.error('Falta el usuario conductor: node grabar-liquidacion.mjs <sitio> <usuario>, o la variable SGV_VIDEO_USUARIO.');
+  process.exit(1);
+}
 // Lo que se ve en pantalla en lugar de los datos reales del conductor.
 const NOMBRE_MOSTRADO = 'CARLOS RAMÍREZ SOTO';
 const DNI_MOSTRADO = '45871236';
