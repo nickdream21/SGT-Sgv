@@ -2,16 +2,16 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-21**, commit anterior `1e8eb1c` — limpieza tras publicar `92d4dc6`: migración 59 (fuera `sp_DC_RevocarFirma`, `FirmaService.RevocarFirma` y `MovimientoDineroViaje.idConductorPortador`; `sp_LD_RegistrarMovimientoViaje` sin ese parámetro) y 60 (8 tablas de Grifo, `GuiasTransportista` y `OrdenViajeAjuste` con sus 2 triggers); cierra M-054, M-056 y M-106; quedan M-109 y M-110. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-21**, commit anterior `9705543` — análisis y plan de la Etapa 4 (seguridad): tareas E4-1 a E4-16 en `docs/HOJA_DE_RUTA_CALIDAD.md`; nuevos M-111, U-078 a U-086 y P-030 a P-032; sin cambios de código. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-110 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-111 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
 - El sitio publicado (`https://sgvtransporte.somee.com`, publicado el commit `92d4dc6` el 2026-11-21) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
 - Producción (`sgvTransporte`) no está al día: el paso a producción es `docs/PASO_A_PRODUCCION.md`, en orden, tras la decisión U-011.
 - Etapa 1 (operación) cerrada: respaldo diario de la BD y de los archivos en Google Drive, restauración ensayada, publicación con vuelta atrás (`herramientas/publicar/publicar.ps1`), monitores de UptimeRobot y cron del GPS activos.
-- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 (integridad de la BD) cerrada el 2026-11-21 con nota 8**; **Etapa 4 (seguridad) en análisis**. Las etapas 4 a 6 (seguridad, interfaz, arquitectura) están en la hoja de ruta.
+- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 (integridad de la BD) cerrada el 2026-11-21 con nota 8**; **Etapa 4 (seguridad) en ejecución** (plan E4-1 a E4-16 en la hoja de ruta; lo más urgente es U-078: el repositorio de GitHub es público). Las etapas 4 a 6 (seguridad, interfaz, arquitectura) están en la hoja de ruta.
 - Lo abierto está en este plan (mejoras) y en los documentos de "Otros documentos" (usuario, datos, pruebas); cada uno se cuenta en su propio documento.
 
 ## Top 20
@@ -20,7 +20,7 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 
 | # | Id | Qué | Por qué importa | Quién |
 |---|---|---|---|---|
-| 1 | U-001 | Rotar el token de apisperu | el token está en el historial de git | Usuario |
+| 1 | U-001 | Rotar el token de apisperu | el token está en el historial de git de un repositorio público (U-078) | Usuario |
 | 2 | U-002 | Cambiar las contraseñas de `CREDENCIALES_USUARIOS.txt` | guarda la de producción de `nickdream` en texto plano y la vieron agentes | Usuario |
 | 3 | U-003 | Contraseña de aplicación de Gmail | quedó escrita en un chat; con ella se envía correo como el sistema | Usuario |
 | 4 | U-004 | Contraseña FTP de somee | quedó en un chat y da escritura sobre el sitio y los PDF firmados | Usuario |
@@ -140,6 +140,8 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 
 ### Etapa 4 — Seguridad
 
+Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; aquí, los pendientes con id que cierran o que quedan fuera.
+
 - [ ] **M-061** Cambiar el carnet de extranjería real del ejemplo por uno ficticio — en `Services/Conductor/DocumentoConductor.cs`, `Services/Conductor/RegistroConductorService.cs`, `WebSGV.Tests/DocumentoConductorTests.cs` y `WebSGV.Tests/Integracion/ConductorLargosBdTests.cs` (que la prueba inserte su propio conductor dentro de `TransaccionDePrueba`). Es de un conductor real (conductor 218). · B
 - [ ] **M-062** Login de una cuenta inactiva no deja `LOGIN_FALLIDO` — en AuditoriaLog (observado en B5-8). Va con "registrar LOGIN_FALLIDO y bloqueos" de la etapa 4. · B
 - [ ] **M-064** Secciones de `TienePermiso` sin página — FACTURA, CPIC, CONSULTAS, INDICADORES, AUDITORIA… (`RolesHelper.cs:169-182`) y ADMIN con acceso a DASHBOARD_CONDUCTOR: depurarlas (cambia `RolesHelperTests` a propósito). · C
@@ -147,6 +149,7 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 - [ ] **M-066** No quedarse sin administrador de sistema activo — impedir que dos se desactiven a la vez (`NOT EXISTS` de otro ADMINISTRADOR DE SISTEMA activo en el `WHERE`) y ocultar "Desactivar" en la fila propia (hoy el servidor lo rechaza con aviso). · C
 - [ ] **M-067** Bandeja: documentos dentro de un ZIP sin comprobación de firma de archivo — los CPIC/MCI, GRE y facturas de flete de un ZIP no tienen comprobación propia (solo las guías al guardarse). · C
 - [ ] **M-068** Ajustar `Seguridad.IteracionesContrasena` — con los ms de "Hash de contraseña … convertido" en `App_Data/logs` del servidor (tarea 7); no volver a un DLL anterior. · C
+- [ ] **M-111** Tablas ledger de SQL Server 2022 para `FirmaDigital` y `AuditoriaLog` — darían prueba criptográfica de que nadie alteró las filas aunque la app sea `db_owner`; hay que reconstruir las tablas con datos reales y comprobar en un ensayo que `sqlpackage` exporta e importa un `.bacpac` con tablas ledger. Mientras tanto, el sello externo diario de E4-11. · C
 
 ### Etapa 5 — Interfaz
 

@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-029 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-032 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -23,6 +23,9 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-010** GPS automático: cuánto tarda en el sitio publicado — local: 1.ª corrida 49 viajes en 122 s; con viajes quietos, 20 s. Si somee corta las corridas largas, bajar `Presupuesto` en `ActualizacionGpsAutomatica`. Medir también "Actualizar GPS" con los viajes abiertos (cuántos alcanza por clic con la caché). · B
 - [ ] **P-011** Envío de más de 25 MB — en somee podría salir "conexión restablecida" en vez del aviso. · C
 - [ ] **P-023** Cronometrar una firma real en el hosting — para confirmar que las idas y vueltas a la BD desde somee son menores que desde la oficina (el arranque en frío ya lo evita UptimeRobot). · C
+- [ ] **P-030** Segundo factor con un celular real — tras publicar E4-14: alta con Google Authenticator o Microsoft Authenticator, entrada con código, un código de recuperación y "Quitar segundo factor" desde Gestión de usuarios, con una cuenta de prueba. · B
+- [ ] **P-031** Política de contenido en modo informe — tras publicar E4-5: recorrer todos los roles a 1366 y 390 px (cámara del celular en Movimientos, PDF en el iframe de contabilidad, mapa, firma) y revisar en `App_Data/logs` lo que anota `CspInforme`; solo se esperan avisos de `unsafe-eval` por los `AutoPostBack`. Condición de E4-15. · B
+- [ ] **P-032** Comprobaciones por HTTP en el sitio publicado — un POST de formulario a un PageMethod no ejecuta nada; `GpsAutomatico.ashx?iniciar=1` sin sesión da 403; la cookie `SGV_SessionId` sale con `Secure` tras iniciar sesión; `/trace.axd` y `/Web.config` no dan 200. · C
 
 ## En el sitio local (probador)
 

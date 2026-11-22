@@ -4,7 +4,7 @@ Lo que **solo puede hacer el usuario** (o la oficina, a pedido suyo): decisiones
 
 Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = valor claro; C = menor. Las mejoras de código están en `docs/PLAN_MEJORAS_SGV.md` (`M-`), los datos por corregir en `docs/DATOS_POR_CORREGIR.md` (`D-`) y las pruebas en `docs/PRUEBAS_PENDIENTES.md` (`P-`).
 
-Último id usado: U-077 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: U-086 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Credenciales y paneles externos
 
@@ -21,6 +21,11 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-073** Panel de somee: ¿permite un segundo usuario de BD con permisos limitados? — hoy la aplicación entra como `db_owner` y desde SQL no se pueden crear logins; con un usuario limitado nadie podría saltarse la protección de firmas y auditoría. · B
 - [ ] **U-077** Panel de somee: ¿modelo de recuperación FULL o respaldo del log (restaurar a un punto en el tiempo)? — hoy la BD está en SIMPLE y solo hay el `.bacpac` diario: un error de datos a media tarde se pierde hasta el respaldo de la noche anterior. Ver si el plan lo permite y qué cuesta. · B
 - [ ] **U-075** Quitar de `privado/CREDENCIALES_USUARIOS.txt` los usuarios desactivados `admin.grifo`, `admin.maquinaria` y `operador` y su nota (*) — en esta máquina y en la laptop (el archivo está fuera de git). Además, cambiar ya la contraseña de `operador` (quedó expuesta en la salida de una herramienta) y, si se conserva su línea, dejarla con el mismo formato que las demás; si alguno se reactiva, cambiar antes su contraseña. · C
+- [ ] **U-078** El repositorio de GitHub es público: pasarlo a privado o purgar su historial — cualquiera puede leer el código, el token de apisperu (U-001), una contraseña antigua de la BD con el login vigente, y DNI y nombres de conductores (U-033). Recomendado: hacerlo privado ya (GitHub → Settings → Danger zone → Change visibility) y rotar U-001; en privado las Actions de Windows gastan minutos del plan (confirmar el cupo) y el secret scanning gratuito se pierde. Si debe seguir público, U-033 pasa a ser obligatorio. · A
+- [ ] **U-083** Preguntar a somee por parches y FTPS — el SQL Server es 2022 sin ninguna actualización (16.0.1000.6): ¿cuándo aplican las acumulativas?; ¿ofrecen FTPS o SFTP? (hoy la contraseña FTP, los PDF firmados y el archivo de secretos viajan sin cifrar). Va con U-073 y U-077 en la misma consulta. · B
+- [ ] **U-084** Poner `Encrypt=True` en la cadena de conexión — en `connectionStrings.config` de cada PC y del servidor (y en la de producción), después de E4-10; hoy los datos viajan sin cifrar entre la oficina y somee. Ya se probó que conecta. · B
+- [ ] **U-085** Respaldos: cifrarlos y revisar quién los ve — los `.bacpac` (datos personales y hashes de contraseñas) están sin cifrar en la unidad compartida de Drive y en la laptop: decidir si se guardan en un 7z con clave (guardada fuera de Drive), revisar quién tiene acceso a la unidad y si el disco de la laptop está cifrado. · B
+- [ ] **U-086** GitHub: activar las alertas de Dependabot y proteger `master` — Settings → Code security → Dependabot alerts y security updates (gratis); va con E4-9. Opcional: exigir el CI en verde antes de fusionar a `master`. · B
 - [ ] **U-076** Crear (o reactivar) un usuario SUPERVISOR de prueba — en GestionUsuarios de la BD de pruebas, con su clave en `privado/CREDENCIALES_USUARIOS.txt`, para la prueba P-028. · C
 
 ## Decisiones de negocio
@@ -72,7 +77,10 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-056** Reporte de cargas: más pestañas — solo si se piden: "Facturas" (una fila por factura), "Documentación" (pendientes con antigüedad) y detalle por producto/cliente. · C
 - [ ] **U-057** Interfaz de documentos: filtro y columnas — ¿"Con documentos pendientes" como filtro por defecto en Lotes registrados?, ¿compactar las 13 columnas (Operación, Ámbito, Planta, Creado)?, ¿anotar el número de pedido también desde "Documentos"? · C
 - [ ] **U-058** Dashboards e indicadores — el usuario tiene temas que comentar antes (al final). · C
-
+- [ ] **U-079** Segundo factor (código del celular al entrar) — decidir: (1) qué roles lo llevan: recomendado administración, supervisor y contabilidad (hoy 4 personas), no los conductores (ya reescriben su contraseña para firmar); (2) obligatorio tras 2 semanas de aviso, o voluntario; (3) si se pierde el celular: 10 códigos de recuperación de un solo uso, y si tampoco los tiene, otro administrador de sistema le quita el factor (U-080); (4) "recordar este equipo 30 días": recomendado no, al inicio. Frena E4-14. · A
+- [ ] **U-080** Crear un segundo usuario ADMINISTRADOR DE SISTEMA para otra persona — hoy hay uno solo activo y sin correo: si pierde la contraseña (o el celular, con el segundo factor) nadie puede restablecerle el acceso desde el sistema. Como mínimo, registrar su correo para la recuperación. Antes de E4-14. · A
+- [ ] **U-081** Permisos del SUPERVISOR y del administrador que no coinciden — la matriz dice que SUPERVISOR entra a Facturas de flete, Productos y Rutas, pero esas tres páginas solo dejan pasar a administración (y así está el menú): ¿se le abren o se quita de la matriz? Recomendado: dejarlo como funciona hoy. Y la matriz da al administrador el panel del conductor, pero la página lo rebota: recomendado quitarlo. Frena E4-3. · B
+- [ ] **U-082** Qué muestra la verificación pública de documentos — cualquiera con un código ve el nombre completo de cada firmante, el motivo de anulación (texto libre) y los códigos de las demás firmas de la orden. Recomendado: mantener nombre, fecha, estado y huella; quitar el motivo de anulación y los otros códigos. Entra en E4-8. · C
 
 ## Datos o documentos por conseguir
 
