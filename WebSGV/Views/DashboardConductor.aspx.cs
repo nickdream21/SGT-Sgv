@@ -674,10 +674,8 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error general al enviar la liquidación del conductor");
-                MostrarMensaje(ex is ErrorNegocioException
-                    ? ex.Message
-                    : "Error al enviar la liquidación. Inténtalo de nuevo o avisa a la administración.", "danger");
+                // Negocio (ErrorNegocioException o RAISERROR): su texto; técnico: registrado y el genérico (M-116).
+                MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex, "Error general al enviar la liquidación del conductor"), "danger");
                 MantenerPestanaLiquidar();
             }
         }

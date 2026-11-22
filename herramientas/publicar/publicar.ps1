@@ -503,7 +503,7 @@ function Test-ContenidoPaquete {
         $m = @($malas | Where-Object { $_ })
         $res.Add((New-Object PSObject -Property ([ordered]@{
             Comprobacion = $nombre; Ok = ($m.Count -eq 0)
-            Detalle = $(if ($m.Count -eq 0) { $detalleOk } else { ($m | Select-Object -First 5) -join ', ' }) })))
+            Detalle = $(if ($m.Count -eq 0) { $detalleOk } else { ($m | Select-Object -First 8) -join ', ' }) })))
     }
     $primer = { param($r) ($r -split '/')[0] }
     Add-Res 'Sin App_Data'  ($rs | Where-Object { (& $primer $_) -ieq 'App_Data' -or $_ -imatch '(^|/)App_Data/' }) 'no hay'
@@ -528,8 +528,20 @@ function Test-ContenidoPaquete {
             $comp = $x.SelectSingleNode('/configuration/system.web/compilation')
             if ($comp -and $comp.GetAttribute('debug') -ieq 'true') { $malas += 'compilation debug="true"' }
             if (-not $x.SelectSingleNode("/configuration/system.webServer/rewrite/rules/rule[@name='ForzarHTTPS']")) { $malas += 'sin la regla ForzarHTTPS (¿no se transformó a Release?)' }
+            # E4-8: lo que deja ver detalles internos o cookies sin Secure en producción.
+            $ce = $x.SelectSingleNode('/configuration/system.web/customErrors')
+            if ($ce -and $ce.GetAttribute('mode') -ieq 'Off') { $malas += 'customErrors mode="Off"' }
+            $hc = $x.SelectSingleNode('/configuration/system.web/httpCookies')
+            if (-not $hc -or $hc.GetAttribute('requireSSL') -ine 'true') { $malas += 'httpCookies sin requireSSL="true"' }
+            $he = $x.SelectSingleNode('/configuration/system.webServer/httpErrors')
+            if ($he -and $he.GetAttribute('errorMode') -ieq 'Detailed') { $malas += 'httpErrors errorMode="Detailed"' }
+            $tr = $x.SelectSingleNode('/configuration/system.web/trace')
+            if ($tr -and $tr.GetAttribute('enabled') -ieq 'true') { $malas += 'trace enabled="true"' }
+            $hsts = @($x.SelectNodes('/configuration/system.webServer/httpProtocol/customHeaders/add') |
+                Where-Object { $_.GetAttribute('name') -ieq 'Strict-Transport-Security' -and $_.GetAttribute('value') })
+            if ($hsts.Count -eq 0) { $malas += 'sin la cabecera Strict-Transport-Security' }
         } catch { $malas += "Web.config no es XML válido: $($_.Exception.Message)" }
-        Add-Res 'Web.config de Release' $malas 'sin debug="true", con ForzarHTTPS'
+        Add-Res 'Web.config de Release' $malas 'sin debug, trace ni errores detallados; con ForzarHTTPS, requireSSL y HSTS'
     }
     return $res.ToArray()
 }

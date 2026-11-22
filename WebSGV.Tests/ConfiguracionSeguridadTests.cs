@@ -103,6 +103,17 @@ namespace WebSGV.Tests
             Assert.Contains("mode", transformacion);
         }
 
+        /// <summary>E4-8: trace apagado y SameSite=Lax explícitos en la cookie de sesión y en las demás.</summary>
+        [Fact]
+        public void WebConfig_TraceApagadoYSameSiteLaxExplicitos()
+        {
+            XElement web = Cargar("Web.config").Root.Element("system.web");
+            Assert.Equal("false", (string)web.Element("trace")?.Attribute("enabled"));
+            Assert.Equal("Lax", (string)web.Element("sessionState")?.Attribute("cookieSameSite"));
+            Assert.Equal("Lax", (string)web.Element("httpCookies")?.Attribute("sameSite"));
+            Assert.Equal("true", (string)web.Element("httpCookies")?.Attribute("httpOnlyCookies"));
+        }
+
         [Fact]
         public void WebConfigRelease_AgregaHstsSinReemplazarLasCabecerasBase()
         {

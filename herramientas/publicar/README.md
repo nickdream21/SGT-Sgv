@@ -123,7 +123,7 @@ Lo de **cada** publicación. Cómo arma, comprueba y sube el paquete está arrib
    | `App_Data/OrdenesViaje` | PDF firmados de las liquidaciones (`OrdenViaje.RutaArchivo`) |
    | `App_Data/RutasGps` | Caché del mapa de la ruta del seguimiento |
    | `App_Data/HistorialGps` | Caché del historial GPS (se borra a los 30 días) |
-   | `App_Data/logs` | Log del sitio `sgv-AAAAMMDD.log` |
+   | `App_Data/logs` | Log del sitio `sgv-AAAAMMDD.log` (y `_001`, `_002`… si el día pasa de 20 MB) |
    | `Uploads/Factura`, `Uploads/CPIC`, `Uploads/Manifiesto`, `Uploads/Guias`, `Uploads/FacturasFlete`, `Uploads/MovimientosViaje` | Documentos subidos (por año/mes) |
    | `Uploads/Factura/_temp`, `Uploads/CPIC/_temp`, `Uploads/Manifiesto/_temp`, `Uploads/_temp/Bandeja`, `Uploads/_temp/ReporteGps` | Temporales; `Global.asax` borra al arrancar los de más de 24 h |
 
@@ -135,7 +135,7 @@ Lo de **cada** publicación. Cómo arma, comprueba y sube el paquete está arrib
 2. `https://sgvtransporte.somee.com/Salud.ashx` y `.../Salud.ashx?gps=1` responden `{"ok":true}` (pueden tardar hasta 2 min en reflejar un cambio; detalle en `docs/OPERACION.md`, sección 1).
 3. Iniciar sesión en el sitio y abrir las páginas que tocó el cambio (usuarios por rol: `privado/CREDENCIALES_USUARIOS.txt`, solo el que haga falta).
 4. Si se borraron sobrantes, cada página retirada responde 404 (p. ej. `Views/WebForm2.aspx`). Cabeceras de seguridad: `curl -I https://sgvtransporte.somee.com/Views/Login.aspx`.
-5. Log del servidor: bajar por FTP `App_Data/logs/sgv-AAAAMMDD.log` del día y buscar líneas de nivel Error desde la hora de la publicación; también si llegó algún correo de `AvisoErrores`.
+5. Log del servidor: bajar por FTP `App_Data/logs/sgv-AAAAMMDD*.log` del día (todos los `_NNN`) y buscar líneas de nivel Error desde la hora de la publicación; también si llegó algún correo de `AvisoErrores`.
 6. Los dos monitores de UptimeRobot ("SGV - Sitio y BD" y "SGV - GPS y Onway") en verde, y en cron-job.org la tarea "SGV GPS automático" activa con la última corrida 200/202 (`docs/OPERACION.md`, secciones 2 y 3).
 
 ## Volver atrás

@@ -47,10 +47,15 @@ namespace WebSGV.Views.Exportacion
             // al instante. Como postback tardaba hasta 80 s con la sesión tomada, y ASP.NET atiende de a una
             // petición por sesión: cualquier otra pantalla que se abriera mientras tanto (entrar a un viaje)
             // quedaba esperando a que terminara.
+            // Solo POST con Content-Type: application/json (E4-8): un formulario de otro sitio solo puede mandar
+            // text/plain, x-www-form-urlencoded o multipart sin preflight, así que no puede lanzarla con la cookie.
             if (ctx.Request.QueryString["iniciar"] == "1")
             {
-                if (ctx.Request.HttpMethod != "POST") { Responder(ctx, 405, new { error = "Solo POST" }); return; }
-                if (!ExigirTablero(ctx)) return;
+                bool conSesion = SesionHelper.HaySesion(ctx.Session);
+                int rechazo = RechazoIniciar(ctx.Request.HttpMethod, PuedeUsarTablero(conSesion, SesionHelper.Rol(ctx.Session)), ctx.Request.ContentType);
+                if (rechazo == 405) { ctx.Response.AppendHeader("Allow", "POST"); Responder(ctx, 405, new { error = "Solo POST" }); return; }
+                if (rechazo == 403) { Responder(ctx, 403, new { error = conSesion ? "Sin permiso" : "Sesión vencida" }); return; }
+                if (rechazo == 415) { Responder(ctx, 415, new { error = "Se espera Content-Type: application/json" }); return; }
                 bool pedida = ActualizacionGpsAutomatica.Iniciar(aPedido: true);
                 Responder(ctx, 200, new { iniciada = pedida, enCurso = ActualizacionGpsAutomatica.EnCurso });
                 return;
@@ -81,6 +86,27 @@ namespace WebSGV.Views.Exportacion
         /// </summary>
         public static bool PuedeUsarTablero(bool conSesion, string rol) =>
             conSesion && RolesHelper.TienePermiso("SEGUIMIENTO_EXPORTACION", rol);
+
+        /// <summary>
+        /// Decide si se rechaza "Actualizar GPS" (<c>?iniciar=1</c>) antes de lanzarla. Pura, para probarla sin
+        /// HttpContext. 0 = seguir; 405 si no es POST; 403 sin sesión o sin permiso (antes que el 415: sin sesión
+        /// responde lo de siempre); 415 si el cuerpo no se declara <c>application/json</c>.
+        /// </summary>
+        public static int RechazoIniciar(string metodo, bool puedeUsarTablero, string contentType)
+        {
+            if (!string.Equals(metodo, "POST", StringComparison.Ordinal)) return 405;
+            if (!puedeUsarTablero) return 403;
+            if (!EsContentTypeJson(contentType)) return 415;
+            return 0;
+        }
+
+        /// <summary>True si el Content-Type es <c>application/json</c> (sin distinguir mayúsculas, con o sin <c>; charset=...</c>).</summary>
+        public static bool EsContentTypeJson(string contentType)
+        {
+            if (string.IsNullOrWhiteSpace(contentType)) return false;
+            string tipo = contentType.Split(';')[0].Trim();
+            return string.Equals(tipo, "application/json", StringComparison.OrdinalIgnoreCase);
+        }
 
         /// <summary>Responde 403 y devuelve false si la sesión venció o el rol no tiene permiso.</summary>
         private static bool ExigirTablero(HttpContext ctx)

@@ -28,6 +28,17 @@ namespace WebSGV.Helpers
         Cerrada
     }
 
+    /// <summary>Qué hace <c>Login.aspx?error=sesion</c> (<see cref="SesionVigenteHelper.DecidirLoginErrorSesion"/>).</summary>
+    public enum DecisionLoginErrorSesion
+    {
+        /// <summary>No hay sesión: se muestra el formulario con el aviso de sesión vencida.</summary>
+        MostrarFormulario,
+        /// <summary>Sesión a medias (sin sello o con un rol sin inicio) o rebote repetido: se cierra y se muestra el formulario.</summary>
+        LimpiarSesion,
+        /// <summary>Sesión vigente: a la página de inicio de su rol, sin cerrarla.</summary>
+        IrAInicio
+    }
+
     /// <summary>
     /// Sesión vigente (auditoría de seguridad, tarea 5): en cada petición con sesión
     /// (<c>Global.Application_AcquireRequestState</c>) se compara lo que quedó en la sesión al
@@ -100,6 +111,40 @@ namespace WebSGV.Helpers
         }
 
         private static string NormalizarRol(string rol) => (rol ?? "").Trim().ToUpperInvariant();
+
+        /// <summary>
+        /// Clave de sesión (<see cref="DateTime"/> UTC): cuándo <c>Login.aspx?error=sesion</c> mandó por última vez
+        /// una sesión vigente a su inicio. Si vuelve a llegar antes de <see cref="VentanaReboteLogin"/>, el inicio
+        /// la rechazó (bucle Login ↔ página protegida) y se cierra.
+        /// </summary>
+        public const string ClaveReboteLogin = "LoginErrorSesionReboteUtc";
+
+        public static readonly TimeSpan VentanaReboteLogin = TimeSpan.FromSeconds(30);
+
+        /// <summary>
+        /// Login con <c>?error=sesion</c> (E4-8). Antes cerraba siempre la sesión; ahora una sesión vigente
+        /// (usuario, sello de <see cref="ClaveSello"/> y un rol con inicio) va a su inicio sin cerrarse. Rompe-bucles:
+        /// las guardas mandan aquí con la sesión abierta cuando el inicio de su rol la rechaza
+        /// (<c>SecurityHelper.RedirigirSinPermiso</c> con la misma página, postback del conductor sin conductor);
+        /// si vuelve antes de <see cref="VentanaReboteLogin"/> desde el último envío al inicio, se cierra
+        /// (la siguiente llegada ya no tiene sesión y muestra el formulario). Lógica pura.
+        /// </summary>
+        public static DecisionLoginErrorSesion DecidirLoginErrorSesion(bool haySesion, bool tieneSello, string urlInicio,
+            DateTime? ultimoReboteUtc, DateTime ahoraUtc)
+        {
+            if (!haySesion)
+                return DecisionLoginErrorSesion.MostrarFormulario;
+            if (!tieneSello || string.IsNullOrEmpty(urlInicio))
+                return DecisionLoginErrorSesion.LimpiarSesion;
+            if (ultimoReboteUtc.HasValue)
+            {
+                TimeSpan desde = ahoraUtc - ultimoReboteUtc.Value;
+                // Un reloj que vuelve atrás (desde < 0) también cuenta como rebote: ante la duda, se cierra.
+                if (desde < VentanaReboteLogin)
+                    return DecisionLoginErrorSesion.LimpiarSesion;
+            }
+            return DecisionLoginErrorSesion.IrAInicio;
+        }
 
         /// <summary>True si la página (nombre de archivo, p. ej. "Login.aspx") no exige sesión.</summary>
         public static bool EsRutaPublica(string nombreArchivo)

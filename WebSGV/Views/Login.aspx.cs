@@ -40,23 +40,41 @@ namespace WebSGV.Views
                 return;
             }
 
-            // ✅ ROMPE-LOOPS: si llegamos a Login.aspx con ?error=sesion y hay sesión,
-            // significa que una página protegida nos rebotó. Limpiar sesión y mostrar el form
-            // en lugar de reenviar al usuario al destino que ya falló.
+            // ROMPE-BUCLES (E4-8): ?error=sesion con una sesión vigente (un enlace viejo, otra pestaña) va al
+            // inicio de su rol sin cerrarla. Si ese inicio la rechaza y la devuelve aquí antes de 30 s, o la
+            // sesión está a medias, se cierra y se muestra el formulario (SesionVigenteHelper.DecidirLoginErrorSesion).
             string errParam = Request.QueryString["error"];
             string errNormalizado = (errParam ?? "").ToLowerInvariant();
-            if (errNormalizado == "sesion" || errNormalizado == "sesion_cerrada")
+            if (errNormalizado == "sesion")
             {
-                if (SesionHelper.HaySesion(Session))
+                bool haySesion = SesionHelper.HaySesion(Session);
+                string urlInicio = haySesion ? RolesHelper.UrlInicioSegunRol(SesionHelper.Rol(Session)) : null;
+                DateTime ahora = DateTime.UtcNow;
+                var decision = SesionVigenteHelper.DecidirLoginErrorSesion(
+                    haySesion,
+                    haySesion && SesionVigenteHelper.SelloDeSesion(Session[SesionVigenteHelper.ClaveSello]).HasValue,
+                    urlInicio,
+                    Session[SesionVigenteHelper.ClaveReboteLogin] as DateTime?,
+                    ahora);
+
+                if (decision == DecisionLoginErrorSesion.IrAInicio)
                 {
-                    Session.Clear();
-                    Session.Abandon();
-                    HttpCookie sessionCookie = new HttpCookie("SGV_SessionId")
-                    {
-                        Expires = DateTime.Now.AddDays(-1)
-                    };
-                    Response.Cookies.Add(sessionCookie);
+                    Session[SesionVigenteHelper.ClaveReboteLogin] = ahora;
+                    Response.Redirect(urlInicio, true);
+                    return;
                 }
+                if (decision == DecisionLoginErrorSesion.LimpiarSesion)
+                {
+                    LogSGV.Advertencia("Login con error=sesion: se cierra la sesión del usuario {IdUsuario} (a medias o rebotada por su inicio)",
+                        SesionHelper.IdUsuario(Session));
+                    CerrarSesionActual();
+                }
+            }
+            else if (errNormalizado == "sesion_cerrada")
+            {
+                // Global.asax ya la cerró; por si llega con una sesión, se limpia como antes.
+                if (SesionHelper.HaySesion(Session))
+                    CerrarSesionActual();
             }
             // Si el usuario ya ha iniciado sesión, redireccionar según su rol
             else if (SesionHelper.HaySesion(Session))
@@ -409,6 +427,14 @@ namespace WebSGV.Views
             using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
                 rng.GetBytes(bytes);
             return HttpServerUtility.UrlTokenEncode(bytes);
+        }
+
+        /// <summary>Cierra la sesión de esta petición y borra su cookie (el formulario se muestra sin sesión).</summary>
+        private void CerrarSesionActual()
+        {
+            Session.Clear();
+            Session.Abandon();
+            Response.Cookies.Add(new HttpCookie("SGV_SessionId", "") { Expires = DateTime.Now.AddDays(-1), HttpOnly = true });
         }
 
         private void MostrarMensaje(string mensaje)

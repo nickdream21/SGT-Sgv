@@ -48,5 +48,37 @@ namespace WebSGV.Tests
         {
             Assert.Null(MensajeError.ExtraerMensajeDeNegocio(null));
         }
+
+        // ===== E4-8: sin texto técnico en el resumen del GPS ni en el reporte personalizado =====
+
+        [Fact]
+        public void GpsAutomatico_ResumenDeUnErrorTecnico_SinSuTexto()
+        {
+            var ex = new System.IO.IOException(@"No se pudo abrir C:\inetpub\sgv\App_Data\x.json: acceso denegado");
+            var textos = WebSGV.Services.Exportacion.ActualizacionGpsAutomatica.TextosTrasError(ex);
+            Assert.Equal("Error: " + MensajeError.Generico, textos.Resumen);
+            Assert.Equal("No se pudo consultar el GPS. " + MensajeError.Generico, textos.Mensaje);
+            Assert.DoesNotContain("inetpub", textos.Resumen + textos.Mensaje);
+        }
+
+        [Fact]
+        public void GpsAutomatico_ResumenDeUnErrorDeNegocio_ConSuTexto()
+        {
+            var textos = WebSGV.Services.Exportacion.ActualizacionGpsAutomatica.TextosTrasError(
+                new ErrorNegocioException("No hay viajes abiertos con tracto."));
+            Assert.Equal("Error: No hay viajes abiertos con tracto.", textos.Resumen);
+            Assert.Equal("No se pudo consultar el GPS. No hay viajes abiertos con tracto.", textos.Mensaje);
+        }
+
+        [Fact]
+        public void ReportePersonalizado_FiltrosInvalidosSonDeNegocio_YNingunArgumentExceptionLlegaAlUsuario()
+        {
+            string cs = System.IO.File.ReadAllText(System.IO.Path.Combine(
+                Integracion.BaseDePruebas.RaizRepo, "WebSGV", "Views", "ReportesOrdenesViaje.aspx.cs"));
+            Assert.DoesNotContain("catch (ArgumentException", cs);
+            Assert.DoesNotContain("throw new ArgumentException(", cs);
+            Assert.DoesNotContain("ResponderSolicitudInvalida(ex.Message)", cs);
+            Assert.Contains("throw new ErrorNegocioException(\"El formato de exportación personalizado no es válido.\")", cs);
+        }
     }
 }

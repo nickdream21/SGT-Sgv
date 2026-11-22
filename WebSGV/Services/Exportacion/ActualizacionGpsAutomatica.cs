@@ -62,6 +62,19 @@ namespace WebSGV.Services.Exportacion
         public static bool UltimoConFallas { get; private set; }
         public static bool EnCurso => _enCurso == 1;
 
+        /// <summary>
+        /// Resumen (respuesta del cron) y mensaje (tablero) de una corrida que falló, sin texto técnico (E4-8):
+        /// <see cref="MensajeErrorHelper.ParaUsuario(Exception, string)"/> registra el error técnico (una vez, con
+        /// este contexto) y devuelve el genérico; uno de negocio se registra aparte como advertencia.
+        /// </summary>
+        public static (string Resumen, string Mensaje) TextosTrasError(Exception ex)
+        {
+            string texto = MensajeErrorHelper.ParaUsuario(ex, "Actualización automática del GPS");
+            if (WebSGV.Services.Common.MensajeError.ExtraerMensajeDeNegocio(ex) != null)
+                LogSGV.Advertencia("Actualización automática del GPS: {Mensaje}", texto);
+            return ("Error: " + texto, "No se pudo consultar el GPS. " + texto);
+        }
+
         /// <summary>Inicia una corrida en segundo plano. False si ya hay una en curso o la anterior fue hace poco.</summary>
         /// <param name="aPedido">
         /// La pide una persona desde el tablero: no espera el <see cref="Intervalo"/> (sí respeta que no corran dos a la vez).
@@ -79,10 +92,10 @@ namespace WebSGV.Services.Exportacion
                     try { Correr(programada: !aPedido); }
                     catch (Exception ex)
                     {
-                        LogSGV.Error(ex, "Actualización automática del GPS");
                         if (!aPedido) UltimaProgramadaConError = true;
-                        UltimoResumen = "Error: " + ex.Message;
-                        UltimoMensaje = "No se pudo consultar el GPS. " + MensajeErrorHelper.ParaUsuario(ex);
+                        var textos = TextosTrasError(ex);
+                        UltimoResumen = textos.Resumen;
+                        UltimoMensaje = textos.Mensaje;
                         UltimoConFallas = true;
                     }
                     finally { UltimoFin = FechaHelper.Ahora(); Interlocked.Exchange(ref _enCurso, 0); }

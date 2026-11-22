@@ -367,5 +367,38 @@ namespace WebSGV.Tests
         {
             Assert.Equal(esperado, WebSGV.Views.Exportacion.GpsAutomatico.PuedeUsarTablero(conSesion, rol));
         }
+
+        // E4-8: "Actualizar GPS" solo por POST con JSON; un formulario de otro sitio (text/plain, urlencoded,
+        // multipart: sin preflight) no puede lanzarla con la cookie del usuario.
+        [Theory]
+        [InlineData("POST", true, "application/json", 0)]
+        [InlineData("POST", true, "application/json; charset=utf-8", 0)]
+        [InlineData("POST", true, "Application/JSON;charset=UTF-8", 0)]
+        [InlineData("POST", true, "  application/json  ", 0)]
+        [InlineData("POST", true, "text/plain", 415)]
+        [InlineData("POST", true, "text/plain; charset=application/json", 415)]
+        [InlineData("POST", true, "application/x-www-form-urlencoded", 415)]
+        [InlineData("POST", true, "multipart/form-data; boundary=x", 415)]
+        [InlineData("POST", true, "application/jsonx", 415)]
+        [InlineData("POST", true, "", 415)]
+        [InlineData("POST", true, null, 415)]
+        [InlineData("POST", false, "text/plain", 403)]              // sin sesión o permiso: lo de siempre, antes que el 415
+        [InlineData("POST", false, "application/json", 403)]
+        [InlineData("GET", true, "application/json", 405)]
+        [InlineData("GET", false, null, 405)]
+        [InlineData("post", true, "application/json", 405)]
+        [InlineData("PUT", true, "application/json", 405)]
+        public void GpsAutomatico_IniciarSoloPostConJson(string metodo, bool puede, string contentType, int esperado)
+        {
+            Assert.Equal(esperado, WebSGV.Views.Exportacion.GpsAutomatico.RechazoIniciar(metodo, puede, contentType));
+        }
+
+        [Fact]
+        public void GpsAutomatico_ElTableroMandaJsonAlIniciar()
+        {
+            string js = File.ReadAllText(Path.Combine(RaizRepo(), "WebSGV", "Scripts", "paginas", "Exportacion", "RegistroSeguimiento.js"));
+            Assert.Contains("'Content-Type': 'application/json'", js);
+            Assert.Contains("pedir(SGV.urlIniciarGps, 'POST')", js);
+        }
     }
 }

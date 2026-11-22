@@ -217,5 +217,60 @@ namespace WebSGV.Tests
             Assert.Equal(7, SesionVigenteHelper.EnteroDeSesion(7));
             Assert.Null(SesionVigenteHelper.EnteroDeSesion(null));
         }
+
+        // ===== Login.aspx?error=sesion (E4-8): no cierra una sesión vigente, sin bucles =====
+
+        private static readonly DateTime Ahora = new DateTime(2026, 11, 22, 15, 0, 0, DateTimeKind.Utc);
+        private const string Inicio = "~/Views/Inicio.aspx";
+
+        [Fact]
+        public void LoginErrorSesion_SinSesion_MuestraElFormulario()
+        {
+            Assert.Equal(DecisionLoginErrorSesion.MostrarFormulario,
+                SesionVigenteHelper.DecidirLoginErrorSesion(false, false, null, null, Ahora));
+            Assert.Equal(DecisionLoginErrorSesion.MostrarFormulario,
+                SesionVigenteHelper.DecidirLoginErrorSesion(false, true, Inicio, Ahora.AddSeconds(-1), Ahora));
+        }
+
+        [Fact]
+        public void LoginErrorSesion_SesionVigente_VaASuInicioSinCerrarla()
+        {
+            Assert.Equal(DecisionLoginErrorSesion.IrAInicio,
+                SesionVigenteHelper.DecidirLoginErrorSesion(true, true, Inicio, null, Ahora));
+            // El rebote anterior fue hace más de la ventana: es otro enlace viejo, no un bucle.
+            Assert.Equal(DecisionLoginErrorSesion.IrAInicio,
+                SesionVigenteHelper.DecidirLoginErrorSesion(true, true, Inicio, Ahora - SesionVigenteHelper.VentanaReboteLogin, Ahora));
+            Assert.Equal(DecisionLoginErrorSesion.IrAInicio,
+                SesionVigenteHelper.DecidirLoginErrorSesion(true, true, Inicio, Ahora.AddMinutes(-10), Ahora));
+        }
+
+        [Theory]
+        [InlineData(false, Inicio)]   // sin sello: sesión a medias (Global.asax la cierra si la BD responde)
+        [InlineData(true, null)]      // rol sin página de inicio (RolesHelper.UrlInicioSegunRol)
+        [InlineData(true, "")]
+        public void LoginErrorSesion_SesionAMedias_SeCierra(bool tieneSello, string urlInicio)
+        {
+            Assert.Equal(DecisionLoginErrorSesion.LimpiarSesion,
+                SesionVigenteHelper.DecidirLoginErrorSesion(true, tieneSello, urlInicio, null, Ahora));
+        }
+
+        [Fact]
+        public void LoginErrorSesion_ElInicioLaDevuelve_SeCierraYNoHayBucle()
+        {
+            // 1) Llega con sesión vigente: al inicio (Login guarda la hora del envío).
+            var primera = SesionVigenteHelper.DecidirLoginErrorSesion(true, true, Inicio, null, Ahora);
+            Assert.Equal(DecisionLoginErrorSesion.IrAInicio, primera);
+            // 2) El inicio la rechaza y la devuelve al instante: se cierra.
+            Assert.Equal(DecisionLoginErrorSesion.LimpiarSesion,
+                SesionVigenteHelper.DecidirLoginErrorSesion(true, true, Inicio, Ahora, Ahora.AddMilliseconds(300)));
+            Assert.Equal(DecisionLoginErrorSesion.LimpiarSesion,
+                SesionVigenteHelper.DecidirLoginErrorSesion(true, true, Inicio, Ahora, Ahora.AddSeconds(29)));
+            // 3) Ya sin sesión: formulario, sin más redirecciones.
+            Assert.Equal(DecisionLoginErrorSesion.MostrarFormulario,
+                SesionVigenteHelper.DecidirLoginErrorSesion(false, false, null, null, Ahora.AddSeconds(1)));
+            // Reloj que vuelve atrás: ante la duda, se cierra.
+            Assert.Equal(DecisionLoginErrorSesion.LimpiarSesion,
+                SesionVigenteHelper.DecidirLoginErrorSesion(true, true, Inicio, Ahora.AddSeconds(5), Ahora));
+        }
     }
 }

@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using QuestPDF.Fluent;
 using WebSGV.Helpers;
+using WebSGV.Services.Common;
 using WebSGV.Services.Reportes;
 
 namespace WebSGV.Views
@@ -928,49 +929,49 @@ namespace WebSGV.Views
             DateTime fechaHasta;
             string errorFecha;
             if (!TryParseFecha(q["fechaDesde"], "Fecha desde", out fechaDesde, out errorFecha))
-                throw new ArgumentException(errorFecha);
+                throw new ErrorNegocioException(errorFecha);
             if (!TryParseFecha(q["fechaHasta"], "Fecha hasta", out fechaHasta, out errorFecha))
-                throw new ArgumentException(errorFecha);
+                throw new ErrorNegocioException(errorFecha);
             if (fechaDesde > fechaHasta)
-                throw new ArgumentException("El rango de fechas del reporte personalizado es inválido: la fecha final debe ser mayor o igual a la inicial.");
+                throw new ErrorNegocioException("El rango de fechas del reporte personalizado es inválido: la fecha final debe ser mayor o igual a la inicial.");
             if ((fechaHasta - fechaDesde).TotalDays > 3660)
-                throw new ArgumentException("El rango de fechas del reporte personalizado no puede exceder 10 años.");
+                throw new ErrorNegocioException("El rango de fechas del reporte personalizado no puede exceder 10 años.");
 
             decimal factor;
             if (!TryParseFactor(q["factor"], out factor, out errorFecha))
-                throw new ArgumentException(errorFecha);
+                throw new ErrorNegocioException(errorFecha);
 
             int idConductor;
             if (!TryParseIdentificadorNoNegativo(q["idConductor"], "Conductor", out idConductor, out errorFecha))
-                throw new ArgumentException(errorFecha);
+                throw new ErrorNegocioException(errorFecha);
 
             int idCliente;
             if (!TryParseIdentificadorNoNegativo(q["idCliente"], "Cliente", out idCliente, out errorFecha))
-                throw new ArgumentException(errorFecha);
+                throw new ErrorNegocioException(errorFecha);
 
             string estado = FiltroEstadoLiquidacion.Normalizar(q["estado"]);
             if (estado == null || !EstadosPersonalizadoPermitidos.Contains(estado))
-                throw new ArgumentException("El estado de la liquidación del reporte personalizado no es válido.");
+                throw new ErrorNegocioException("El estado de la liquidación del reporte personalizado no es válido.");
 
             string orden = (q["orden"] ?? "fecha_desc").Trim().ToLowerInvariant();
             if (!OrdenesPersonalizadoPermitidas.Contains(orden))
-                throw new ArgumentException("El criterio de orden del reporte personalizado no es válido.");
+                throw new ErrorNegocioException("El criterio de orden del reporte personalizado no es válido.");
 
             string placaTracto = (q["placaTracto"] ?? "").Trim();
             if (placaTracto.Length > 15 || !Regex.IsMatch(placaTracto, @"^[a-zA-Z0-9\-\s]*$"))
-                throw new ArgumentException("La placa de tracto es inválida. Solo se permiten letras, números, espacio y guion (máx. 15). ");
+                throw new ErrorNegocioException("La placa de tracto es inválida. Solo se permiten letras, números, espacio y guion (máx. 15). ");
 
             string categoria = (q["categoria"] ?? "").Trim();
             if (categoria.Length > 60 || !Regex.IsMatch(categoria, @"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-\.]*$"))
-                throw new ArgumentException("La categoría de gasto adicional es inválida (máx. 60 caracteres). ");
+                throw new ErrorNegocioException("La categoría de gasto adicional es inválida (máx. 60 caracteres). ");
 
             string titulo = string.IsNullOrWhiteSpace(q["titulo"]) ? "Reporte Personalizado" : q["titulo"].Trim();
             if (titulo.Length < 5 || titulo.Length > 120)
-                throw new ArgumentException("El título del reporte debe tener entre 5 y 120 caracteres.");
+                throw new ErrorNegocioException("El título del reporte debe tener entre 5 y 120 caracteres.");
 
             string formato = (q["formato"] ?? "excel").Trim().ToLowerInvariant();
             if (formato != "excel" && formato != "pdf")
-                throw new ArgumentException("El formato de exportación personalizado no es válido.");
+                throw new ErrorNegocioException("El formato de exportación personalizado no es válido.");
 
             var columnasSolicitadas = (q["cols"] ?? "")
                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
@@ -982,7 +983,7 @@ namespace WebSGV.Views
             var columnasValidas = new HashSet<string>(ColumnasPersonalizadas.Select(c => c.Item1), StringComparer.OrdinalIgnoreCase);
             var columnasInvalidas = columnasSolicitadas.Where(c => !columnasValidas.Contains(c)).ToList();
             if (columnasInvalidas.Any())
-                throw new ArgumentException("Se enviaron columnas inválidas en el reporte personalizado.");
+                throw new ErrorNegocioException("Se enviaron columnas inválidas en el reporte personalizado.");
 
             return new FiltrosPersonalizado
             {
@@ -1118,12 +1119,10 @@ namespace WebSGV.Views
                     ExportarPersonalizadoExcel(dt, colsOrdenadas, f);
             }
             catch (System.Threading.ThreadAbortException) { /* normal */ }
-            catch (ArgumentException ex)
-            {
-                ResponderSolicitudInvalida(ex.Message);
-            }
             catch (Exception ex)
             {
+                // Los filtros inválidos son ErrorNegocioException (400 con su texto); cualquier otra excepción,
+                // también un ArgumentException de ClosedXML/QuestPDF, es técnica: 500 con el texto genérico (M-065).
                 ResponderErrorExportacion(ex, "Error al generar el reporte personalizado en ReportesOrdenesViaje");
             }
         }

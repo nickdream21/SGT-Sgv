@@ -45,7 +45,12 @@ namespace WebSGV.Helpers
                     .WriteTo.File(
                         Path.Combine(carpetaLogs ?? string.Empty, "sgv-.log"),
                         rollingInterval: RollingInterval.Day,
-                        retainedFileCountLimit: 31,
+                        // Tope de 20 MB por archivo (E4-8): un día con muchos errores parte el archivo
+                        // (sgv-AAAAMMDD_001.log...) en vez de llenar el disco. Se conservan 62 archivos
+                        // (los 31 días de antes aunque algunos vengan partidos).
+                        fileSizeLimitBytes: 20L * 1024 * 1024,
+                        rollOnFileSizeLimit: true,
+                        retainedFileCountLimit: 62,
                         shared: true,
                         outputTemplate: Plantilla)
                     .CreateLogger();

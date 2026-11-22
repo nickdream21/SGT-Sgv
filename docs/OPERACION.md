@@ -79,4 +79,4 @@ Cada error no controlado del sitio (el que llega a `Global.asax` `Application_Er
 
 **Qué trae:** fecha y hora de Perú, sitio (host), URL sin los valores del querystring (solo los nombres: `?id=&token=`), método, usuario y rol si hay sesión, IP, tipo, mensaje, lugar y la excepción completa con sus internas y la pila. Nunca valores de formularios, cookies, contraseñas, cadenas de conexión ni el querystring con valores.
 
-**Qué hacer al recibir uno:** buscar la misma hora en `App_Data/logs/sgv-AAAAMMDD.log` del servidor (allí está todo, también los omitidos), reproducir con la ruta y el usuario del correo, y corregir con una tarea en `docs/PLAN_MEJORAS_SGV.md`.
+**Qué hacer al recibir uno:** buscar la misma hora en `App_Data/logs/sgv-AAAAMMDD*.log` del servidor (al pasar de 20 MB el día sigue en `sgv-AAAAMMDD_001.log`, `_002`…; allí está todo, también los omitidos), reproducir con la ruta y el usuario del correo, y corregir con una tarea en `docs/PLAN_MEJORAS_SGV.md`.

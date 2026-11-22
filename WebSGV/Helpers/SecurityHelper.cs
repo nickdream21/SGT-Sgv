@@ -150,7 +150,8 @@ namespace WebSGV.Helpers
         /// </summary>
         /// <summary>
         /// Hay sesión pero el rol no tiene acceso: vuelve a la página de inicio de su rol en vez
-        /// de ir a Login.aspx?error=sesion (que cierra la sesión). Si el rol no se reconoce, o
+        /// de ir a Login.aspx?error=sesion (que la manda a su inicio y la cierra si vuelve en menos de
+        /// 30 s: SesionVigenteHelper.DecidirLoginErrorSesion). Si el rol no se reconoce, o
         /// su inicio es la misma página que lo rechaza (evita bucles), sí va al login.
         /// </summary>
         private static void RedirigirSinPermiso()

@@ -37,7 +37,10 @@
         boton.disabled = true;
 
         function pedir(url, metodo) {
-            return fetch(url, { method: metodo, credentials: 'same-origin', cache: 'no-store' })
+            var opciones = { method: metodo, credentials: 'same-origin', cache: 'no-store' };
+            // El servidor exige JSON para lanzarla (415 si no): un formulario de otro sitio no puede mandarlo.
+            if (metodo === 'POST') { opciones.headers = { 'Content-Type': 'application/json' }; opciones.body = '{}'; }
+            return fetch(url, opciones)
                 .then(function (r) {
                     if (r.ok) return r.json();
                     var error = new Error('GPS ' + r.status);

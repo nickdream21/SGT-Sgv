@@ -364,9 +364,17 @@ Comprobar 'Ancestro: -1 -> $null' ($null -eq (ConvertFrom-CodigoAncestro -1)) ''
 # -------------------------------------------------------------------------------------------------
 # 4) Comprobaciones del paquete
 # -------------------------------------------------------------------------------------------------
-$wcRelease = '<configuration><system.web><compilation targetFramework="4.8" /></system.web><system.webServer><rewrite><rules><rule name="ForzarHTTPS" /></rules></rewrite></system.webServer></configuration>'
-$wcDebug   = '<configuration><system.web><compilation debug="true" targetFramework="4.8" /></system.web><system.webServer><rewrite><rules><rule name="ForzarHTTPS" /></rules></rewrite></system.webServer></configuration>'
-$wcSinHttps = '<configuration><system.web><compilation targetFramework="4.8" /></system.web></configuration>'
+# Web.config mínimo de Release: cada caso malo cambia una sola cosa (E4-8: customErrors, requireSSL, httpErrors, trace, HSTS).
+function WcRelease([string]$compilation = '<compilation targetFramework="4.8" />', [string]$customErrors = '<customErrors mode="RemoteOnly" />',
+                   [string]$httpCookies = '<httpCookies httpOnlyCookies="true" sameSite="Lax" requireSSL="true" />', [string]$trace = '<trace enabled="false" />',
+                   [string]$httpErrors = '<httpErrors errorMode="Custom" existingResponse="PassThrough" />',
+                   [string]$rewrite = '<rewrite><rules><rule name="ForzarHTTPS" /></rules></rewrite>',
+                   [string]$cabeceras = '<add name="X-Frame-Options" value="DENY" /><add name="Strict-Transport-Security" value="max-age=31536000; includeSubDomains" />') {
+    "<configuration><system.web>$compilation$customErrors$httpCookies$trace</system.web><system.webServer>$httpErrors$rewrite<httpProtocol><customHeaders>$cabeceras</customHeaders></httpProtocol></system.webServer></configuration>"
+}
+$wcRelease  = WcRelease
+$wcDebug    = WcRelease -compilation '<compilation debug="true" targetFramework="4.8" />'
+$wcSinHttps = WcRelease -rewrite ''
 $bueno = @('Web.config', 'Global.asax', 'Views/Inicio.aspx', 'bin/WebSGV.dll', 'bin/runtimes/win-x86/native/QuestPdfSkia.dll',
            'bin/runtimes/win-x64/native/QuestPdfSkia.dll', 'bin/roslyn/csc.exe.config')
 foreach ($r in 'bin/runtimes/linux-x64/native/libQuestPdfSkia.so', 'bin\runtimes\linux-arm64\native\a.so', 'bin/runtimes/linux-musl-x64/native/a.so',
@@ -423,11 +431,53 @@ $casos = @(
     @{ n = 'Web.config con debug="true"';  r = $bueno;                                   wc = $wcDebug;   esp = 'Web.config de Release' }
     @{ n = 'Web.config sin transformar';   r = $bueno;                                   wc = $wcSinHttps; esp = 'Web.config de Release' }
     @{ n = 'Web.config que no es XML';     r = $bueno;                                   wc = '<configuration>';  esp = 'Web.config de Release' }
+    @{ n = 'Web.config con customErrors Off'; r = $bueno; wc = (WcRelease -customErrors '<customErrors mode="off" />'); esp = 'Web.config de Release' }
+    @{ n = 'Web.config sin requireSSL';    r = $bueno; wc = (WcRelease -httpCookies '<httpCookies httpOnlyCookies="true" sameSite="Lax" />'); esp = 'Web.config de Release' }
+    @{ n = 'Web.config con requireSSL="false"'; r = $bueno; wc = (WcRelease -httpCookies '<httpCookies requireSSL="false" />'); esp = 'Web.config de Release' }
+    @{ n = 'Web.config sin httpCookies';   r = $bueno; wc = (WcRelease -httpCookies ''); esp = 'Web.config de Release' }
+    @{ n = 'Web.config con httpErrors Detailed'; r = $bueno; wc = (WcRelease -httpErrors '<httpErrors errorMode="Detailed" />'); esp = 'Web.config de Release' }
+    @{ n = 'Web.config con trace enabled'; r = $bueno; wc = (WcRelease -trace '<trace enabled="True" />'); esp = 'Web.config de Release' }
+    @{ n = 'Web.config sin HSTS';          r = $bueno; wc = (WcRelease -cabeceras '<add name="X-Frame-Options" value="DENY" />'); esp = 'Web.config de Release' }
     @{ n = 'sin Web.config';               r = @($bueno | Where-Object { $_ -ne 'Web.config' }); wc = $null; esp = 'Web.config de Release' }
 )
 foreach ($c in $casos) {
     $f = @(Fallidas $c.r $c.wc)
     Comprobar "Paquete $($c.n): falla solo '$($c.esp)'" ($f.Count -eq 1 -and $f[0] -eq $c.esp) ($f -join ', ')
+}
+# Sin customErrors ni trace (valores por defecto: RemoteOnly y apagado) también es apto.
+$f = @(Fallidas $bueno (WcRelease -customErrors '' -trace ''))
+Comprobar 'Paquete Web.config sin customErrors ni trace (por defecto): apto' ($f.Count -eq 0) ($f -join ', ')
+$det = (Test-ContenidoPaquete -Rutas $bueno -WebConfig $wcDebug | Where-Object { $_.Comprobacion -eq 'Web.config de Release' }).Detalle
+Comprobar 'Paquete Web.config de Debug: el detalle dice qué falla' ($det -match 'compilation debug="true"') $det
+
+# E4-8: el Web.config real del repo (sin transformar, el de Debug) se rechaza; transformado con Web.Release.config, se acepta.
+$wcRepo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\WebSGV\Web.config'))
+$wcRepoRelease = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\WebSGV\Web.Release.config'))
+$detRepo = (Test-ContenidoPaquete -Rutas $bueno -WebConfig ([IO.File]::ReadAllText($wcRepo)) | Where-Object { $_.Comprobacion -eq 'Web.config de Release' })
+Write-Host "       Web.config del repo sin transformar: $($detRepo.Detalle)"
+Comprobar 'Web.config del repo sin transformar: rechazado (debug, customErrors Off, sin requireSSL, Detailed, sin HSTS)' (
+    -not $detRepo.Ok -and $detRepo.Detalle -match 'compilation debug' -and $detRepo.Detalle -match 'customErrors mode="Off"' -and
+    $detRepo.Detalle -match 'requireSSL' -and $detRepo.Detalle -match 'Detailed' -and $detRepo.Detalle -match 'Strict-Transport-Security') $detRepo.Detalle
+$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+$dllTransform = $null
+if (Test-Path -LiteralPath $vswhere) {
+    $vs = & $vswhere -latest -products * -property installationPath
+    if ($vs) { $dllTransform = Get-ChildItem -LiteralPath (Join-Path $vs 'MSBuild\Microsoft\VisualStudio') -Recurse -Filter 'Microsoft.Web.XmlTransform.dll' -ErrorAction SilentlyContinue | Select-Object -First 1 }
+}
+if ($dllTransform) {
+    Add-Type -LiteralPath $dllTransform.FullName
+    $doc = New-Object Microsoft.Web.XmlTransform.XmlTransformableDocument
+    $doc.PreserveWhitespace = $true
+    $doc.Load($wcRepo)
+    $transformacion = New-Object Microsoft.Web.XmlTransform.XmlTransformation($wcRepoRelease)
+    $aplicada = $transformacion.Apply($doc)
+    $sw = New-Object IO.StringWriter
+    $doc.Save($sw)
+    $detRel = (Test-ContenidoPaquete -Rutas $bueno -WebConfig $sw.ToString() | Where-Object { $_.Comprobacion -eq 'Web.config de Release' })
+    Write-Host "       Web.config del repo transformado a Release: $($detRel.Detalle)"
+    Comprobar 'Web.config del repo transformado con Web.Release.config: aceptado' ($aplicada -and $detRel.Ok) $detRel.Detalle
+} else {
+    Write-Host "OMITIDA Web.config transformado: no se encontró Microsoft.Web.XmlTransform.dll (Visual Studio)." -ForegroundColor Yellow
 }
 
 # -------------------------------------------------------------------------------------------------
