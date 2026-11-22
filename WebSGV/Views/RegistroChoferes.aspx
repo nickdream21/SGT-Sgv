@@ -39,11 +39,11 @@
                 </p>
                 <div class="row align-items-end">
                     <div class="col-md-4 form-group">
-                        <label class="font-weight-bold">Excel (.xlsx)</label>
+                        <label for="<%= fuListaChoferes.ClientID %>" class="font-weight-bold">Excel (.xlsx)</label>
                         <asp:FileUpload ID="fuListaChoferes" runat="server" CssClass="form-control-file" accept=".xlsx" />
                     </div>
                     <div class="col-md-6 form-group">
-                        <label class="font-weight-bold">o filas pegadas</label>
+                        <label for="<%= txtListaChoferes.ClientID %>" class="font-weight-bold">o filas pegadas</label>
                         <asp:TextBox ID="txtListaChoferes" runat="server" TextMode="MultiLine" Rows="3" CssClass="form-control form-control-sm"
                             placeholder="1&#9;ALFREDO ... &#9;PERUANA&#9;B-00000000&#9;00000000"></asp:TextBox>
                     </div>
@@ -77,14 +77,14 @@
                             <%-- Fila 1: Tipo documento + campo de documento (en la misma posición) --%>
                             <div class="row align-items-end">
                                 <div class="col-md-4 form-group">
-                                    <label class="font-weight-bold">Tipo documento:</label>
+                                    <label for="<%= ddlTipoDocumento.ClientID %>" class="font-weight-bold">Tipo documento:</label>
                                     <asp:DropDownList ID="ddlTipoDocumento" runat="server" CssClass="form-control" data-accion-change="mostrarCampoDocumento">
                                         <asp:ListItem>DNI</asp:ListItem>
                                         <asp:ListItem>Carnet de Extranjería</asp:ListItem>
                                     </asp:DropDownList>
                                 </div>
                                 <div class="col-md-8 form-group" id="grupoDNI">
-                                    <label class="font-weight-bold">DNI:</label>
+                                    <label for="<%= txtDNI.ClientID %>" class="font-weight-bold">DNI:</label>
                                     <div class="input-group" data-enter="<%= btnBuscarDNI.ClientID %>">
                                         <asp:TextBox ID="txtDNI" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="8" placeholder="8 dígitos"></asp:TextBox>
                                         <div class="input-group-append">
@@ -93,7 +93,7 @@
                                     </div>
                                 </div>
                                 <div class="col-md-8 form-group" id="grupoCarnet" style="display:none;">
-                                    <label class="font-weight-bold">Carnet Extranjer&#xED;a:</label>
+                                    <label for="<%= txtCarnetExtranjeria.ClientID %>" class="font-weight-bold">Carnet Extranjer&#xED;a:</label>
                                     <asp:TextBox ID="txtCarnetExtranjeria" runat="server" CssClass="form-control" MaxLength="11" placeholder="Núm. carnet (9 dígitos)"></asp:TextBox>
                                 </div>
                                 <asp:RegularExpressionValidator ID="revDni" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtDNI" ValidationExpression="^$|^\d{8}$" ErrorMessage="DNI: debe tener exactamente 8 dígitos." CssClass="text-danger small" Display="Dynamic" />
@@ -103,14 +103,14 @@
                             <%-- Fila 2: Nombres + Apellido Paterno --%>
                             <div class="row">
                                 <div class="col-md-6 form-group">
-                                    <label class="font-weight-bold">Nombres: <span class="text-danger">*</span></label>
+                                    <label for="<%= txtNombres.ClientID %>" class="font-weight-bold">Nombres: <span class="text-danger">*</span></label>
                                     <asp:TextBox ID="txtNombres" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
                                     <asp:RequiredFieldValidator ID="rfvNombres" runat="server" ControlToValidate="txtNombres" ValidationGroup="vgRegistroConductor"
                                         ErrorMessage="El nombre es requerido" CssClass="text-danger small" Display="Dynamic"></asp:RequiredFieldValidator>
                                     <asp:RegularExpressionValidator ID="revNombres" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtNombres" ValidationExpression="^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s]{2,50}$" ErrorMessage="Nombres: solo letras y espacios (2 a 50 caracteres)." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                                 <div class="col-md-6 form-group">
-                                    <label class="font-weight-bold">Apellido paterno: <span class="text-danger">*</span></label>
+                                    <label for="<%= txtApellidoPaterno.ClientID %>" class="font-weight-bold">Apellido paterno: <span class="text-danger">*</span></label>
                                     <asp:TextBox ID="txtApellidoPaterno" runat="server" CssClass="form-control" MaxLength="20"></asp:TextBox>
                                     <asp:RequiredFieldValidator ID="rfvApellidoPaterno" runat="server" ControlToValidate="txtApellidoPaterno" ValidationGroup="vgRegistroConductor"
                                         ErrorMessage="El apellido paterno es requerido" CssClass="text-danger small" Display="Dynamic"></asp:RequiredFieldValidator>
@@ -121,12 +121,12 @@
                             <%-- Fila 3: Apellido Materno + Teléfono --%>
                             <div class="row">
                                 <div class="col-md-6 form-group">
-                                    <label class="font-weight-bold">Apellido materno:</label>
+                                    <label for="<%= txtApellidoMaterno.ClientID %>" class="font-weight-bold">Apellido materno:</label>
                                     <asp:TextBox ID="txtApellidoMaterno" runat="server" CssClass="form-control" MaxLength="20"></asp:TextBox>
                                     <asp:RegularExpressionValidator ID="revApellidoMaterno" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtApellidoMaterno" ValidationExpression="^$|^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s]{2,20}$" ErrorMessage="Apellido materno: solo letras y espacios (2 a 20 caracteres)." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                                 <div class="col-md-6 form-group">
-                                    <label class="font-weight-bold">Tel&#xE9;fono:</label>
+                                    <label for="<%= txtTelefono.ClientID %>" class="font-weight-bold">Tel&#xE9;fono:</label>
                                     <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" inputmode="tel" MaxLength="9"></asp:TextBox>
                                     <asp:RegularExpressionValidator ID="revTelefono" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtTelefono" ValidationExpression="^$|^\d{7,9}$" ErrorMessage="Teléfono: ingrese entre 7 y 9 dígitos numéricos." CssClass="text-danger small" Display="Dynamic" />
                                 </div>
@@ -216,21 +216,21 @@
                     </asp:Panel>
                     <div class="row">
                         <div class="col-md-6 form-group">
-                            <label class="font-weight-bold">Nombres <span class="text-danger">*</span></label>
+                            <label for="<%= txtEditarNombres.ClientID %>" class="font-weight-bold">Nombres <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtEditarNombres" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
                         </div>
                         <div class="col-md-6 form-group">
-                            <label class="font-weight-bold">Apellido paterno <span class="text-danger">*</span></label>
+                            <label for="<%= txtEditarApellidoPaterno.ClientID %>" class="font-weight-bold">Apellido paterno <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtEditarApellidoPaterno" runat="server" CssClass="form-control" MaxLength="20"></asp:TextBox>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 form-group">
-                            <label class="font-weight-bold">Apellido materno</label>
+                            <label for="<%= txtEditarApellidoMaterno.ClientID %>" class="font-weight-bold">Apellido materno</label>
                             <asp:TextBox ID="txtEditarApellidoMaterno" runat="server" CssClass="form-control" MaxLength="20"></asp:TextBox>
                         </div>
                         <div class="col-md-6 form-group mb-0">
-                            <label class="font-weight-bold">Tel&#xE9;fono</label>
+                            <label for="<%= txtEditarTelefono.ClientID %>" class="font-weight-bold">Tel&#xE9;fono</label>
                             <asp:TextBox ID="txtEditarTelefono" runat="server" CssClass="form-control" inputmode="tel" MaxLength="12"></asp:TextBox>
                         </div>
                     </div>

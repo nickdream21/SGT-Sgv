@@ -134,7 +134,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>Nombre de usuario <span class="text-danger">*</span></label>
+                                <label for="<%= txtNombreUsuario.ClientID %>">Nombre de usuario <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtNombreUsuario" runat="server" CssClass="form-control"
                                     placeholder="Sin espacios, ej: jperez" MaxLength="100" autocomplete="off" />
                                 <small class="text-muted">3 a 50 caracteres: letras, números, punto y guion bajo.</small>
@@ -142,7 +142,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>Nombre completo <span class="text-danger">*</span></label>
+                                <label for="<%= txtNombre.ClientID %>">Nombre completo <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"
                                     placeholder="Ej: Juan Pérez García" MaxLength="200" />
                             </div>
@@ -151,13 +151,13 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>Rol <span class="text-danger">*</span></label>
+                                <label for="<%= ddlRol.ClientID %>">Rol <span class="text-danger">*</span></label>
                                  <asp:DropDownList ID="ddlRol" runat="server" CssClass="form-control" />
                              </div>
                          </div>
                         <asp:Panel ID="pnlContrasena" runat="server" CssClass="col-md-6">
                             <div class="form-group">
-                                <label>Contraseña <span class="text-danger">*</span></label>
+                                <label for="<%= txtContrasena.ClientID %>">Contraseña <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtContrasena" runat="server" CssClass="form-control"
                                     TextMode="Password" autocomplete="new-password" /><%-- placeholder: Page_Load (PasswordHelper.TextoMinimoNueva) --%>
                                 <small class="form-text text-muted"><%: WebSGV.Helpers.PoliticaContrasena.TextoAyuda %></small>
@@ -167,7 +167,7 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="form-group">
-                                <label>Conductor asociado</label>
+                                <label for="<%= ddlConductor.ClientID %>">Conductor asociado</label>
                                 <asp:DropDownList ID="ddlConductor" runat="server" CssClass="form-control" />
                                 <small class="text-muted">
                                     Es obligatorio cuando el rol es Conductor. Esta asociación determina qué viajes puede consultar y firmar el usuario.
@@ -211,13 +211,13 @@
                     </asp:Panel>
 
                     <div class="form-group">
-                        <label>Nueva contraseña <span class="text-danger">*</span></label>
+                        <label for="<%= txtNuevaPass.ClientID %>">Nueva contraseña <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtNuevaPass" runat="server" CssClass="form-control"
                             TextMode="Password" autocomplete="new-password" /><%-- placeholder: Page_Load (PasswordHelper.TextoMinimoNueva) --%>
                         <small class="form-text text-muted"><%: WebSGV.Helpers.PoliticaContrasena.TextoAyuda %></small>
                     </div>
                     <div class="form-group mb-0">
-                        <label>Confirmar contraseña <span class="text-danger">*</span></label>
+                        <label for="<%= txtConfirmarPass.ClientID %>">Confirmar contraseña <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtConfirmarPass" runat="server" CssClass="form-control"
                             TextMode="Password" placeholder="Repite la nueva contraseña" autocomplete="new-password" />
                     </div>

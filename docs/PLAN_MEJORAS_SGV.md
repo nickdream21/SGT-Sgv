@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `d568414` — E5-4: zoom permitido en FirmarLiquidacion, `lang` y viewport en Error.aspx, `<main id="contenido">` y "Saltar al contenido" en Site.Master, canvas de firma con `role="img"`, botón Nota de 44 px y letra ≥ 12 px en las pantallas del conductor, `AccesibilidadMarcadoTests`; nuevo P-063. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `5474b0d` — E5-5: 159 etiquetas asociadas a su campo (29 `for` con el ID de servidor pasan a `ClientID` y 130 nuevos) y 7 reglas de accesibilidad con tope en `AccesibilidadMarcadoTests` (campos sin nombre de 225 a 65). No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-132 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

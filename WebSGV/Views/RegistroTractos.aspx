@@ -35,7 +35,7 @@
                     <div class="card-body">
                         <asp:ValidationSummary ID="vsRegistroTracto" runat="server" ValidationGroup="vgRegistroTracto" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                         <div class="form-group">
-                            <label class="font-weight-bold">N&#xBA; de Placa <span class="text-danger">*</span></label>
+                            <label for="<%= txtPlaca.ClientID %>" class="font-weight-bold">N&#xBA; de Placa <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtPlaca" runat="server" CssClass="form-control"
                                 placeholder="Ej: ABC-123" MaxLength="10"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvPlaca" runat="server" ControlToValidate="txtPlaca" ValidationGroup="vgRegistroTracto"
@@ -44,7 +44,7 @@
                                 ValidationExpression="^[A-Za-z0-9\-]{6,10}$" ErrorMessage="Placa: use 6 a 10 caracteres (letras, números o guion)." CssClass="text-danger small" Display="Dynamic" />
                         </div>
                         <div class="form-group">
-                            <label class="font-weight-bold">Marca <span class="text-danger">*</span></label>
+                            <label for="<%= txtMarca.ClientID %>" class="font-weight-bold">Marca <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtMarca" runat="server" CssClass="form-control"
                                 placeholder="Ej: VOLVO" MaxLength="30"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvMarca" runat="server" ControlToValidate="txtMarca" ValidationGroup="vgRegistroTracto"
@@ -53,7 +53,7 @@
                                 ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,30}$" ErrorMessage="Marca: use entre 2 y 30 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
                         </div>
                         <div class="form-group">
-                            <label class="font-weight-bold">Modelo <span class="text-danger">*</span></label>
+                            <label for="<%= txtModelo.ClientID %>" class="font-weight-bold">Modelo <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtModelo" runat="server" CssClass="form-control"
                                 placeholder="Ej: FH 460" MaxLength="30"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvModelo" runat="server" ControlToValidate="txtModelo" ValidationGroup="vgRegistroTracto"
@@ -146,7 +146,7 @@
                         <asp:Label ID="lblErrorModal" runat="server" EnableViewState="false"></asp:Label>
                     </asp:Panel>
                     <div class="form-group">
-                        <label class="font-weight-bold">N&#xBA; de Placa <span class="text-danger">*</span></label>
+                        <label for="<%= txtEditarPlaca.ClientID %>" class="font-weight-bold">N&#xBA; de Placa <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtEditarPlaca" runat="server" CssClass="form-control text-uppercase" MaxLength="10"></asp:TextBox>
                         <small id="notaPlacaHistorial" class="form-text text-muted d-none">
                             <i class="fas fa-lock mr-1"></i>Este tracto tiene despachos u otro historial: la placa no se puede cambiar.
@@ -154,11 +154,11 @@
                         </small>
                     </div>
                     <div class="form-group">
-                        <label class="font-weight-bold">Marca <span class="text-danger">*</span></label>
+                        <label for="<%= txtEditarMarca.ClientID %>" class="font-weight-bold">Marca <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtEditarMarca" runat="server" CssClass="form-control text-uppercase" MaxLength="30"></asp:TextBox>
                     </div>
                     <div class="form-group mb-0">
-                        <label class="font-weight-bold">Modelo <span class="text-danger">*</span></label>
+                        <label for="<%= txtEditarModelo.ClientID %>" class="font-weight-bold">Modelo <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtEditarModelo" runat="server" CssClass="form-control text-uppercase" MaxLength="30"></asp:TextBox>
                     </div>
                 </div>

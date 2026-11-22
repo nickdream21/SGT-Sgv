@@ -37,7 +37,7 @@
                     <div class="card-body">
                         <asp:ValidationSummary ID="vsRegistroPlanta" runat="server" ValidationGroup="vgRegistroPlanta" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                         <div class="form-group">
-                            <label class="font-weight-bold">Nombre de la planta <span class="text-danger">*</span></label>
+                            <label for="<%= txtNombre.ClientID %>" class="font-weight-bold">Nombre de la planta <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"
                                 placeholder="Ej: PLANTA TRUJILLO" MaxLength="200"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ValidationGroup="vgRegistroPlanta"
@@ -51,7 +51,7 @@
                             </small>
                         </div>
                         <div class="form-group">
-                            <label class="font-weight-bold">&#xC1;mbito <span class="text-danger">*</span></label>
+                            <label for="<%= ddlAmbito.ClientID %>" class="font-weight-bold">&#xC1;mbito <span class="text-danger">*</span></label>
                             <asp:DropDownList ID="ddlAmbito" runat="server" CssClass="form-control">
                                 <asp:ListItem Value="0" Text="Nacional (Per&#xFA;)"></asp:ListItem>
                                 <asp:ListItem Value="1" Text="Internacional"></asp:ListItem>
@@ -148,11 +148,11 @@
                         <asp:Label ID="lblErrorModal" runat="server" EnableViewState="false"></asp:Label>
                     </asp:Panel>
                     <div class="form-group">
-                        <label class="font-weight-bold">Nombre de la planta <span class="text-danger">*</span></label>
+                        <label for="<%= txtEditarNombre.ClientID %>" class="font-weight-bold">Nombre de la planta <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control text-uppercase" MaxLength="200"></asp:TextBox>
                     </div>
                     <div class="form-group mb-0">
-                        <label class="font-weight-bold">&#xC1;mbito <span class="text-danger">*</span></label>
+                        <label for="<%= ddlEditarAmbito.ClientID %>" class="font-weight-bold">&#xC1;mbito <span class="text-danger">*</span></label>
                         <asp:DropDownList ID="ddlEditarAmbito" runat="server" CssClass="form-control">
                             <asp:ListItem Value="0" Text="Nacional (Per&#xFA;)"></asp:ListItem>
                             <asp:ListItem Value="1" Text="Internacional"></asp:ListItem>

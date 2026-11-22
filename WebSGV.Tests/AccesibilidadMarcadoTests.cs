@@ -182,5 +182,351 @@ namespace WebSGV.Tests
                 .ToList();
             Assert.True(malos.Count == 0, "Canvas sin role=\"img\" o sin aria-label:\n" + string.Join("\n", malos));
         }
+
+        // ── Reglas de E5-5: etiquetas, ✕, modales, pestañas y <h1> ──────────────────────────
+        //
+        // Cada regla tiene un tope igual a lo que quedaba al cerrar E5-5. El tope solo baja: la prueba
+        // falla si la cifra sube (algo nuevo sin etiqueta) y también si baja sin bajar el tope (así
+        // queda ajustado y nadie gasta el margen sin darse cuenta). E5-6 los lleva a 0 (salvo <h1>,
+        // E5-15).
+
+        private const int TopeLabelSinForNiControl = 14;
+        private const int TopeForConIdDeServidor = 0;
+        private const int TopeCampoSinEtiqueta = 65;
+        private const int TopeCerrarSinAriaLabel = 14;
+        private const int TopeModalSinRoleNiTitulo = 17;
+        private const int TopePestanaSinAriaSelected = 8;
+        private const int TopePaginaSinUnSoloH1 = 34;
+
+        /// <summary>Etiqueta de apertura: nombre, atributos y posición. Admite <c>&lt;% %&gt;</c> dentro y fuera de comillas.</summary>
+        internal sealed class Elemento
+        {
+            public string Nombre { get; set; }      // en minúsculas: "label", "asp:textbox"
+            public int Indice { get; set; }
+            public int Fin { get; set; }            // índice tras el '>'
+            public bool Cerrado { get; set; }       // termina en "/>"
+            public Dictionary<string, string> Atributos { get; set; }
+
+            public string Attr(string nombre) => Atributos.TryGetValue(nombre, out var v) ? v : null;
+            public bool Tiene(string nombre) => !string.IsNullOrWhiteSpace(Attr(nombre));
+            public bool EsServidor => Nombre.StartsWith("asp:") || string.Equals(Attr("runat"), "server", StringComparison.OrdinalIgnoreCase);
+            public bool EsEstatico => string.Equals(Attr("ClientIDMode"), "Static", StringComparison.OrdinalIgnoreCase);
+            public string Id => Attr("id");
+            public string Clase => (Attr("class") ?? "") + " " + (Attr("CssClass") ?? "");
+            public bool TieneClase(string c) => Regex.IsMatch(Clase, @"(^|\s)" + Regex.Escape(c) + @"(\s|$)");
+        }
+
+        private const string Bloque = @"<%.*?%>";
+        private static readonly Regex EtiquetaApertura = new Regex(
+            @"<(?<n>[a-zA-Z][\w:\.-]*)(?<a>(?:" + Bloque + @"|""(?:" + Bloque + @"|[^""])*""|'(?:" + Bloque + @"|[^'])*'|[^>""'])*)>",
+            RegexOptions.Singleline | RegexOptions.Compiled);
+        private static readonly Regex Atributo = new Regex(
+            @"(?<k>[a-zA-Z_:][\w:\.-]*)\s*=\s*(?:""(?<v>(?:" + Bloque + @"|[^""])*)""|'(?<v>(?:" + Bloque + @"|[^'])*)'|(?<v>[^\s>""']+))",
+            RegexOptions.Singleline | RegexOptions.Compiled);
+        private static readonly Regex ReferenciaClientId = new Regex(@"^\s*<%[=:#]\s*(?<id>\w+)\.ClientID\s*%>\s*$");
+
+        internal static List<Elemento> Elementos(string texto)
+        {
+            var lista = new List<Elemento>();
+            foreach (Match m in EtiquetaApertura.Matches(texto))
+            {
+                // Los atributos se leen sin los bloques <% %> que van fuera de comillas (p. ej. <%# Eval() %> sueltos).
+                string a = m.Groups["a"].Value;
+                var atributos = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (Match at in Atributo.Matches(Regex.Replace(a, @"(?<=\s)" + Bloque, " ", RegexOptions.Singleline)))
+                    if (!atributos.ContainsKey(at.Groups["k"].Value)) atributos[at.Groups["k"].Value] = at.Groups["v"].Value;
+                lista.Add(new Elemento
+                {
+                    Nombre = m.Groups["n"].Value.ToLowerInvariant(),
+                    Indice = m.Index,
+                    Fin = m.Index + m.Length,
+                    Cerrado = a.TrimEnd().EndsWith("/"),
+                    Atributos = atributos,
+                });
+            }
+            return lista;
+        }
+
+        private static readonly HashSet<string> TiposSinEtiqueta = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            { "hidden", "submit", "button", "reset", "image" };
+
+        private static readonly HashSet<string> CamposDeServidor = new HashSet<string>
+            { "asp:textbox", "asp:dropdownlist", "asp:listbox", "asp:checkbox", "asp:radiobutton",
+              "asp:checkboxlist", "asp:radiobuttonlist", "asp:fileupload" };
+
+        /// <summary>¿Es un campo que el usuario llena y que necesita nombre accesible?</summary>
+        internal static bool EsCampo(Elemento e)
+        {
+            // aria-hidden="true": el lector no lo ve (p. ej. el usuario oculto para el gestor de contraseñas de Site.Master).
+            if (string.Equals(e.Attr("aria-hidden"), "true", StringComparison.OrdinalIgnoreCase)) return false;
+            if (CamposDeServidor.Contains(e.Nombre)) return true;
+            if (e.Nombre == "select" || e.Nombre == "textarea") return true;
+            if (e.Nombre == "input") return !TiposSinEtiqueta.Contains((e.Attr("type") ?? "text").Trim());
+            return false;
+        }
+
+        /// <summary>Análisis de las etiquetas de una página (reglas 1 a 3).</summary>
+        internal sealed class AnalisisEtiquetas
+        {
+            public List<string> LabelSinForNiControl = new List<string>();
+            public List<string> ForConIdDeServidor = new List<string>();
+            public List<string> CampoSinEtiqueta = new List<string>();
+        }
+
+        internal static AnalisisEtiquetas AnalizarEtiquetas(Pagina p)
+        {
+            var r = new AnalisisEtiquetas();
+            var elementos = Elementos(p.Texto);
+            var campos = elementos.Where(EsCampo).ToList();
+
+            // IDs de servidor cuyo id en el cliente NO es el ID a secas (no tienen ClientIDMode="Static").
+            var idsDeServidor = new HashSet<string>(elementos.Where(e => e.EsServidor && !e.EsEstatico && e.Tiene("id")).Select(e => e.Id), StringComparer.Ordinal);
+            // IDs que el navegador verá tal cual: HTML sin runat o de servidor con ClientIDMode="Static".
+            var idsLiterales = new HashSet<string>(elementos.Where(e => e.Tiene("id") && (!e.EsServidor || e.EsEstatico)).Select(e => e.Id), StringComparer.Ordinal);
+
+            var asociadosServidor = new HashSet<string>(StringComparer.Ordinal);   // ID de servidor con etiqueta
+            var asociadosLiteral = new HashSet<string>(StringComparer.Ordinal);    // id de cliente con etiqueta
+            var rangosLabel = new List<Tuple<int, int>>();
+
+            foreach (var e in elementos)
+            {
+                if (e.Nombre == "asp:label" && e.Tiene("AssociatedControlID"))
+                    asociadosServidor.Add(e.Attr("AssociatedControlID"));
+                if (e.Nombre != "label") continue;
+
+                int cierre = p.Texto.IndexOf("</label", e.Fin, StringComparison.OrdinalIgnoreCase);
+                if (cierre < 0) cierre = e.Fin;
+                rangosLabel.Add(Tuple.Create(e.Indice, cierre));
+                string donde = p.Ruta + ":" + p.Linea(e.Indice);
+
+                string paraQue = e.Attr("for");
+                if (string.IsNullOrWhiteSpace(paraQue))
+                {
+                    if (!campos.Any(c => c.Indice > e.Indice && c.Indice < cierre))
+                        r.LabelSinForNiControl.Add(donde + " " + Recortar(p.Texto, e.Indice, cierre));
+                    continue;
+                }
+                var refId = ReferenciaClientId.Match(paraQue);
+                if (refId.Success) { asociadosServidor.Add(refId.Groups["id"].Value); continue; }
+                if (idsDeServidor.Contains(paraQue) && !idsLiterales.Contains(paraQue))
+                    r.ForConIdDeServidor.Add(donde + " for=\"" + paraQue + "\" (use for=\"<%= " + paraQue + ".ClientID %>\")");
+                else
+                    asociadosLiteral.Add(paraQue);
+            }
+
+            foreach (var c in campos)
+            {
+                bool tieneNombre =
+                    c.Tiene("aria-label") || c.Tiene("aria-labelledby") || c.Tiene("title") || c.Tiene("ToolTip")
+                    // asp:CheckBox / asp:RadioButton con Text generan su propio <label for>; las listas, uno por opción.
+                    || ((c.Nombre == "asp:checkbox" || c.Nombre == "asp:radiobutton") && c.Tiene("Text"))
+                    || c.Nombre == "asp:checkboxlist" || c.Nombre == "asp:radiobuttonlist"
+                    || rangosLabel.Any(rg => c.Indice > rg.Item1 && c.Indice < rg.Item2)
+                    || (c.Tiene("id") && (c.EsServidor && !c.EsEstatico ? asociadosServidor.Contains(c.Id) : asociadosLiteral.Contains(c.Id)))
+                    || (c.Tiene("id") && c.EsServidor && c.EsEstatico && asociadosServidor.Contains(c.Id));
+                if (!tieneNombre)
+                    r.CampoSinEtiqueta.Add(p.Ruta + ":" + p.Linea(c.Indice) + " <" + c.Nombre + (c.Tiene("id") ? " id=" + c.Id : "") + ">");
+            }
+            return r;
+        }
+
+        private static string Recortar(string texto, int desde, int hasta)
+        {
+            string s = Regex.Replace(texto.Substring(desde, Math.Min(Math.Max(hasta - desde, 0) + 8, Math.Min(160, texto.Length - desde))), @"\s+", " ");
+            return s.Length > 120 ? s.Substring(0, 120) + "…" : s;
+        }
+
+        private static readonly Regex SoloCruz = new Regex(@"^(×|&times;|✕|✖|x|X|&#215;|&#x2715;)?$");
+
+        /// <summary>Regla 4: botones de cerrar (class="close", o data-dismiss sin más texto que la ✕) sin aria-label.</summary>
+        internal static List<string> CerrarSinAriaLabel(Pagina p)
+        {
+            var malas = new List<string>();
+            foreach (var e in Elementos(p.Texto))
+            {
+                bool esCruz = e.TieneClase("close");
+                if (!esCruz && e.Tiene("data-dismiss"))
+                {
+                    string interior = e.Attr("Text");
+                    if (interior == null && !e.Cerrado)
+                    {
+                        int cierre = p.Texto.IndexOf("</" + e.Nombre, e.Fin, StringComparison.OrdinalIgnoreCase);
+                        interior = cierre < 0 ? "" : p.Texto.Substring(e.Fin, cierre - e.Fin);
+                    }
+                    interior = Regex.Replace(interior ?? "", @"<[^>]*>|\s+", "");
+                    esCruz = SoloCruz.IsMatch(interior);
+                }
+                if (esCruz && !e.Tiene("aria-label") && !e.Tiene("aria-labelledby"))
+                    malas.Add(p.Ruta + ":" + p.Linea(e.Indice) + " <" + e.Nombre + " class=\"" + e.Clase.Trim() + "\">");
+            }
+            return malas;
+        }
+
+        /// <summary>Regla 5: todo class="modal" con role="dialog" y aria-labelledby a un id que existe en la página.</summary>
+        internal static List<string> ModalSinRoleNiTitulo(Pagina p)
+        {
+            var elementos = Elementos(p.Texto);
+            var idsLiterales = new HashSet<string>(elementos.Where(e => e.Tiene("id") && (!e.EsServidor || e.EsEstatico)).Select(e => e.Id), StringComparer.Ordinal);
+            var idsServidor = new HashSet<string>(elementos.Where(e => e.Tiene("id") && e.EsServidor).Select(e => e.Id), StringComparer.Ordinal);
+            var malas = new List<string>();
+            foreach (var e in elementos.Where(x => x.TieneClase("modal")))
+            {
+                var faltas = new List<string>();
+                string rol = e.Attr("role") ?? "";
+                if (rol != "dialog" && rol != "alertdialog") faltas.Add("sin role=\"dialog\"");
+                string titulo = e.Attr("aria-labelledby");
+                if (string.IsNullOrWhiteSpace(titulo)) faltas.Add("sin aria-labelledby");
+                else
+                {
+                    var refId = ReferenciaClientId.Match(titulo);
+                    if (refId.Success ? !idsServidor.Contains(refId.Groups["id"].Value) : !idsLiterales.Contains(titulo))
+                        faltas.Add("aria-labelledby=\"" + titulo + "\" no existe");
+                }
+                if (faltas.Count > 0)
+                    malas.Add(p.Ruta + ":" + p.Linea(e.Indice) + " " + (e.Tiene("id") ? "#" + e.Id + " " : "") + string.Join(", ", faltas));
+            }
+            return malas;
+        }
+
+        /// <summary>Regla 6: todo role="tab" con aria-selected.</summary>
+        internal static List<string> PestanaSinAriaSelected(Pagina p) =>
+            Elementos(p.Texto)
+                .Where(e => string.Equals(e.Attr("role"), "tab", StringComparison.OrdinalIgnoreCase) && !e.Tiene("aria-selected"))
+                .Select(e => p.Ruta + ":" + p.Linea(e.Indice) + " <" + e.Nombre + (e.Tiene("id") ? " id=" + e.Id : "") + " role=\"tab\">")
+                .ToList();
+
+        /// <summary>
+        /// Regla 7: un solo &lt;h1&gt; en cada .aspx que muestra algo (con master o con &lt;body&gt;). Site.Master no
+        /// pone &lt;h1&gt;: lo pone cada página.
+        /// </summary>
+        internal static List<string> PaginaSinUnSoloH1(Pagina p)
+        {
+            if (!p.Ruta.EndsWith(".aspx", StringComparison.OrdinalIgnoreCase)) return new List<string>();
+            bool muestraAlgo = Regex.IsMatch(p.Texto, @"<asp:Content\b|<body\b", RegexOptions.IgnoreCase);
+            if (!muestraAlgo) return new List<string>();
+            var h1 = Regex.Matches(p.Texto, @"<h1\b", RegexOptions.IgnoreCase).Cast<Match>().ToList();
+            if (h1.Count == 1) return new List<string>();
+            return new List<string> { p.Ruta + ": " + h1.Count + " <h1>" + (h1.Count > 1 ? " (líneas " + string.Join(", ", h1.Select(m => p.Linea(m.Index))) + ")" : "") };
+        }
+
+        private static void CumpleTope(string regla, int tope, List<string> casos)
+        {
+            string lista = string.Join("\n", casos);
+            Assert.True(casos.Count <= tope,
+                regla + ": hay " + casos.Count + " y el tope es " + tope + ". Lo nuevo debe cumplir la regla:\n" + lista);
+            Assert.True(casos.Count == tope,
+                regla + ": bajó de " + tope + " a " + casos.Count + ". Baje el tope a " + casos.Count
+                + " en AccesibilidadMarcadoTests (el tope solo baja).\n" + lista);
+        }
+
+        [Fact]
+        public void Regla1_TodoLabel_TieneForOEnvuelveSuCampo()
+        {
+            var casos = Paginas().SelectMany(p => AnalizarEtiquetas(p).LabelSinForNiControl).ToList();
+            CumpleTope("<label> sin for y sin campo adentro (el lector no sabe a qué campo nombra)", TopeLabelSinForNiControl, casos);
+        }
+
+        [Fact]
+        public void Regla2_NingunFor_UsaElIdDeServidorASecas()
+        {
+            var casos = Paginas().SelectMany(p => AnalizarEtiquetas(p).ForConIdDeServidor).ToList();
+            CumpleTope("for=\"X\" con el ID de servidor (en el navegador el id es MainContent_X)", TopeForConIdDeServidor, casos);
+        }
+
+        [Fact]
+        public void Regla3_TodoCampo_TieneEtiquetaONombreAccesible()
+        {
+            var casos = Paginas().SelectMany(p => AnalizarEtiquetas(p).CampoSinEtiqueta).ToList();
+            CumpleTope("Campo sin <label for>, aria-label, aria-labelledby, title ni ToolTip", TopeCampoSinEtiqueta, casos);
+        }
+
+        [Fact]
+        public void Regla4_TodaCruzDeCerrar_TieneAriaLabel()
+        {
+            var casos = Paginas().SelectMany(CerrarSinAriaLabel).ToList();
+            CumpleTope("Botón ✕ de cerrar sin aria-label", TopeCerrarSinAriaLabel, casos);
+        }
+
+        [Fact]
+        public void Regla5_TodoModal_TieneRoleDialogYTituloQueExiste()
+        {
+            var casos = Paginas().SelectMany(ModalSinRoleNiTitulo).ToList();
+            CumpleTope("Modal sin role=\"dialog\" o sin aria-labelledby válido", TopeModalSinRoleNiTitulo, casos);
+        }
+
+        [Fact]
+        public void Regla6_TodaPestana_TieneAriaSelected()
+        {
+            var casos = Paginas().SelectMany(PestanaSinAriaSelected).ToList();
+            CumpleTope("role=\"tab\" sin aria-selected", TopePestanaSinAriaSelected, casos);
+        }
+
+        [Fact]
+        public void Regla7_CadaPagina_TieneUnSoloH1()
+        {
+            var casos = Paginas().SelectMany(PaginaSinUnSoloH1).ToList();
+            CumpleTope("Página sin un <h1> o con más de uno", TopePaginaSinUnSoloH1, casos);
+        }
+
+        // ── El analizador mismo ──────────────────────────────────────────────────────────────
+
+        private static Pagina De(string texto) => new Pagina { Ruta = "X.aspx", Texto = texto };
+
+        [Fact]
+        public void Analizador_ForConIdDeServidor_SeDetectaConArchivoYLinea()
+        {
+            var r = AnalizarEtiquetas(De("<div>\n<label for=\"txtA\">A</label>\n<asp:TextBox ID=\"txtA\" runat=\"server\" />\n</div>"));
+            Assert.Equal(new[] { "X.aspx:2 for=\"txtA\" (use for=\"<%= txtA.ClientID %>\")" }, r.ForConIdDeServidor);
+            Assert.Single(r.CampoSinEtiqueta);   // el for roto no cuenta como etiqueta
+            Assert.StartsWith("X.aspx:3 ", r.CampoSinEtiqueta[0]);
+        }
+
+        [Fact]
+        public void Analizador_ClientIdAssociatedControlYStatic_CuentanComoEtiqueta()
+        {
+            var r = AnalizarEtiquetas(De(
+                "<label for=\"<%= txtA.ClientID %>\">A</label><asp:TextBox ID=\"txtA\" runat=\"server\" />" +
+                "<asp:Label runat=\"server\" AssociatedControlID=\"ddlB\" Text=\"B\" /><asp:DropDownList ID=\"ddlB\" runat=\"server\" />" +
+                "<label for=\"txtC\">C</label><asp:TextBox ID=\"txtC\" runat=\"server\" ClientIDMode=\"Static\" />" +
+                "<label for=\"d\">D</label><input id=\"d\" type=\"text\" />" +
+                "<label>E <input type=\"checkbox\" /></label>" +
+                "<asp:CheckBox ID=\"chkF\" runat=\"server\" Text=\"F\" />" +
+                "<input type=\"search\" aria-label=\"Buscar\" /><asp:TextBox ID=\"txtG\" runat=\"server\" ToolTip=\"G\" />" +
+                "<input type=\"hidden\" id=\"h\" /><input type=\"submit\" value=\"Ir\" />" +
+                "<input type=\"text\" autocomplete=\"username\" hidden aria-hidden=\"true\" />"));
+            Assert.Empty(r.ForConIdDeServidor);
+            Assert.Empty(r.LabelSinForNiControl);
+            Assert.Empty(r.CampoSinEtiqueta);
+        }
+
+        [Fact]
+        public void Analizador_LabelSueltoYCampoSinNada_SeDetectan()
+        {
+            var r = AnalizarEtiquetas(De("<label class=\"x\">Fecha</label>\n<input type=\"date\" id=\"f\" placeholder=\"dd/mm\" />\n<asp:TextBox ID=\"txtB\" runat=\"server\" Text='<%# Eval(\"A\") %>' />"));
+            Assert.Equal(1, r.LabelSinForNiControl.Count);
+            Assert.Equal(2, r.CampoSinEtiqueta.Count);   // el placeholder no es etiqueta
+        }
+
+        [Fact]
+        public void Analizador_CruzModalYPestana()
+        {
+            var p = De("<div class=\"modal fade\" id=\"m\" tabindex=\"-1\">\n<h5 id=\"t\">T</h5>" +
+                       "<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>" +
+                       "<button type=\"button\" class=\"btn\" data-dismiss=\"modal\">Cancelar</button></div>" +
+                       "<div class=\"modal\" role=\"dialog\" aria-labelledby=\"t\"></div>" +
+                       "<a role=\"tab\" href=\"#a\">A</a><a role=\"tab\" aria-selected=\"true\" href=\"#b\">B</a>");
+            Assert.Single(CerrarSinAriaLabel(p));
+            Assert.Equal(new[] { "X.aspx:1 #m sin role=\"dialog\", sin aria-labelledby" }, ModalSinRoleNiTitulo(p));
+            Assert.Single(PestanaSinAriaSelected(p));
+        }
+
+        [Fact]
+        public void Analizador_H1_SoloCuentaPaginasQueMuestranAlgo()
+        {
+            Assert.Empty(PaginaSinUnSoloH1(De("<%@ Page %>")));
+            Assert.Empty(PaginaSinUnSoloH1(De("<asp:Content runat=\"server\"><h1>A</h1></asp:Content>")));
+            Assert.Single(PaginaSinUnSoloH1(De("<asp:Content runat=\"server\"><h2>A</h2></asp:Content>")));
+            Assert.Single(PaginaSinUnSoloH1(De("<body><h1>A</h1><h1>B</h1></body>")));
+        }
     }
 }

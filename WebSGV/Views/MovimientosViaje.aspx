@@ -41,7 +41,7 @@
                                 <asp:TextBox ID="txtFecha" runat="server" CssClass="form-control" TextMode="DateTimeLocal" />
                             </div>
                             <div class="form-group col-12 col-sm-6">
-                                <label class="form-label">Concepto <span class="text-danger">*</span></label>
+                                <label for="<%= ddlConceptoEntrega.ClientID %>" class="form-label">Concepto <span class="text-danger">*</span></label>
                                 <asp:DropDownList ID="ddlConceptoEntrega" runat="server" CssClass="form-control mv-solo-entrega" />
                                 <asp:DropDownList ID="ddlConceptoPago" runat="server" CssClass="form-control mv-solo-pago" style="display:none;" />
                             </div>

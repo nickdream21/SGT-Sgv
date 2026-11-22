@@ -590,7 +590,7 @@
                                                     
                                                     <!-- Fecha de Despacho -->
                                                     <div class="form-group mb-3">
-                                                        <label for="txtFechaDespachoBase" class="form-label">
+                                                        <label for="<%= txtFechaDespachoBase.ClientID %>" class="form-label">
                                                             <strong>Fecha de programación:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
@@ -620,7 +620,7 @@
 
                                                     <!-- Cliente -->
                                                     <div class="form-group mb-3">
-                                                        <label for="ddlClienteBase" class="form-label">
+                                                        <label for="<%= ddlClienteBase.ClientID %>" class="form-label">
                                                             <strong>Cliente:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
@@ -645,7 +645,7 @@
                                                     <!-- Número de Pedido - Solo para Carga Nacional -->
                                                     <asp:Panel ID="pnlNumeroPedido" runat="server" Visible="false">
                                                         <div class="form-group mb-3">
-                                                            <label for="txtNumeroPedidoBase" class="form-label">
+                                                            <label for="<%= txtNumeroPedidoBase.ClientID %>" class="form-label">
                                                                 <strong>N° de Pedido:</strong>
                                                             </label>
                                                             <asp:TextBox ID="txtNumeroPedidoBase" runat="server"
@@ -673,7 +673,7 @@
                                                     
                                                     <!-- Tipo de Operación -->
                                                     <div class="form-group mb-3">
-                                                        <label for="ddlTipoOperacionBase" class="form-label">
+                                                        <label for="<%= ddlTipoOperacionBase.ClientID %>" class="form-label">
                                                             <strong>Tipo de operación:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
@@ -716,7 +716,7 @@
 
                                                     <!-- Lugar de Operación -->
                                                     <div class="form-group mb-3">
-                                                        <label for="ddlLugarOperacionBase" class="form-label">
+                                                        <label for="<%= ddlLugarOperacionBase.ClientID %>" class="form-label">
                                                             <strong>Planta de operación:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
@@ -752,7 +752,7 @@
                                                                 <div class="rd-doc-title"><i class="fas fa-receipt mr-1"></i> Datos de factura</div>
 
                                                                 <div class="form-group mb-2">
-                                                                    <label for="txtNumeroFacturaBase" class="form-label">
+                                                                    <label for="<%= txtNumeroFacturaBase.ClientID %>" class="form-label">
                                                                         <strong>N° Factura:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
@@ -782,7 +782,7 @@
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
-                                                                    <label for="txtFechaEmisionFacturaBase" class="form-label">
+                                                                    <label for="<%= txtFechaEmisionFacturaBase.ClientID %>" class="form-label">
                                                                         <strong>Fecha emisión:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
@@ -811,7 +811,7 @@
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
-                                                                    <label for="txtValorTotalFacturaBase" class="form-label">
+                                                                    <label for="<%= txtValorTotalFacturaBase.ClientID %>" class="form-label">
                                                                         <strong>Valor total:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
@@ -850,7 +850,7 @@
                                                                 </div>
 
                                                                 <div class="form-group mb-0">
-                                                                    <label for="fileFacturaBase" class="form-label">
+                                                                    <label for="<%= fileFacturaBase.ClientID %>" class="form-label">
                                                                         <strong>Adjuntar documento:</strong>
                                                                         <span class="text-muted small">(Opcional)</span>
                                                                     </label>
@@ -866,7 +866,7 @@
                                                                 <div class="rd-doc-title"><i class="fas fa-shipping-fast mr-1"></i> Datos de CPIC</div>
 
                                                                 <div class="form-group mb-2">
-                                                                    <label for="txtNumeroCPICBase" class="form-label">
+                                                                    <label for="<%= txtNumeroCPICBase.ClientID %>" class="form-label">
                                                                         <strong>N° CPIC:</strong>
                                                                         <span class="text-danger rd-req">*</span>
                                                                         <span class="text-muted small rd-opcional">(Opcional: si llega después, agréguelo en Lista de despachos)</span>
@@ -897,7 +897,7 @@
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
-                                                                    <label for="txtFechaEmisionCPICBase" class="form-label">
+                                                                    <label for="<%= txtFechaEmisionCPICBase.ClientID %>" class="form-label">
                                                                         <strong>Fecha emisión CPIC:</strong>
                                                                         <span class="text-danger rd-req">*</span>
                                                                     </label>
@@ -926,7 +926,7 @@
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
-                                                                    <label for="txtValorFleteBase" class="form-label">
+                                                                    <label for="<%= txtValorFleteBase.ClientID %>" class="form-label">
                                                                         <strong>Valor flete (S/):</strong>
                                                                         <span class="text-danger rd-req">*</span>
                                                                     </label>
@@ -957,7 +957,7 @@
                                                                 </div>
 
                                                                 <div class="form-group mb-0">
-                                                                    <label for="fileCPICBase" class="form-label">
+                                                                    <label for="<%= fileCPICBase.ClientID %>" class="form-label">
                                                                         <strong>Adjuntar documento:</strong>
                                                                         <span class="text-muted small">(Opcional)</span>
                                                                     </label>
@@ -1153,7 +1153,7 @@
 
                                                     <!-- Conductor -->
                                                     <div class="form-group mb-3">
-                                                        <label for="ddlConductor" class="form-label">
+                                                        <label for="<%= ddlConductor.ClientID %>" class="form-label">
                                                             <strong>Conductor:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
@@ -1179,7 +1179,7 @@
 
                                                     <!-- Placa Tracto -->
                                                     <div class="form-group mb-3">
-                                                        <label for="ddlPlacaTracto" class="form-label">
+                                                        <label for="<%= ddlPlacaTracto.ClientID %>" class="form-label">
                                                             <strong>Placa tracto:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
@@ -1203,7 +1203,7 @@
 
                                                     <!-- Placa Carreta -->
                                                     <div class="form-group mb-3">
-                                                        <label for="ddlPlacaCarreta" class="form-label">
+                                                        <label for="<%= ddlPlacaCarreta.ClientID %>" class="form-label">
                                                             <strong>Placa carreta:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
@@ -1233,7 +1233,7 @@
                                                     <!-- Guía Remitente -->
                                                     <asp:Panel ID="pnlGuiaRemitenteConductor" runat="server" Visible="false">
                                                         <div class="form-group mb-3">
-                                                            <label for="txtGuiaRemitente" class="form-label">
+                                                            <label for="<%= txtGuiaRemitente.ClientID %>" class="form-label">
                                                                 <strong>Guía remitente:</strong>
                                                                 <span class="text-muted small">(Opcional)</span>
                                                             </label>
@@ -1268,7 +1268,7 @@
                                                     <!-- Guía Transportista -->
                                                     <asp:Panel ID="pnlGuiaTransportistaConductor" runat="server" Visible="false">
                                                         <div class="form-group mb-3">
-                                                            <label for="txtGuiaTransportista" class="form-label">
+                                                            <label for="<%= txtGuiaTransportista.ClientID %>" class="form-label">
                                                                 <strong>Guía transportista:</strong>
                                                                 <span class="text-danger">*</span>
                                                             </label>

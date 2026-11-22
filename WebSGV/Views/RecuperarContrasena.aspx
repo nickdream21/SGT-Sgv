@@ -11,7 +11,7 @@
         </asp:Panel>
 
         <div class="form-group">
-            <label for="txtUsuarioEmail">Usuario o correo electrónico:</label>
+            <label for="<%= txtUsuarioEmail.ClientID %>">Usuario o correo electrónico:</label>
             <asp:TextBox ID="txtUsuarioEmail" runat="server" CssClass="form-control" placeholder="usuario o email@ejemplo.com" autocomplete="username"></asp:TextBox>
         </div>
 

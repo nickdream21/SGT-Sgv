@@ -34,11 +34,11 @@
                 </p>
                 <div class="row align-items-end">
                     <div class="col-md-4 form-group">
-                        <label class="font-weight-bold">Excel (.xlsx)</label>
+                        <label for="<%= fuLista.ClientID %>" class="font-weight-bold">Excel (.xlsx)</label>
                         <asp:FileUpload ID="fuLista" runat="server" CssClass="form-control-file" accept=".xlsx" />
                     </div>
                     <div class="col-md-6 form-group">
-                        <label class="font-weight-bold">o filas pegadas</label>
+                        <label for="<%= txtLista.ClientID %>" class="font-weight-bold">o filas pegadas</label>
                         <asp:TextBox ID="txtLista" runat="server" TextMode="MultiLine" Rows="3" CssClass="form-control form-control-sm"
                             placeholder="25/9/2026&#9;4400132772&#9;1&#9;BSP816 - TBE-995&#9;VIVIANA&#9;MILAGRO"></asp:TextBox>
                     </div>

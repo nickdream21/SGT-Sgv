@@ -36,7 +36,7 @@
                     <div class="card-body">
                         <asp:ValidationSummary ID="vsRegistroPeaje" runat="server" ValidationGroup="vgRegistroPeaje" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                         <div class="form-group">
-                            <label class="font-weight-bold">Nombre de la Estaci&#xF3;n <span class="text-danger">*</span></label>
+                            <label for="<%= txtNombre.ClientID %>" class="font-weight-bold">Nombre de la Estaci&#xF3;n <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"
                                 placeholder="Ej: ESTACION DE PEAJE CHICAMA" MaxLength="100"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvNombrePeaje" runat="server" ValidationGroup="vgRegistroPeaje"
@@ -127,7 +127,7 @@
                         <asp:Label ID="lblErrorModal" runat="server" EnableViewState="false"></asp:Label>
                     </asp:Panel>
                     <div class="form-group mb-0">
-                        <label class="font-weight-bold">Nombre de la Estaci&#xF3;n <span class="text-danger">*</span></label>
+                        <label for="<%= txtEditarNombre.ClientID %>" class="font-weight-bold">Nombre de la Estaci&#xF3;n <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control text-uppercase" MaxLength="100"></asp:TextBox>
                     </div>
                 </div>

@@ -86,19 +86,19 @@
                 <div class="row">
                     <div class="col-12 col-md-2">
                         <div class="form-group">
-                            <label class="aud-form-label">Desde</label>
+                            <label for="<%= txtFechaDesde.ClientID %>" class="aud-form-label">Desde</label>
                             <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control form-control-sm" TextMode="Date"></asp:TextBox>
                         </div>
                     </div>
                     <div class="col-12 col-md-2">
                         <div class="form-group">
-                            <label class="aud-form-label">Hasta</label>
+                            <label for="<%= txtFechaHasta.ClientID %>" class="aud-form-label">Hasta</label>
                             <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control form-control-sm" TextMode="Date"></asp:TextBox>
                         </div>
                     </div>
                     <div class="col-12 col-md-2">
                         <div class="form-group">
-                            <label class="aud-form-label">Acción</label>
+                            <label for="<%= ddlAccion.ClientID %>" class="aud-form-label">Acción</label>
                             <asp:DropDownList ID="ddlAccion" runat="server" CssClass="form-control form-control-sm">
                                 <asp:ListItem Value="">-- Todas --</asp:ListItem>
                                 <asp:ListItem Value="INSERT">Inserción</asp:ListItem>
@@ -117,7 +117,7 @@
                     </div>
                     <div class="col-12 col-md-2">
                         <div class="form-group">
-                            <label class="aud-form-label">Tabla</label>
+                            <label for="<%= ddlTabla.ClientID %>" class="aud-form-label">Tabla</label>
                             <asp:DropDownList ID="ddlTabla" runat="server" CssClass="form-control form-control-sm">
                                 <asp:ListItem Value="">-- Todas --</asp:ListItem>
                             </asp:DropDownList>
@@ -125,7 +125,7 @@
                     </div>
                     <div class="col-12 col-md-2">
                         <div class="form-group">
-                            <label class="aud-form-label">Usuario</label>
+                            <label for="<%= txtUsuario.ClientID %>" class="aud-form-label">Usuario</label>
                             <asp:TextBox ID="txtUsuario" runat="server" CssClass="form-control form-control-sm"
                                 placeholder="Nombre de usuario"></asp:TextBox>
                         </div>

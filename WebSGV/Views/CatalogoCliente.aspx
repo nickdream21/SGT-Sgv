@@ -31,7 +31,7 @@
             <div class="col-12 col-md-6 col-lg-5">
                 <div class="card shadow-sm">
                     <div class="card-body py-3">
-                        <label class="font-weight-bold mb-2">Cliente:</label>
+                        <label for="<%= ddlCliente.ClientID %>" class="font-weight-bold mb-2">Cliente:</label>
                         <asp:DropDownList ID="ddlCliente" runat="server" CssClass="form-control"
                             AutoPostBack="true" OnSelectedIndexChanged="ddlCliente_SelectedIndexChanged">
                         </asp:DropDownList>
@@ -85,14 +85,14 @@
                                 <asp:ValidationSummary ID="vsAlta" runat="server" ValidationGroup="vgAlta"
                                     CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                                 <div class="form-group">
-                                    <label class="font-weight-bold">Nombre <span class="text-danger">*</span></label>
+                                    <label for="<%= txtNombre.ClientID %>" class="font-weight-bold">Nombre <span class="text-danger">*</span></label>
                                     <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
                                     <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ValidationGroup="vgAlta"
                                         ControlToValidate="txtNombre" ErrorMessage="El nombre es obligatorio."
                                         CssClass="text-danger small" Display="Dynamic" />
                                 </div>
                                 <div class="form-group">
-                                    <label class="font-weight-bold"><asp:Literal ID="litEtiquetaDetalle" runat="server" Text="Descripción" />:</label>
+                                    <label for="<%= txtDetalle.ClientID %>" class="font-weight-bold"><asp:Literal ID="litEtiquetaDetalle" runat="server" Text="Descripción" />:</label>
                                     <asp:TextBox ID="txtDetalle" runat="server" CssClass="form-control" MaxLength="300"
                                         TextMode="MultiLine" Rows="2"></asp:TextBox>
                                 </div>
@@ -179,11 +179,11 @@
                         <asp:Label ID="lblErrorModal" runat="server" EnableViewState="false"></asp:Label>
                     </asp:Panel>
                     <div class="form-group">
-                        <label class="font-weight-bold">Nombre <span class="text-danger">*</span></label>
+                        <label for="<%= txtEditarNombre.ClientID %>" class="font-weight-bold">Nombre <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
                     </div>
                     <div class="form-group mb-0">
-                        <label class="font-weight-bold"><asp:Literal ID="litEtiquetaDetalleEditar" runat="server" Text="Descripción" />:</label>
+                        <label for="<%= txtEditarDetalle.ClientID %>" class="font-weight-bold"><asp:Literal ID="litEtiquetaDetalleEditar" runat="server" Text="Descripción" />:</label>
                         <asp:TextBox ID="txtEditarDetalle" runat="server" CssClass="form-control" MaxLength="300"
                             TextMode="MultiLine" Rows="2"></asp:TextBox>
                     </div>

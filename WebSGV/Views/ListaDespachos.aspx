@@ -614,7 +614,7 @@
                                                 <div class="row mb-3">
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label required">Fecha de programación:</label>
+                                                            <label for="<%= txtFechaProgramacionEdit.ClientID %>" class="form-label required">Fecha de programación:</label>
                                                             <asp:TextBox ID="txtFechaProgramacionEdit" runat="server" 
                                                                 CssClass="form-control" 
                                                                 TextMode="Date">
@@ -630,7 +630,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label">Cliente:</label>
+                                                            <label for="<%= txtClienteEdit.ClientID %>" class="form-label">Cliente:</label>
                                                             <asp:TextBox ID="txtClienteEdit" runat="server" 
                                                                 CssClass="form-control readonly-field" 
                                                                 ReadOnly="true">
@@ -640,7 +640,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label">N° de Pedido:</label>
+                                                            <label for="<%= txtNumeroPedidoEdit.ClientID %>" class="form-label">N° de Pedido:</label>
                                                             <asp:TextBox ID="txtNumeroPedidoEdit" runat="server" 
                                                                 CssClass="form-control" 
                                                                 placeholder="Ej: 1234567890"
@@ -651,7 +651,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label required">Planta de operación:</label>
+                                                            <label for="<%= ddlPlantaEdit.ClientID %>" class="form-label required">Planta de operación:</label>
                                                             <%-- Opciones cargadas desde el catálogo Planta en CargarPlantasFiltro(). --%>
                                                             <asp:DropDownList ID="ddlPlantaEdit" runat="server" CssClass="form-select">
                                                             </asp:DropDownList>
@@ -671,7 +671,7 @@
                                                 <div class="row mb-3">
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label class="form-label required">Tipo de operación:</label>
+                                                            <label for="<%= ddlTipoOperacionEdit.ClientID %>" class="form-label required">Tipo de operación:</label>
                                                             <asp:DropDownList ID="ddlTipoOperacionEdit" runat="server" CssClass="form-select"
                                                                 AutoPostBack="true" OnSelectedIndexChanged="ddlTipoOperacionEdit_SelectedIndexChanged">
                                                                 <asp:ListItem Value="" Text="-- Seleccione --"></asp:ListItem>
@@ -700,21 +700,21 @@
                                                             </div>
                                                             <div class="doc-panel-content">
                                                                 <div class="form-group">
-                                                                    <label class="form-label">N° Factura:</label>
+                                                                    <label for="<%= txtNumeroFacturaEdit.ClientID %>" class="form-label">N° Factura:</label>
                                                                     <asp:TextBox ID="txtNumeroFacturaEdit" runat="server" 
                                                                         CssClass="form-control" 
                                                                         placeholder="Ej: F222 - 00004267">
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label class="form-label">Fecha emisión:</label>
+                                                                    <label for="<%= txtFechaEmisionFacturaEdit.ClientID %>" class="form-label">Fecha emisión:</label>
                                                                     <asp:TextBox ID="txtFechaEmisionFacturaEdit" runat="server" 
                                                                         CssClass="form-control" 
                                                                         TextMode="Date">
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label class="form-label">Valor total:</label>
+                                                                    <label for="<%= txtValorTotalFacturaEdit.ClientID %>" class="form-label">Valor total:</label>
                                                                     <asp:TextBox ID="txtValorTotalFacturaEdit" runat="server"
                                                                         CssClass="form-control"
                                                                         placeholder="0.00"
@@ -722,7 +722,7 @@
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label class="form-label">Moneda:</label>
+                                                                    <label for="<%= ddlMonedaFacturaEdit.ClientID %>" class="form-label">Moneda:</label>
                                                                     <asp:DropDownList ID="ddlMonedaFacturaEdit" runat="server" CssClass="form-select">
                                                                         <asp:ListItem Value="PEN" Text="Soles (PEN)"></asp:ListItem>
                                                                         <asp:ListItem Value="USD" Text="Dólares (USD)"></asp:ListItem>
@@ -743,7 +743,7 @@
                                                             </div>
                                                             <div class="doc-panel-content">
                                                                 <div class="form-group">
-                                                                    <label class="form-label">N° CPIC:</label>
+                                                                    <label for="<%= txtNumeroCPICEdit.ClientID %>" class="form-label">N° CPIC:</label>
                                                                     <asp:TextBox ID="txtNumeroCPICEdit" runat="server" 
                                                                         CssClass="form-control" 
                                                                         placeholder="Ej: 1234567"
@@ -751,14 +751,14 @@
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label class="form-label">Fecha emisión CPIC:</label>
+                                                                    <label for="<%= txtFechaEmisionCPICEdit.ClientID %>" class="form-label">Fecha emisión CPIC:</label>
                                                                     <asp:TextBox ID="txtFechaEmisionCPICEdit" runat="server" 
                                                                         CssClass="form-control" 
                                                                         TextMode="Date">
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label class="form-label">Valor flete:</label>
+                                                                    <label for="<%= txtValorFleteEdit.ClientID %>" class="form-label">Valor flete:</label>
                                                                     <asp:TextBox ID="txtValorFleteEdit" runat="server"
                                                                         CssClass="form-control"
                                                                         placeholder="0.00"
@@ -1062,19 +1062,19 @@
                                                         <div class="ld-doc-registrar-titulo">Registrar factura</div>
                                                         <div class="ld-doc-campos">
                                                             <div class="ld-campo ld-campo-ancho">
-                                                                <label>N° de factura</label>
+                                                                <label for="<%= txtFacturaNueva.ClientID %>">N° de factura</label>
                                                                 <asp:TextBox ID="txtFacturaNueva" runat="server" CssClass="form-control form-control-sm" MaxLength="30" placeholder="Ej: F222-00004267"></asp:TextBox>
                                                             </div>
                                                             <div class="ld-campo">
-                                                                <label>Fecha de emisión</label>
+                                                                <label for="<%= txtFacturaFecha.ClientID %>">Fecha de emisión</label>
                                                                 <asp:TextBox ID="txtFacturaFecha" runat="server" CssClass="form-control form-control-sm" TextMode="Date"></asp:TextBox>
                                                             </div>
                                                             <div class="ld-campo">
-                                                                <label>Valor total</label>
+                                                                <label for="<%= txtFacturaValor.ClientID %>">Valor total</label>
                                                                 <asp:TextBox ID="txtFacturaValor" runat="server" CssClass="form-control form-control-sm" inputmode="decimal" autocomplete="off" data-monto="true" placeholder="0.00"></asp:TextBox>
                                                             </div>
                                                             <div class="ld-campo">
-                                                                <label>Moneda</label>
+                                                                <label for="<%= ddlFacturaMoneda.ClientID %>">Moneda</label>
                                                                 <asp:DropDownList ID="ddlFacturaMoneda" runat="server" CssClass="form-control form-control-sm">
                                                                     <asp:ListItem Value="PEN" Text="Soles (PEN)"></asp:ListItem>
                                                                     <asp:ListItem Value="USD" Text="Dólares (USD)"></asp:ListItem>
@@ -1111,15 +1111,15 @@
                                                         <div class="ld-doc-registrar-titulo">Registrar CPIC</div>
                                                         <div class="ld-doc-campos">
                                                             <div class="ld-campo ld-campo-ancho">
-                                                                <label>N° de CPIC (7 dígitos)</label>
+                                                                <label for="<%= txtCpicNuevo.ClientID %>">N° de CPIC (7 dígitos)</label>
                                                                 <asp:TextBox ID="txtCpicNuevo" runat="server" CssClass="form-control form-control-sm" MaxLength="7" placeholder="Ej: 1234567"></asp:TextBox>
                                                             </div>
                                                             <div class="ld-campo">
-                                                                <label>Fecha de emisión</label>
+                                                                <label for="<%= txtCpicFecha.ClientID %>">Fecha de emisión</label>
                                                                 <asp:TextBox ID="txtCpicFecha" runat="server" CssClass="form-control form-control-sm" TextMode="Date"></asp:TextBox>
                                                             </div>
                                                             <div class="ld-campo">
-                                                                <label>Valor del flete</label>
+                                                                <label for="<%= txtCpicFlete.ClientID %>">Valor del flete</label>
                                                                 <asp:TextBox ID="txtCpicFlete" runat="server" CssClass="form-control form-control-sm" inputmode="decimal" autocomplete="off" data-monto="true" placeholder="0.00"></asp:TextBox>
                                                             </div>
                                                         </div>

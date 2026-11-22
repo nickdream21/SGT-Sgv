@@ -20,13 +20,13 @@
             <div class="card-body" data-enter="btnBuscarLiquidaciones">
                 <div class="row">
                     <div class="col-md-4">
-                        <label>Conductor</label>
+                        <label for="txtConductor">Conductor</label>
                         <input type="text" id="txtConductor" class="form-control" placeholder="Buscar conductor..." autocomplete="off" />
                         <input type="hidden" id="hfConductorId" value="" />
                         <div id="conductorSugg" class="conductor-autocomplete-dropdown"></div>
                     </div>
                     <div class="col-md-4">
-                        <label>N° Liquidación</label>
+                        <label for="txtNumeroLiquidacion">N° Liquidación</label>
                         <input type="text" id="txtNumeroLiquidacion" class="form-control" placeholder="Ej. OV-000123" maxlength="30" />
                     </div>
                     <div class="col-md-4 d-flex align-items-end">

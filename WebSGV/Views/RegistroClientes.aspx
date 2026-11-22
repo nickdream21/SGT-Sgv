@@ -37,7 +37,7 @@
                         <asp:Panel ID="pnlFormulario" runat="server">
                             <asp:ValidationSummary ID="vsRegistroCliente" runat="server" ValidationGroup="vgRegistroCliente" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                             <div class="form-group">
-                                <label class="font-weight-bold">RUC (Opcional):</label>
+                                <label for="<%= txtRUC.ClientID %>" class="font-weight-bold">RUC (Opcional):</label>
                                 <div class="input-group">
                                     <asp:TextBox ID="txtRUC" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="11"></asp:TextBox>
                                     <div class="input-group-append">
@@ -49,7 +49,7 @@
                                 <small class="form-text text-muted">Ingrese el RUC si lo conoce, o deje en blanco.</small>
                             </div>
                             <div class="form-group">
-                                <label class="font-weight-bold">Nombre / Raz&#xF3;n Social: <span class="text-danger">*</span></label>
+                                <label for="<%= txtNombre.ClientID %>" class="font-weight-bold">Nombre / Raz&#xF3;n Social: <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control" MaxLength="100"></asp:TextBox>
                                 <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ValidationGroup="vgRegistroCliente"
                                     ControlToValidate="txtNombre"
@@ -65,20 +65,20 @@
                             <p class="text-muted small mb-2 font-weight-bold text-uppercase" style="letter-spacing:.05em;">Datos comerciales</p>
 
                             <div class="form-group">
-                                <label class="font-weight-bold">Direcci&#xF3;n fiscal:</label>
+                                <label for="<%= txtDireccion.ClientID %>" class="font-weight-bold">Direcci&#xF3;n fiscal:</label>
                                 <asp:TextBox ID="txtDireccion" runat="server" CssClass="form-control" MaxLength="250"></asp:TextBox>
                             </div>
                             <div class="form-group">
-                                <label class="font-weight-bold">Persona de contacto:</label>
+                                <label for="<%= txtContacto.ClientID %>" class="font-weight-bold">Persona de contacto:</label>
                                 <asp:TextBox ID="txtContacto" runat="server" CssClass="form-control" MaxLength="150"></asp:TextBox>
                             </div>
                             <div class="form-row">
                                 <div class="form-group col-6">
-                                    <label class="font-weight-bold">Tel&#xE9;fono:</label>
+                                    <label for="<%= txtTelefono.ClientID %>" class="font-weight-bold">Tel&#xE9;fono:</label>
                                     <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" inputmode="tel" MaxLength="50"></asp:TextBox>
                                 </div>
                                 <div class="form-group col-6">
-                                    <label class="font-weight-bold">Moneda:</label>
+                                    <label for="<%= ddlMoneda.ClientID %>" class="font-weight-bold">Moneda:</label>
                                     <asp:DropDownList ID="ddlMoneda" runat="server" CssClass="form-control">
                                         <asp:ListItem Value="PEN" Text="PEN - Soles" Selected="True"></asp:ListItem>
                                         <asp:ListItem Value="USD" Text="USD - D&#xF3;lares"></asp:ListItem>
@@ -86,7 +86,7 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="font-weight-bold">Correo:</label>
+                                <label for="<%= txtCorreo.ClientID %>" class="font-weight-bold">Correo:</label>
                                 <asp:TextBox ID="txtCorreo" runat="server" CssClass="form-control" MaxLength="150" TextMode="Email"></asp:TextBox>
                                 <asp:RegularExpressionValidator ID="revCorreo" runat="server" ControlToValidate="txtCorreo" ValidationGroup="vgRegistroCliente"
                                     ValidationExpression="^$|^[^@\s]+@[^@\s]+\.[^@\s]+$" ErrorMessage="Correo: ingrese una direcci&#xF3;n v&#xE1;lida o deje el campo vac&#xED;o." CssClass="text-danger small" Display="Dynamic" />
@@ -98,7 +98,7 @@
                                 <small class="form-text text-muted">M&#xE1;rquelo si el cliente exporta: habilita su seguimiento de exportaci&#xF3;n.</small>
                             </div>
                             <div class="form-group">
-                                <label class="font-weight-bold">Observaciones:</label>
+                                <label for="<%= txtObservaciones.ClientID %>" class="font-weight-bold">Observaciones:</label>
                                 <asp:TextBox ID="txtObservaciones" runat="server" CssClass="form-control" MaxLength="500"
                                     TextMode="MultiLine" Rows="2"></asp:TextBox>
                             </div>
@@ -210,36 +210,36 @@
                     </asp:Panel>
                     <div class="form-row">
                         <div class="form-group col-md-4">
-                            <label class="font-weight-bold">RUC (Opcional):</label>
+                            <label for="<%= txtEditarRUC.ClientID %>" class="font-weight-bold">RUC (Opcional):</label>
                             <asp:TextBox ID="txtEditarRUC" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="11"></asp:TextBox>
                             <small class="form-text text-muted">11 d&#xED;gitos. Dejar en blanco si no aplica.</small>
                         </div>
                         <div class="form-group col-md-8">
-                            <label class="font-weight-bold">Nombre / Raz&#xF3;n Social <span class="text-danger">*</span></label>
+                            <label for="<%= txtEditarNombre.ClientID %>" class="font-weight-bold">Nombre / Raz&#xF3;n Social <span class="text-danger">*</span></label>
                             <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control" MaxLength="100"></asp:TextBox>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="font-weight-bold">Direcci&#xF3;n fiscal:</label>
+                        <label for="<%= txtEditarDireccion.ClientID %>" class="font-weight-bold">Direcci&#xF3;n fiscal:</label>
                         <asp:TextBox ID="txtEditarDireccion" runat="server" CssClass="form-control" MaxLength="250"></asp:TextBox>
                     </div>
                     <div class="form-row">
                         <div class="form-group col-md-5">
-                            <label class="font-weight-bold">Persona de contacto:</label>
+                            <label for="<%= txtEditarContacto.ClientID %>" class="font-weight-bold">Persona de contacto:</label>
                             <asp:TextBox ID="txtEditarContacto" runat="server" CssClass="form-control" MaxLength="150"></asp:TextBox>
                         </div>
                         <div class="form-group col-md-3">
-                            <label class="font-weight-bold">Tel&#xE9;fono:</label>
+                            <label for="<%= txtEditarTelefono.ClientID %>" class="font-weight-bold">Tel&#xE9;fono:</label>
                             <asp:TextBox ID="txtEditarTelefono" runat="server" CssClass="form-control" inputmode="tel" MaxLength="50"></asp:TextBox>
                         </div>
                         <div class="form-group col-md-4">
-                            <label class="font-weight-bold">Correo:</label>
+                            <label for="<%= txtEditarCorreo.ClientID %>" class="font-weight-bold">Correo:</label>
                             <asp:TextBox ID="txtEditarCorreo" runat="server" CssClass="form-control" MaxLength="150" TextMode="Email"></asp:TextBox>
                         </div>
                     </div>
                     <div class="form-row align-items-center">
                         <div class="form-group col-md-4">
-                            <label class="font-weight-bold">Moneda de facturaci&#xF3;n:</label>
+                            <label for="<%= ddlEditarMoneda.ClientID %>" class="font-weight-bold">Moneda de facturaci&#xF3;n:</label>
                             <asp:DropDownList ID="ddlEditarMoneda" runat="server" CssClass="form-control">
                                 <asp:ListItem Value="PEN" Text="PEN - Soles"></asp:ListItem>
                                 <asp:ListItem Value="USD" Text="USD - D&#xF3;lares"></asp:ListItem>
@@ -251,7 +251,7 @@
                         </div>
                     </div>
                     <div class="form-group mb-0">
-                        <label class="font-weight-bold">Observaciones:</label>
+                        <label for="<%= txtEditarObservaciones.ClientID %>" class="font-weight-bold">Observaciones:</label>
                         <asp:TextBox ID="txtEditarObservaciones" runat="server" CssClass="form-control" MaxLength="500"
                             TextMode="MultiLine" Rows="2"></asp:TextBox>
                     </div>

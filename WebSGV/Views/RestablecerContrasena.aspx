@@ -12,13 +12,13 @@
 
         <asp:Panel ID="pnlFormulario" runat="server">
             <div class="form-group">
-                <label>Nueva contraseña:</label>
+                <label for="<%= txtNuevaContrasena.ClientID %>">Nueva contraseña:</label>
                 <asp:TextBox ID="txtNuevaContrasena" runat="server" TextMode="Password" CssClass="form-control" placeholder="Ingrese su nueva contraseña" autocomplete="new-password"></asp:TextBox>
                 <p class="password-requirements"><%: WebSGV.Helpers.PoliticaContrasena.TextoAyuda %></p>
             </div>
 
             <div class="form-group">
-                <label>Confirmar contraseña:</label>
+                <label for="<%= txtConfirmarContrasena.ClientID %>">Confirmar contraseña:</label>
                 <asp:TextBox ID="txtConfirmarContrasena" runat="server" TextMode="Password" CssClass="form-control" placeholder="Confirme su nueva contraseña" autocomplete="new-password"></asp:TextBox>
             </div>
 
