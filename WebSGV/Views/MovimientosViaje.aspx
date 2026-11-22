@@ -50,11 +50,11 @@
                         <div class="form-row">
                             <div class="form-group col-12 col-sm-6">
                                 <label class="form-label" for="<%= txtSoles.ClientID %>">Soles (S/)</label>
-                                <asp:TextBox ID="txtSoles" runat="server" CssClass="form-control" TextMode="Number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" />
+                                <asp:TextBox ID="txtSoles" runat="server" CssClass="form-control" inputmode="decimal" autocomplete="off" data-monto="true" placeholder="0.00" />
                             </div>
                             <div class="form-group col-12 col-sm-6">
                                 <label class="form-label" for="<%= txtDolares.ClientID %>">Dólares (US$)</label>
-                                <asp:TextBox ID="txtDolares" runat="server" CssClass="form-control" TextMode="Number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" />
+                                <asp:TextBox ID="txtDolares" runat="server" CssClass="form-control" inputmode="decimal" autocomplete="off" data-monto="true" placeholder="0.00" />
                             </div>
                         </div>
 

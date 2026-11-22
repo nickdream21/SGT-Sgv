@@ -193,3 +193,7 @@ table[border="1"] td .btn { white-space: nowrap; }
     .card-header.d-flex.justify-content-between { flex-wrap: wrap; row-gap: .5rem; column-gap: .5rem; }
     .sgv-avisos { top: 70px; left: 12px; right: 12px; width: auto; max-width: none; }
 }
+
+/* Montos (E5-1): un [data-monto] que no se pudo leer (SGV.normalizarMonto en SiteMaster.js). */
+input[data-monto].is-invalid { border-color: #dc3545; }
+.sgv-monto-ayuda { display: block; margin-top: .25rem; font-size: .8125rem; line-height: 1.3; color: #b02a37; }

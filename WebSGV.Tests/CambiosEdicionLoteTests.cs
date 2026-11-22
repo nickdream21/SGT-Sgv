@@ -210,7 +210,7 @@ namespace WebSGV.Tests
 
         [Theory]
         [InlineData("abc")]
-        [InlineData("12,50")]
+        [InlineData("1.250,00")]
         [InlineData("-5")]
         public void LeerMonto_texto_invalido_avisa_con_el_campo(string valor)
         {

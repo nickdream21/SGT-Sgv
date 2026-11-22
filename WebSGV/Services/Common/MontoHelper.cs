@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace WebSGV.Services.Common
 {
@@ -14,38 +15,62 @@ namespace WebSGV.Services.Common
         public const decimal MontoMaximo = 9_999_999m;
 
         /// <summary>
-        /// Parsea un monto proveniente de un campo HTML <c>type="number"</c>, que
-        /// siempre usa punto como separador decimal (cultura invariante), con
-        /// independencia de la cultura del servidor (es-PE usa coma). Cadena vacía o
-        /// formato inválido devuelven 0; los valores negativos se clampean a 0.
+        /// Texto del rechazo cuando un monto escrito no cumple <see cref="IntentarLeerMonto"/>. El navegador
+        /// (<c>SGV.leerMonto</c> en <c>Scripts/paginas/SiteMaster.js</c>) muestra el mismo.
         /// </summary>
-        public static decimal ParseMonto(string valor)
+        public const string MensajeFormatoMonto =
+            "Escriba el monto sin separador de miles, con coma o punto para los decimales (por ejemplo 1250,50).";
+
+        // La regla de lectura de montos escritos por el usuario, igual a SGV.leerMonto (SiteMaster.js): signo
+        // opcional al inicio (como el NumberStyles.Float de antes; el negativo lo rechaza ValidarMonto), dígitos
+        // y como máximo un separador decimal, coma o punto, con 0 a 2 decimales. Sin separador de miles, sin
+        // exponente y sin espacios internos. "1,250" y "1.250" son ambiguos (¿miles o 3 decimales?): se
+        // rechazan por tener más de 2 decimales. [0-9] y no \d: \d acepta dígitos de otros alfabetos.
+        private static readonly Regex RxMonto = new Regex(
+            @"^[+-]?(?:[0-9]+(?:[.,][0-9]{0,2})?|[.,][0-9]{1,2})$",
+            RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// Lee un monto escrito por el usuario con la regla única de SGV (ver <see cref="RxMonto"/>), sin
+        /// depender de la cultura del hilo: "12,50" y "12.50" son 12.50; "1250" es 1250; "1,250", "1.250,00",
+        /// "1e3" o "1 250" no se leen. Recorta los espacios de los extremos. No valida signo ni tope (eso lo
+        /// hace <see cref="ValidarMonto(decimal?, string)"/>). Vacío no es un monto: devuelve false.
+        /// </summary>
+        public static bool IntentarLeerMonto(string valor, out decimal monto)
         {
-            if (string.IsNullOrWhiteSpace(valor)) return 0m;
-            if (!decimal.TryParse(valor, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal d))
-                return 0m;
-            return d < 0m ? 0m : d;
+            monto = 0m;
+            if (valor == null) return false;
+            string texto = valor.Trim();
+            if (!RxMonto.IsMatch(texto)) return false;
+            // Solo dígitos, un signo y un separador: con el punto invariante no hay otra lectura posible.
+            // Falla solo por desbordamiento (más de ~28 dígitos), que tampoco es un monto válido.
+            return decimal.TryParse(texto.Replace(',', '.'),
+                NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+                CultureInfo.InvariantCulture, out monto);
         }
 
         /// <summary>
-        /// Lee un monto que escribió el usuario en un campo HTML <c>type="number"</c> (punto
-        /// decimal, cultura invariante; acepta notación exponencial como <c>1e15</c>, que el
-        /// navegador también deja pasar) y lo valida con <see cref="ValidarMonto(decimal?, string)"/>.
-        /// Vacío = 0. Un texto que no es número, un negativo o un monto sobre el tope lanzan
-        /// <see cref="ErrorNegocioException"/> con el nombre del campo, para que el usuario sepa
-        /// qué corregir (antes se convertía en 0 o pasaba sin tope).
+        /// Lee un monto que escribió el usuario (TextBox o campo del formulario) con la regla de
+        /// <see cref="IntentarLeerMonto"/> y lo valida con <see cref="ValidarMonto(decimal?, string)"/>.
+        /// Vacío = 0. Un texto que no cumple la regla, un negativo o un monto sobre el tope lanzan
+        /// <see cref="ErrorNegocioException"/> con el nombre del campo, para que el usuario sepa qué corregir.
         /// </summary>
         public static decimal LeerMonto(string valor, string campo)
         {
             if (string.IsNullOrWhiteSpace(valor)) return 0m;
-            if (!decimal.TryParse(valor.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out decimal d))
-                throw new ErrorNegocioException($"El monto de «{campo}» no es un número válido.");
+            if (!IntentarLeerMonto(valor, out decimal d))
+            {
+                // Cumple la regla pero no cabe en un decimal (más de ~28 dígitos): es un monto sobre el tope.
+                if (RxMonto.IsMatch(valor.Trim()))
+                    return ValidarMonto(decimal.MaxValue, campo);
+                throw new ErrorNegocioException($"El monto de «{campo}» no es válido. {MensajeFormatoMonto}");
+            }
             return ValidarMonto(d, campo);
         }
 
         /// <summary>
         /// Valida un monto deserializado desde un campo controlado por el cliente.
-        /// A diferencia de <see cref="ParseMonto"/>, lanza <see cref="ErrorNegocioException"/>
+        /// A diferencia de un clamp a 0, lanza <see cref="ErrorNegocioException"/>
         /// (que hereda de <see cref="InvalidOperationException"/>) en lugar de clampar: el mensaje
         /// dice qué campo falla y se puede mostrar al usuario. La excepción también deshace la
         /// transacción en curso. Rechaza negativos, montos sobre <see cref="MontoMaximo"/> y más
@@ -73,26 +98,5 @@ namespace WebSGV.Services.Common
         /// <summary>Sobrecarga no-nullable de <see cref="ValidarMonto(decimal?, string)"/>.</summary>
         public static decimal ValidarMonto(decimal monto, string campo)
             => ValidarMonto((decimal?)monto, campo);
-
-        /// <summary>
-        /// Indica si un texto representa un monto no negativo. Una cadena vacía se
-        /// considera válida (true). Usa la cultura actual del servidor, como el código
-        /// original del filtro de búsqueda.
-        /// </summary>
-        public static bool EsMontoNoNegativo(string valor)
-        {
-            if (string.IsNullOrEmpty(valor)) return true;
-            if (decimal.TryParse(valor, out decimal monto)) return monto >= 0;
-            return false;
-        }
-
-        /// <summary>
-        /// Convierte un texto a decimal usando la cultura actual; devuelve 0 si el
-        /// formato no es válido.
-        /// </summary>
-        public static decimal ConvertToDecimal(string value)
-        {
-            return decimal.TryParse(value, out decimal result) ? result : 0m;
-        }
     }
 }

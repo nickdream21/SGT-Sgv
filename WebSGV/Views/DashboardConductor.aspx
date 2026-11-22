@@ -190,8 +190,8 @@
                                     <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
-                                    <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="combustibleSoles" name="combustibleSoles"></div>
-                                    <div class="dc-monto solo-intl"><span>$</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-dolares" id="combustibleDolares" name="combustibleDolares" aria-label="Combustible en dólares"></div>
+                                    <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="combustibleSoles" name="combustibleSoles"></div>
+                                    <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="combustibleDolares" name="combustibleDolares" aria-label="Combustible en dólares"></div>
                                 </div>
                                 <input type="text" class="form-control dc-nota" name="descCombustible" id="descCombustible" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
@@ -202,8 +202,8 @@
                                     <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
-                                    <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="alimentacionSoles" name="alimentacionSoles"></div>
-                                    <div class="dc-monto solo-intl"><span>$</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-dolares" id="alimentacionDolares" name="alimentacionDolares" aria-label="Alimentación en dólares"></div>
+                                    <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="alimentacionSoles" name="alimentacionSoles"></div>
+                                    <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="alimentacionDolares" name="alimentacionDolares" aria-label="Alimentación en dólares"></div>
                                 </div>
                                 <input type="text" class="form-control dc-nota" name="descAlimentacion" id="descAlimentacion" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
@@ -214,7 +214,7 @@
                                     <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
-                                    <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="peajesNacSoles" name="peajesNacSoles"></div>
+                                    <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="peajesNacSoles" name="peajesNacSoles"></div>
                                 </div>
                                 <input type="text" class="form-control dc-nota" name="descPeajesNacionales" id="descPeajesNacionales" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
@@ -225,7 +225,7 @@
                                     <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
-                                    <div class="dc-monto"><span>$</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-dolares" id="peajesExtDolares" name="peajesExtDolares"></div>
+                                    <div class="dc-monto"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="peajesExtDolares" name="peajesExtDolares"></div>
                                 </div>
                                 <input type="text" class="form-control dc-nota" name="descPeajesExtranjeros" id="descPeajesExtranjeros" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
@@ -236,8 +236,8 @@
                                     <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
-                                    <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="hospedajeSoles" name="hospedajeSoles"></div>
-                                    <div class="dc-monto solo-intl"><span>$</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-dolares" id="hospedajeDolares" name="hospedajeDolares" aria-label="Hospedaje en dólares"></div>
+                                    <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="hospedajeSoles" name="hospedajeSoles"></div>
+                                    <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="hospedajeDolares" name="hospedajeDolares" aria-label="Hospedaje en dólares"></div>
                                 </div>
                                 <input type="text" class="form-control dc-nota" name="descHospedaje" id="descHospedaje" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
@@ -248,8 +248,8 @@
                                     <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
-                                    <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="movilidadSoles" name="movilidadSoles"></div>
-                                    <div class="dc-monto solo-intl"><span>$</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-dolares" id="movilidadDolares" name="movilidadDolares" aria-label="Movilidad en dólares"></div>
+                                    <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="movilidadSoles" name="movilidadSoles"></div>
+                                    <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="movilidadDolares" name="movilidadDolares" aria-label="Movilidad en dólares"></div>
                                 </div>
                                 <input type="text" class="form-control dc-nota" name="descMovilidad" id="descMovilidad" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
@@ -260,8 +260,8 @@
                                     <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
-                                    <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="encapadaSoles" name="encapadaSoles"></div>
-                                    <div class="dc-monto solo-intl"><span>$</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-dolares" id="encapadaDolares" name="encapadaDolares" aria-label="Encarpada en dólares"></div>
+                                    <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="encapadaSoles" name="encapadaSoles"></div>
+                                    <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="encapadaDolares" name="encapadaDolares" aria-label="Encarpada en dólares"></div>
                                 </div>
                                 <input type="text" class="form-control dc-nota" name="descEncapada" id="descEncapada" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
@@ -272,8 +272,8 @@
                                     <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
-                                    <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="reparacionesSoles" name="reparacionesSoles"></div>
-                                    <div class="dc-monto solo-intl"><span>$</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-dolares" id="reparacionesDolares" name="reparacionesDolares" aria-label="Reparaciones en dólares"></div>
+                                    <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="reparacionesSoles" name="reparacionesSoles"></div>
+                                    <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="reparacionesDolares" name="reparacionesDolares" aria-label="Reparaciones en dólares"></div>
                                 </div>
                                 <input type="text" class="form-control dc-nota" name="descReparaciones" id="descReparaciones" maxlength="250" placeholder="Qué se reparó (opcional)" hidden>
                             </div>
@@ -284,8 +284,8 @@
                                     <button type="button" class="dc-nota-btn" data-accion="toggleNota">Nota</button>
                                 </div>
                                 <div class="dc-montos">
-                                    <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-soles" id="apoyoSeguridadSoles" name="apoyoSeguridadSoles"></div>
-                                    <div class="dc-monto solo-intl"><span>$</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" class="gasto-dolares" id="apoyoSeguridadDolares" name="apoyoSeguridadDolares" aria-label="Apoyo en dólares"></div>
+                                    <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="apoyoSeguridadSoles" name="apoyoSeguridadSoles"></div>
+                                    <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="apoyoSeguridadDolares" name="apoyoSeguridadDolares" aria-label="Apoyo en dólares"></div>
                                 </div>
                                 <input type="text" class="form-control dc-nota" name="descApoyoSeguridad" id="descApoyoSeguridad" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>

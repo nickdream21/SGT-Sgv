@@ -825,9 +825,7 @@
                                                                         <asp:TextBox ID="txtValorTotalFacturaBase" runat="server"
                                                                             CssClass="form-control"
                                                                             placeholder="0.00"
-                                                                            TextMode="Number"
-                                                                            step="0.01"
-                                                                            min="0">
+                                                                            inputmode="decimal" autocomplete="off" data-monto="true">
                                                                         </asp:TextBox>
                                                                     </div>
                                                                     <asp:RequiredFieldValidator ID="rfvValorTotalFacturaBase" runat="server"
@@ -841,10 +839,10 @@
                                                                     <asp:RangeValidator ID="rvValorTotalFacturaBase" runat="server"
                                                                         ControlToValidate="txtValorTotalFacturaBase"
                                                                         MinimumValue="0.01"
-                                                                        MaximumValue="99999999"
+                                                                        MaximumValue="9999999"
                                                                         Type="Double"
                                                                         CultureInvariantValues="true"
-                                                                        ErrorMessage="Ingrese un monto válido (mayor a 0)"
+                                                                        ErrorMessage="Ingrese un monto mayor a 0 y menor a 10 millones."
                                                                         CssClass="text-danger small"
                                                                         Display="Dynamic"
                                                                         ValidationGroup="ConfiguracionBase">
@@ -935,9 +933,7 @@
                                                                     <asp:TextBox ID="txtValorFleteBase" runat="server"
                                                                         CssClass="form-control"
                                                                         placeholder="0.00"
-                                                                        TextMode="Number"
-                                                                        step="0.01"
-                                                                        min="0">
+                                                                        inputmode="decimal" autocomplete="off" data-monto="true">
                                                                     </asp:TextBox>
                                                                     <asp:RequiredFieldValidator ID="rfvValorFleteBase" runat="server"
                                                                         ControlToValidate="txtValorFleteBase"
@@ -950,10 +946,10 @@
                                                                     <asp:RangeValidator ID="rvValorFleteBase" runat="server"
                                                                         ControlToValidate="txtValorFleteBase"
                                                                         MinimumValue="0.01"
-                                                                        MaximumValue="99999999"
+                                                                        MaximumValue="9999999"
                                                                         Type="Double"
                                                                         CultureInvariantValues="true"
-                                                                        ErrorMessage="Ingrese un monto válido (mayor a 0)"
+                                                                        ErrorMessage="Ingrese un monto mayor a 0 y menor a 10 millones."
                                                                         CssClass="text-danger small"
                                                                         Display="Dynamic"
                                                                         ValidationGroup="ConfiguracionBase">

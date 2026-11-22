@@ -327,6 +327,8 @@ function mostrarDetalle(datos) {
     _ingresosFijosDolares = parseFloat(datos.TotalIngresosDolares || 0) - principalD;
     _gastosSoles = parseFloat(datos.TotalGastosSoles || 0);
     _gastosDolares = parseFloat(datos.TotalGastosDolares || 0);
+    // Los valores puestos por código no lanzan 'input': se limpia la marca de un monto ilegible anterior.
+    SGV.normalizarMontos(document.getElementById('modalDetalleLiquidacion'));
     actualizarBalanceAjustado();
 
     if (modoAprobacion) cargarMovimientosRevision(datos.IdOrdenViaje);
@@ -423,11 +425,17 @@ function abrirModalAprobar(idOrdenViaje) {
     verDetalleLiquidacion(idOrdenViaje);
 }
 
+// Monto escrito en la revisión, con la regla de SGV.leerMonto (coma o punto decimal, igual que el
+// servidor). Lo que no se puede leer cuenta 0 en el balance en vivo; aprobarDesdeModal no deja enviarlo.
+function montoCampo(selectorOElemento) {
+    return SGV.leerMonto($(selectorOElemento).val()) || 0;
+}
+
 function actualizarBalanceAjustado() {
-    var descS = parseFloat($('#ajusteDescuentoSoles').val()) || 0;
-    var descD = parseFloat($('#ajusteDescuentoDolares').val()) || 0;
-    var reintS = parseFloat($('#ajusteReintegroSoles').val()) || 0;
-    var reintD = parseFloat($('#ajusteReintegroDolares').val()) || 0;
+    var descS = montoCampo('#ajusteDescuentoSoles');
+    var descD = montoCampo('#ajusteDescuentoDolares');
+    var reintS = montoCampo('#ajusteReintegroSoles');
+    var reintD = montoCampo('#ajusteReintegroDolares');
     var ent = leerIngresosEntregados();
 
     // En aprobación el balance se recalcula con lo entregado que se está registrando.
@@ -453,8 +461,8 @@ function leerIngresosEntregados() {
     $('.tabla-entregado tr[data-ingreso]').each(function () {
         var k = $(this).data('ingreso');
         var campo = k === 'OtrosIngresos' ? 'Otros' : k;
-        var s = parseFloat($(this).find('.ing-soles').val()) || 0;
-        var d = parseFloat($(this).find('.ing-dolares').val()) || 0;
+        var s = montoCampo($(this).find('.ing-soles'));
+        var d = montoCampo($(this).find('.ing-dolares'));
         if (s < 0 || d < 0) r.negativo = true;
         r.totalSoles += s; r.totalDolares += d;
         r.datos[campo + 'Soles'] = s;
@@ -631,12 +639,22 @@ function aprobarDesdeModal() {
         return;
     }
 
+    // Un monto que no se puede leer (separador de miles, letras) no se envía como 0: se marca y se avisa.
+    var $montoMalo = $('#modalDetalleLiquidacion [data-monto]').filter(function () {
+        return SGV.normalizarMonto(this) === null;
+    }).first();
+    if ($montoMalo.length) {
+        SGV.avisar(SGV.mensajeFormatoMonto);
+        $montoMalo.trigger('focus');
+        return;
+    }
+
     var ajustes = {
-        DescuentoSoles: parseFloat($('#ajusteDescuentoSoles').val()) || 0,
-        DescuentoDolares: parseFloat($('#ajusteDescuentoDolares').val()) || 0,
+        DescuentoSoles: montoCampo('#ajusteDescuentoSoles'),
+        DescuentoDolares: montoCampo('#ajusteDescuentoDolares'),
         MotivoDescuento: $('#ajusteMotivoDescuento').val().trim(),
-        ReintegroSoles: parseFloat($('#ajusteReintegroSoles').val()) || 0,
-        ReintegroDolares: parseFloat($('#ajusteReintegroDolares').val()) || 0,
+        ReintegroSoles: montoCampo('#ajusteReintegroSoles'),
+        ReintegroDolares: montoCampo('#ajusteReintegroDolares'),
         MotivoReintegro: $('#ajusteMotivoReintegro').val().trim()
     };
     var hayDescuento = ajustes.DescuentoSoles > 0 || ajustes.DescuentoDolares > 0;
@@ -736,6 +754,7 @@ $(document).ready(function () {
         $('#modalDetalleLiquidacionHeader').removeClass('mode-aprobacion');
         $('#notaAprobacion').val('');
         $('#ajusteDescuentoSoles, #ajusteDescuentoDolares, #ajusteReintegroSoles, #ajusteReintegroDolares').val('');
+        SGV.normalizarMontos(document.getElementById('modalDetalleLiquidacion'));
         $('#ajusteMotivoDescuento, #ajusteMotivoReintegro').val('').removeClass('campo-con-error');
         $('#errorMotivoDescuento, #errorMotivoReintegro').addClass('d-none').text('');
         $('#balanceAjustadoPanel').hide();

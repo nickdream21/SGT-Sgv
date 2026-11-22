@@ -570,7 +570,7 @@
 
                                 <!-- PANEL EDICIÓN DE LOTE -->
                                 <asp:Panel ID="pnlEdicionLote" runat="server" Visible="false">
-                                    <div class="section-card edit-section">
+                                    <div class="section-card edit-section" data-montos-grupo>
                                         <div class="section-header">
                                             <div class="row align-items-center">
                                                 <div class="col-md-8">
@@ -718,8 +718,7 @@
                                                                     <asp:TextBox ID="txtValorTotalFacturaEdit" runat="server"
                                                                         CssClass="form-control"
                                                                         placeholder="0.00"
-                                                                        TextMode="Number"
-                                                                        step="0.01">
+                                                                        inputmode="decimal" autocomplete="off" data-monto="true">
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
@@ -763,8 +762,7 @@
                                                                     <asp:TextBox ID="txtValorFleteEdit" runat="server"
                                                                         CssClass="form-control"
                                                                         placeholder="0.00"
-                                                                        TextMode="Number"
-                                                                        step="0.01">
+                                                                        inputmode="decimal" autocomplete="off" data-monto="true">
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group mb-0">
@@ -782,7 +780,7 @@
                                                     <div>
                                                         <strong>Este lote lleva más de una factura o CPIC.</strong>
                                                         Sus números no se cambian aquí: corríjalos en
-                                                        <asp:LinkButton ID="lnkIrDocsPorDespacho" runat="server" OnClick="lnkIrDocsPorDespacho_Click"
+                                                        <asp:LinkButton ID="lnkIrDocsPorDespacho" runat="server" OnClick="lnkIrDocsPorDespacho_Click" data-montos-libre="true"
                                                             CausesValidation="false">Documentos del lote → Factura y CPIC por despacho</asp:LinkButton>.
                                                         Los demás cambios de esta pantalla sí se guardan.
                                                     </div>
@@ -845,6 +843,7 @@
                                                                 CssClass="btn btn-warning"
                                                                 OnClick="btnAnularLote_Click"
                                                                 CausesValidation="false"
+                                                                data-montos-libre="true"
                                                                 data-confirmar="¿Anular este lote?\n\nTodos sus despachos quedarán como ANULADO y saldrán de la lista, de la liquidación del conductor y del seguimiento. Un viaje que quede sin despachos también se anula.\nNo se puede anular si algún viaje del lote ya tiene liquidación del conductor.\nLos registros se conservan para auditoría."
                                                                 data-confirmar-titulo="Anular lote"
                                                                 data-confirmar-aceptar="Anular lote"
@@ -1059,7 +1058,7 @@
                                                     </div>
                                                     <%-- Factura aún sin registrar: se anota aquí mismo, sin pasar por "Editar". --%>
                                                     <asp:Panel ID="pnlRegistrarFactura" runat="server" CssClass="ld-doc-manual-envoltura" Visible="false" DefaultButton="btnRegistrarFactura">
-                                                    <div class="ld-doc-registrar">
+                                                    <div class="ld-doc-registrar" data-montos-grupo>
                                                         <div class="ld-doc-registrar-titulo">Registrar factura</div>
                                                         <div class="ld-doc-campos">
                                                             <div class="ld-campo ld-campo-ancho">
@@ -1072,7 +1071,7 @@
                                                             </div>
                                                             <div class="ld-campo">
                                                                 <label>Valor total</label>
-                                                                <asp:TextBox ID="txtFacturaValor" runat="server" CssClass="form-control form-control-sm" TextMode="Number" step="0.01" placeholder="0.00"></asp:TextBox>
+                                                                <asp:TextBox ID="txtFacturaValor" runat="server" CssClass="form-control form-control-sm" inputmode="decimal" autocomplete="off" data-monto="true" placeholder="0.00"></asp:TextBox>
                                                             </div>
                                                             <div class="ld-campo">
                                                                 <label>Moneda</label>
@@ -1108,7 +1107,7 @@
                                                     <div class="ld-doc-archivo">
                                                         <asp:LinkButton ID="lnkVerDocCpic" runat="server" OnClick="lnkVerDocCpic_Click" CausesValidation="false" Visible="false" CssClass="ld-doc-ver"></asp:LinkButton>
                                                     </div>
-                                                    <asp:Panel ID="pnlRegistrarCpic" runat="server" CssClass="ld-doc-registrar" Visible="false" DefaultButton="btnRegistrarCpic">
+                                                    <asp:Panel ID="pnlRegistrarCpic" runat="server" CssClass="ld-doc-registrar" Visible="false" DefaultButton="btnRegistrarCpic" data-montos-grupo="true">
                                                         <div class="ld-doc-registrar-titulo">Registrar CPIC</div>
                                                         <div class="ld-doc-campos">
                                                             <div class="ld-campo ld-campo-ancho">
@@ -1121,7 +1120,7 @@
                                                             </div>
                                                             <div class="ld-campo">
                                                                 <label>Valor del flete</label>
-                                                                <asp:TextBox ID="txtCpicFlete" runat="server" CssClass="form-control form-control-sm" TextMode="Number" step="0.01" placeholder="0.00"></asp:TextBox>
+                                                                <asp:TextBox ID="txtCpicFlete" runat="server" CssClass="form-control form-control-sm" inputmode="decimal" autocomplete="off" data-monto="true" placeholder="0.00"></asp:TextBox>
                                                             </div>
                                                         </div>
                                                         <asp:Button ID="btnRegistrarCpic" runat="server" Text="Registrar CPIC"
@@ -1197,7 +1196,7 @@
                                                         </table>
                                                     </div>
 
-                                                    <div class="ld-doc-registrar ld-asignar-docs">
+                                                    <div class="ld-doc-registrar ld-asignar-docs" data-montos-grupo>
                                                         <div class="ld-doc-registrar-titulo">Asignar a los marcados</div>
                                                         <p class="ld-bloque-ayuda mb-2">Si el número ya existe se usa ese documento (la factura, del mismo cliente);
                                                             si no, se crea. Deje vacío lo que no cambia.</p>
@@ -1212,7 +1211,7 @@
                                                             </div>
                                                             <div class="ld-campo">
                                                                 <label for="<%= txtAsigFacturaValor.ClientID %>">Valor total</label>
-                                                                <asp:TextBox ID="txtAsigFacturaValor" runat="server" CssClass="form-control form-control-sm" TextMode="Number" step="0.01" placeholder="0.00"></asp:TextBox>
+                                                                <asp:TextBox ID="txtAsigFacturaValor" runat="server" CssClass="form-control form-control-sm" inputmode="decimal" autocomplete="off" data-monto="true" placeholder="0.00"></asp:TextBox>
                                                             </div>
                                                             <div class="ld-campo">
                                                                 <label for="<%= ddlAsigFacturaMoneda.ClientID %>">Moneda</label>
@@ -1233,7 +1232,7 @@
                                                             </div>
                                                             <div class="ld-campo">
                                                                 <label for="<%= txtAsigCpicFlete.ClientID %>">Valor del flete</label>
-                                                                <asp:TextBox ID="txtAsigCpicFlete" runat="server" CssClass="form-control form-control-sm" TextMode="Number" step="0.01" placeholder="0.00"></asp:TextBox>
+                                                                <asp:TextBox ID="txtAsigCpicFlete" runat="server" CssClass="form-control form-control-sm" inputmode="decimal" autocomplete="off" data-monto="true" placeholder="0.00"></asp:TextBox>
                                                             </div>
                                                         </div>
                                                         <asp:Button ID="btnAsignarDocumentos" runat="server" Text="Asignar a los marcados"

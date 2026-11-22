@@ -11,6 +11,7 @@ using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
 using WebSGV.Models.Despachos;
+using WebSGV.Services.Common;
 using WebSGV.Services.Despachos;
 using WebSGV.Services.Despachos.Importacion;
 
@@ -682,11 +683,12 @@ namespace WebSGV.Views
             // Configurar documentación base
             if (pnlFacturaBase.Visible && !string.IsNullOrEmpty(txtNumeroFacturaBase.Text))
             {
-                // BLK-002: Usar TryParse con InvariantCulture (input type=number usa punto decimal)
+                // E5-1: coma o punto decimal, sin separador de miles ni exponente (MontoHelper.LeerMonto).
                 decimal valorFactura;
-                if (!decimal.TryParse(txtValorTotalFacturaBase.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out valorFactura))
+                try { valorFactura = MontoHelper.LeerMonto(txtValorTotalFacturaBase.Text, "Valor total de la factura"); }
+                catch (ErrorNegocioException ex)
                 {
-                    MostrarMensaje("El valor total de la factura no tiene un formato numérico válido.", "danger");
+                    MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex), "danger");
                     return false;
                 }
                 if (valorFactura <= 0)
@@ -714,11 +716,12 @@ namespace WebSGV.Views
 
             if (pnlCPICBase.Visible && !string.IsNullOrEmpty(txtNumeroCPICBase.Text))
             {
-                // BLK-002: Usar TryParse con InvariantCulture (input type=number usa punto decimal)
+                // E5-1: coma o punto decimal, sin separador de miles ni exponente (MontoHelper.LeerMonto).
                 decimal valorFlete;
-                if (!decimal.TryParse(txtValorFleteBase.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out valorFlete))
+                try { valorFlete = MontoHelper.LeerMonto(txtValorFleteBase.Text, "Valor del flete"); }
+                catch (ErrorNegocioException ex)
                 {
-                    MostrarMensaje("El valor del flete no tiene un formato numérico válido.", "danger");
+                    MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex), "danger");
                     return false;
                 }
                 if (valorFlete <= 0)

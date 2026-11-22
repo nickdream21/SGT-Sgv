@@ -1715,11 +1715,12 @@ namespace WebSGV.Views
                     MostrarMensajeManifiesto("Indique la fecha de emisión de la factura.", "warning");
                     return;
                 }
-                decimal valor = 0;
-                if (!string.IsNullOrWhiteSpace(txtFacturaValor.Text) &&
-                    !decimal.TryParse(txtFacturaValor.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out valor))
+                // E5-1: coma o punto decimal, sin separador de miles ni exponente; vacío = 0.
+                decimal valor;
+                try { valor = MontoHelper.LeerMonto(txtFacturaValor.Text, "Valor total de la factura"); }
+                catch (ErrorNegocioException ex)
                 {
-                    MostrarMensajeManifiesto("El valor de la factura no es válido.", "warning");
+                    MostrarMensajeManifiesto(MensajeErrorHelper.ParaUsuario(ex), "warning");
                     return;
                 }
 
@@ -1760,11 +1761,12 @@ namespace WebSGV.Views
                     MostrarMensajeManifiesto("Indique la fecha de emisión del CPIC.", "warning");
                     return;
                 }
-                decimal flete = 0;
-                if (!string.IsNullOrWhiteSpace(txtCpicFlete.Text) &&
-                    !decimal.TryParse(txtCpicFlete.Text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out flete))
+                // E5-1: coma o punto decimal, sin separador de miles ni exponente; vacío = 0.
+                decimal flete;
+                try { flete = MontoHelper.LeerMonto(txtCpicFlete.Text, "Valor del flete"); }
+                catch (ErrorNegocioException ex)
                 {
-                    MostrarMensajeManifiesto("El valor del flete no es válido.", "warning");
+                    MostrarMensajeManifiesto(MensajeErrorHelper.ParaUsuario(ex), "warning");
                     return;
                 }
 

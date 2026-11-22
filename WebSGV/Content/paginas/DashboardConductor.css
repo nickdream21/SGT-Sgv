@@ -401,3 +401,6 @@ body.dc-con-barra { padding-bottom: 84px; }
 }
 
 .dc-dinero { padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+
+/* Monto que no se pudo leer (E5-1): el borde está en el envoltorio, no en el input. */
+.dc-monto:has(> input.is-invalid) { border-color: var(--dc-peligro); }

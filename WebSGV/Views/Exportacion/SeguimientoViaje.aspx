@@ -202,9 +202,9 @@
                                 <asp:ListItem Value="DEPSA" Text="Depsa" />
                             </asp:DropDownList>
                         </label>
-                        <label class="sx-campo">Sacos robados <asp:TextBox ID="txtSacosRobados" runat="server" TextMode="Number" min="0" step="1" /></label>
-                        <label class="sx-campo">Sacos rotos <asp:TextBox ID="txtSacosRotos" runat="server" TextMode="Number" min="0" step="1" /></label>
-                        <label class="sx-campo">Sacos mojados <asp:TextBox ID="txtSacosMojados" runat="server" TextMode="Number" min="0" step="1" /></label>
+                        <label class="sx-campo">Sacos robados <asp:TextBox ID="txtSacosRobados" runat="server" TextMode="Number" min="0" step="1" inputmode="numeric" /></label>
+                        <label class="sx-campo">Sacos rotos <asp:TextBox ID="txtSacosRotos" runat="server" TextMode="Number" min="0" step="1" inputmode="numeric" /></label>
+                        <label class="sx-campo">Sacos mojados <asp:TextBox ID="txtSacosMojados" runat="server" TextMode="Number" min="0" step="1" inputmode="numeric" /></label>
                     </div>
                     <label class="sx-campo" style="margin-top: 0.75rem;">Motivo de retraso o incidencias
                         <asp:TextBox ID="txtMotivoRetraso" runat="server" TextMode="MultiLine" Rows="2" MaxLength="1000" />

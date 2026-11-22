@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `d33f2d4` — plan detallado de la Etapa 5 (E5-1 a E5-24 en la hoja de ruta); salen M-083 (hecho en E4-6) y M-095 (no era SQL); nuevos M-126 a M-128; dirección visual elegida por el usuario (DN-28: "Expediente", iconos solo en acciones y avisos; E5-12 y E5-24). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `5031fb1` — E5-1: montos con coma o punto (una sola regla en `MontoHelper.LeerMonto` y `SGV.leerMonto`, 38+2 campos de dinero a texto con teclado decimal, freno del envío con un monto ilegible); cierra M-069; nuevo M-129. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-128 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-129 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -31,7 +31,7 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 | 9 | D-011 | Descargas de Guayaquil de 9 pedidos | sin despacho de descarga no hay liquidación del chofer ni CPIC | Claude con el Word (orden del usuario) |
 | 10 | M-046 | Subir al sitio los Uploads de la oficina | facturas registradas que en el sitio dicen "el archivo no existe" | Claude (orden del usuario) |
 | 11 | M-040 | Bandeja con dos pestañas | puede registrar documentos en el despacho equivocado | Claude |
-| 12 | M-069 | Coma decimal en el celular | un monto del conductor puede llegar ×100 | Claude; el usuario lo confirma en celular |
+| 12 | P-003 | Probar en un celular real | confirma la coma decimal de E5-1 (M-069, ya en el código) y el panel del conductor | Usuario |
 | 13 | P-001 | Prueba de punta a punta con un pedido real | robustez del flujo completo antes de presentarlo | Claude + usuario |
 | 14 | U-012 | Activar `ConductoresEnSistema` | sin esto los conductores no liquidan en el sistema | Usuario (decide el día) |
 | 15 | M-037 | Generar el CPI y el MCI | hoy se copian a mano en Excel, con errores encontrados | Claude, tras U-023 |
@@ -162,7 +162,7 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 
 Las tareas de la etapa (E5-1 a E5-24) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; cada pendiente de aquí dice con qué tarea se cierra.
 
-- [ ] **M-069** Celular: coma decimal en `type=number` — "12,50" podría enviarse como 1250 (visto en Edge headless es-PE): monto ×100. Validar en el JS antes de enviar y confirmarlo en un celular real (P-003). Tarea E5-1. · A
+- [ ] **M-129** Factor de conversión de ReportesOrdenesViaje con coma de miles — `TryParseFactor` (`ReportesOrdenesViaje.aspx.cs` ~1270) cambia la coma por punto y lee con `NumberStyles.Number`: "1,000" se lee como 1 (lo acota el rango 0,01–20). No es dinero, pero conviene la misma regla de `MontoHelper` (un separador decimal, sin miles) o una propia para el factor. · C
 - [ ] **M-070** Saldos: encabezado del conductor con monedas de signo opuesto — `SaldosConductores.aspx.cs:79-90`: con neto +100 S/ y −50 US$ dice "A descontar S/ 100,00 · US$ 50,00" mientras el resumen pone los US$ en "A reintegrar". Mostrar el sentido por moneda. Tarea E5-17. · B
 - [ ] **M-071** SaldosConductores: el enlace a la orden no sirve para el administrador — `SaldosConductores.aspx:93` enlaza a `DetalleOrdenViaje.aspx?id=`, que redirige a quien no es conductor. Apuntarlo a la revisión/PDF del administrador o permitirle ver el detalle. Tarea E5-17. · B
 - [ ] **M-072** Celular: filtros antes del resultado — en ReporteCargas el listado empieza a ~3 pantallas (y=2902) y en el tablero de RegistroSeguimiento a y≈1151; DashboardExportacion con chips de 26 px y textos de 11,5 px. En ReporteCargas la causa no son solo los filtros: antes del listado van 5 tarjetas de resumen y los gráficos. Filtros plegables (`<details>`, como en DashboardConductor) y resúmenes plegados en el celular. Tarea E5-17 y E5-18. · B

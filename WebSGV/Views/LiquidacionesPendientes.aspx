@@ -562,26 +562,26 @@
                                     <tbody>
                                         <tr data-ingreso="Despacho">
                                             <td>Adelanto para el viaje</td>
-                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
-                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-soles" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-dolares" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
                                             <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
                                         <tr data-ingreso="Mensualidad">
                                             <td>Mensualidad</td>
-                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
-                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-soles" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-dolares" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
                                             <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
                                         <tr data-ingreso="Prestamo">
                                             <td>Préstamo</td>
-                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
-                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-soles" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-dolares" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
                                             <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
                                         <tr data-ingreso="OtrosIngresos" data-ultima="1">
                                             <td>Otros autorizados</td>
-                                            <td><input type="number" class="form-control form-control-sm ing-soles" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
-                                            <td><input type="number" class="form-control form-control-sm ing-dolares" step="0.01" min="0" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-soles" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-dolares" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
                                             <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
                                     </tbody>
@@ -620,14 +620,14 @@
                                     <div class="row mt-2">
                                         <div class="col-6">
                                             <label class="form-label">Soles (S/)</label>
-                                            <input type="number" id="ajusteDescuentoSoles" class="form-control form-control-sm"
-                                                placeholder="0.00" step="0.01" min="0" value=""
+                                            <input type="text" inputmode="decimal" autocomplete="off" data-monto id="ajusteDescuentoSoles" class="form-control form-control-sm"
+                                                placeholder="0.00" value=""
                                                 data-accion-input="actualizarBalanceAjustado">
                                         </div>
                                         <div class="col-6">
                                             <label class="form-label">Dólares ($)</label>
-                                            <input type="number" id="ajusteDescuentoDolares" class="form-control form-control-sm"
-                                                placeholder="0.00" step="0.01" min="0" value=""
+                                            <input type="text" inputmode="decimal" autocomplete="off" data-monto id="ajusteDescuentoDolares" class="form-control form-control-sm"
+                                                placeholder="0.00" value=""
                                                 data-accion-input="actualizarBalanceAjustado">
                                         </div>
                                     </div>
@@ -647,14 +647,14 @@
                                     <div class="row mt-2">
                                         <div class="col-6">
                                             <label class="form-label">Soles (S/)</label>
-                                            <input type="number" id="ajusteReintegroSoles" class="form-control form-control-sm"
-                                                placeholder="0.00" step="0.01" min="0" value=""
+                                            <input type="text" inputmode="decimal" autocomplete="off" data-monto id="ajusteReintegroSoles" class="form-control form-control-sm"
+                                                placeholder="0.00" value=""
                                                 data-accion-input="actualizarBalanceAjustado">
                                         </div>
                                         <div class="col-6">
                                             <label class="form-label">Dólares ($)</label>
-                                            <input type="number" id="ajusteReintegroDolares" class="form-control form-control-sm"
-                                                placeholder="0.00" step="0.01" min="0" value=""
+                                            <input type="text" inputmode="decimal" autocomplete="off" data-monto id="ajusteReintegroDolares" class="form-control form-control-sm"
+                                                placeholder="0.00" value=""
                                                 data-accion-input="actualizarBalanceAjustado">
                                         </div>
                                     </div>

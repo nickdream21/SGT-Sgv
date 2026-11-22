@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace WebSGV.Helpers
@@ -9,7 +8,8 @@ namespace WebSGV.Helpers
     ///
     /// Consolida los patrones regex que estaban repetidos y desperdigados en las
     /// páginas (DNI, placa, nombres, teléfono, número de pedido/orden, texto de
-    /// búsqueda, montos). El objetivo es que todas las páginas validen igual y que
+    /// búsqueda). Los montos se leen con MontoHelper.LeerMonto. El objetivo es
+    /// que todas las páginas validen igual y que
     /// un cambio de regla se haga en un solo lugar.
     ///
     /// Todos los métodos hacen <c>Trim()</c> internamente. Los validadores de
@@ -20,7 +20,6 @@ namespace WebSGV.Helpers
     /// Uso:
     /// <code>
     ///   if (!ValidacionHelper.EsPlaca(txtPlaca.Text)) { MostrarMensaje("Placa inválida."); return; }
-    ///   if (!ValidacionHelper.EsMonto(txtMonto.Text, out decimal monto)) { ... }
     /// </code>
     /// </summary>
     public static class ValidacionHelper
@@ -80,29 +79,6 @@ namespace WebSGV.Helpers
             valor = valor.Trim();
             if (valor.Length > maxLongitud) return false;
             return RxTextoBusqueda.IsMatch(valor);
-        }
-
-        /// <summary>
-        /// Valida un monto en formato decimal (cultura es-PE) y lo devuelve.
-        /// Acepta vacío como 0. Rechaza valores negativos.
-        /// </summary>
-        public static bool EsMonto(string valor, out decimal monto)
-        {
-            monto = 0m;
-            if (string.IsNullOrWhiteSpace(valor)) return true;
-
-            valor = valor.Trim();
-            var cultura = CultureInfo.GetCultureInfo("es-PE");
-            const NumberStyles estilos = NumberStyles.Number;
-
-            if (!decimal.TryParse(valor, estilos, cultura, out monto) &&
-                !decimal.TryParse(valor, estilos, CultureInfo.InvariantCulture, out monto))
-            {
-                monto = 0m;
-                return false;
-            }
-
-            return monto >= 0m;
         }
 
         private static bool Coincide(Regex rx, string valor)

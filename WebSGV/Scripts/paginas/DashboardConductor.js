@@ -10,9 +10,12 @@ function esInternacional() {
     return $('#hfEsInternacional').val() === '1';
 }
 
+// Monto escrito por el conductor con la regla de SGV.leerMonto (coma o punto decimal, igual que
+// MontoHelper.LeerMonto en el servidor). Lo que no se puede leer, o es negativo, suma 0: el campo ya
+// quedó marcado al salir de él y el resumen no deja enviar (abrirRevision).
 function num(v) {
-    const n = parseFloat(v);
-    return isFinite(n) && n > 0 ? n : 0;
+    const n = SGV.leerMonto(v);
+    return n !== null && n > 0 ? n : 0;
 }
 
 // Tope de cada monto: lo escribe la página desde MontoHelper.MontoMaximo (el servidor valida igual).
@@ -43,11 +46,9 @@ $(document).ready(function () {
     // Viajes nacionales: sin dólares ni peajes (la empresa paga los peajes a la concesionaria).
     $('body').toggleClass('dc-nacional', !esInternacional());
     vaciarSoloIntlSiNacional();
-    $form.find('input[type=number]').attr('max', montoMaximo());
-
     $form.on('input change', 'input, textarea, select', function () {
         liquidacionModificada = true;
-        if ($(this).is('[type=number]')) calcularTotales();
+        if ($(this).is('[data-monto]')) calcularTotales();
         guardarBorradorLuego();
     });
 
@@ -118,9 +119,9 @@ function agregarGasto(datos) {
                 </button>
             </div>
             <div class="dc-montos">
-                <div class="dc-monto"><span>S/</span><input type="number" inputmode="decimal" step="0.01" min="0" max="${montoMaximo()}" placeholder="0.00"
+                <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00"
                      class="gasto-soles" name="gastoSoles_${n}" aria-label="Monto en soles"></div>
-                <div class="dc-monto solo-intl"><span>$</span><input type="number" inputmode="decimal" step="0.01" min="0" max="${montoMaximo()}" placeholder="0.00"
+                <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00"
                      class="gasto-dolares" name="gastoDolares_${n}" aria-label="Monto en dólares"></div>
             </div>
             <input type="text" class="form-control dc-nota" name="descGasto_${n}" maxlength="250" placeholder="Detalle (opcional)">
@@ -273,6 +274,9 @@ function aplicarDatos(datos) {
     $('#gastosAdicionalesBody').empty();
     (datos.gastosAdicionales || []).forEach(function (g) { agregarGasto(g); });
     vaciarSoloIntlSiNacional();
+    // Un borrador guardado mientras se escribía puede traer "12,5" (o "12.50" si es de antes de E5-1):
+    // se muestra igual que al salir del campo.
+    SGV.normalizarMontos(document.getElementById(SGV.pnlFormularioLiquidacion));
     calcularTotales();
 }
 
@@ -328,17 +332,20 @@ function abrirRevision() {
     });
     if (sinConcepto) { SGV.avisar('Escribe en qué fue el gasto que agregaste.'); return; }
 
-    // Montos fuera de rango (negativos, sobre el tope o texto que no es número): se avisa antes de enviar.
-    let $malo = null;
-    $('#' + SGV.pnlFormularioLiquidacion).find('input[type=number]').each(function () {
-        const v = this.validity;
-        if ($(this).is(':visible') && v && (v.rangeOverflow || v.rangeUnderflow || v.badInput)) { $malo = $(this); return false; }
+    // Montos que no se pueden leer (separador de miles, letras), negativos o sobre el tope: se avisa
+    // antes de enviar (el servidor valida igual con MontoHelper.LeerMonto).
+    let $malo = null, formatoMalo = false;
+    $('#' + SGV.pnlFormularioLiquidacion).find('input[data-monto]').each(function () {
+        if (!$(this).is(':visible')) return;
+        const n = SGV.normalizarMonto(this);
+        if (n === null || n < 0 || n > montoMaximo()) { $malo = $(this); formatoMalo = n === null; return false; }
     });
     if ($malo) {
         const $g = $malo.closest('.dc-gasto');
         const nombre = $g.hasClass('dc-gasto-extra') ? ($g.find('.dc-concepto').val() || 'otro gasto') : $g.find('.dc-gasto-cab label').text();
-        SGV.avisar('Revisa el monto de ' + nombre + ': debe estar entre 0 y ' +
-            montoMaximo().toLocaleString('es-PE') + '.');
+        SGV.avisar('Revisa el monto de ' + nombre + (formatoMalo
+            ? '. ' + SGV.mensajeFormatoMonto
+            : ': debe estar entre 0 y ' + montoMaximo().toLocaleString('es-PE') + '.'));
         $malo.trigger('focus');
         return;
     }

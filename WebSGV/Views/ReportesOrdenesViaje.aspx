@@ -78,7 +78,7 @@
                                     <div class="input-group-prepend">
                                         <span class="input-group-text">S/</span>
                                     </div>
-                                     <asp:TextBox ID="txtFactorConversion" runat="server" CssClass="form-control" Text="3.75" step="0.01"></asp:TextBox>
+                                     <asp:TextBox ID="txtFactorConversion" runat="server" CssClass="form-control" Text="3.75"></asp:TextBox>
                                  </div>
                                 <small id="errFactorConversion" class="text-danger d-none"></small>
                             </div>

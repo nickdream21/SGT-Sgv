@@ -509,3 +509,199 @@
         }
     }, true);
 })();
+
+// ── Montos con coma o punto (E5-1) ──────────────────────────────────
+// Los campos de dinero son de texto (type=text, inputmode=decimal, data-monto; no type=number: en un
+// navegador es-PE "12,50" llegaba como 1250). SGV.leerMonto aplica la misma regla que
+// MontoHelper.LeerMonto en el servidor: signo opcional al inicio, dígitos y como máximo un separador
+// decimal (coma o punto) con 0 a 2 decimales; sin separador de miles, sin exponente ni espacios
+// internos. Vacío = 0; lo que no cumple la regla = null. "1,250" y "1.250" (¿miles o 3 decimales?)
+// no se leen. Al salir de un [data-monto] se escribe con punto ("12,5" → "12.5") o, si no se puede
+// leer, se marca (is-invalid, aria-invalid y un solo mensaje por campo, ver marcar). El servidor
+// decide igual: esto solo evita sorpresas.
+//
+// Envío con un monto ilegible: al pulsar algo que envía (submit, input image, enlace __doPostBack) se
+// normalizan los montos y, si en el ámbito del botón queda uno visible que no se lee, se cancela el
+// clic, se enfoca el campo y se avisa. Ámbito = el contenedor más cercano del botón entre
+// .modal, fieldset, .card y [data-montos-grupo]; sin ninguno, el formulario. Un monto que está dentro
+// de un [data-montos-grupo] solo cuenta para los botones de ese mismo grupo (páginas con una sola
+// tarjeta grande, como ListaDespachos). Así un "Buscar" de otra tarjeta o grupo no queda bloqueado. No se revisan los botones con data-dismiss, .close, formnovalidate o
+// data-montos-libre, ni los de Cancelar/Cerrar/Volver/Limpiar (un botón nuevo que no use montos debe llevar
+// data-montos-libre="true": no confiar en su texto). Se escucha en window (captura): corre
+// antes que data-confirmar (no se abre la confirmación), data-accion, los validadores y __doPostBack.
+(function () {
+    var SGV = window.SGV = window.SGV || {};
+    var REGLA = /^[+-]?(?:[0-9]+(?:[.,][0-9]{0,2})?|[.,][0-9]{1,2})$/;
+    var contador = 0;
+
+    SGV.mensajeFormatoMonto = 'Escriba el monto sin separador de miles, con coma o punto para los decimales (por ejemplo 1250,50).';
+
+    SGV.leerMonto = function (texto) {
+        var t = texto === null || texto === undefined ? '' : String(texto).trim();
+        if (!t) return 0;
+        if (!REGLA.test(t)) return null;
+        return parseFloat(t.replace(',', '.'));
+    };
+
+    // Texto ya válido escrito con punto: "12,5" → "12.5", ",5" → "0.5", "12," → "12". No rellena ceros.
+    function conPunto(t) {
+        t = t.replace(',', '.').replace(/^([+-]?)\./, function (m, signo) { return signo + '0.'; });
+        return t.replace(/\.$/, '');
+    }
+
+    // ── Validadores de WebForms sobre el campo (RangeValidator, CompareValidator, ...) ──
+    // Un campo con validador propio muestra UN mensaje: el del validador. Si el texto no se puede leer,
+    // el validador da el de formato (en vez de "Ingrese un monto válido (mayor a 0)") y frena el envío
+    // como siempre; si se lee, da su propio mensaje (rango). La ayuda de abajo no se agrega.
+    function validadoresDe(el) {
+        var lista = window.Page_Validators || [];
+        var propios = [];
+        for (var i = 0; i < lista.length; i++) if (lista[i] && lista[i].controltovalidate === el.id) propios.push(lista[i]);
+        return propios;
+    }
+
+    function adaptarValidador(v) {
+        if (v.sgvMonto || typeof v.evaluationfunction !== 'function') return;
+        // RequiredFieldValidator: vacío es "obligatorio", no un formato malo; se deja como está.
+        if (/RequiredField/.test(String(v.evaluationfunction.name || v.evaluationfunction))) { v.sgvMonto = true; return; }
+        var original = v.evaluationfunction;
+        var texto = v.innerHTML, mensaje = v.errormessage;
+        v.sgvMonto = true;
+        v.sgvMontoFormato = true;
+        v.evaluationfunction = function (val) {
+            var campo = document.getElementById(val.controltovalidate);
+            var ilegible = campo && SGV.leerMonto(campo.value) === null;
+            if (ilegible) val.textContent = SGV.mensajeFormatoMonto;
+            else val.innerHTML = texto;
+            val.errormessage = ilegible ? SGV.mensajeFormatoMonto : mensaje;
+            return ilegible ? false : original(val);
+        };
+    }
+
+    function prepararValidadores(el) {
+        var propios = validadoresDe(el);
+        for (var i = 0; i < propios.length; i++) adaptarValidador(propios[i]);
+        return propios;
+    }
+
+    // ── Marca y ayuda ──
+    function anclaDe(el) { return el.closest('.input-group, .dc-montos') || el; }
+
+    function quitarMarca(el) {
+        if (!el.hasAttribute('data-monto-invalido')) return;
+        el.removeAttribute('data-monto-invalido');
+        el.classList.remove('is-invalid');
+        el.removeAttribute('aria-invalid');
+        var id = el.getAttribute('data-monto-ayuda');
+        el.removeAttribute('data-monto-ayuda');
+        var descrita = (el.getAttribute('aria-describedby') || '').split(/\s+/).filter(function (x) { return x && x !== id; });
+        if (descrita.length) el.setAttribute('aria-describedby', descrita.join(' '));
+        else el.removeAttribute('aria-describedby');
+        // La ayuda puede ser compartida (S/ y $ del conductor): se va cuando ya no la usa nadie.
+        var ayuda = id ? document.getElementById(id) : null;
+        if (ayuda && !document.querySelector('[data-monto-ayuda="' + id + '"]')) ayuda.parentNode.removeChild(ayuda);
+    }
+
+    function marcar(el) {
+        el.setAttribute('data-monto-invalido', '');
+        el.classList.add('is-invalid');
+        el.setAttribute('aria-invalid', 'true');
+        // Con validador propio, el mensaje lo da el validador (un solo mensaje por campo).
+        if (validadoresDe(el).some(function (v) { return v.sgvMontoFormato && v.enabled !== false; })) return;
+        if (el.getAttribute('data-monto-ayuda') && document.getElementById(el.getAttribute('data-monto-ayuda'))) return;
+        // Debajo del grupo (input-group de Bootstrap, montos del conductor), no dentro de él; si el grupo
+        // ya tiene la ayuda (otro campo del mismo grupo), se reutiliza.
+        var ancla = anclaDe(el);
+        var ayuda = ancla.nextElementSibling;
+        if (!ayuda || !ayuda.classList.contains('sgv-monto-ayuda')) {
+            ayuda = document.createElement('small');
+            ayuda.id = 'sgvMontoAyuda' + (++contador);
+            ayuda.className = 'sgv-monto-ayuda';
+            ayuda.textContent = SGV.mensajeFormatoMonto;
+            ancla.parentNode.insertBefore(ayuda, ancla.nextSibling);
+        }
+        el.setAttribute('data-monto-ayuda', ayuda.id);
+        el.setAttribute('aria-describedby', ((el.getAttribute('aria-describedby') || '') + ' ' + ayuda.id).trim());
+    }
+
+    // Normaliza un campo y devuelve su monto (0 si está vacío) o null si no se puede leer.
+    SGV.normalizarMonto = function (el) {
+        var t = (el.value || '').trim();
+        var n = SGV.leerMonto(t);
+        var propios = prepararValidadores(el);
+        if (n === null) {
+            marcar(el);
+            // El validador muestra ya el mensaje de formato (sin esperar al clic en Guardar).
+            if (window.ValidatorValidate) for (var i = 0; i < propios.length; i++) window.ValidatorValidate(propios[i]);
+            return null;
+        }
+        quitarMarca(el);
+        if (t && conPunto(t) !== el.value) el.value = conPunto(t);
+        return n;
+    };
+
+    // Normaliza todos los [data-monto] del contenedor (o de la página); devuelve el primero que no se lee.
+    SGV.normalizarMontos = function (contenedor) {
+        var campos = (contenedor && contenedor.querySelectorAll ? contenedor : document).querySelectorAll('[data-monto]');
+        var primero = null;
+        for (var i = 0; i < campos.length; i++) {
+            if (SGV.normalizarMonto(campos[i]) === null && !primero) primero = campos[i];
+        }
+        return primero;
+    };
+
+    function esMonto(el) { return el && el.nodeType === 1 && el.hasAttribute('data-monto'); }
+    function visible(el) { return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }
+    function alSalir(e) { if (esMonto(e.target)) SGV.normalizarMonto(e.target); }
+    document.addEventListener('change', alSalir, true);
+    document.addEventListener('focusout', alSalir, true);
+    // Mientras corrige, la marca se quita apenas el texto vuelve a ser un monto.
+    document.addEventListener('input', function (e) {
+        if (esMonto(e.target) && SGV.leerMonto(e.target.value) !== null) quitarMarca(e.target);
+    }, true);
+
+    // ── Envío con un monto ilegible ──
+    var AMBITO = '.modal, fieldset, .card, [data-montos-grupo]';
+    var NO_REVISA = /^\s*(cancelar|cerrar|volver|limpiar)\b/i;
+
+    function botonQueEnvia(e) {
+        var el = e.target && e.target.closest ? e.target.closest('input[type=submit], input[type=image], button, a[href]') : null;
+        if (!el || el.disabled) return null;
+        if (el.tagName === 'BUTTON' && (el.getAttribute('type') || 'submit').toLowerCase() !== 'submit') return null;
+        if (el.tagName === 'A' && !/__doPostBack|WebForm_DoPostBack/.test(el.getAttribute('href') || '')) return null;
+        return el;
+    }
+
+    SGV.revisarMontosAntesDeEnviar = function (boton) {
+        var ambito = boton.closest(AMBITO) || boton.form || document;
+        SGV.normalizarMontos(ambito);
+        var campos = ambito.querySelectorAll('[data-monto]');
+        for (var i = 0; i < campos.length; i++) {
+            // Un monto dentro de un [data-montos-grupo] solo cuenta para los botones de ese grupo.
+            var grupo = campos[i].closest('[data-montos-grupo]');
+            if (grupo && !grupo.contains(boton)) continue;
+            if (visible(campos[i]) && SGV.leerMonto(campos[i].value) === null) return campos[i];
+        }
+        return null;
+    };
+
+    window.addEventListener('click', function (e) {
+        var boton = botonQueEnvia(e);
+        if (!boton) {
+            // Otros clics en botones (type=button con data-accion, etc.): solo se normaliza.
+            var otro = e.target && e.target.closest ? e.target.closest('button, input[type=button]') : null;
+            if (otro) SGV.normalizarMontos(otro.form || document);
+            return;
+        }
+        var etiqueta = boton.value || boton.textContent || '';
+        if (boton.matches('[data-dismiss], .close, [formnovalidate], [data-montos-libre]') || NO_REVISA.test(etiqueta)) return;
+        var malo = SGV.revisarMontosAntesDeEnviar(boton);
+        if (!malo) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+        try { malo.focus(); } catch (err) { }
+        if (SGV.avisar) SGV.avisar('Revise el monto marcado. ' + SGV.mensajeFormatoMonto, { tipo: 'warning' });
+    }, true);
+    document.addEventListener('submit', function (e) { SGV.normalizarMontos(e.target); }, true);
+})();

@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.Threading;
 using WebSGV.Services.Common;
 using Xunit;
 
@@ -6,35 +8,6 @@ namespace WebSGV.Tests
 {
     public class MontoHelperTests
     {
-        // ---- ParseMonto (cultura invariante, clamp a 0) ----
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public void ParseMonto_VacioONulo_RetornaCero(string entrada)
-        {
-            Assert.Equal(0m, MontoHelper.ParseMonto(entrada));
-        }
-
-        [Fact]
-        public void ParseMonto_DecimalConPunto_Parsea()
-        {
-            Assert.Equal(10.50m, MontoHelper.ParseMonto("10.50"));
-        }
-
-        [Fact]
-        public void ParseMonto_Negativo_ClampeaACero()
-        {
-            Assert.Equal(0m, MontoHelper.ParseMonto("-5"));
-        }
-
-        [Fact]
-        public void ParseMonto_FormatoInvalido_RetornaCero()
-        {
-            Assert.Equal(0m, MontoHelper.ParseMonto("abc"));
-        }
-
         // ---- ValidarMonto ----
 
         [Fact]
@@ -88,7 +61,6 @@ namespace WebSGV.Tests
         [InlineData("  ", "0")]
         [InlineData("10.50", "10.50")]
         [InlineData(" 250 ", "250")]
-        [InlineData("1e3", "1000")]
         [InlineData("9999999", "9999999")]
         public void LeerMonto_Validos(string entrada, string esperado)
         {
@@ -98,8 +70,9 @@ namespace WebSGV.Tests
 
         [Theory]
         [InlineData("2000000000")]
-        [InlineData("1e15")]
         [InlineData("10000000")]
+        [InlineData("10000000,00")]
+        [InlineData("99999999999999999999999999999999")] // no cabe en un decimal: también es "sobre el tope"
         public void LeerMonto_SobreElTope_LanzaConElNombreDelCampo(string entrada)
         {
             var ex = Assert.Throws<ErrorNegocioException>(() => MontoHelper.LeerMonto(entrada, "Combustible (S/)"));
@@ -108,22 +81,24 @@ namespace WebSGV.Tests
         }
 
         // Las columnas de destino son de 2 decimales (DECIMAL(12,2) desde la migración 51): un tercer
-        // decimal lo redondearía SQL Server sin avisar y lo guardado no sería lo escrito ni lo firmado.
+        // decimal lo redondearía SQL Server sin avisar. Con la coma o el punto como decimal (E5-1), un
+        // texto con 3 decimales es además ambiguo ("1,250": ¿mil doscientos cincuenta?): se rechaza con
+        // el mensaje de formato, que dice cómo escribirlo.
         [Theory]
         [InlineData("12.345")]
         [InlineData("0.001")]
         [InlineData("9999998.999")]
+        [InlineData("12.500")]
         public void LeerMonto_ConMasDeDosDecimales_Lanza(string entrada)
         {
             var ex = Assert.Throws<ErrorNegocioException>(() => MontoHelper.LeerMonto(entrada, "Peajes nacionales (S/)"));
-            Assert.Contains("máximo 2 decimales", ex.Message);
+            Assert.Contains(MontoHelper.MensajeFormatoMonto, ex.Message);
             Assert.Contains("Peajes nacionales (S/)", ex.Message);
         }
 
         [Theory]
         [InlineData("12.50", "12.50")]
         [InlineData("12.5", "12.5")]
-        [InlineData("12.500", "12.5")]   // ceros de más no cambian el monto
         [InlineData("0.30", "0.30")]
         [InlineData("9999999.00", "9999999")]
         public void LeerMonto_ConHastaDosDecimales_Acepta(string entrada, string esperado)
@@ -163,10 +138,11 @@ namespace WebSGV.Tests
         }
 
         [Theory]
-        [InlineData("12.345", "máximo 2 decimales")]
+        [InlineData("12.345", "sin separador de miles")]
+        [InlineData("1.250,00", "sin separador de miles")]
         [InlineData("10000000", "máximo permitido")]
         [InlineData("-5", "negativo")]
-        [InlineData("abc", "no es un número")]
+        [InlineData("abc", "no es válido")]
         public void LeerMontoOpcional_Invalido_AgregaElErrorDelCampo(string entrada, string fragmento)
         {
             var errores = new System.Collections.Generic.List<string>();
@@ -186,37 +162,95 @@ namespace WebSGV.Tests
         [Theory]
         [InlineData("abc")]
         [InlineData("1e400")]
-        [InlineData("12,50")]
         public void LeerMonto_NoNumerico_Lanza(string entrada)
         {
             var ex = Assert.Throws<ErrorNegocioException>(() => MontoHelper.LeerMonto(entrada, "Hospedaje ($)"));
             Assert.Contains("Hospedaje ($)", ex.Message);
         }
 
-        // ---- EsMontoNoNegativo (cultura actual) ----
+        // ---- E5-1: una sola regla, coma o punto decimal, sin miles ni exponente ----
+        // La misma regla está en SGV.leerMonto (Scripts/paginas/SiteMaster.js); MarcadoMontosTests
+        // comprueba que la expresión de los dos lados es la misma y la corre con estos casos.
 
         [Theory]
-        [InlineData(null, true)]
-        [InlineData("", true)]
-        [InlineData("100", true)]
-        [InlineData("0", true)]
-        [InlineData("-5", false)]
-        [InlineData("abc", false)]
-        public void EsMontoNoNegativo_Casos(string entrada, bool esperado)
+        [InlineData("12,50", "12.50")]
+        [InlineData("12.5", "12.5")]
+        [InlineData("1250", "1250")]
+        [InlineData(" 7,05 ", "7.05")]
+        [InlineData("0,5", "0.5")]
+        [InlineData("12,", "12")]
+        [InlineData("12.", "12")]
+        [InlineData(",5", "0.5")]
+        [InlineData("+3,10", "3.10")]
+        [InlineData("1250,50", "1250.50")]   // el ejemplo del mensaje
+        public void LeerMonto_ComaOPuntoDecimal_Acepta(string entrada, string esperado)
         {
-            Assert.Equal(esperado, MontoHelper.EsMontoNoNegativo(entrada));
+            Assert.Equal(decimal.Parse(esperado, CultureInfo.InvariantCulture), MontoHelper.LeerMonto(entrada, "Combustible (S/)"));
         }
 
-        // ---- ConvertToDecimal ----
+        [Theory]
+        [InlineData("1,250")]
+        [InlineData("1.250")]
+        [InlineData("1.250,00")]
+        [InlineData("1,250.00")]
+        [InlineData("1e3")]
+        [InlineData("12,345")]
+        [InlineData("abc")]
+        [InlineData("1 250")]
+        [InlineData("12,5,0")]
+        [InlineData("- 5")]
+        [InlineData("5-")]
+        [InlineData("(5)")]
+        [InlineData("S/ 5")]
+        [InlineData("\u0661\u0662")]   // dígitos arábigos orientales: el \d de .NET los aceptaría
+        [InlineData(",")]
+        public void LeerMonto_FueraDeLaRegla_LanzaConElMensajeDeFormato(string entrada)
+        {
+            var ex = Assert.Throws<ErrorNegocioException>(() => MontoHelper.LeerMonto(entrada, "Combustible (S/)"));
+            Assert.Equal("El monto de «Combustible (S/)» no es válido. " + MontoHelper.MensajeFormatoMonto, ex.Message);
+            Assert.Equal(ex.Message, MensajeError.ExtraerMensajeDeNegocio(ex));
+        }
+
+        [Fact]
+        public void IntentarLeerMonto_Vacio_NoEsUnMonto()
+        {
+            Assert.False(MontoHelper.IntentarLeerMonto("", out _));
+            Assert.False(MontoHelper.IntentarLeerMonto(null, out _));
+            Assert.False(MontoHelper.IntentarLeerMonto("   ", out _));
+            // LeerMonto, en cambio, toma el campo vacío como 0.
+            Assert.Equal(0m, MontoHelper.LeerMonto("", "x"));
+        }
+
+        [Fact]
+        public void LeerMonto_Negativo_ConComa_SigueRechazandoseComoNegativo()
+        {
+            var ex = Assert.Throws<ErrorNegocioException>(() => MontoHelper.LeerMonto("-12,50", "Movilidad (S/)"));
+            Assert.Contains("negativo", ex.Message);
+        }
 
         [Theory]
-        [InlineData("123", 123)]
-        [InlineData("0", 0)]
-        [InlineData("abc", 0)]
-        [InlineData("", 0)]
-        public void ConvertToDecimal_Casos(string entrada, decimal esperado)
+        [InlineData("es-PE")]
+        [InlineData("en-US")]
+        [InlineData("es-ES")]
+        [InlineData("de-DE")]
+        public void LeerMonto_NoDependeDeLaCulturaDelHilo(string cultura)
         {
-            Assert.Equal(esperado, MontoHelper.ConvertToDecimal(entrada));
+            var antes = Thread.CurrentThread.CurrentCulture;
+            try
+            {
+                Thread.CurrentThread.CurrentCulture = new CultureInfo(cultura);
+                Assert.Equal(12.50m, MontoHelper.LeerMonto("12,50", "x"));
+                Assert.Equal(12.5m, MontoHelper.LeerMonto("12.5", "x"));
+                Assert.Equal(1250m, MontoHelper.LeerMonto("1250", "x"));
+                Assert.Equal(7.05m, MontoHelper.LeerMonto(" 7,05 ", "x"));
+                Assert.Equal(0.5m, MontoHelper.LeerMonto("0,5", "x"));
+                foreach (string rechazado in new[] { "1,250", "1.250", "1.250,00", "1,250.00", "1e3", "12,345", "abc", "1 250" })
+                    Assert.Throws<ErrorNegocioException>(() => MontoHelper.LeerMonto(rechazado, "x"));
+            }
+            finally
+            {
+                Thread.CurrentThread.CurrentCulture = antes;
+            }
         }
     }
 }
