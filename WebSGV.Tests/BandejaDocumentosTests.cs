@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using WebSGV.Models.Despachos;
 using WebSGV.Services.Despachos;
+using WebSGV.Services.Despachos.Importacion;
 using Xunit;
 
 namespace WebSGV.Tests
@@ -552,6 +553,42 @@ namespace WebSGV.Tests
             Assert.False(l.FaltanTemporales());
             Assert.Equal(new byte[] { 3 }, l.Cpics[0].Pdf);
             Assert.True(l.Pedidos[0].HayFacturaPdf);
+        }
+
+        /// <summary>ZIP en memoria con entradas de texto (nombre, contenido).</summary>
+        private static byte[] ZipConTextos(params (string Nombre, string Texto)[] entradas)
+        {
+            using (var ms = new System.IO.MemoryStream())
+            {
+                using (var zip = new System.IO.Compression.ZipArchive(ms, System.IO.Compression.ZipArchiveMode.Create, true))
+                    foreach (var e in entradas)
+                        using (var s = zip.CreateEntry(e.Nombre).Open())
+                        {
+                            byte[] b = System.Text.Encoding.UTF8.GetBytes(e.Texto);
+                            s.Write(b, 0, b.Length);
+                        }
+                return ms.ToArray();
+            }
+        }
+
+        [Fact]
+        public void En_un_zip_lo_que_no_es_un_pdf_de_verdad_va_a_no_reconocidos_con_su_motivo()
+        {
+            // M-067: un .pdf que es otra cosa (firma, no extensión) y un archivo que no es PDF.
+            var zip = new ImportacionPedidoService.ArchivoSubido
+            {
+                Nombre = "pedido.zip",
+                Contenido = ZipConTextos(("cpic.pdf", "MZ esto no es un PDF"), ("notas.txt", "hola"))
+            };
+            var presupuesto = new ImportacionPedidoService.PresupuestoLectura();
+
+            var l = BandejaDocumentosService.LeerArchivos(new[] { zip }, null, presupuesto);
+
+            Assert.Contains("pedido.zip: cpic.pdf: no es un PDF (está dañado o le cambiaron la extensión)", l.NoReconocidos);
+            Assert.Contains("pedido.zip: notas.txt: no es un PDF (dentro de un ZIP solo se leen PDF)", l.NoReconocidos);
+            Assert.Empty(l.Cpics);
+            Assert.Empty(l.Pedidos);
+            Assert.Equal(ImportacionPedidoService.PresupuestoLectura.PdfPorEnvio, presupuesto.PdfRestantes);   // no contó como PDF
         }
     }
 }

@@ -84,13 +84,15 @@ namespace WebSGV.Views.Exportacion
                 return;
             }
 
-            // Solo .xlsx de verdad (firma ZIP "PK") y hasta 10 MB: ClosedXML no abre el .xls antiguo.
-            var archivo = fileExcel.PostedFile;
-            string errorArchivo = LimitesImportacionSeguimiento.ValidarArchivo(
-                archivo.FileName, archivo.ContentLength, ArchivoSubidoHelper.LeerCabecera(archivo.InputStream));
-            if (errorArchivo != null)
+            // Solo .xlsx de verdad (firma ZIP "PK"), hasta 10 MB y sin contenido inflado (E4-7):
+            // ClosedXML no abre el .xls antiguo y carga el libro entero al abrirlo.
+            try
             {
-                MostrarAlerta(errorArchivo, "warning");
+                ExcelSubidoHelper.Validar(fileExcel.PostedFile, LimitesImportacionSeguimiento.MaxBytes);
+            }
+            catch (ErrorNegocioException ex)
+            {
+                MostrarAlerta(MensajeErrorHelper.ParaUsuario(ex), "warning");
                 return;
             }
 
@@ -405,11 +407,6 @@ namespace WebSGV.Views.Exportacion
             _filasSinProgramacion = 0;
             _duplicadosEnArchivo = 0;
             _fechasDeducidas = 0;
-
-            // ClosedXML carga el libro entero al abrirlo: un .xlsx muy comprimido se frena antes.
-            string errorContenido = LimitesImportacionSeguimiento.ValidarDescomprimido(path);
-            if (errorContenido != null)
-                throw new ErrorNegocioException(errorContenido);
 
             using (var workbook = new XLWorkbook(path))
             {

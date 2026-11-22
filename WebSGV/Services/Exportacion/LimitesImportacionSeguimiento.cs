@@ -100,16 +100,10 @@ namespace WebSGV.Services.Exportacion
         /// Error para el usuario sobre el archivo subido (vacío, tamaño, extensión o contenido que no
         /// es un .xlsx de verdad), o null si está bien. Usa <see cref="ArchivoSubidoHelper"/>; un .xls
         /// lleva una indicación propia porque es el caso habitual (archivo antiguo de Excel).
+        /// La página usa <see cref="ExcelSubidoHelper.Validar(System.Web.HttpPostedFile, long)"/>, que hace
+        /// esto mismo y además mira el contenido del ZIP.
         /// </summary>
-        public static string ValidarArchivo(string nombre, long largo, byte[] cabecera)
-        {
-            string extension = System.IO.Path.GetExtension(nombre ?? string.Empty).ToLowerInvariant();
-            if (extension == ".xls")
-                return "El archivo es de Excel 97-2003 (.xls) y no se puede leer. Ábralo en Excel y use " +
-                       "\"Guardar como\" > \"Libro de Excel (.xlsx)\"; luego suba el .xlsx.";
-
-            string error = ArchivoSubidoHelper.Validar(nombre, largo, cabecera, MaxBytes, Extension);
-            return error == null ? null : "Archivo Excel: " + error + ".";
-        }
+        public static string ValidarArchivo(string nombre, long largo, byte[] cabecera) =>
+            ExcelSubidoHelper.ErrorArchivo(nombre, largo, cabecera, MaxBytes);
     }
 }

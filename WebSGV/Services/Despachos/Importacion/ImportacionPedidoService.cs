@@ -21,6 +21,12 @@ namespace WebSGV.Services.Despachos.Importacion
         public const long TamanoMaximoArchivo = ArchivoSubidoHelper.MaxPdfImportacion;   // por PDF
         public const int MaximoDocumentos = 60;                      // un pedido trae ~12
 
+        /// <summary>Entradas máximas de un ZIP del pedido (directorio central); con más no se lee.</summary>
+        public const int MaximoEntradasZip = 500;
+
+        /// <summary>Archivos que no son PDF dentro de un ZIP que se nombran uno por uno en "ignorados".</summary>
+        public const int MaximoIgnoradosNoPdf = 10;
+
         /// <summary>Archivo tal como llegó del formulario.</summary>
         public class ArchivoSubido
         {
@@ -198,15 +204,38 @@ namespace WebSGV.Services.Despachos.Importacion
                                        PresupuestoLectura presupuesto, ref bool excedeCantidad)
         {
             var delZip = new List<ArchivoSubido>();
+            int noPdf = 0;
             try
             {
-                using (var stream = new MemoryStream(zip.Contenido))
-                using (var archivoZip = new ZipArchive(stream, ZipArchiveMode.Read))
+                using (var archivoZip = AbrirZip(zip.Contenido, out Dictionary<int, string> nombresNoValidos))
                 {
+                    // Un pedido real trae unos 12 PDF: miles de entradas no son un pedido (y cada una costaría
+                    // una línea de "ignorado"). Se mira en el directorio central, sin descomprimir nada.
+                    if (archivoZip.Entries.Count > MaximoEntradasZip)
+                    {
+                        ignorados.Add($"{zip.Nombre}: tiene demasiados archivos (más de {MaximoEntradasZip}); no se leyó");
+                        return;
+                    }
+                    int indice = -1;
                     foreach (var entrada in archivoZip.Entries)
                     {
-                        if (string.IsNullOrEmpty(entrada.Name)) continue;   // carpeta
-                        if (!entrada.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) continue;
+                        indice++;
+                        // Un nombre con < > " | no se puede leer en .NET 4.8 (ver AbrirZip): esa entrada se
+                        // ignora con su motivo y el resto del ZIP se sigue leyendo.
+                        string nombre = NombreEntrada(entrada.FullName);
+                        if (nombresNoValidos.TryGetValue(indice, out string original) || nombre == null)
+                        {
+                            ignorados.Add($"{NombreVisible(original ?? entrada.FullName)}: nombre de archivo no válido dentro del ZIP; no se leyó");
+                            continue;
+                        }
+                        if (nombre.Length == 0) continue;   // carpeta
+                        if (!nombre.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Se dice qué se dejó fuera (M-067), sin una línea por archivo si son muchos.
+                            if (++noPdf <= MaximoIgnoradosNoPdf)
+                                ignorados.Add($"{nombre}: no es un PDF (dentro de un ZIP solo se leen PDF)");
+                            continue;
+                        }
 
                         if (pdfs.Count + delZip.Count >= MaximoDocumentos)
                         {
@@ -215,7 +244,7 @@ namespace WebSGV.Services.Despachos.Importacion
                         }
                         if (entrada.Length > TamanoMaximoArchivo)
                         {
-                            ignorados.Add($"{entrada.Name}: supera los {TamanoMaximoArchivo / 1024 / 1024} MB");
+                            ignorados.Add($"{nombre}: supera los {TamanoMaximoArchivo / 1024 / 1024} MB");
                             continue;
                         }
                         // Los PDF de este ZIP se cuentan al final (si el ZIP está dañado no se usan).
@@ -237,20 +266,117 @@ namespace WebSGV.Services.Despachos.Importacion
                                 presupuesto.Avisar(ignorados);
                                 break;
                             }
-                            ignorados.Add($"{entrada.Name}: supera los {TamanoMaximoArchivo / 1024 / 1024} MB");
+                            ignorados.Add($"{nombre}: supera los {TamanoMaximoArchivo / 1024 / 1024} MB");
                             continue;
                         }
-                        delZip.Add(new ArchivoSubido { Nombre = entrada.Name, Contenido = contenido });
+                        // Por la firma (%PDF-), no por la extensión: lo demás no se procesa ni cuenta como PDF.
+                        if (!ArchivoSubidoHelper.EsPdf(contenido))
+                        {
+                            ignorados.Add($"{nombre}: no es un PDF (está dañado o le cambiaron la extensión)");
+                            continue;
+                        }
+                        delZip.Add(new ArchivoSubido { Nombre = nombre, Contenido = contenido });
                     }
                 }
+                if (noPdf > MaximoIgnoradosNoPdf)
+                    ignorados.Add($"{zip.Nombre}: y {noPdf - MaximoIgnoradosNoPdf} archivo(s) más que no son PDF");
                 pdfs.AddRange(delZip);
                 presupuesto.ContarPdfs(delZip.Count);
             }
-            catch (InvalidDataException ex)
+            catch (Exception ex) when (ex is InvalidDataException || ex is IOException || ex is ArgumentException)
             {
+                // InvalidDataException o IOException (directorio central roto) y ArgumentException (nombres
+                // no válidos) de System.IO.Compression: el ZIP no se lee, pero la importación sigue.
                 LogSGV.Error(ex, "ZIP inválido en la importación: {Archivo}", zip.Nombre);
                 ignorados.Add($"{zip.Nombre}: el ZIP está dañado");
             }
+        }
+
+        private static readonly char[] CaracteresInvalidosRuta = Path.GetInvalidPathChars();
+
+        /// <summary>
+        /// Abre el ZIP para leer. En .NET 4.8 una sola entrada con &lt; &gt; " | (o un carácter de control) en su
+        /// nombre hace que <c>Entries</c> lance ArgumentException y se perdería el ZIP entero: en ese caso se
+        /// abre una copia con esos caracteres cambiados por "_" en el directorio central, y
+        /// <paramref name="nombresNoValidos"/> trae (posición de la entrada → nombre original) para ignorarlas.
+        /// </summary>
+        internal static ZipArchive AbrirZip(byte[] contenido, out Dictionary<int, string> nombresNoValidos)
+        {
+            nombresNoValidos = new Dictionary<int, string>();
+            var zip = new ZipArchive(new MemoryStream(contenido), ZipArchiveMode.Read);
+            try
+            {
+                _ = zip.Entries.Count;
+                return zip;
+            }
+            catch (ArgumentException)
+            {
+                zip.Dispose();
+            }
+            byte[] saneado = SanearNombresZip(contenido, nombresNoValidos);
+            if (saneado == null) throw new InvalidDataException("El directorio central del ZIP no se puede recorrer.");
+            return new ZipArchive(new MemoryStream(saneado), ZipArchiveMode.Read);
+        }
+
+        /// <summary>
+        /// Copia del ZIP con los caracteres no válidos de cada nombre del directorio central cambiados por
+        /// "_" (mismo largo: nada más se mueve). Null si el directorio central no se puede recorrer (o es ZIP64).
+        /// </summary>
+        internal static byte[] SanearNombresZip(byte[] zip, Dictionary<int, string> nombresNoValidos)
+        {
+            if (zip == null || zip.Length < 22) return null;
+            int fin = -1;
+            for (int i = zip.Length - 22; i >= Math.Max(0, zip.Length - 22 - 65535); i--)
+                if (zip[i] == 0x50 && zip[i + 1] == 0x4B && zip[i + 2] == 0x05 && zip[i + 3] == 0x06) { fin = i; break; }
+            if (fin < 0) return null;
+            int total = BitConverter.ToUInt16(zip, fin + 10);
+            long inicio = BitConverter.ToUInt32(zip, fin + 16);
+            if (total == 0xFFFF || inicio == 0xFFFFFFFF) return null;   // ZIP64: no hace falta para un pedido
+
+            var copia = (byte[])zip.Clone();
+            long p = inicio;
+            for (int n = 0; n < total; n++)
+            {
+                if (p < 0 || p + 46 > copia.Length || copia[p] != 0x50 || copia[p + 1] != 0x4B || copia[p + 2] != 0x01 || copia[p + 3] != 0x02)
+                    return null;
+                int largoNombre = BitConverter.ToUInt16(copia, (int)p + 28);
+                int largoExtra = BitConverter.ToUInt16(copia, (int)p + 30);
+                int largoComentario = BitConverter.ToUInt16(copia, (int)p + 32);
+                int desde = (int)p + 46;
+                if (desde + largoNombre > copia.Length) return null;
+                bool malo = false;
+                for (int i = desde; i < desde + largoNombre; i++)
+                {
+                    byte b = copia[i];
+                    if (b < 0x20 || b == (byte)'<' || b == (byte)'>' || b == (byte)'"' || b == (byte)'|')
+                    {
+                        malo = true;
+                        copia[i] = (byte)'_';
+                    }
+                }
+                if (malo) nombresNoValidos[n] = System.Text.Encoding.UTF8.GetString(zip, desde, largoNombre);
+                p = desde + largoNombre + largoExtra + largoComentario;
+            }
+            return copia;
+        }
+
+        /// <summary>
+        /// Nombre del archivo de la entrada (sin carpetas; "" si es una carpeta), o null si la ruta trae
+        /// caracteres no válidos. No usa <c>ZipArchiveEntry.Name</c>, que en .NET 4.8 lanza con ellos.
+        /// </summary>
+        internal static string NombreEntrada(string rutaEntrada)
+        {
+            string ruta = rutaEntrada ?? string.Empty;
+            if (ruta.IndexOfAny(CaracteresInvalidosRuta) >= 0) return null;
+            int barra = ruta.LastIndexOfAny(new[] { '/', '\\' });
+            return barra < 0 ? ruta : ruta.Substring(barra + 1);
+        }
+
+        /// <summary>La ruta sin los caracteres no válidos, para nombrarla en "ignorados".</summary>
+        private static string NombreVisible(string rutaEntrada)
+        {
+            string limpio = new string((rutaEntrada ?? string.Empty).Where(c => Array.IndexOf(CaracteresInvalidosRuta, c) < 0).ToArray());
+            return limpio.Length == 0 ? "(sin nombre)" : limpio;
         }
 
         /// <summary>

@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `cc7d273` — E4-6: JS propio limpio (un solo `SGV.escaparHtml`, `data-confirmar` en vez de `confirm`, select2 solo 4.0.13, fuera 6 archivos sin uso, `noopener`, borradores del navegador fuera al cerrar sesión); nuevos M-116, M-117, P-038 a P-040 y D-035. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `df59a81` — E4-7: límites al subir Excel (`ExcelSubidoHelper` en las 4 subidas, contra archivos inflados y dañados) y ZIP de pedidos (solo PDF de verdad, nombres no válidos ignorados); cierra M-067; nuevos M-118 y P-041. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-117 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-118 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -148,10 +148,10 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-115** Detalles del login tras E4-4 — un usuario fuera de formato responde unos 125 ms antes que uno inexistente (no consulta `Usuarios`; solo depende de lo escrito, no revela cuentas); el aviso del log de la recuperación dice "(IP …)" aunque lo bloqueó la clave fija `RECUP_USR_invalido`; Auditoría corta "Inicio de sesión fallido" en el combo de Acción a 1366 px (`Content/paginas/Auditoria.css`). · C
 - [ ] **M-116** `DashboardConductor.aspx.cs` (~línea 676) muestra `ex.Message` de una `ErrorNegocioException` sin `MensajeErrorHelper.ParaUsuario` — pasar por el helper como manda CLAUDE.md. · C
 - [ ] **M-117** `RegistroDespacho.aspx` usa las clases `form-select` / `form-select-sm` de Bootstrap 5, que en Bootstrap 4 no hacen nada — cambiarlas a `form-control` / `custom-select` (`-sm`) y comprobar a 1366 y 390 px. · C
+- [ ] **M-118** El Word de la programación (`.docx`, `LectorProgramacionWord` en RegistroDespacho) también es un ZIP y solo tiene el tope de 5 MB del archivo — darle el mismo control que los Excel (generalizar `ExcelSubidoHelper` a un `ZipSubidoHelper` con extensión `.docx`) y su prueba con un docx inflado. · B
 - [ ] **M-064** Secciones de `TienePermiso` sin página — FACTURA, CPIC, CONSULTAS, INDICADORES, AUDITORIA… (`RolesHelper.cs:169-182`) y ADMIN con acceso a DASHBOARD_CONDUCTOR: depurarlas (cambia `RolesHelperTests` a propósito). · C
 - [ ] **M-065** ReportesOrdenesViaje: `ex.Message` de cualquier `ArgumentException` al usuario — `ResponderSolicitudInvalida(ex.Message)` (`ReportesOrdenesViaje.aspx.cs:~1123`): si ClosedXML/QuestPDF lanza una, su texto técnico llega al usuario. · C
 - [ ] **M-066** No quedarse sin administrador de sistema activo — impedir que dos se desactiven a la vez (`NOT EXISTS` de otro ADMINISTRADOR DE SISTEMA activo en el `WHERE`) y ocultar "Desactivar" en la fila propia (hoy el servidor lo rechaza con aviso). · C
-- [ ] **M-067** Bandeja: documentos dentro de un ZIP sin comprobación de firma de archivo — los CPIC/MCI, GRE y facturas de flete de un ZIP no tienen comprobación propia (solo las guías al guardarse). · C
 - [ ] **M-068** Ajustar `Seguridad.IteracionesContrasena` — con los ms de "Hash de contraseña … convertido" en `App_Data/logs` del servidor (tarea 7); no volver a un DLL anterior. · C
 - [ ] **M-111** Tablas ledger de SQL Server 2022 para `FirmaDigital` y `AuditoriaLog` — darían prueba criptográfica de que nadie alteró las filas aunque la app sea `db_owner`; hay que reconstruir las tablas con datos reales y comprobar en un ensayo que `sqlpackage` exporta e importa un `.bacpac` con tablas ledger. Mientras tanto, el sello externo diario de E4-11. · C
 

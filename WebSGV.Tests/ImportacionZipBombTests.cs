@@ -63,6 +63,24 @@ namespace WebSGV.Tests
             return r;
         }
 
+        /// <summary>
+        /// Cambia un nombre de entrada por otro del mismo largo en todo el ZIP (cabecera local y directorio
+        /// central). Sirve para nombres con &lt; &gt; " |, que ZipArchive de .NET 4.8 no deja crear.
+        /// </summary>
+        internal static byte[] Renombrar(byte[] zip, string de, string a)
+        {
+            byte[] bde = Encoding.ASCII.GetBytes(de), ba = Encoding.ASCII.GetBytes(a);
+            Assert.Equal(bde.Length, ba.Length);
+            var r = (byte[])zip.Clone();
+            int cambios = 0;
+            for (int i = 0; i + bde.Length <= r.Length; i++)
+            {
+                if (!bde.Where((b, k) => r[i + k] != b).Any()) { Array.Copy(ba, 0, r, i, ba.Length); cambios++; }
+            }
+            Assert.Equal(2, cambios);   // cabecera local + directorio central
+            return r;
+        }
+
         private static long Consumido(Presupuesto p) => p.LimiteBytes - p.BytesRestantes;
 
         [Fact]
@@ -167,6 +185,70 @@ namespace WebSGV.Tests
             Assert.Single(l.NoReconocidos, x => x.Contains("Se alcanzó el límite de lectura por envío"));
             Assert.DoesNotContain(l.NoReconocidos, x => x.Contains(".zip: z"));   // sin "z3.zip: z3.zip: …"
             Assert.Contains("z3.zip: no se leyó (límite de lectura por envío)", l.NoReconocidos);
+        }
+
+        [Fact]
+        public void Zip_ConMuchosArchivosQueNoSonPdf_NombraDiezYResumeElResto()
+        {
+            var entradas = Enumerable.Range(0, ImportacionPedidoService.MaximoIgnoradosNoPdf + 3).Select(i => ($"x{i}.xml", 10)).ToArray();
+            var pedido = ImportacionPedidoService.Leer(new[] { new Archivo { Nombre = "sunat.zip", Contenido = Zip(entradas) } },
+                                                       out _, out _, new Presupuesto());
+
+            Assert.Equal(ImportacionPedidoService.MaximoIgnoradosNoPdf,
+                         pedido.ArchivosIgnorados.Count(x => x.EndsWith("dentro de un ZIP solo se leen PDF)")));
+            Assert.Contains("sunat.zip: y 3 archivo(s) más que no son PDF", pedido.ArchivosIgnorados);
+        }
+
+        [Fact]
+        public void Zip_ConUnaEntradaDeNombreNoValido_LaIgnoraYLeeElResto()
+        {
+            // .NET 4.8 lanza ArgumentException al leer Name con < > " |: antes se perdía la lectura entera.
+            var zip = Renombrar(Zip(("~b^x~/b^&`.pdf", 10), ("guia.pdf", 10)), "~b^x~/b^&`.pdf", "<b>x</b>&\".pdf");
+            var presupuesto = new Presupuesto();
+
+            var pedido = ImportacionPedidoService.Leer(new[] { new Archivo { Nombre = "pedido.zip", Contenido = zip } },
+                                                       out _, out _, presupuesto);
+
+            Assert.Contains("bx/b&.pdf: nombre de archivo no válido dentro del ZIP; no se leyó", pedido.ArchivosIgnorados);
+            Assert.Equal(Presupuesto.PdfPorEnvio - 1, presupuesto.PdfRestantes);   // guia.pdf sí se tomó del ZIP
+            Assert.DoesNotContain(pedido.ArchivosIgnorados, x => x.Contains("dañado"));
+            Assert.DoesNotContain(pedido.ArchivosIgnorados, x => x.Contains("<"));
+        }
+
+        [Fact]
+        public void Zip_ConDirectorioCentralCortado_DiceDanadoSinExcepcion()
+        {
+            var zip = Zip(("a.pdf", 1000));
+            var cortado = zip.Take(zip.Length - 10).ToArray();
+
+            var pedido = ImportacionPedidoService.Leer(new[] { new Archivo { Nombre = "cortado.zip", Contenido = cortado } },
+                                                       out _, out _, new Presupuesto());
+
+            Assert.Contains("cortado.zip: el ZIP está dañado", pedido.ArchivosIgnorados);
+        }
+
+        [Theory]
+        [InlineData("docs/guia.pdf", "guia.pdf")]
+        [InlineData("docs\\guia.pdf", "guia.pdf")]
+        [InlineData("guia.pdf", "guia.pdf")]
+        [InlineData("docs/", "")]
+        [InlineData("a<b.pdf", null)]
+        public void NombreEntrada_SinCarpetasYNullSiNoEsValido(string ruta, string esperado)
+        {
+            Assert.Equal(esperado, ImportacionPedidoService.NombreEntrada(ruta));
+        }
+
+        [Fact]
+        public void Zip_ConDemasiadasEntradas_NoSeLee()
+        {
+            var entradas = Enumerable.Range(0, ImportacionPedidoService.MaximoEntradasZip + 1).Select(i => ($"p{i}.pdf", 0)).ToArray();
+            var presupuesto = new Presupuesto();
+            var pedido = ImportacionPedidoService.Leer(new[] { new Archivo { Nombre = "miles.zip", Contenido = Zip(entradas) } },
+                                                       out _, out _, presupuesto);
+
+            Assert.Contains($"miles.zip: tiene demasiados archivos (más de {ImportacionPedidoService.MaximoEntradasZip}); no se leyó",
+                            pedido.ArchivosIgnorados);
+            Assert.Equal(presupuesto.LimiteBytes, presupuesto.BytesRestantes);   // no se descomprimió nada
         }
 
         [Fact]

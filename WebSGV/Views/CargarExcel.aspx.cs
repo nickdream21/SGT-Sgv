@@ -37,39 +37,23 @@ namespace WebSGV.Views
         {
             if (fileUpload.HasFile)
             {
+                string tempFilePath = null;
                 try
                 {
-                    // Validar extensión del archivo
-                    string fileExtension = Path.GetExtension(fileUpload.FileName).ToLower();
-                    if (fileExtension != ".xlsx" && fileExtension != ".xls")
-                    {
-                        ShowAlert("Por favor, seleccione un archivo Excel válido (.xlsx o .xls).", "warning");
-                        return;
-                    }
-
-                    // Validar tamaño del archivo (máx 10MB)
-                    if (fileUpload.PostedFile.ContentLength > 10485760)
-                    {
-                        ShowAlert("El archivo es demasiado grande. El tamaño máximo es de 10MB.", "danger");
-                        return;
-                    }
+                    // Solo .xlsx de verdad (ClosedXML no lee el .xls antiguo), hasta 10 MB y sin
+                    // contenido inflado: ClosedXML carga el libro entero al abrirlo (E4-7).
+                    ExcelSubidoHelper.Validar(fileUpload.PostedFile, 10 * 1024 * 1024);
 
                     // Obtener mes y año de los dropdowns
                     int selectedMonth = Convert.ToInt32(ddlMes.SelectedValue);
                     int selectedYear = Convert.ToInt32(ddlAnio.SelectedValue);
 
-                    // Guardar archivo temporalmente
-                    string tempFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + fileExtension);
+                    // Guardar archivo temporalmente (se borra en el finally, aunque falle la lectura)
+                    tempFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".xlsx");
                     fileUpload.SaveAs(tempFilePath);
 
                     // Procesar el archivo Excel (usando ClosedXML)
                     int rowsProcessed = ProcessExcelWithClosedXML(tempFilePath, selectedMonth, selectedYear);
-
-                    // Eliminar el archivo temporal
-                    if (File.Exists(tempFilePath))
-                    {
-                        File.Delete(tempFilePath);
-                    }
 
                     AuditoriaHelper.Registrar("INSERT", "Indicadores", descripcion:
                         $"Carga de indicadores desde Excel - Archivo: {Path.GetFileName(fileUpload.FileName)}, Periodo: {selectedMonth:00}/{selectedYear}, Registros: {rowsProcessed}");
@@ -78,10 +62,23 @@ namespace WebSGV.Views
                     // Refrescar la grilla
                     LoadUploadHistory();
                 }
+                catch (ErrorNegocioException ex)
+                {
+                    // Rechazo con motivo (archivo que no es .xlsx, inflado, sin hojas…): aviso con el motivo.
+                    ShowAlert(MensajeErrorHelper.ParaUsuario(ex), "warning");
+                }
                 catch (Exception ex)
                 {
                     LogSGV.Error(ex, "Error al procesar el Excel de indicadores");
                     ShowAlert("Error al procesar el archivo. Verifique que tenga el formato de la plantilla e intente nuevamente.", "danger");
+                }
+                finally
+                {
+                    if (tempFilePath != null && File.Exists(tempFilePath))
+                    {
+                        try { File.Delete(tempFilePath); }
+                        catch (Exception ex) { LogSGV.Error(ex, "No se pudo borrar el temporal del Excel de indicadores"); }
+                    }
                 }
             }
             else

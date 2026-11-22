@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-040 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-041 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -53,6 +53,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-038** Borrador del conductor de punta a punta (E4-6) — con un conductor de prueba con viaje activo (D-035), en un celular real a 390 px: escribir en Liquidar, recargar y ver que vuelve; "Cerrar sesión" → cancelar el aviso → cambiar de app y volver: el borrador sigue; "Cerrar sesión" → aceptar: en Login ya no hay claves `sgv-borrador-liquidacion-*`; con la sesión vencida (`?error=sesion`) no se borra. · B
 - [ ] **P-039** select2 4.0.13 en los buscadores de la tabla de importación de RegistroDespacho (conductor, tracto, carreta tras "Leer documentos") y en ListaDespachos (conductor al editar un lote), a 1366 y 390 px, sin guardar. · C
 - [ ] **P-040** Lo de E4-6 que necesita datos en la BD de pruebas — enlaces `target="_blank"` de DetalleOrdenViaje, SaldosConductores, MovimientosViaje y LiquidacionesPendientes abren pestaña nueva con `window.opener` null; CargarExcel "eliminar carga" muestra el diálogo rojo y Cancelar no envía nada; Aceptar en un `data-confirmar` hace el postback real sobre un registro de prueba reversible. · C
+- [ ] **P-041** Subir un Excel real en CargarExcel (Indicadores) e ImportarSeguimiento con E4-7 — el camino bueno escribe en la BD, así que en local solo se probaron los rechazos: con orden del usuario, cargar un archivo real de cada uno y comprobar que se procesa como antes. · C
 
 ## Reglas
 

@@ -187,7 +187,10 @@ namespace WebSGV.Views
                 List<ListaChoferesService.FilaLista> filas;
                 if (fuListaChoferes.HasFile)
                 {
-                    if (!string.Equals(Path.GetExtension(fuListaChoferes.FileName), ".xlsx", StringComparison.OrdinalIgnoreCase))
+                    // Un PDF o una imagen reciben la indicación propia de la página; un .xls, la de
+                    // ExcelSubidoHelper ("Guardar como" .xlsx).
+                    string extension = Path.GetExtension(fuListaChoferes.FileName ?? "").ToLowerInvariant();
+                    if (extension != ".xlsx" && extension != ".xls")
                     {
                         MostrarMensaje("La lista debe ser un Excel .xlsx. Si la tiene en PDF escaneado, copie las filas desde el Excel original.");
                         return;
@@ -197,6 +200,8 @@ namespace WebSGV.Views
                         MostrarMensaje("El Excel pesa más de 2 MB: no parece la lista de choferes.");
                         return;
                     }
+                    // Firma ZIP y contenido no inflado antes de que ClosedXML lo cargue entero (E4-7).
+                    ExcelSubidoHelper.Validar(fuListaChoferes.PostedFile, 2 * 1024 * 1024);
                     filas = ListaChoferesService.LeerExcel(fuListaChoferes.FileContent);
                 }
                 else if (!string.IsNullOrWhiteSpace(txtListaChoferes.Text))

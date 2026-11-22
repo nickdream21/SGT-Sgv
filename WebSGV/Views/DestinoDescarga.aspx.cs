@@ -75,7 +75,10 @@ namespace WebSGV.Views
                 string origen;
                 if (fuLista.HasFile)
                 {
-                    if (!string.Equals(System.IO.Path.GetExtension(fuLista.FileName), ".xlsx", StringComparison.OrdinalIgnoreCase))
+                    // Una imagen o un PDF reciben la indicación propia de la página; un .xls, la de
+                    // ExcelSubidoHelper ("Guardar como" .xlsx).
+                    string extension = System.IO.Path.GetExtension(fuLista.FileName ?? "").ToLowerInvariant();
+                    if (extension != ".xlsx" && extension != ".xls")
                     {
                         MostrarMensaje("La lista debe ser un Excel .xlsx. Si solo tiene una imagen, pídale el Excel a quien la envía o copie las filas.");
                         return;
@@ -85,6 +88,8 @@ namespace WebSGV.Views
                         MostrarMensaje("El Excel pesa más de 2 MB: no parece la lista de recepción.");
                         return;
                     }
+                    // Firma ZIP y contenido no inflado antes de que ClosedXML lo cargue entero (E4-7).
+                    ExcelSubidoHelper.Validar(fuLista.PostedFile, 2 * 1024 * 1024);
                     filas = LectorDestinosDescarga.LeerExcel(fuLista.FileContent);
                     origen = "EXCEL";
                 }
