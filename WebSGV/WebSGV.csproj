@@ -481,6 +481,9 @@
     <Compile Include="Helpers\CorreoHelper.cs" />
     <Compile Include="Helpers\TokenRecuperacion.cs" />
     <Compile Include="Helpers\SolicitudRecuperacion.cs" />
+    <Compile Include="Helpers\Base32.cs" />
+    <Compile Include="Helpers\Totp.cs" />
+    <Compile Include="Helpers\CifradoSecreto.cs" />
     <Compile Include="Helpers\LogSGV.cs" />
     <Compile Include="Helpers\NumeroALetrasHelper.cs" />
     <Compile Include="Helpers\PaginaBase.cs">

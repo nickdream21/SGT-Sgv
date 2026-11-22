@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `078ae17` — E4-12: no quedarse sin administrador de sistema, fila propia sin acciones peligrosas, contraseña del administrador para restablecer, cambiar rol, crear y activar cuentas de administración, sesión máxima de 12 h; cierra M-066; nuevos U-089, P-046 y P-047. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `1a950f1` — E4-13: núcleo del segundo factor (`Totp`, `Base32`, `CifradoSecreto`) sin interfaz; lo que queda de la Etapa 4 espera al usuario (U-079, U-080, U-081, publicar E4-5 y P-031). No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-123 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
