@@ -298,6 +298,16 @@ namespace WebSGV
             }
         }
 
+        /// <summary>
+        /// Respaldo de compresión (E5-7): gzip propio del HTML/JSON/texto si el interruptor Compresion.Respuesta
+        /// está encendido (apagado por defecto; ver Helpers/CompresionRespuesta.cs). Aquí el handler ya fijó su
+        /// Content-Type final y nada se envió todavía.
+        /// </summary>
+        void Application_PostRequestHandlerExecute(object sender, EventArgs e)
+        {
+            CompresionRespuesta.AplicarSiCorresponde(Context);
+        }
+
         /// <summary>Quita la cabecera "Server" (versión de IIS) de todas las respuestas.</summary>
         void Application_PreSendRequestHeaders(object sender, EventArgs e)
         {

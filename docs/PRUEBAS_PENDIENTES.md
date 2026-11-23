@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-064 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-065 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -33,7 +33,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-030** Segundo factor con un celular real — tras publicar E4-14: alta con Google Authenticator o Microsoft Authenticator, entrada con código, un código de recuperación y "Quitar segundo factor" desde Gestión de usuarios, con una cuenta de prueba. · B
 - [ ] **P-031** Política de contenido en modo informe en el sitio publicado — tras publicar E4-5, abrir por **https** con cada rol a 1366 y 390 px y revisar en `App_Data/logs` lo que anota `CspInforme` unos minutos después; solo se espera `script-src` por `eval` (MicrosoftAjax en todas las páginas, validadores, `AutoPostBack`) y 0 `CSP (aplicada)`. Comprobar que somee no duplica las cabeceras. En local ya pasó (E4-5) salvo la cámara de Movimientos (apagada por configuración), el PDF en el iframe real de contabilidad (U-087; probado en una réplica) y el canvas de firma (P-037). Condición de E4-15. · B
 - [ ] **P-032** Comprobaciones por HTTP en el sitio publicado — un POST de formulario a un PageMethod no ejecuta nada; `GpsAutomatico.ashx?iniciar=1` sin sesión da 403; la cookie `SGV_SessionId` sale con `Secure` tras iniciar sesión; `/trace.axd` y `/Web.config` no dan 200. · C
-- [ ] **P-053** Compresión en el sitio publicado — tras publicar E5-7, solo con GET: `Login.aspx`, un `ScriptResource.axd` y un postback de UpdatePanel llegan con `Content-Encoding: gzip`, `sgv-base.css?v=` con `max-age` de un año, y el primer ingreso a Login con caché vacía pesa menos de 400 KB (hoy ≈ 1,35 MB); si el HTML sigue sin gzip, activar el filtro propio de E5-7. · B
+- [ ] **P-053** Compresión en el sitio publicado — tras publicar E5-7, solo con GET: `Login.aspx`, un `ScriptResource.axd` y un postback de UpdatePanel llegan con `Content-Encoding: gzip`, `sgv-base.css?v=` con `max-age` de un año, y el primer ingreso a Login con caché vacía pesa menos de 400 KB (hoy ≈ 1,35 MB); si el HTML sigue sin gzip, encender `Compresion.Respuesta` (el respaldo de E5-7 comprime solo el HTML: el `.axd` y el parcial de UpdatePanel solo llegan con gzip si somee tiene la compresión dinámica de IIS). Pasos en "Medir gzip tras publicar" de `herramientas/publicar/README.md`. · B
 - [ ] **P-054** Bloqueo de doble envío con la latencia real — tras publicar E5-2, sin guardar datos: doble toque en "Buscar" desde un celular da una sola respuesta con "Procesando…", y tras descargar un Excel y un PDF la página queda usable (no pegada 20 s). · B
 
 ## En el sitio local (probador)
@@ -77,6 +77,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-062** MovimientosViaje con envío único (E5-3) — con `MovimientosViaje.Habilitado` encendido (solo local o al activarlo): registrar, pulsar F5 y aceptar el reenvío: 1 sola fila, aviso "Ya se registró" y el formulario vacío. · B
 - [ ] **P-063** Firma y estructura con una orden real (E5-4) — abrir FirmarLiquidacion y ConformarLiquidacion con una orden por firmar (la BD de pruebas no tiene ninguna; se probó en un arnés): el trazo con el dedo no desplaza la página, fuera del canvas se amplía con dos dedos, TalkBack o VoiceOver leen "Área de firma"; en el panel del conductor con un viaje, el botón "Nota" de cada gasto es cómodo de tocar y "Saltar al contenido" aparece con un teclado. · B
 - [ ] **P-064** Nombres accesibles donde el sitio local no llega (E5-6) — con el árbol de accesibilidad del navegador o un lector de pantalla: MovimientosViaje (apagada; grupo Tipo, Concepto y el modal Anular), la lista de gastos del conductor con un viaje activo (descripciones con nombre) y la edición de un lote en ListaDespachos (conductores, documentos por despacho, guías): 0 campos sin nombre. · C
+- [ ] **P-065** PDF en el iframe de contabilidad tras E5-7 — con una liquidación aprobada real (la BD de pruebas no tiene `OrdenViaje`), en LiquidacionesAprobadasContabilidad pulsar "Ver": el PDF se muestra en el iframe y la consola no tiene errores, en el sitio local y en el publicado. · B
 
 ## Reglas
 

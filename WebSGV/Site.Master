@@ -10,19 +10,17 @@
     <!-- CSS -->
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/bootstrap-4.6.2/bootstrap.min.css") %>" rel="stylesheet" />
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/fontawesome-5.15.4/css/all.min.css") %>" rel="stylesheet" />
-    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/jquery-ui-1.13.2/jquery-ui.min.css") %>" rel="stylesheet" />
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/App.css") %>" rel="stylesheet" />
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/responsive-mobile.css") %>" rel="stylesheet" />
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/sgv-base.css") %>" rel="stylesheet" />
 
-    <!-- Librerías base, UNA sola vez y en el head: jQuery → Popper → Bootstrap 4.6.2 → jQuery UI.
-         Deben cargarse antes de MainContent porque las páginas usan $.datepicker / .modal() en
+    <!-- Librerías base, UNA sola vez y en el head: jQuery → Popper → Bootstrap 4.6.2 (sin jQuery UI desde
+         E5-7: nada lo usaba). Deben cargarse antes de MainContent porque las páginas usan .modal() en
          scripts en línea. Las páginas NO deben volver a cargar jQuery ni Bootstrap: una segunda
          copia de jQuery reemplaza $ y desconecta los plugins ya registrados. -->
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/jquery-3.6.4.min.js") %>"></script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/popper-1.16.1.min.js") %>"></script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/bootstrap-4.6.2.min.js") %>"></script>
-    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/jquery-ui-1.13.2.min.js") %>"></script>
 
     <!-- Estilos para corregir problemas de transparencia -->
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/SiteMaster.css") %>" rel="stylesheet" />

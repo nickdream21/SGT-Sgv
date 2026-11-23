@@ -6,7 +6,7 @@ namespace WebSGV
     {
         public static void RegisterJQueryScriptManager()
         {
-            // Site.Master ya carga jQuery (con Bootstrap y jQuery UI) en el head. El recurso "jquery"
+            // Site.Master ya carga jQuery (con Bootstrap) en el head. El recurso "jquery"
             // que pide la validación unobtrusive apunta a un script que solo carga jQuery si falta:
             // antes inyectaba una segunda copia (3.7.0) que reemplazaba $ y rompía los plugins.
             ScriptManager.ScriptResourceMapping.AddDefinition("jquery",

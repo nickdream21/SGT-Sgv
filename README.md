@@ -8,7 +8,7 @@ Aplicación web de **Servicios Generales Viviana E.I.R.L.** para la operación d
 |---|---|
 | Backend | C#, ASP.NET Web Forms puro (.NET Framework 4.8); sin MVC, FriendlyUrls, bundling ni AjaxControlToolkit |
 | Datos | SQL Server + ADO.NET (`SqlCommand` parametrizado, procedimientos `sp_*`), sin ORM |
-| Interfaz | Bootstrap 4.6.2, jQuery 3.6.4, jQuery UI (cargados una vez en `Site.Master`) |
+| Interfaz | Bootstrap 4.6.2, jQuery 3.6.4 (cargados una vez en `Site.Master`) |
 | PDF | QuestPDF 2026.5.0 (licencia Community; PDF/A-2B en los documentos firmados) |
 | Excel | ClosedXML 0.105 |
 | Pruebas | xUnit (`WebSGV.Tests/`) |

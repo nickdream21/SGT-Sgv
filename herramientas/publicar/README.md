@@ -139,7 +139,15 @@ Lo de **cada** publicación. Cómo arma, comprueba y sube el paquete está arrib
 3. Iniciar sesión en el sitio y abrir las páginas que tocó el cambio (usuarios por rol: `privado/CREDENCIALES_USUARIOS.txt`, solo el que haga falta).
 4. Si se borraron sobrantes, cada página retirada responde 404 (p. ej. `Views/WebForm2.aspx`). Cabeceras de seguridad: `curl -I https://sgvtransporte.somee.com/Views/Login.aspx`.
 5. Log del servidor: bajar por FTP `App_Data/logs/sgv-AAAAMMDD*.log` del día (todos los `_NNN`) y buscar líneas de nivel Error desde la hora de la publicación; también si llegó algún correo de `AvisoErrores`.
-6. Los dos monitores de UptimeRobot ("SGV - Sitio y BD" y "SGV - GPS y Onway") en verde, y en cron-job.org la tarea "SGV GPS automático" activa con la última corrida 200/202 (`docs/OPERACION.md`, secciones 2 y 3).
+6. **Medir gzip tras publicar** (E5-7). Solo GET, sin sesión:
+
+   ```bash
+   curl -s -o /dev/null -D - -H "Accept-Encoding: gzip" https://sgvtransporte.somee.com/Views/Login.aspx | grep -i -E "content-encoding|vary"
+   curl -s -o /dev/null -D - -H "Accept-Encoding: gzip" https://sgvtransporte.somee.com/Content/lib/bootstrap-4.6.2/bootstrap.min.css | grep -i -E "content-encoding|cache-control"
+   ```
+
+   (`curl -I` también sirve, pero algunos IIS no comprimen las respuestas a HEAD: ante la duda, vale el GET.) IIS comprime un archivo estático recién desde su segunda petición en pocos segundos: repetir la línea del CSS dos o tres veces antes de concluir. Los dos deben traer `Content-Encoding: gzip`, y el CSS además `Cache-Control: max-age=31536000`. Si el **HTML** llega sin `Content-Encoding` (el servidor no tiene el módulo de compresión dinámica), encender el respaldo propio: `<add key="Compresion.Respuesta" value="true" />` en `WebSGV/Web.config` del repo (no solo en el servidor: la siguiente publicación lo pisaría), commit, publicar (no hace falta otro cambio de código) y repetir la medición (Login debe traer `Content-Encoding: gzip` y `Vary: Accept-Encoding`). Si es el **CSS** el que llega sin gzip, el servidor no comprime estáticos: anotarlo, el respaldo no lo cubre. Seguimiento: P-053 en `docs/PRUEBAS_PENDIENTES.md`.
+7. Los dos monitores de UptimeRobot ("SGV - Sitio y BD" y "SGV - GPS y Onway") en verde, y en cron-job.org la tarea "SGV GPS automático" activa con la última corrida 200/202 (`docs/OPERACION.md`, secciones 2 y 3).
 
 ## Volver atrás
 
