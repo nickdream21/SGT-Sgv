@@ -8,18 +8,15 @@
 
     /* Tarjeta de montos de LiquidacionesPendientes (.financial-card) */
     .financial-card {
-        background: var(--sgv-bs-gris-100);
-        border: 1px solid var(--sgv-bs-gris-300);
-        border-radius: 8px;
+        background: var(--sgv-fondo);
+        border: 1px solid var(--sgv-borde);
+        border-radius: var(--sgv-radio);
         padding: 1rem;
         margin-bottom: 1rem;
         position: relative;
     }
 
-    /* Mejorar contraste de textos en pantallas pequeñas */
-    .text-muted {
-        color: var(--sgv-bs-gris-700) !important;
-    }
+    /* El .text-muted más oscuro del celular está en sgv-base.css (aquí perdía por orden de carga). */
 
     /* Headers más grandes en móvil */
     .page-title {

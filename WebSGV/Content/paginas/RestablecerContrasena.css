@@ -1,9 +1,10 @@
 ﻿.reset-container {
     max-width: 500px;
     margin: 50px auto;
-    background-color: var(--sgv-bs-gris-100);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(var(--sgv-negro-rgb), 0.1);
+    background-color: var(--sgv-superficie);
+    border-radius: var(--sgv-radio);
+    box-shadow: none;
+    border: 1px solid var(--sgv-borde);
     padding: 30px;
 }
 
@@ -16,7 +17,7 @@
 
 .reset-subtitle {
     text-align: center;
-    color: var(--sgv-suelto-666666);
+    color: var(--sgv-texto-suave);
     margin-bottom: 25px;
     font-size: 14px;
 }
@@ -35,7 +36,7 @@
     width: 100%;
     padding: 10px 15px;
     font-size: 16px;
-    border: 1px solid var(--sgv-bs-gris-400);
+    border: 1px solid var(--sgv-borde-fuerte);
     border-radius: 4px;
 }
 
@@ -50,22 +51,22 @@
 }
 
 .btn-primary {
-    background-color: var(--sgv-bs-azul);
+    background-color: var(--sgv-primario);
     color: var(--sgv-blanco);
 }
 
 .btn-primary:hover {
-    background-color: var(--sgv-bs-azul-hover);
+    background-color: var(--sgv-primario-osc);
 }
 
 .btn-secondary {
-    background-color: var(--sgv-bs-gris-600);
+    background-color: var(--sgv-texto-suave);
     color: var(--sgv-blanco);
     margin-top: 10px;
 }
 
 .btn-secondary:hover {
-    background-color: var(--sgv-bs-gris-activo);
+    background-color: var(--sgv-texto-medio);
 }
 
 .alert {
@@ -75,19 +76,19 @@
 }
 
 .alert-success {
-    background-color: var(--sgv-bs-alerta-exito-fondo);
-    color: var(--sgv-bs-alerta-exito-texto);
-    border: 1px solid var(--sgv-bs-alerta-exito-borde);
+    background-color: var(--sgv-ok-fondo);
+    color: var(--sgv-ok-texto);
+    border: 1px solid var(--sgv-ok-borde);
 }
 
 .alert-danger {
-    background-color: var(--sgv-bs-alerta-peligro-fondo);
-    color: var(--sgv-bs-alerta-peligro-texto);
-    border: 1px solid var(--sgv-bs-alerta-peligro-borde);
+    background-color: var(--sgv-peligro-fondo);
+    color: var(--sgv-peligro-texto);
+    border: 1px solid var(--sgv-peligro-borde);
 }
 
 .password-requirements {
     font-size: 12px;
-    color: var(--sgv-suelto-666666);
+    color: var(--sgv-texto-suave);
     margin-top: 5px;
 }

@@ -14,11 +14,11 @@
 
 /* === Tablas === */
 .table thead th {
-    background-color: var(--sgv-pizarra-100) !important;
-    color: var(--sgv-pizarra-600) !important;
+    background-color: var(--sgv-fondo-pagina) !important;
+    color: var(--sgv-texto-suave) !important;
     font-weight: 600 !important;
     border: none !important;
-    border-bottom: 1px solid var(--sgv-pizarra-300) !important;
+    border-bottom: 1px solid var(--sgv-borde-fuerte) !important;
     vertical-align: middle !important;
     padding: 10px !important;
     opacity: 1 !important;
@@ -30,7 +30,7 @@
 }
 
 .table tbody tr:hover {
-    background-color: var(--sgv-pizarra-50) !important;
+    background-color: var(--sgv-fondo) !important;
 }
 
 .table tbody td {
@@ -42,7 +42,7 @@
 
 /* === Tarjetas === */
 .card.shadow-sm {
-    border-radius: 6px !important;
+    border-radius: var(--sgv-radio) !important;
     overflow: hidden !important;
     margin-bottom: 1rem !important;
 }
@@ -72,13 +72,13 @@
 
 .modal-content {
     border: none !important;
-    border-radius: 6px !important;
+    border-radius: var(--sgv-radio) !important;
     overflow: hidden !important;
-    box-shadow: 0 10px 30px rgba(var(--sgv-pizarra-900-rgb), 0.25) !important;
+    box-shadow: 0 10px 30px rgba(var(--sgv-texto-rgb), 0.25) !important;
 }
 
 .modal-header {
-    background-color: var(--sgv-pizarra-50) !important;
+    background-color: var(--sgv-fondo) !important;
     color: var(--sgv-texto) !important;
     border-bottom: 1px solid var(--sgv-borde) !important;
     border-top: 3px solid var(--sgv-primario) !important;
@@ -91,7 +91,7 @@
 }
 
 .modal-header .close {
-    color: var(--sgv-pizarra-600) !important;
+    color: var(--sgv-texto-suave) !important;
     text-shadow: none !important;
     opacity: 0.8 !important;
 }
@@ -107,7 +107,7 @@
 }
 
 .modal-footer.bg-light {
-    background-color: var(--sgv-pizarra-50) !important;
+    background-color: var(--sgv-fondo) !important;
     border-top: 1px solid var(--sgv-borde) !important;
 }
 
@@ -139,7 +139,7 @@
 /* === Scroll de tablas === */
 .table-responsive {
     scrollbar-width: thin;
-    scrollbar-color: var(--sgv-pizarra-400) var(--sgv-pizarra-100);
+    scrollbar-color: var(--sgv-borde-fuerte) var(--sgv-fondo-pagina);
 }
 
 .table-responsive::-webkit-scrollbar {
@@ -148,13 +148,13 @@
 }
 
 .table-responsive::-webkit-scrollbar-track {
-    background: var(--sgv-pizarra-100);
+    background: var(--sgv-fondo-pagina);
 }
 
 .table-responsive::-webkit-scrollbar-thumb {
-    background-color: var(--sgv-pizarra-400);
-    border-radius: 10px;
-    border: 2px solid var(--sgv-pizarra-100);
+    background-color: var(--sgv-borde-fuerte);
+    border-radius: var(--sgv-radio);
+    border: 2px solid var(--sgv-borde);
 }
 
 /* === Tablets === */

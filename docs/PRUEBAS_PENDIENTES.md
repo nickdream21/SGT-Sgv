@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-070 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-073 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -15,6 +15,9 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-005** Caso "por elegir" con programados reales — en la Bandeja y en RegistroDespacho (hoy hay 0 programados esperando documentos). · C
 - [ ] **P-052** Zoom y firma en un celular real — tras E5-4: en `FirmarLiquidacion` se amplía con dos dedos el texto legal y la orden, y al firmar dentro del recuadro la página no se mueve ni se amplía (Android y iPhone si hay). · A
 - [ ] **P-055** Ayuda y manual del conductor en un celular real — tras E5-21: el "?" abre el tema de la pantalla, se lee sin ampliar y el PDF del manual se abre desde el enlace. · B
+- [ ] **P-071** Fuente y colores de E5-12 en un celular real — abrir Login, el panel del conductor y Gestión de liquidaciones en un Android viejo (Chrome o el navegador del fabricante) y en un iPhone si hay: que se vea IBM Plex Sans (o Segoe/Roboto mientras carga, sin texto invisible), tildes y ñ bien, cifras alineadas en los montos y el foco visible con un teclado Bluetooth; anotar si la primera carga se nota lenta con datos móviles. · C
+- [ ] **P-072** Montos en verde y rojo de E5-12 con datos reales — a 1366 y 390 px, el modal de revisión de LiquidacionesPendientes (reintegros, descuentos, saldo a favor o en contra) y el panel del conductor con un viaje en curso: que lo positivo salga en verde `#17603a` y lo negativo en rojo `#9a1c1c`, legibles sobre su fondo, y las cifras alineadas. Necesita una liquidación y un conductor con viaje (puede ser en un `sgvEnsayo_*`). · B
+- [ ] **P-073** Descarga del mapa y filtro Cliente tras E5-12 — en `Exportacion/SeguimientoViaje.aspx`, con un viaje que tenga recorrido GPS de descarga, a 1366 y 390 px: la línea, el camión, los hitos y el carril de descarga en naranja `#c2410c` como su leyenda (el viaje de pruebas 8517 no tiene ese tramo; hoy solo se comprobó con clases inyectadas). En `FacturasFlete.aspx` a 1366 px, que un cliente de nombre largo se lea en el filtro Cliente (queda en unos 118 px junto a las fechas de ancho fijo). · C
 
 ## En el sitio publicado (lo que escribe, con orden del usuario)
 

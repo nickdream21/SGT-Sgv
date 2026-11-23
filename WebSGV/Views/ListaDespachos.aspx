@@ -1,4 +1,4 @@
-﻿<%@ Page Title="Gestión de Viajes y Lotes" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ListaDespachos.aspx.cs" Inherits="WebSGV.Views.ListaDespachos" %>
+<%@ Page Title="Gestión de Viajes y Lotes" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ListaDespachos.aspx.cs" Inherits="WebSGV.Views.ListaDespachos" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
@@ -106,7 +106,7 @@
                                                 <div class="col-md-6">
                                                     <h5 class="section-title">
                                                             <i class="fas fa-route mr-2"></i> Viajes en Progreso
-                                                            <asp:Label ID="lblContadorViajes" runat="server" CssClass="badge bg-secondary text-white ml-2"></asp:Label>
+                                                            <asp:Label ID="lblContadorViajes" runat="server" CssClass="badge badge-pill bg-secondary text-white ml-2"></asp:Label>
                                                         </h5>
                                                 </div>
                                                 <div class="col-md-6">
@@ -228,7 +228,7 @@
                                                 <div class="col-md-6">
                                                     <h5 class="section-title">
                                                             <i class="fas fa-layer-group mr-2"></i> Lotes de Despacho
-                                                            <asp:Label ID="lblContadorLotes" runat="server" CssClass="badge bg-secondary text-white ml-2"></asp:Label>
+                                                            <asp:Label ID="lblContadorLotes" runat="server" CssClass="badge badge-pill bg-secondary text-white ml-2"></asp:Label>
                                                         </h5>
                                                 </div>
                                                 <div class="col-md-6">

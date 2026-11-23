@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-29 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-30 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -49,6 +49,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-27 | Segundo factor: quién lo lleva, apagado por interruptor y cómo se recupera (opción recomendada, a confirmar) |
 | DN-28 | Aspecto del sistema: dirección "Expediente", iconos solo en acciones y avisos, sin emojis |
 | DN-29 | Contabilidad: liquidaciones aprobadas de los últimos 90 días al abrir, 50 por página (opción recomendada, a confirmar) |
+| DN-30 | Gráficos con su paleta propia de datos; tarjetas grandes de totales fuera (aspecto aprobado de E5-12) |
 
 ---
 
@@ -137,6 +138,15 @@ por página, con "Todo el historial" para quitar el rango. Antes traía toda la 
 - En el código: `WebSGV/Services/Liquidaciones/LiquidacionesContabilidadService.cs` (`DiasRangoPorDefecto`, `TamanoPagina`)
   y `WebSGV/Scripts/paginas/LiquidacionesAprobadasContabilidad.js` (E5-10).
 - Estado: vigente, a confirmar.
+
+### DN-30 — Gráficos con su paleta propia de datos; tarjetas grandes de totales fuera (aspecto aprobado de E5-12)
+El usuario aprobó el aspecto "Expediente" de E5-12 sobre las comparaciones antes y después (Gestión de liquidaciones, panel
+del conductor, Lista de despachos, Login y Seguimiento de viaje). Los gráficos (Reporte de cargas, tablero de Exportación)
+conservan sus colores vivos para distinguir las series: no pasan a la paleta de la dirección. Las tarjetas grandes de totales
+de Lista de despachos "se notan muy IA": se quitan como ya dice DN-28 (los contadores van en las pestañas), en E5-18 (M-082).
+- Desde: 2026-11-23.
+- En el código: `WebSGV/Content/sgv-base.css` (E5-12); gráficos en `ReporteCargas` y `DashboardExportacion`; tarjetas, E5-18.
+- Estado: vigente.
 
 ## 2. Usuarios y acceso
 

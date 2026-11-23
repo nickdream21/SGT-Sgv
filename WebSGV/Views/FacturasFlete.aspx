@@ -47,11 +47,11 @@
                     </div>
                     <div class="card-body" data-enter="<%= btnBuscar.ClientID %>">
                         <div class="row align-items-end">
-                            <div class="col-sm-6 col-md-3 col-xl-2 form-group">
+                            <div class="col-sm-6 col-md-3 col-xl-auto ff-col-fecha form-group">
                                 <label class="font-weight-bold" for="<%= txtDesde.ClientID %>">Desde</label>
                                 <asp:TextBox ID="txtDesde" runat="server" TextMode="Date" CssClass="form-control"></asp:TextBox>
                             </div>
-                            <div class="col-sm-6 col-md-3 col-xl-2 form-group">
+                            <div class="col-sm-6 col-md-3 col-xl-auto ff-col-fecha form-group">
                                 <label class="font-weight-bold" for="<%= txtHasta.ClientID %>">Hasta</label>
                                 <asp:TextBox ID="txtHasta" runat="server" TextMode="Date" CssClass="form-control"></asp:TextBox>
                             </div>

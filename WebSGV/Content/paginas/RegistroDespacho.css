@@ -1,41 +1,41 @@
-﻿/* ---- Registro Despacho - Minimal Professional ---- */
-.rd-page-header { background: var(--sgv-pizarra-800); color: var(--sgv-pizarra-50); border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
+/* ---- Registro Despacho - Minimal Professional ---- */
+.rd-page-header { background: var(--sgv-texto); color: var(--sgv-superficie); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: .85rem 1.25rem; }
 .rd-page-header h4 { margin: 0; font-size: 1rem; font-weight: 600; }
-.rd-step-header { background: var(--sgv-pizarra-50); border-bottom: 1px solid var(--sgv-pizarra-200); border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
-.rd-step-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: var(--sgv-pizarra-800); display: flex; align-items: center; gap: .45rem; }
-.rd-step-header .rd-subtitle { font-size: .77rem; color: var(--sgv-pizarra-500); margin-top: 3px; margin-left: 2rem; }
+.rd-step-header { background: var(--sgv-fondo); border-bottom: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: .85rem 1.25rem; }
+.rd-step-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: var(--sgv-texto); display: flex; align-items: center; gap: .45rem; }
+.rd-step-header .rd-subtitle { font-size: .77rem; color: var(--sgv-texto-suave); margin-top: 3px; margin-left: 2rem; }
 .rd-manual-toggle { display: block; width: 100%; text-align: left; border: 0; cursor: pointer; }
-.rd-manual-toggle.collapsed { border-bottom: 0; border-radius: 5px; }
-.rd-manual-toggle:hover { background: var(--sgv-pizarra-100); }
-.rd-manual-chevron { font-size: .75rem; color: var(--sgv-pizarra-500); transition: transform .2s; }
+.rd-manual-toggle.collapsed { border-bottom: 0; border-radius: var(--sgv-radio); }
+.rd-manual-toggle:hover { background: var(--sgv-fondo-pagina); }
+.rd-manual-chevron { font-size: .75rem; color: var(--sgv-texto-suave); transition: transform .2s; }
 .rd-manual-toggle:not(.collapsed) .rd-manual-chevron { transform: rotate(180deg); }
 .rd-step-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--sgv-primario-osc); color: var(--sgv-blanco); font-size: .72rem; font-weight: 700; flex-shrink: 0; }
-.rd-summary-header { background: var(--sgv-verde-50); border-bottom: 1px solid var(--sgv-verde-200); border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
+.rd-summary-header { background: var(--sgv-verde-50); border-bottom: 1px solid var(--sgv-verde-200); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: .85rem 1.25rem; }
 .rd-summary-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: var(--sgv-ok-texto); display: flex; align-items: center; gap: .45rem; }
-.rd-section-label { font-size: .77rem; font-weight: 700; color: var(--sgv-pizarra-600); border-bottom: 1px solid var(--sgv-pizarra-200); padding-bottom: .4rem; margin-bottom: 1rem; }
-.rd-doc-box { background: var(--sgv-pizarra-50); border: 1px solid var(--sgv-pizarra-200); border-radius: 5px; padding: 1rem; }
+.rd-section-label { font-size: .77rem; font-weight: 700; color: var(--sgv-texto-suave); border-bottom: 1px solid var(--sgv-borde); padding-bottom: .4rem; margin-bottom: 1rem; }
+.rd-doc-box { background: var(--sgv-fondo); border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); padding: 1rem; }
 .rd-doc-box .rd-doc-title { font-size: .78rem; font-weight: 700; color: var(--sgv-texto-medio); margin-bottom: .75rem; }
-.rd-notice { background: var(--sgv-pizarra-50); border: 1px solid var(--sgv-pizarra-200); border-radius: 5px; padding: .7rem 1rem; font-size: .84rem; color: var(--sgv-texto-medio); }
+.rd-notice { background: var(--sgv-fondo); border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); padding: .7rem 1rem; font-size: .84rem; color: var(--sgv-texto-medio); }
 .rd-notice-ok { background: var(--sgv-verde-50); border-color: var(--sgv-verde-200); color: var(--sgv-ok-texto); }
 .rd-notice-warn { background: var(--sgv-ambar-50); border-color: var(--sgv-ambar-200); color: var(--sgv-alerta-texto); }
-.rd-viaje-header { background: var(--sgv-violeta-50); border-bottom: 1px solid var(--sgv-violeta-200); border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
+.rd-viaje-header { background: var(--sgv-violeta-50); border-bottom: 1px solid var(--sgv-violeta-200); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: .85rem 1.25rem; }
 .rd-viaje-header h6 { margin: 0; font-size: .88rem; font-weight: 600; color: var(--sgv-violeta-900); display: flex; align-items: center; gap: .45rem; }
-.rd-list-header { background: var(--sgv-pizarra-50); border-bottom: 1px solid var(--sgv-pizarra-200); border-radius: 5px 5px 0 0; padding: .85rem 1.25rem; }
-.rd-list-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: var(--sgv-pizarra-800); }
+.rd-list-header { background: var(--sgv-fondo); border-bottom: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: .85rem 1.25rem; }
+.rd-list-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: var(--sgv-texto); }
 /* ---- Stepper de progreso ---- */
 .rd-stepper { padding: .5rem 0 .25rem; }
 .rd-stepper-inner { display: flex; align-items: center; justify-content: center; gap: 0; }
 .rd-stepper-item { display: flex; flex-direction: column; align-items: center; gap: .3rem; min-width: 110px; }
-.rd-stepper-circle { width: 34px; height: 34px; border-radius: 50%; background: var(--sgv-pizarra-200); color: var(--sgv-pizarra-400); font-size: .8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--sgv-pizarra-200); transition: background .3s, color .3s, border-color .3s; }
+.rd-stepper-circle { width: 34px; height: 34px; border-radius: 50%; background: var(--sgv-borde); color: var(--sgv-texto-suave); font-size: .8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--sgv-borde); transition: background .3s, color .3s, border-color .3s; }
 .rd-stepper-item.active .rd-stepper-circle { background: var(--sgv-primario-osc); color: var(--sgv-blanco); border-color: var(--sgv-primario-osc); }
 .rd-stepper-item.done .rd-stepper-circle { background: var(--sgv-verde-600); color: var(--sgv-blanco); border-color: var(--sgv-verde-600); }
-.rd-stepper-label { font-size: .72rem; font-weight: 600; color: var(--sgv-pizarra-400); transition: color .3s; }
+.rd-stepper-label { font-size: .72rem; font-weight: 600; color: var(--sgv-texto-suave); transition: color .3s; }
 .rd-stepper-item.active .rd-stepper-label { color: var(--sgv-info-texto); }
 .rd-stepper-item.done .rd-stepper-label { color: var(--sgv-verde-600); }
-.rd-stepper-connector { flex: 1; height: 2px; background: var(--sgv-pizarra-200); max-width: 120px; margin-bottom: 1.4rem; }
+.rd-stepper-connector { flex: 1; height: 2px; background: var(--sgv-borde); max-width: 120px; margin-bottom: 1.4rem; }
 
 /* ---- Barra compacta de resumen del lote (reemplaza la tarjeta grande) ---- */
-.rd-lote-bar { background: var(--sgv-verde-50); border: 1px solid var(--sgv-verde-200); border-radius: 5px; padding: .7rem 1rem; }
+.rd-lote-bar { background: var(--sgv-verde-50); border: 1px solid var(--sgv-verde-200); border-radius: var(--sgv-radio); padding: .7rem 1rem; }
 .rd-lote-bar .rd-lote-grid { display: flex; flex-wrap: wrap; gap: .35rem 1.75rem; }
 .rd-lote-item { display: flex; flex-direction: column; line-height: 1.25; }
 .rd-lote-item .rd-lote-k { font-size: .66rem; font-weight: 700; color: var(--sgv-ok); }
@@ -46,19 +46,19 @@
    columna (min-height) el formulario deja de reacomodarse al cambiar de operación. */
 .rd-form-col { min-height: 232px; }
 .rd-conductor-card.rd-editando { border-left: 3px solid var(--sgv-alerta); }
-.rd-edit-flag { background: var(--sgv-ambar-50); border: 1px solid var(--sgv-ambar-200); color: var(--sgv-alerta-texto); border-radius: 5px; padding: .5rem .85rem; font-size: .82rem; font-weight: 600; }
+.rd-edit-flag { background: var(--sgv-ambar-50); border: 1px solid var(--sgv-ambar-200); color: var(--sgv-alerta-texto); border-radius: var(--sgv-radio); padding: .5rem .85rem; font-size: .82rem; font-weight: 600; }
 
 /* ---- Tabla de conductores ---- */
 .rd-tabla-conductores { font-size: .86rem; }
-.rd-tabla-conductores thead th { background: var(--sgv-pizarra-50); color: var(--sgv-pizarra-600); font-size: .72rem; font-weight: 700; border-bottom: 2px solid var(--sgv-pizarra-200); white-space: nowrap; }
+.rd-tabla-conductores thead th { background: var(--sgv-fondo); color: var(--sgv-texto-suave); font-size: .72rem; font-weight: 700; border-bottom: 2px solid var(--sgv-borde); white-space: nowrap; }
 .rd-tabla-conductores td { vertical-align: middle; }
 .rd-tabla-conductores tr.rd-fila-editando > td { background: var(--sgv-ambar-50) !important; }
 .rd-placa { font-family: Consolas, "Courier New", monospace; font-weight: 700; }
-.rd-chip { display: inline-block; padding: .12rem .5rem; border-radius: 10px; font-size: .7rem; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
+.rd-chip { display: inline-block; padding: .12rem .5rem; border-radius: var(--sgv-radio); font-size: .7rem; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
 .rd-chip-ok { background: var(--sgv-verde-50); border-color: var(--sgv-verde-200); color: var(--sgv-ok-texto); }
-.rd-chip-wait { background: var(--sgv-pizarra-50); border-color: var(--sgv-pizarra-200); color: var(--sgv-pizarra-600); }
+.rd-chip-wait { background: var(--sgv-fondo); border-color: var(--sgv-borde); color: var(--sgv-texto-suave); }
 .rd-chip-warn { background: var(--sgv-ambar-50); border-color: var(--sgv-ambar-200); color: var(--sgv-alerta-texto); }
-.rd-sin-datos { color: var(--sgv-pizarra-400); }
+.rd-sin-datos { color: var(--sgv-texto-suave); }
 
 /* Importación de documentos del pedido */
 /* Esta página trabaja con tablas anchas (10 tractos con conductor, tracto, carreta y carga):
@@ -76,18 +76,18 @@
 .rd-cpic-opcional .rd-opcional { display: inline; }
 .rd-cpic-opcional .rd-req { display: none; }
 .rd-carga-celda { min-width: 260px; }
-.rd-doc-dato { display: block; font-size: .72rem; color: var(--sgv-pizarra-500); min-height: 1.1rem; margin-bottom: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-doc-dato { display: block; font-size: .72rem; color: var(--sgv-texto-suave); min-height: 1.1rem; margin-bottom: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rd-fila-registrada > td { opacity: .55; }
 .rd-check-aprobar input { margin-right: .45rem; }
 /* Estados del desplegable: nuevo por aprobar (ámbar) y sugerido por el sistema (azul) */
 select.rd-select-nuevo, select.rd-select-nuevo + .select2-container .select2-selection--single { border-color: var(--sgv-ambar-500) !important; background-color: var(--sgv-ambar-50) !important; }
 select.rd-select-sugerido, select.rd-select-sugerido + .select2-container .select2-selection--single { border-color: var(--sgv-azul-400) !important; background-color: var(--sgv-primario-claro) !important; }
 /* select2 con su tema por defecto, al alto y borde del .form-control de Bootstrap 4 (y del -sm en la tabla de importación). */
-.select2-container.select2-container--default .select2-selection--single { height: calc(1.5em + .75rem + 2px); border: 1px solid var(--sgv-bs-gris-400); border-radius: .25rem; }
-.select2-container.select2-container--default .select2-selection--single .select2-selection__rendered { line-height: calc(1.5em + .75rem); padding-left: .75rem; color: var(--sgv-bs-gris-700); }
+.select2-container.select2-container--default .select2-selection--single { height: calc(1.5em + .75rem + 2px); border: 1px solid var(--sgv-borde-fuerte); border-radius: var(--sgv-radio); }
+.select2-container.select2-container--default .select2-selection--single .select2-selection__rendered { line-height: calc(1.5em + .75rem); padding-left: .75rem; color: var(--sgv-texto-medio); }
 .select2-container.select2-container--default .select2-selection--single .select2-selection__arrow { height: calc(1.5em + .75rem); }
 .select2-container.select2-container--default.select2-container--focus .select2-selection--single,
-.select2-container.select2-container--default.select2-container--open .select2-selection--single { border-color: var(--sgv-bs-foco); box-shadow: 0 0 0 .2rem rgba(var(--sgv-bs-azul-rgb), .15); outline: 0; }
+.select2-container.select2-container--default.select2-container--open .select2-selection--single { border-color: var(--sgv-foco); box-shadow: 0 0 0 .2rem rgba(var(--sgv-primario-rgb), .15); outline: 0; }
 .rd-tabla-import .select2-container.select2-container--default .select2-selection--single { height: calc(1.5em + .5rem + 2px); font-size: .84rem; }
 .rd-tabla-import .select2-container.select2-container--default .select2-selection--single .select2-selection__rendered { line-height: calc(1.5em + .5rem); padding-left: .5rem; }
 .rd-tabla-import .select2-container.select2-container--default .select2-selection--single .select2-selection__arrow { height: calc(1.5em + .5rem); }

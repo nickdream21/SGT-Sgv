@@ -1,184 +1,209 @@
 /* Estilo base del SGV: formal, con color moderado.
    Clases opcionales con prefijo sgv-: una página solo cambia si las usa.
-   Tintes suaves para estados y acciones; sin degradados, sombras grandes ni animaciones. */
+   Dirección "Expediente" (DN-28): hoja blanca sobre gris, un solo azul tinta, estados como sello;
+   sin degradados, sombras ni animaciones. */
 
 :root {
-    /* Semánticas: lo que usan las hojas cuando coinciden propiedad y valor. Las 9 primeras
-       y --sgv-radio existían antes de E5-11 (mismo nombre y valor). E5-12 cambia sus valores. */
-    --sgv-texto: var(--sgv-gris-800);
-    --sgv-texto-suave: var(--sgv-gris-500);
-    --sgv-borde: var(--sgv-gris-200);
-    --sgv-borde-fuerte: var(--sgv-gris-300);
-    --sgv-fondo: var(--sgv-gris-50);
-    --sgv-primario: var(--sgv-azul-700);
-    --sgv-ok: var(--sgv-verde-700);
-    --sgv-alerta: var(--sgv-ambar-700);
-    --sgv-peligro: var(--sgv-rojo-700);
-    --sgv-texto-medio: var(--sgv-gris-700);
-    --sgv-superficie: var(--sgv-blanco);
-    --sgv-fondo-pagina: var(--sgv-gris-100);
-    --sgv-primario-osc: var(--sgv-azul-800);
-    --sgv-primario-claro: var(--sgv-azul-50);
-    --sgv-ok-texto: var(--sgv-verde-800);
-    --sgv-ok-fondo: var(--sgv-verde-100);
-    --sgv-ok-borde: var(--sgv-verde-300);
-    --sgv-alerta-texto: var(--sgv-ambar-800);
-    --sgv-alerta-fondo: var(--sgv-ambar-100);
-    --sgv-alerta-borde: var(--sgv-ambar-300);
-    --sgv-peligro-texto: var(--sgv-rojo-800);
-    --sgv-peligro-fondo: var(--sgv-rojo-100);
-    --sgv-peligro-borde: var(--sgv-rojo-300);
-    --sgv-info-texto: var(--sgv-azul-800);
-    --sgv-info-fondo: var(--sgv-azul-100);
-    --sgv-info-borde: var(--sgv-azul-300);
-    --sgv-foco: var(--sgv-azul-700);
-    --sgv-radio: 6px;
+    /* Dirección visual "Expediente" (DN-28, E5-12): hoja blanca sobre gris, un solo azul tinta,
+       un solo gris y estados como sello (texto, fondo suave y borde). Tres capas:
+         1. Escala de la dirección: los ÚNICOS colores literales del CSS propio (más --de-f-*).
+         2. Semánticas: lo que usan las hojas (texto, borde, primario, ok-fondo...).
+         3. Pasos heredados de E5-11 (--sgv-<familia>-<paso>): alias de la escala, para no reescribir
+            pantallas. Azules, celestes, cianes, índigos y violetas → azul tinta y sus tonos claros;
+            grises → el gris único; verdes, esmeraldas y turquesas → verde; ámbar y naranja → ámbar;
+            rojos → rojo. Los pasos 50-100 son el fondo suave, 200-400 el borde, 500-700 el color
+            pleno y 800-900 el tono oscuro (en grises: 400-600 el secundario, 800-900 el texto).
+       Contraste (WCAG, lo calcula EstilosTests): texto 16:1 sobre blanco, secundario 6,3:1, cada
+       estado 6:1 o más sobre su fondo, blanco sobre primario 11:1. Un color nuevo se agrega a la
+       escala (y a la prueba si es texto), no como literal en una hoja. */
 
-    /* Paleta exacta (sin redondeos): un valor por variable. Pasos de Tailwind por familia,
-       --sgv-bs-* de Bootstrap 4 heredado y --sgv-suelto-* fuera de toda escala (E5-12 los quita).
-       La genera herramientas/estilos/colores.js aplicar. */
+    /* 1. Escala */
     --sgv-blanco: #ffffff;
-    --sgv-pizarra-50: #f8fafc;
-    --sgv-pizarra-100: #f1f5f9;
-    --sgv-pizarra-200: #e2e8f0;
-    --sgv-pizarra-300: #cbd5e1;
-    --sgv-pizarra-400: #94a3b8;
-    --sgv-pizarra-500: #64748b;
-    --sgv-pizarra-600: #475569;
-    --sgv-pizarra-700: #334155;
-    --sgv-pizarra-800: #1e293b;
-    --sgv-pizarra-900: #0f172a;
-    --sgv-gris-50: #f9fafb;
-    --sgv-gris-100: #f3f4f6;
-    --sgv-gris-200: #e5e7eb;
-    --sgv-gris-300: #d1d5db;
-    --sgv-gris-400: #9ca3af;
-    --sgv-gris-500: #6b7280;
-    --sgv-gris-600: #4b5563;
-    --sgv-gris-700: #374151;
-    --sgv-gris-800: #1f2937;
-    --sgv-gris-900: #111827;
-    --sgv-rojo-50: #fef2f2;
-    --sgv-rojo-100: #fee2e2;
-    --sgv-rojo-200: #fecaca;
-    --sgv-rojo-300: #fca5a5;
-    --sgv-rojo-400: #f87171;
-    --sgv-rojo-600: #dc2626;
-    --sgv-rojo-700: #b91c1c;
-    --sgv-rojo-800: #991b1b;
-    --sgv-rojo-900: #7f1d1d;
-    --sgv-naranja-50: #fff7ed;
-    --sgv-naranja-700: #c2410c;
-    --sgv-naranja-800: #9a3412;
-    --sgv-naranja-900: #7c2d12;
-    --sgv-ambar-50: #fffbeb;
-    --sgv-ambar-100: #fef3c7;
-    --sgv-ambar-200: #fde68a;
-    --sgv-ambar-300: #fcd34d;
-    --sgv-ambar-400: #fbbf24;
-    --sgv-ambar-500: #f59e0b;
-    --sgv-ambar-600: #d97706;
-    --sgv-ambar-700: #b45309;
-    --sgv-ambar-800: #92400e;
-    --sgv-ambar-900: #78350f;
-    --sgv-verde-50: #f0fdf4;
-    --sgv-verde-100: #dcfce7;
-    --sgv-verde-200: #bbf7d0;
-    --sgv-verde-300: #86efac;
-    --sgv-verde-600: #16a34a;
-    --sgv-verde-700: #15803d;
-    --sgv-verde-800: #166534;
-    --sgv-verde-900: #14532d;
-    --sgv-esmeralda-50: #ecfdf5;
-    --sgv-esmeralda-200: #a7f3d0;
-    --sgv-esmeralda-600: #059669;
-    --sgv-esmeralda-800: #065f46;
-    --sgv-turquesa-100: #ccfbf1;
-    --sgv-turquesa-700: #0f766e;
-    --sgv-turquesa-800: #115e59;
-    --sgv-cian-50: #ecfeff;
-    --sgv-cian-300: #67e8f9;
-    --sgv-cian-600: #0891b2;
-    --sgv-cian-700: #0e7490;
-    --sgv-cielo-50: #f0f9ff;
-    --sgv-cielo-100: #e0f2fe;
-    --sgv-cielo-200: #bae6fd;
-    --sgv-cielo-300: #7dd3fc;
-    --sgv-cielo-800: #075985;
-    --sgv-cielo-900: #0c4a6e;
-    --sgv-azul-50: #eff6ff;
-    --sgv-azul-100: #dbeafe;
-    --sgv-azul-200: #bfdbfe;
-    --sgv-azul-300: #93c5fd;
-    --sgv-azul-400: #60a5fa;
-    --sgv-azul-500: #3b82f6;
-    --sgv-azul-600: #2563eb;
-    --sgv-azul-700: #1d4ed8;
-    --sgv-azul-800: #1e40af;
-    --sgv-azul-900: #1e3a8a;
-    --sgv-indigo-100: #e0e7ff;
-    --sgv-indigo-800: #3730a3;
-    --sgv-violeta-50: #f5f3ff;
-    --sgv-violeta-100: #ede9fe;
-    --sgv-violeta-200: #ddd6fe;
-    --sgv-violeta-800: #5b21b6;
-    --sgv-violeta-900: #4c1d95;
-    --sgv-bs-azul: #007bff;
-    --sgv-bs-azul-hover: #0069d9;
-    --sgv-bs-enlace-hover: #0056b3;
-    --sgv-bs-foco: #80bdff;
-    --sgv-bs-verde: #28a745;
-    --sgv-bs-rojo: #dc3545;
-    --sgv-bs-gris-activo: #545b62;
-    --sgv-bs-gris-100: #f8f9fa;
-    --sgv-bs-gris-200: #e9ecef;
-    --sgv-bs-gris-300: #dee2e6;
-    --sgv-bs-gris-400: #ced4da;
-    --sgv-bs-gris-600: #6c757d;
-    --sgv-bs-gris-700: #495057;
-    --sgv-bs-gris-800: #343a40;
-    --sgv-bs-alerta-exito-fondo: #d4edda;
-    --sgv-bs-alerta-exito-borde: #c3e6cb;
-    --sgv-bs-alerta-exito-texto: #155724;
-    --sgv-bs-alerta-info-fondo: #d1ecf1;
-    --sgv-bs-alerta-info-texto: #0c5460;
-    --sgv-bs-alerta-aviso-fondo: #fff3cd;
-    --sgv-bs-alerta-aviso-texto: #856404;
-    --sgv-bs-alerta-peligro-fondo: #f8d7da;
-    --sgv-bs-alerta-peligro-borde: #f5c6cb;
-    --sgv-bs-alerta-peligro-texto: #721c24;
-    --sgv-suelto-0077cc: #0077cc;
-    --sgv-suelto-0b3d91: #0b3d91;
-    --sgv-suelto-555555: #555555;
-    --sgv-suelto-666666: #666666;
-    --sgv-suelto-b02a37: #b02a37;
-    --sgv-suelto-b6d4da: #b6d4da;
-    --sgv-suelto-badbcc: #badbcc;
-    --sgv-suelto-cccccc: #cccccc;
-    --sgv-suelto-e9f7fe: #e9f7fe;
-    --sgv-suelto-ecfdf3: #ecfdf3;
-    --sgv-suelto-eef1f5: #eef1f5;
-    --sgv-suelto-eef2f7: #eef2f7;
-    --sgv-suelto-eff4ff: #eff4ff;
-    --sgv-suelto-f0f7ff: #f0f7ff;
-    --sgv-suelto-f4f6f9: #f4f6f9;
-    --sgv-suelto-f8fbff: #f8fbff;
-    --sgv-suelto-f9f9f9: #f9f9f9;
-    --sgv-suelto-fafafa: #fafafa;
-    --sgv-suelto-ffeaa7: #ffeaa7;
-    --sgv-suelto-fff5f5: #fff5f5;
+    --sgv-exp-tinta: #1f3a6e;
+    --sgv-exp-tinta-osc: #152a52;
+    --sgv-exp-tinta-borde: #b4c1d8;
+    --sgv-exp-tinta-fondo: #e3e9f3;
+    --sgv-exp-tinta-claro: #f2f5fa;
+    --sgv-exp-texto: #1a2230;
+    --sgv-exp-texto-medio: #3b4656;
+    --sgv-exp-secundario: #566173;
+    --sgv-exp-linea-fuerte: #a8b0bc;
+    --sgv-exp-linea: #d5dae2;
+    --sgv-exp-gris-pagina: #eceef1;
+    --sgv-exp-gris-claro: #f5f6f8;
+    --sgv-exp-verde: #17603a;
+    --sgv-exp-verde-osc: #0f4529;
+    --sgv-exp-verde-borde: #a6cdb5;
+    --sgv-exp-verde-fondo: #e4f1e9;
+    --sgv-exp-ambar: #7a5200;
+    --sgv-exp-ambar-osc: #5a3c00;
+    --sgv-exp-ambar-borde: #dcc48a;
+    --sgv-exp-ambar-fondo: #f8eed8;
+    --sgv-exp-rojo: #9a1c1c;
+    --sgv-exp-rojo-osc: #761515;
+    --sgv-exp-rojo-borde: #dfa9a9;
+    --sgv-exp-rojo-fondo: #f7e4e4;
+    /* Solo para las líneas de ruta sobre el mapa (tiene que verse sobre calles y verde de OpenStreetMap). */
+    --sgv-exp-mapa-naranja: #c2410c;
 
-    /* Triples para transparencias: rgba(var(--sgv-x-rgb), alfa). */
+    /* Triples para transparencias: rgba(var(--sgv-x-rgb), alfa). Mismos valores que la escala. */
     --sgv-blanco-rgb: 255, 255, 255;
     --sgv-negro-rgb: 0, 0, 0;
-    --sgv-pizarra-900-rgb: 15, 23, 42;
-    --sgv-gris-900-rgb: 17, 24, 39;
-    --sgv-azul-600-rgb: 37, 99, 235;
-    --sgv-azul-700-rgb: 29, 78, 216;
-    --sgv-azul-800-rgb: 30, 64, 175;
-    --sgv-bs-azul-rgb: 0, 123, 255;
-    --sgv-bs-rojo-rgb: 220, 53, 69;
+    --sgv-texto-rgb: 26, 34, 48;
+    --sgv-primario-rgb: 31, 58, 110;
+    --sgv-peligro-rgb: 154, 28, 28;
+
+    /* 2. Semánticas */
+    --sgv-texto: var(--sgv-exp-texto);
+    --sgv-texto-suave: var(--sgv-exp-secundario);
+    --sgv-texto-medio: var(--sgv-exp-texto-medio);
+    --sgv-borde: var(--sgv-exp-linea);
+    --sgv-borde-fuerte: var(--sgv-exp-linea-fuerte);
+    --sgv-superficie: var(--sgv-blanco);
+    --sgv-fondo: var(--sgv-exp-gris-claro);
+    --sgv-fondo-pagina: var(--sgv-exp-gris-pagina);
+    --sgv-primario: var(--sgv-exp-tinta);
+    --sgv-primario-osc: var(--sgv-exp-tinta-osc);
+    --sgv-primario-claro: var(--sgv-exp-tinta-claro);
+    --sgv-ok: var(--sgv-exp-verde);
+    --sgv-ok-texto: var(--sgv-exp-verde);
+    --sgv-ok-fondo: var(--sgv-exp-verde-fondo);
+    --sgv-ok-borde: var(--sgv-exp-verde-borde);
+    --sgv-alerta: var(--sgv-exp-ambar);
+    --sgv-alerta-texto: var(--sgv-exp-ambar);
+    --sgv-alerta-fondo: var(--sgv-exp-ambar-fondo);
+    --sgv-alerta-borde: var(--sgv-exp-ambar-borde);
+    --sgv-peligro: var(--sgv-exp-rojo);
+    --sgv-peligro-texto: var(--sgv-exp-rojo);
+    --sgv-peligro-fondo: var(--sgv-exp-rojo-fondo);
+    --sgv-peligro-borde: var(--sgv-exp-rojo-borde);
+    --sgv-info-texto: var(--sgv-exp-tinta);
+    --sgv-info-fondo: var(--sgv-exp-tinta-fondo);
+    --sgv-info-borde: var(--sgv-exp-tinta-borde);
+    --sgv-foco: var(--sgv-exp-tinta);
+    /* Rutas del mapa: las lee SeguimientoViajeMapa.js con getComputedStyle (leyenda y líneas del mismo origen). */
+    --sgv-mapa-carga: var(--sgv-exp-tinta);
+    --sgv-mapa-descarga: var(--sgv-exp-mapa-naranja);
+    --sgv-radio: 3px;
+    --sgv-fuente: "IBM Plex Sans", "Segoe UI", Roboto, sans-serif;
+
+    /* 3. Pasos heredados de E5-11 (solo los que se usan), alias de la escala */
+    --sgv-gris-200: var(--sgv-exp-linea);
+    --sgv-gris-400: var(--sgv-exp-secundario);
+    --sgv-gris-500: var(--sgv-exp-secundario);
+    --sgv-gris-600: var(--sgv-exp-secundario);
+    --sgv-gris-900: var(--sgv-exp-texto);
+    --sgv-azul-100: var(--sgv-exp-tinta-fondo);
+    --sgv-azul-200: var(--sgv-exp-tinta-borde);
+    --sgv-azul-400: var(--sgv-exp-tinta-borde);
+    --sgv-azul-500: var(--sgv-exp-tinta);
+    --sgv-azul-600: var(--sgv-exp-tinta);
+    --sgv-azul-900: var(--sgv-exp-tinta-osc);
+    --sgv-cielo-50: var(--sgv-exp-tinta-claro);
+    --sgv-cielo-100: var(--sgv-exp-tinta-fondo);
+    --sgv-cielo-200: var(--sgv-exp-tinta-borde);
+    --sgv-cielo-300: var(--sgv-exp-tinta-borde);
+    --sgv-cielo-800: var(--sgv-exp-tinta);
+    --sgv-cielo-900: var(--sgv-exp-tinta-osc);
+    --sgv-cian-50: var(--sgv-exp-tinta-claro);
+    --sgv-cian-300: var(--sgv-exp-tinta-borde);
+    --sgv-cian-600: var(--sgv-exp-tinta);
+    --sgv-cian-700: var(--sgv-exp-tinta);
+    --sgv-indigo-100: var(--sgv-exp-tinta-fondo);
+    --sgv-indigo-800: var(--sgv-exp-tinta);
+    --sgv-violeta-50: var(--sgv-exp-tinta-claro);
+    --sgv-violeta-100: var(--sgv-exp-tinta-fondo);
+    --sgv-violeta-200: var(--sgv-exp-tinta-borde);
+    --sgv-violeta-800: var(--sgv-exp-tinta);
+    --sgv-violeta-900: var(--sgv-exp-tinta-osc);
+    --sgv-verde-50: var(--sgv-exp-verde-fondo);
+    --sgv-verde-200: var(--sgv-exp-verde-borde);
+    --sgv-verde-600: var(--sgv-exp-verde);
+    --sgv-verde-800: var(--sgv-exp-verde-osc);
+    --sgv-verde-900: var(--sgv-exp-verde-osc);
+    --sgv-esmeralda-50: var(--sgv-exp-verde-fondo);
+    --sgv-esmeralda-200: var(--sgv-exp-verde-borde);
+    --sgv-esmeralda-600: var(--sgv-exp-verde);
+    --sgv-esmeralda-800: var(--sgv-exp-verde-osc);
+    --sgv-turquesa-100: var(--sgv-exp-verde-fondo);
+    --sgv-turquesa-700: var(--sgv-exp-verde);
+    --sgv-turquesa-800: var(--sgv-exp-verde-osc);
+    --sgv-ambar-50: var(--sgv-exp-ambar-fondo);
+    --sgv-ambar-200: var(--sgv-exp-ambar-borde);
+    --sgv-ambar-400: var(--sgv-exp-ambar-borde);
+    --sgv-ambar-500: var(--sgv-exp-ambar);
+    --sgv-ambar-600: var(--sgv-exp-ambar);
+    --sgv-ambar-800: var(--sgv-exp-ambar-osc);
+    --sgv-ambar-900: var(--sgv-exp-ambar-osc);
+    --sgv-naranja-50: var(--sgv-exp-ambar-fondo);
+    --sgv-naranja-700: var(--sgv-exp-ambar);
+    --sgv-naranja-800: var(--sgv-exp-ambar);
+    --sgv-naranja-900: var(--sgv-exp-ambar-osc);
+    --sgv-rojo-50: var(--sgv-exp-rojo-fondo);
+    --sgv-rojo-200: var(--sgv-exp-rojo-borde);
+    --sgv-rojo-400: var(--sgv-exp-rojo-borde);
+    --sgv-rojo-600: var(--sgv-exp-rojo);
+    --sgv-rojo-800: var(--sgv-exp-rojo-osc);
+    --sgv-rojo-900: var(--sgv-exp-rojo-osc);
 }
+
+/* === Tipografía: IBM Plex Sans servida desde el sitio (Content/fonts, licencia OFL en OFL.txt) ===
+   Subconjunto latino (tildes, ñ, ¿¡, €) de @fontsource/ibm-plex-sans 5.3.0, solo 400, 500 y 600
+   (unos 70 KB en total, guardados 365 días). Mientras carga se ve la de respaldo (swap). */
+@font-face {
+    font-family: "IBM Plex Sans";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "IBM Plex Sans";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("fonts/ibm-plex-sans-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "IBM Plex Sans";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2");
+}
+
+body {
+    font-family: var(--sgv-fuente);
+    background-color: var(--sgv-fondo-pagina);
+    color: var(--sgv-texto);
+}
+
+.tooltip, .popover { font-family: var(--sgv-fuente); }
+
+/* Cifras del mismo ancho en tablas y montos, para que las columnas queden alineadas. */
+table, .table, .sgv-num, .sgv-monto, input[data-monto], .text-right { font-variant-numeric: tabular-nums; }
+
+/* === Foco común: visible al navegar con teclado, igual en enlaces, botones y campos === */
+a:focus-visible,
+button:focus-visible,
+.btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
+.page-link:focus-visible,
+.nav-link:focus-visible,
+.dropdown-item:focus-visible {
+    outline: 2px solid var(--sgv-foco);
+    outline-offset: 2px;
+}
+
+/* La X de los modales llega al borde de .modal-header (márgenes negativos) y .modal-content recorta lo que sale:
+   el contorno va hacia adentro para verse entero. */
+.modal-header .close:focus-visible, .close:focus-visible { outline-offset: -4px; }
 
 /* === Encabezado de página === */
 .sgv-encabezado {
@@ -313,34 +338,24 @@
     .sgv-tab-contador, .sgv-tab-alerta { white-space: nowrap; }
 }
 
-/* === Estados: píldora con tinte suave, sin borde ni animación === */
+/* === Estados: sello rectangular con texto, fondo suave y borde (DN-28) === */
 .sgv-estado {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    padding: 0.125rem 0.5rem;
-    border-radius: 999px;
-    background: var(--sgv-fondo-pagina);
+    padding: 0.0625rem 0.4375rem;
+    border: 1px solid var(--sgv-borde-fuerte);
+    border-radius: var(--sgv-radio);
+    background: var(--sgv-fondo);
     color: var(--sgv-texto-medio);
     font-size: 0.8125rem;
     font-weight: 500;
     white-space: nowrap;
 }
 
-.sgv-estado::before {
-    content: "";
-    width: 0.4rem;
-    height: 0.4rem;
-    border-radius: 50%;
-    background: currentColor;
-    opacity: 0.8;
-    flex-shrink: 0;
-}
-
-.sgv-estado-ok { background: var(--sgv-ok-fondo); color: var(--sgv-ok-texto); }
-.sgv-estado-alerta { background: var(--sgv-alerta-fondo); color: var(--sgv-alerta-texto); }
-.sgv-estado-peligro { background: var(--sgv-peligro-fondo); color: var(--sgv-peligro-texto); }
-.sgv-estado-info { background: var(--sgv-info-fondo); color: var(--sgv-info-texto); }
+.sgv-estado-ok { background: var(--sgv-ok-fondo); border-color: var(--sgv-ok-borde); color: var(--sgv-ok-texto); }
+.sgv-estado-alerta { background: var(--sgv-alerta-fondo); border-color: var(--sgv-alerta-borde); color: var(--sgv-alerta-texto); }
+.sgv-estado-peligro { background: var(--sgv-peligro-fondo); border-color: var(--sgv-peligro-borde); color: var(--sgv-peligro-texto); }
+.sgv-estado-info { background: var(--sgv-info-fondo); border-color: var(--sgv-info-borde); color: var(--sgv-info-texto); }
 
 /* === Tablas ===
    App.css pinta todas las cabeceras de azul con !important; aquí se anula solo dentro de .sgv-tabla.
@@ -348,12 +363,12 @@
 .sgv-tabla { font-size: 0.875rem; color: var(--sgv-texto); }
 
 .table.sgv-tabla th {
-    background: var(--sgv-pizarra-100) !important;
-    color: var(--sgv-pizarra-600) !important;
+    background: var(--sgv-fondo-pagina) !important;
+    color: var(--sgv-texto-suave) !important;
     font-size: 0.8125rem !important;
     font-weight: 600 !important;
     border: none !important;
-    border-bottom: 1px solid var(--sgv-pizarra-300) !important;
+    border-bottom: 1px solid var(--sgv-borde-fuerte) !important;
     padding: 0.625rem 0.75rem !important;
     text-align: left !important;
     white-space: nowrap;
@@ -367,7 +382,7 @@
 .table.sgv-tabla tbody tr:nth-child(odd),
 .table.sgv-tabla tbody tr:nth-child(even) { background: var(--sgv-superficie) !important; }
 
-.table.sgv-tabla tbody tr:hover { background: var(--sgv-pizarra-50) !important; }
+.table.sgv-tabla tbody tr:hover { background: var(--sgv-fondo) !important; }
 
 .table.sgv-tabla tbody td {
     border: none !important;
@@ -404,13 +419,13 @@
     background: var(--sgv-superficie);
     border: 1px solid var(--sgv-borde-fuerte);
     border-radius: var(--sgv-radio);
-    color: var(--sgv-pizarra-600);
+    color: var(--sgv-texto-suave);
     font-size: 0.8125rem;
     cursor: pointer;
     transition: color .15s, border-color .15s, background-color .15s;
 }
 
-.sgv-btn-icono:hover { border-color: var(--sgv-pizarra-400); background: var(--sgv-pizarra-50); text-decoration: none; color: var(--sgv-texto); }
+.sgv-btn-icono:hover { border-color: var(--sgv-borde-fuerte); background: var(--sgv-fondo); text-decoration: none; color: var(--sgv-texto); }
 
 .sgv-btn-icono.info { color: var(--sgv-primario); }
 .sgv-btn-icono.info:hover { background: var(--sgv-primario-claro); border-color: var(--sgv-info-borde); color: var(--sgv-primario); }
@@ -443,16 +458,16 @@
     padding: 0.375rem 1.75rem 0.375rem 0.75rem;
     font-size: 1rem;
     line-height: 1.5;
-    color: var(--sgv-bs-gris-700);
+    color: var(--sgv-texto-medio);
     background: var(--sgv-superficie) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") no-repeat right 0.75rem center / 8px 10px;
-    border: 1px solid var(--sgv-bs-gris-400);
+    border: 1px solid var(--sgv-borde-fuerte);
     border-radius: 0.25rem;
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
 }
-.form-select:focus { border-color: var(--sgv-bs-foco); outline: 0; box-shadow: 0 0 0 0.2rem rgba(var(--sgv-bs-azul-rgb), 0.25); }
-.form-select:disabled { background-color: var(--sgv-bs-gris-200); }
+.form-select:focus { border-color: var(--sgv-foco); outline: 0; box-shadow: 0 0 0 0.2rem rgba(var(--sgv-primario-rgb), 0.25); }
+.form-select:disabled { background-color: var(--sgv-fondo-pagina); }
 .fw-bold { font-weight: 700 !important; }
 .me-2 { margin-right: 0.5rem !important; }
 .ms-2 { margin-left: 0.5rem !important; }
@@ -470,3 +485,156 @@
 .btn-danger-custom:hover, .btn-danger-custom:focus { background: var(--sgv-rojo-800); border-color: var(--sgv-rojo-800); color: var(--sgv-blanco); }
 .btn-success-custom { background: var(--sgv-ok); border: 1px solid var(--sgv-ok); color: var(--sgv-blanco); font-weight: 500; }
 .btn-success-custom:hover, .btn-success-custom:focus { background: var(--sgv-verde-800); border-color: var(--sgv-verde-800); color: var(--sgv-blanco); }
+
+/* === Bootstrap 4.6.2 con la dirección "Expediente" ===
+   bootstrap.min.css trae sus colores fijos (#007bff, #28a745, #6c757d...); aquí se re-tiñe lo que se ve
+   en todas las pantallas con las variables, sin tocar el archivo de la librería. sgv-base.css se carga
+   después de bootstrap.min.css y App.css, así que con la misma especificidad gana esta regla. */
+a { color: var(--sgv-primario); }
+a:hover { color: var(--sgv-primario-osc); }
+
+.navbar.bg-light { background-color: var(--sgv-superficie) !important; border-bottom: 1px solid var(--sgv-borde); }
+.navbar-light .navbar-brand, .navbar-light .navbar-brand:hover { color: var(--sgv-primario); }
+.navbar-light .navbar-nav .nav-link { color: var(--sgv-texto-medio); }
+.navbar-light .navbar-nav .nav-link:hover, .navbar-light .navbar-nav .show > .nav-link, .navbar-light .navbar-nav .active > .nav-link { color: var(--sgv-primario); }
+.dropdown-menu { border-color: var(--sgv-borde); border-radius: var(--sgv-radio); }
+.dropdown-item { color: var(--sgv-texto); }
+.dropdown-item.active, .dropdown-item:active { background-color: var(--sgv-primario); color: var(--sgv-blanco); }
+
+/* Botones: un solo azul; verde, ámbar y rojo de los estados; gris secundario. Texto blanco con 6:1 o más. */
+.btn { border-radius: var(--sgv-radio); }
+.btn-primary, .btn-primary.disabled, .btn-primary:disabled { background-color: var(--sgv-primario); border-color: var(--sgv-primario); color: var(--sgv-blanco); }
+.btn-primary:hover, .btn-primary:focus, .btn-primary.focus,
+.btn-primary:not(:disabled):not(.disabled):active, .btn-primary:not(:disabled):not(.disabled).active, .show > .btn-primary.dropdown-toggle { background-color: var(--sgv-primario-osc); border-color: var(--sgv-primario-osc); color: var(--sgv-blanco); }
+.btn-outline-primary { color: var(--sgv-primario); border-color: var(--sgv-primario); }
+.btn-outline-primary:hover, .btn-outline-primary:not(:disabled):not(.disabled):active, .btn-outline-primary:not(:disabled):not(.disabled).active { background-color: var(--sgv-primario); border-color: var(--sgv-primario); color: var(--sgv-blanco); }
+.btn-success, .btn-success.disabled, .btn-success:disabled { background-color: var(--sgv-ok); border-color: var(--sgv-ok); color: var(--sgv-blanco); }
+.btn-success:hover, .btn-success:focus, .btn-success:not(:disabled):not(.disabled):active { background-color: var(--sgv-exp-verde-osc); border-color: var(--sgv-exp-verde-osc); color: var(--sgv-blanco); }
+.btn-outline-success { color: var(--sgv-ok); border-color: var(--sgv-ok); }
+.btn-outline-success:hover, .btn-outline-success:not(:disabled):not(.disabled):active { background-color: var(--sgv-ok); border-color: var(--sgv-ok); color: var(--sgv-blanco); }
+.btn-danger, .btn-danger.disabled, .btn-danger:disabled { background-color: var(--sgv-peligro); border-color: var(--sgv-peligro); color: var(--sgv-blanco); }
+.btn-danger:hover, .btn-danger:focus, .btn-danger:not(:disabled):not(.disabled):active { background-color: var(--sgv-exp-rojo-osc); border-color: var(--sgv-exp-rojo-osc); color: var(--sgv-blanco); }
+.btn-outline-danger { color: var(--sgv-peligro); border-color: var(--sgv-peligro); }
+.btn-outline-danger:hover, .btn-outline-danger:not(:disabled):not(.disabled):active { background-color: var(--sgv-peligro); border-color: var(--sgv-peligro); color: var(--sgv-blanco); }
+.btn-warning, .btn-warning.disabled, .btn-warning:disabled { background-color: var(--sgv-alerta); border-color: var(--sgv-alerta); color: var(--sgv-blanco); }
+.btn-warning:hover, .btn-warning:focus, .btn-warning:not(:disabled):not(.disabled):active { background-color: var(--sgv-exp-ambar-osc); border-color: var(--sgv-exp-ambar-osc); color: var(--sgv-blanco); }
+.btn-outline-warning { color: var(--sgv-alerta); border-color: var(--sgv-alerta); }
+.btn-outline-warning:hover, .btn-outline-warning:not(:disabled):not(.disabled):active { background-color: var(--sgv-alerta); border-color: var(--sgv-alerta); color: var(--sgv-blanco); }
+.btn-info, .btn-info.disabled, .btn-info:disabled { background-color: var(--sgv-primario); border-color: var(--sgv-primario); color: var(--sgv-blanco); }
+.btn-info:hover, .btn-info:focus, .btn-info:not(:disabled):not(.disabled):active { background-color: var(--sgv-primario-osc); border-color: var(--sgv-primario-osc); color: var(--sgv-blanco); }
+.btn-outline-info { color: var(--sgv-primario); border-color: var(--sgv-primario); }
+.btn-outline-info:hover, .btn-outline-info:not(:disabled):not(.disabled):active { background-color: var(--sgv-primario); border-color: var(--sgv-primario); color: var(--sgv-blanco); }
+.btn-secondary, .btn-secondary.disabled, .btn-secondary:disabled { background-color: var(--sgv-texto-suave); border-color: var(--sgv-texto-suave); color: var(--sgv-blanco); }
+.btn-secondary:hover, .btn-secondary:focus, .btn-secondary:not(:disabled):not(.disabled):active { background-color: var(--sgv-texto-medio); border-color: var(--sgv-texto-medio); color: var(--sgv-blanco); }
+.btn-outline-secondary { color: var(--sgv-texto-medio); border-color: var(--sgv-borde-fuerte); }
+.btn-outline-secondary:hover, .btn-outline-secondary:not(:disabled):not(.disabled):active { background-color: var(--sgv-fondo-pagina); border-color: var(--sgv-borde-fuerte); color: var(--sgv-texto); }
+.btn-link { color: var(--sgv-primario); }
+.btn-link:hover { color: var(--sgv-primario-osc); }
+.btn:focus, .btn.focus, .btn:not(:disabled):not(.disabled):active:focus { box-shadow: 0 0 0 0.2rem rgba(var(--sgv-primario-rgb), 0.25); }
+
+/* Campos: borde gris único; al recibir el foco, borde y halo del azul tinta. */
+.form-control, .custom-select { border-color: var(--sgv-borde-fuerte); border-radius: var(--sgv-radio); color: var(--sgv-texto); }
+.form-control:focus, .custom-select:focus { border-color: var(--sgv-foco); box-shadow: 0 0 0 0.2rem rgba(var(--sgv-primario-rgb), 0.2); color: var(--sgv-texto); }
+.form-control::placeholder { color: var(--sgv-texto-suave); opacity: 1; }
+.form-control:disabled, .form-control[readonly] { background-color: var(--sgv-fondo); }
+.custom-control-input:checked ~ .custom-control-label::before { background-color: var(--sgv-primario); border-color: var(--sgv-primario); }
+.custom-control-input:focus ~ .custom-control-label::before { box-shadow: 0 0 0 0.2rem rgba(var(--sgv-primario-rgb), 0.25); }
+.input-group-text { background-color: var(--sgv-fondo); border-color: var(--sgv-borde-fuerte); color: var(--sgv-texto-medio); }
+.text-muted { color: var(--sgv-texto-suave) !important; }
+/* En el celular el texto apagado se oscurece un paso más (antes en responsive-mobile.css, que se carga antes y perdía). */
+@media (max-width: 768px) { .text-muted { color: var(--sgv-texto-medio) !important; } }
+
+/* Pestañas: la activa en azul tinta, con una línea arriba (como la ceja de una carpeta). */
+.nav-tabs { border-bottom-color: var(--sgv-borde); }
+.nav-tabs .nav-link { color: var(--sgv-texto-suave); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; }
+.nav-tabs .nav-link:hover, .nav-tabs .nav-link:focus { border-color: var(--sgv-borde) var(--sgv-borde) var(--sgv-borde); color: var(--sgv-texto); }
+.nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link { color: var(--sgv-primario); background-color: var(--sgv-superficie); border-color: var(--sgv-borde) var(--sgv-borde) var(--sgv-superficie); box-shadow: inset 0 2px 0 var(--sgv-primario); font-weight: 500; }
+.nav-pills .nav-link { border-radius: var(--sgv-radio); }
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link { background-color: var(--sgv-primario); color: var(--sgv-blanco); }
+
+/* Paginación. */
+.page-link { color: var(--sgv-primario); border-color: var(--sgv-borde); }
+.page-link:hover { color: var(--sgv-primario-osc); background-color: var(--sgv-fondo-pagina); border-color: var(--sgv-borde); }
+.page-link:focus { box-shadow: 0 0 0 0.2rem rgba(var(--sgv-primario-rgb), 0.25); }
+.page-item.active .page-link { background-color: var(--sgv-primario); border-color: var(--sgv-primario); color: var(--sgv-blanco); }
+.page-item.disabled .page-link { color: var(--sgv-texto-suave); }
+
+/* Etiquetas: sello rectangular con texto, fondo suave y borde (las .badge-pill siguen redondas: contadores). */
+.badge { border: 1px solid transparent; font-weight: 600; }
+.badge:not(.badge-pill) { border-radius: var(--sgv-radio); }
+.badge-primary, .badge-info { background-color: var(--sgv-info-fondo); border-color: var(--sgv-info-borde); color: var(--sgv-info-texto); }
+.badge-success { background-color: var(--sgv-ok-fondo); border-color: var(--sgv-ok-borde); color: var(--sgv-ok-texto); }
+.badge-warning { background-color: var(--sgv-alerta-fondo); border-color: var(--sgv-alerta-borde); color: var(--sgv-alerta-texto); }
+.badge-danger { background-color: var(--sgv-peligro-fondo); border-color: var(--sgv-peligro-borde); color: var(--sgv-peligro-texto); }
+.badge-secondary, .badge-light { background-color: var(--sgv-fondo); border-color: var(--sgv-borde-fuerte); color: var(--sgv-texto-medio); }
+.badge-dark { background-color: var(--sgv-texto); border-color: var(--sgv-texto); color: var(--sgv-blanco); }
+a.badge-primary:hover, a.badge-info:hover { background-color: var(--sgv-info-borde); color: var(--sgv-info-texto); }
+/* App.css pinta .badge-info redonda (contador de registros, con !important); cuando no es un contador sino un
+   dato (rol, ámbito) va como sello: .sgv-sello. */
+.badge.sgv-sello { border-radius: var(--sgv-radio) !important; border-color: var(--sgv-info-borde); }
+
+/* Avisos: los mismos tres estados más el informativo. */
+.alert { border-radius: var(--sgv-radio); }
+.alert-success { background-color: var(--sgv-ok-fondo); border-color: var(--sgv-ok-borde); color: var(--sgv-ok-texto); }
+.alert-warning { background-color: var(--sgv-alerta-fondo); border-color: var(--sgv-alerta-borde); color: var(--sgv-alerta-texto); }
+.alert-danger { background-color: var(--sgv-peligro-fondo); border-color: var(--sgv-peligro-borde); color: var(--sgv-peligro-texto); }
+.alert-info, .alert-primary { background-color: var(--sgv-info-fondo); border-color: var(--sgv-info-borde); color: var(--sgv-info-texto); }
+.alert-secondary, .alert-light { background-color: var(--sgv-fondo); border-color: var(--sgv-borde); color: var(--sgv-texto-medio); }
+.alert .alert-link { color: inherit; }
+
+/* Textos y fondos de utilidad que llevan color de marca o de estado. */
+.text-primary, .text-info { color: var(--sgv-primario) !important; }
+.text-success { color: var(--sgv-ok) !important; }
+.text-danger { color: var(--sgv-peligro) !important; }
+.text-warning { color: var(--sgv-alerta) !important; }
+.text-secondary { color: var(--sgv-texto-suave) !important; }
+.bg-primary, .bg-info { background-color: var(--sgv-primario) !important; }
+.bg-success { background-color: var(--sgv-ok) !important; }
+.bg-danger { background-color: var(--sgv-peligro) !important; }
+.bg-secondary { background-color: var(--sgv-texto-suave) !important; }
+.bg-dark { background-color: var(--sgv-texto) !important; }
+/* .badge de Bootstrap 4 no define color: sobre un fondo oscuro el texto va en blanco (con el texto heredado daba 1,4:1).
+   .bg-warning sigue siendo el amarillo de Bootstrap con texto oscuro (12:1), por eso no está aquí. */
+.badge.bg-primary, .badge.bg-info, .badge.bg-success, .badge.bg-danger, .badge.bg-secondary, .badge.bg-dark { color: var(--sgv-blanco); }
+.border-primary { border-color: var(--sgv-primario) !important; }
+.border-success { border-color: var(--sgv-ok) !important; }
+.border-danger { border-color: var(--sgv-peligro) !important; }
+.border-warning { border-color: var(--sgv-alerta) !important; }
+
+/* Tablas tipo planilla: líneas grises finas y cifras alineadas. */
+.table { color: var(--sgv-texto); }
+.table th, .table td { border-top-color: var(--sgv-borde); }
+.table thead th { border-bottom-color: var(--sgv-borde-fuerte); }
+.table-bordered, .table-bordered th, .table-bordered td { border-color: var(--sgv-borde); }
+.table-striped tbody tr:nth-of-type(odd) { background-color: var(--sgv-fondo); }
+.table-hover tbody tr:hover { background-color: var(--sgv-primario-claro); color: var(--sgv-texto); }
+
+/* Hojas: blanco con borde de 1 px, radio de 3 px y sin sombra. */
+.card { border-color: var(--sgv-borde); border-radius: var(--sgv-radio); }
+.card.shadow, .card.shadow-sm, .card.shadow-lg, .shadow-sm.card { box-shadow: none !important; }
+.card-header { background-color: var(--sgv-fondo); border-bottom-color: var(--sgv-borde); }
+.card-header:first-child { border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; }
+.card-footer { background-color: var(--sgv-fondo); border-top-color: var(--sgv-borde); }
+.list-group-item { border-color: var(--sgv-borde); }
+.list-group-item.active { background-color: var(--sgv-primario); border-color: var(--sgv-primario); }
+.modal-content { border-radius: var(--sgv-radio); }
+.progress { border-radius: var(--sgv-radio); background-color: var(--sgv-fondo-pagina); }
+.progress-bar { background-color: var(--sgv-primario); }
+
+/* === Select2 (ListaDespachos, RegistroDespacho) con la paleta ===
+   select2.min.css se carga después que esta hoja: los selectores repiten .select2-container para ganarle
+   sin tocar el archivo de la librería. */
+.select2-container.select2-container--default .select2-selection--single,
+.select2-container.select2-container--default .select2-selection--multiple { border-color: var(--sgv-borde-fuerte); border-radius: var(--sgv-radio); }
+.select2-container.select2-container--default .select2-selection--single .select2-selection__rendered { color: var(--sgv-texto); }
+.select2-container.select2-container--default .select2-selection--single .select2-selection__placeholder,
+.select2-container.select2-container--default .select2-search--inline .select2-search__field::placeholder { color: var(--sgv-texto-suave); }
+.select2-container.select2-container--default.select2-container--focus .select2-selection--multiple,
+.select2-container.select2-container--default.select2-container--open .select2-selection--single { border-color: var(--sgv-foco); }
+.select2-container.select2-container--default .select2-dropdown { border-color: var(--sgv-borde-fuerte); border-radius: var(--sgv-radio); }
+.select2-container.select2-container--open .select2-dropdown--below { border-top-left-radius: 0; border-top-right-radius: 0; }
+.select2-container.select2-container--open .select2-dropdown--above { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.select2-container.select2-container--default .select2-search--dropdown .select2-search__field { border-color: var(--sgv-borde-fuerte); border-radius: var(--sgv-radio); }
+.select2-container.select2-container--default .select2-results__option[aria-selected=true] { background-color: var(--sgv-fondo-pagina); color: var(--sgv-texto); }
+.select2-container.select2-container--default .select2-results__option--highlighted[aria-selected] { background-color: var(--sgv-primario); color: var(--sgv-blanco); }
+.select2-container.select2-container--default .select2-results__message { color: var(--sgv-texto-suave); }

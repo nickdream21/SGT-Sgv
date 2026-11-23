@@ -62,7 +62,7 @@
                     <asp:BoundField DataField="nombre" HeaderText="Nombre completo" />
                     <asp:TemplateField HeaderText="Rol">
                         <ItemTemplate>
-                            <span class="badge badge-info"><%#: Eval("rol") %></span>
+                            <span class="badge badge-info sgv-sello"><%#: Eval("rol") %></span>
                             <%-- E4-14: verificación en dos pasos activa. --%>
                             <asp:PlaceHolder runat="server" Visible='<%# SegundoFactorActivo(Eval("segundoFactor")) %>'>
                                 <span class="badge badge-success" title="Verificación en dos pasos activa">2 pasos</span>

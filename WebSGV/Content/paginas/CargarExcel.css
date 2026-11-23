@@ -1,24 +1,24 @@
 ﻿.upload-container {
-    border: 2px dashed var(--sgv-suelto-cccccc);
+    border: 2px dashed var(--sgv-borde-fuerte);
     padding: 20px;
-    border-radius: 8px;
+    border-radius: var(--sgv-radio);
     text-align: center;
     margin-bottom: 30px;
     cursor: pointer;
     transition: all 0.3s;
 }
 .upload-container:hover {
-    border-color: var(--sgv-bs-enlace-hover);
+    border-color: var(--sgv-primario-osc);
 }
 .upload-icon {
     font-size: 28px;
-    color: var(--sgv-bs-enlace-hover);
+    color: var(--sgv-primario-osc);
     margin-bottom: 10px;
 }
 .file-info {
     margin-top: 15px;
     font-style: italic;
-    color: var(--sgv-suelto-666666);
+    color: var(--sgv-texto-suave);
 }
 .action-buttons {
     margin-top: 20px;
@@ -32,34 +32,34 @@
 .status-pill {
     display: inline-block;
     padding: 3px 10px;
-    border-radius: 12px;
+    border-radius: var(--sgv-radio);
     font-size: 12px;
     font-weight: 500;
 }
 .status-success {
-    background-color: var(--sgv-bs-alerta-exito-fondo);
-    color: var(--sgv-bs-alerta-exito-texto);
+    background-color: var(--sgv-ok-fondo);
+    color: var(--sgv-ok-texto);
 }
 .status-error {
-    background-color: var(--sgv-bs-alerta-peligro-fondo);
-    color: var(--sgv-bs-alerta-peligro-texto);
+    background-color: var(--sgv-peligro-fondo);
+    color: var(--sgv-peligro-texto);
 }
 .status-warning {
-    background-color: var(--sgv-bs-alerta-aviso-fondo);
-    color: var(--sgv-bs-alerta-aviso-texto);
+    background-color: var(--sgv-alerta-fondo);
+    color: var(--sgv-alerta-texto);
 }
 .status-info {
-    background-color: var(--sgv-bs-alerta-info-fondo);
-    color: var(--sgv-bs-alerta-info-texto);
+    background-color: var(--sgv-info-fondo);
+    color: var(--sgv-info-texto);
 }
 .template-section {
     margin-top: 40px;
-    background-color: var(--sgv-suelto-f9f9f9);
+    background-color: var(--sgv-fondo);
     padding: 20px;
-    border-radius: 8px;
+    border-radius: var(--sgv-radio);
 }
 .section-header {
-    background-color: var(--sgv-bs-enlace-hover);
+    background-color: var(--sgv-primario-osc);
     color: var(--sgv-blanco);
     padding: 10px 15px;
     margin-bottom: 15px;
@@ -67,8 +67,8 @@
     font-weight: 600;
 }
 .instructions-box {
-    background-color: var(--sgv-suelto-e9f7fe);
-    border-left: 4px solid var(--sgv-suelto-0077cc);
+    background-color: var(--sgv-info-fondo);
+    border-left: 4px solid var(--sgv-primario);
     padding: 15px;
     margin-bottom: 20px;
     border-radius: 3px;

@@ -6,20 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Error del sistema</title>
     <style>
-        body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; margin: 0; padding: 0; color: #1e293b; }
-        .error-container { max-width: 900px; margin: 40px auto; padding: 24px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .error-icon { font-size: 4rem; color: #dc3545; text-align: center; margin-bottom: 12px; }
+        body { font-family: "Segoe UI", Roboto, sans-serif; background: #eceef1; margin: 0; padding: 0; color: #1a2230; }
+        .error-container { max-width: 900px; margin: 40px auto; padding: 24px; background: #fff; border: 1px solid #d5dae2; border-radius: 3px; }
+        .error-icon { font-size: 4rem; color: #9a1c1c; text-align: center; margin-bottom: 12px; }
         .error-title { font-size: 1.5rem; font-weight: 700; text-align: center; margin: 0 0 8px; }
-        .error-message { font-size: 1rem; color: #64748b; text-align: center; margin-bottom: 18px; }
-        .error-debug { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 14px; margin: 14px 0; word-break: break-word; }
-        .error-debug strong { color: #856404; }
+        .error-message { font-size: 1rem; color: #566173; text-align: center; margin-bottom: 18px; }
+        .error-debug { background: #f8eed8; border: 1px solid #dcc48a; border-radius: 3px; padding: 14px; margin: 14px 0; word-break: break-word; }
+        .error-debug strong { color: #7a5200; }
         .error-debug code { background: #fff; padding: 2px 6px; border-radius: 3px; }
-        .error-debug pre { font-size: 0.78rem; margin: 8px 0 0; white-space: pre-wrap; background: #fffbeb; padding: 10px; border-radius: 4px; max-height: 320px; overflow: auto; }
+        .error-debug pre { font-size: 0.78rem; margin: 8px 0 0; white-space: pre-wrap; background: #f5f6f8; padding: 10px; border-radius: 3px; max-height: 320px; overflow: auto; }
         .error-actions { text-align: center; margin-top: 18px; }
-        .error-actions a { display: inline-block; margin: 4px; padding: 9px 18px; border-radius: 4px; text-decoration: none; font-weight: 500; }
-        .btn-primary-custom { background: #2563eb; color: #fff; }
-        .btn-secondary-custom { background: #fff; border: 1px solid #cbd5e1; color: #64748b; }
-        .error-code { text-align: center; color: #94a3b8; font-size: 0.85rem; margin-top: 12px; }
+        .error-actions a { display: inline-block; margin: 4px; padding: 9px 18px; border-radius: 3px; text-decoration: none; font-weight: 500; }
+        .btn-primary-custom { background: #1f3a6e; color: #fff; }
+        .btn-secondary-custom { background: #fff; border: 1px solid #a8b0bc; color: #3b4656; }
+        .error-code { text-align: center; color: #566173; font-size: 0.85rem; margin-top: 12px; }
     </style>
 </head>
 <body>

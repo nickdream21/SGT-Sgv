@@ -10,8 +10,10 @@ namespace WebSGV.Tests
 {
     /// <summary>
     /// E5-11, variables de color: los colores de las hojas propias (Content/*.css y Content/paginas/**) viven en
-    /// el :root de sgv-base.css (paleta exacta + semánticas) y las hojas solo usan var(). Lo genera y lo comprueba
-    /// herramientas/estilos/colores.js (aplicar / verificar). Aquí se sostienen las reglas para lo que venga después.
+    /// el :root de sgv-base.css y las hojas solo usan var(). E5-12, dirección "Expediente" (DN-28): el :root es
+    /// una escala corta (azul tinta, gris único, verde, ámbar y rojo) + semánticas + alias heredados; fuente
+    /// IBM Plex Sans servida desde Content/fonts; contraste WCAG de los pares texto/fondo; foco común.
+    /// herramientas/estilos/colores.js verificar [rev] compara el resultado con otra revisión.
     /// </summary>
     public class EstilosTests
     {
@@ -23,10 +25,10 @@ namespace WebSGV.Tests
         private static readonly Regex RaizPermitida = new Regex(@"^--de-f-|^--dc-radio$");
 
         // var() que se definen fuera de las hojas (lista cerrada): --fase, --tam y --planta los pone
-        // DashboardExportacion.js en style=; --dark-gray no está definida en ninguna parte (M-141).
+        // DashboardExportacion.js en style=.
         private static readonly HashSet<string> VariablesExternas = new HashSet<string>(StringComparer.Ordinal)
         {
-            "--fase", "--tam", "--planta", "--dark-gray"
+            "--fase", "--tam", "--planta"
         };
 
         // Páginas sin Site.Master que no enlazan hojas (Error.aspx guarda su CSS en línea: debe verse aunque
@@ -213,7 +215,9 @@ namespace WebSGV.Tests
             Assert.True(fuera.Count == 0, "Color literal en un :root que no es el de sgv-base.css:\n" + Lista(fuera));
 
             var paleta = decls.Where(d => d.Hoja == Base && Literal.IsMatch(d.Valor) && !d.Valor.StartsWith("var(", StringComparison.Ordinal)).ToList();
-            Assert.True(paleta.Count > 100, "La paleta de sgv-base.css debería tener más de 100 colores; tiene " + paleta.Count);
+            // E5-12: una escala corta (DN-28). Un color nuevo entra a la escala solo si ningún tono existente sirve.
+            Assert.True(paleta.Count >= 15 && paleta.Count <= 30,
+                "La escala de sgv-base.css debería tener entre 15 y 30 colores literales; tiene " + paleta.Count);
             var repetidos = paleta
                 .GroupBy(d => d.Valor.ToLowerInvariant())
                 .Where(g => g.Count() > 1)
@@ -247,26 +251,46 @@ namespace WebSGV.Tests
             var dobles = defs.GroupBy(d => d.Propiedad).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
             Assert.True(dobles.Count == 0, "Variable --sgv-* definida dos veces: " + string.Join(", ", dobles));
 
-            // Las 10 que existían antes de E5-11 siguen con su nombre y su valor.
-            var raiz = defs.ToDictionary(d => d.Propiedad, d => d.Valor);
-            string Resolver(string nombre)
+            // E5-12: las semánticas toman los valores de la dirección "Expediente" (DN-28).
+            var raiz = RaizBase();
+            var direccion = new Dictionary<string, string>
             {
-                var v = raiz[nombre];
-                for (int i = 0; i < 5 && v.StartsWith("var(", StringComparison.Ordinal); i++)
-                    v = raiz[Regex.Match(v, @"var\((--[\w-]+)\)").Groups[1].Value];
-                return v;
-            }
-            var originales = new Dictionary<string, string>
-            {
-                ["--sgv-texto"] = "#1f2937", ["--sgv-texto-suave"] = "#6b7280", ["--sgv-borde"] = "#e5e7eb",
-                ["--sgv-borde-fuerte"] = "#d1d5db", ["--sgv-fondo"] = "#f9fafb", ["--sgv-primario"] = "#1d4ed8",
-                ["--sgv-ok"] = "#15803d", ["--sgv-alerta"] = "#b45309", ["--sgv-peligro"] = "#b91c1c", ["--sgv-radio"] = "6px"
+                ["--sgv-primario"] = "#1f3a6e", ["--sgv-foco"] = "#1f3a6e", ["--sgv-info-texto"] = "#1f3a6e",
+                ["--sgv-texto"] = "#1a2230", ["--sgv-texto-suave"] = "#566173", ["--sgv-borde"] = "#d5dae2",
+                ["--sgv-fondo-pagina"] = "#eceef1", ["--sgv-superficie"] = "#ffffff",
+                ["--sgv-ok"] = "#17603a", ["--sgv-ok-texto"] = "#17603a",
+                ["--sgv-alerta"] = "#7a5200", ["--sgv-alerta-texto"] = "#7a5200",
+                ["--sgv-peligro"] = "#9a1c1c", ["--sgv-peligro-texto"] = "#9a1c1c",
+                ["--sgv-radio"] = "3px"
             };
-            foreach (var o in originales)
+            foreach (var o in direccion)
             {
                 Assert.True(raiz.ContainsKey(o.Key), "Falta " + o.Key + " en sgv-base.css");
-                Assert.Equal(o.Value, Resolver(o.Key));
+                Assert.Equal(o.Value, Resolver(raiz, o.Key));
             }
+
+            // Las familias que E5-12 retiró no vuelven: sus usos apuntan a las semánticas.
+            var retiradas = defs.Where(d => Regex.IsMatch(d.Propiedad, @"^--sgv-(pizarra|bs|suelto)-")).Select(d => d.Propiedad).ToList();
+            Assert.True(retiradas.Count == 0, "--sgv-pizarra-*, --sgv-bs-* y --sgv-suelto-* se retiraron en E5-12 (use una semántica): " + string.Join(", ", retiradas));
+        }
+
+        /// <summary>Definiciones del :root de sgv-base.css (nombre → valor enmascarado).</summary>
+        private static Dictionary<string, string> RaizBase() =>
+            Declaraciones(Base, Leer(Base)).Where(d => d.EnRaiz && d.Propiedad.StartsWith("--", StringComparison.Ordinal))
+                .ToDictionary(d => d.Propiedad, d => d.Valor);
+
+        /// <summary>Valor final de una variable siguiendo sus var() (falla si queda una sin definir).</summary>
+        private static string Resolver(Dictionary<string, string> raiz, string nombre)
+        {
+            Assert.True(raiz.ContainsKey(nombre), "Falta " + nombre + " en el :root de sgv-base.css");
+            var v = raiz[nombre];
+            for (int i = 0; i < 6 && v.StartsWith("var(", StringComparison.Ordinal); i++)
+            {
+                var siguiente = Regex.Match(v, @"var\((--[\w-]+)\)").Groups[1].Value;
+                Assert.True(raiz.ContainsKey(siguiente), nombre + " apunta a " + siguiente + ", que no está en sgv-base.css");
+                v = raiz[siguiente];
+            }
+            return v.ToLowerInvariant();
         }
 
         /// <summary>(e) Toda var() usada está definida en alguna hoja (lista cerrada de las que pone el JS).</summary>
@@ -315,6 +339,258 @@ namespace WebSGV.Tests
                 if (baseCss < 0 || baseCss > pagina) fallas.Add(p + ": falta enlazar ~/Content/sgv-base.css (con RecursoHelper.Url) antes de su hoja");
             }
             Assert.True(fallas.Count == 0, string.Join("\n", fallas));
+        }
+
+        // ------------------------------------------------------------------ E5-12: dirección "Expediente"
+
+        // Colores de la plantilla anterior que no deben volver como color de texto propio. Lista cerrada de
+        // excepciones vacía: los style= de las páginas y los colores que pinta el JS son M-143 (fuera de las hojas).
+        private static readonly string[] ColoresRetirados = { "#007bff", "#94a3b8", "#9ca3af", "#16a34a" };
+        private static readonly HashSet<string> ColoresRetiradosPermitidos = new HashSet<string>(StringComparer.Ordinal);
+
+        /// <summary>(g) Ningún color: de las hojas (con las var() resueltas) ni de los &lt;style&gt; de las páginas usa un color retirado.</summary>
+        [Fact]
+        public void G_SinColoresRetiradosEnTexto()
+        {
+            var decls = TodasLasDeclaraciones();
+            var tabla = decls.Where(d => d.EnRaiz && d.Propiedad.StartsWith("--", StringComparison.Ordinal))
+                .GroupBy(d => d.Propiedad).ToDictionary(g => g.Key, g => g.First().Valor);
+            string Expandir(string v)
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    var nuevo = UsoVarCompleto.Replace(v, m => tabla.TryGetValue(m.Groups[1].Value, out var x) ? x : m.Value);
+                    if (nuevo == v) break;
+                    v = nuevo;
+                }
+                return v.ToLowerInvariant();
+            }
+            var fallas = decls
+                .Where(d => d.Propiedad == "color")
+                .SelectMany(d => ColoresRetirados.Where(c => Expandir(d.Valor).Contains(c)).Select(c => $"{d.Hoja}:{d.Linea} color: {d.Valor} → {c}"))
+                .Where(f => !ColoresRetiradosPermitidos.Contains(f))
+                .ToList();
+
+            // Bloques <style> de las páginas (Error.aspx, Error404.aspx...): literales a mano.
+            var raiz = RaizWeb();
+            foreach (var f in PaginasYMaster())
+            {
+                var texto = File.ReadAllText(f);
+                foreach (Match bloque in Regex.Matches(texto, @"<style[^>]*>([\s\S]*?)</style>", RegexOptions.IgnoreCase))
+                    foreach (var d in Declaraciones(Relativo(raiz, f), bloque.Groups[1].Value).Where(d => d.Propiedad == "color"))
+                        foreach (var c in ColoresRetirados.Where(c => d.Valor.ToLowerInvariant().Contains(c)))
+                            fallas.Add($"{d.Hoja} <style> color: {d.Valor}");
+            }
+            Assert.True(fallas.Count == 0, "Color de la plantilla anterior en un color: (use var(--sgv-texto-suave), --sgv-primario u --sgv-ok):\n" + Lista(fallas));
+        }
+
+        private static readonly Regex UsoVarCompleto = new Regex(@"var\(\s*(--[\w-]+)\s*\)");
+
+        private static List<string> PaginasYMaster()
+        {
+            var raiz = RaizWeb();
+            return Directory.GetFiles(raiz, "*.*", SearchOption.AllDirectories)
+                .Where(f => new[] { ".aspx", ".master", ".ascx" }.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                .Where(f => !Relativo(raiz, f).StartsWith("obj/", StringComparison.OrdinalIgnoreCase)
+                         && !Relativo(raiz, f).StartsWith("bin/", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        private static readonly string[] PesosFuente = { "400", "500", "600" };
+
+        /// <summary>(h) IBM Plex Sans se sirve del propio sitio: 3 pesos woff2 en Content/fonts, con licencia, swap y respaldo.</summary>
+        [Fact]
+        public void H_FuentePropiaServidaDesdeElSitio()
+        {
+            var raiz = RaizWeb();
+            var css = Leer(Base);
+            var caras = Regex.Matches(css, @"@font-face\s*\{([^}]*)\}").Cast<Match>().Select(m => m.Groups[1].Value).ToList();
+            Assert.Equal(PesosFuente.Length, caras.Count);
+            var csproj = File.ReadAllText(Path.Combine(raiz, "WebSGV.csproj"));
+            foreach (var peso in PesosFuente)
+            {
+                var cara = caras.SingleOrDefault(c => Regex.IsMatch(c, @"font-weight:\s*" + peso + @"\s*;"));
+                Assert.True(cara != null, "Falta la @font-face de peso " + peso);
+                Assert.Contains("font-family: \"IBM Plex Sans\"", cara);
+                Assert.Contains("font-display: swap", cara);
+                var url = Regex.Match(cara, @"url\(""(fonts/[\w.-]+\.woff2)""\)\s*format\(""woff2""\)");
+                Assert.True(url.Success, "La @font-face de " + peso + " debe apuntar a fonts/*.woff2 (relativa, sin otro origen)");
+                var archivo = Path.Combine(raiz, "Content", url.Groups[1].Value.Replace('/', Path.DirectorySeparatorChar));
+                Assert.True(File.Exists(archivo), "No existe " + archivo);
+                var bytes = File.ReadAllBytes(archivo);
+                Assert.True(bytes.Length > 1000 && bytes.Length < 40 * 1024, url.Groups[1].Value + " pesa " + bytes.Length + " bytes (subconjunto latino: < 40 KB)");
+                Assert.Equal("wOF2", Encoding.ASCII.GetString(bytes, 0, 4));
+                Assert.Contains("<Content Include=\"Content\\" + url.Groups[1].Value.Replace('/', '\\') + "\" />", csproj);
+            }
+            Assert.True(File.Exists(Path.Combine(raiz, "Content", "fonts", "OFL.txt")), "Falta la licencia OFL junto a las fuentes");
+            Assert.Contains("SIL Open Font License", File.ReadAllText(Path.Combine(raiz, "Content", "fonts", "OFL.txt")));
+            Assert.Contains("<Content Include=\"Content\\fonts\\OFL.txt\" />", csproj);
+
+            // La familia y su respaldo están en una sola variable, y la usa el body.
+            var fuente = Regex.Match(css, @"--sgv-fuente:\s*([^;]+);").Groups[1].Value.Trim();
+            Assert.Equal("\"IBM Plex Sans\", \"Segoe UI\", Roboto, sans-serif", fuente);
+            Assert.Matches(new Regex(@"(^|\})\s*body\s*\{[^}]*font-family:\s*var\(--sgv-fuente\)"), Enmascarar(css).Replace("\r", ""));
+
+            // IIS sirve .woff2 (algunos no lo traen) y la CSP admite fuentes del propio sitio.
+            var config = File.ReadAllText(Path.Combine(raiz, "Web.config"));
+            Assert.Contains("<mimeMap fileExtension=\".woff2\" mimeType=\"font/woff2\" />", config);
+            Assert.Matches(new Regex(@"font-src 'self'"), config);
+        }
+
+        /// <summary>(i) 0 orígenes externos: ni las hojas ni las páginas piden fuentes, hojas o scripts a otro sitio.</summary>
+        [Fact]
+        public void I_SinOrigenesExternos()
+        {
+            var fallas = new List<string>();
+            foreach (var h in Hojas())
+            {
+                var t = Leer(h);
+                if (Regex.IsMatch(t, @"@import", RegexOptions.IgnoreCase)) fallas.Add(h + ": @import");
+                foreach (Match m in Regex.Matches(t, @"url\(\s*['""]?((?:https?:)?//[^'"")]+)", RegexOptions.IgnoreCase))
+                    fallas.Add(h + ": " + m.Groups[1].Value);
+            }
+            var raiz = RaizWeb();
+            var externo = new Regex(@"(?:href|src)\s*=\s*[""'](?:https?:)?//|fonts\.googleapis|fonts\.gstatic|use\.typekit|fonts\.bunny", RegexOptions.IgnoreCase);
+            foreach (var f in PaginasYMaster())
+                foreach (Match m in externo.Matches(File.ReadAllText(f)))
+                    fallas.Add(Relativo(raiz, f) + ": " + m.Value);
+            Assert.True(fallas.Count == 0, "Recurso pedido a otro origen (sírvalo desde Content/ o Scripts/):\n" + Lista(fallas));
+        }
+
+        /// <summary>Contraste WCAG 2.x entre dos colores #rrggbb.</summary>
+        internal static double Contraste(string a, string b)
+        {
+            double Luminancia(string hex)
+            {
+                double Canal(int i)
+                {
+                    double c = Convert.ToInt32(hex.Substring(i, 2), 16) / 255.0;
+                    return c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+                }
+                return 0.2126 * Canal(1) + 0.7152 * Canal(3) + 0.0722 * Canal(5);
+            }
+            double la = Luminancia(a), lb = Luminancia(b);
+            return (Math.Max(la, lb) + 0.05) / (Math.Min(la, lb) + 0.05);
+        }
+
+        /// <summary>Pares texto/fondo de las semánticas que deben leerse (≥ 4,5:1). El foco se mide contra los dos fondos.</summary>
+        public static IEnumerable<object[]> ParesDeContraste() => new[]
+        {
+            new object[] { "--sgv-texto", "--sgv-superficie" },
+            new object[] { "--sgv-texto", "--sgv-fondo-pagina" },
+            new object[] { "--sgv-texto", "--sgv-fondo" },
+            new object[] { "--sgv-texto-medio", "--sgv-superficie" },
+            new object[] { "--sgv-texto-suave", "--sgv-superficie" },
+            new object[] { "--sgv-texto-suave", "--sgv-fondo" },
+            new object[] { "--sgv-texto-suave", "--sgv-fondo-pagina" },
+            new object[] { "--sgv-primario", "--sgv-superficie" },
+            new object[] { "--sgv-primario", "--sgv-fondo-pagina" },
+            new object[] { "--sgv-ok-texto", "--sgv-ok-fondo" },
+            new object[] { "--sgv-alerta-texto", "--sgv-alerta-fondo" },
+            new object[] { "--sgv-peligro-texto", "--sgv-peligro-fondo" },
+            new object[] { "--sgv-info-texto", "--sgv-info-fondo" },
+            new object[] { "--sgv-ok", "--sgv-superficie" },
+            new object[] { "--sgv-alerta", "--sgv-superficie" },
+            new object[] { "--sgv-peligro", "--sgv-superficie" },
+            new object[] { "--sgv-blanco", "--sgv-primario" },
+            new object[] { "--sgv-blanco", "--sgv-primario-osc" },
+            new object[] { "--sgv-blanco", "--sgv-ok" },
+            new object[] { "--sgv-blanco", "--sgv-alerta" },
+            new object[] { "--sgv-blanco", "--sgv-peligro" },
+            new object[] { "--sgv-blanco", "--sgv-texto-suave" },
+            new object[] { "--sgv-foco", "--sgv-superficie" },
+            new object[] { "--sgv-foco", "--sgv-fondo-pagina" },
+        };
+
+        /// <summary>(j) Contraste de al menos 4,5:1 (fórmula WCAG) en cada par texto/fondo de las semánticas.</summary>
+        [Theory]
+        [MemberData(nameof(ParesDeContraste))]
+        public void J_ContrasteDeLasSemanticas(string texto, string fondo)
+        {
+            var raiz = RaizBase();
+            string a = Resolver(raiz, texto), b = Resolver(raiz, fondo);
+            Assert.Matches("^#[0-9a-f]{6}$", a);
+            Assert.Matches("^#[0-9a-f]{6}$", b);
+            double c = Contraste(a, b);
+            Assert.True(c >= 4.5, $"{texto} ({a}) sobre {fondo} ({b}): {c:0.00}:1, mínimo 4,5:1");
+        }
+
+        [Fact]
+        public void J_ContrasteCalculaComoWcag()
+        {
+            Assert.Equal(21.0, Contraste("#000000", "#ffffff"), 2);
+            Assert.Equal(1.0, Contraste("#1f3a6e", "#1f3a6e"), 2);
+            Assert.Equal(4.54, Contraste("#767676", "#ffffff"), 2);   // el gris más claro que pasa AA sobre blanco
+            Assert.True(Contraste("#9ca3af", "#ffffff") < 4.5);       // el gris claro que E5-12 retira del texto
+        }
+
+        /// <summary>(k) Foco común con --sgv-foco en enlaces, botones y campos; cifras tabulares en tablas y montos.</summary>
+        [Fact]
+        public void K_FocoComunYCifrasTabulares()
+        {
+            var css = Enmascarar(Leer(Base)).Replace("\r", "");
+            var regla = Regex.Matches(css, @"([^{}]+)\{([^{}]*)\}").Cast<Match>()
+                .FirstOrDefault(m => m.Groups[1].Value.Contains(":focus-visible") && m.Groups[2].Value.Contains("var(--sgv-foco)"));
+            Assert.True(regla != null, "Falta la regla común de :focus-visible con var(--sgv-foco) en sgv-base.css");
+            var selectores = regla.Groups[1].Value.Split(',').Select(s => s.Trim()).ToList();
+            foreach (var s in new[] { "a:focus-visible", "button:focus-visible", ".btn:focus-visible", "input:focus-visible", "select:focus-visible", "textarea:focus-visible" })
+                Assert.Contains(s, selectores);
+            Assert.Matches(new Regex(@"outline:\s*2px solid var\(--sgv-foco\)"), regla.Groups[2].Value);
+
+            var tabulares = Regex.Matches(css, @"([^{}]+)\{[^{}]*font-variant-numeric:\s*tabular-nums[^{}]*\}").Cast<Match>()
+                .SelectMany(m => m.Groups[1].Value.Split(',').Select(s => s.Trim())).ToList();
+            foreach (var s in new[] { "table", ".table", ".sgv-num", "input[data-monto]" })
+                Assert.Contains(s, tabulares);
+        }
+
+        /// <summary>(l) Error.aspx guarda su CSS en línea: colores de la dirección y fuente de respaldo, sin la fuente web.</summary>
+        [Fact]
+        public void L_ErrorAspxConValoresDeLaDireccionSinFuenteWeb()
+        {
+            var texto = Leer("Views/Error.aspx");
+            Assert.DoesNotContain("IBM Plex", texto);
+            Assert.DoesNotContain("font-face", texto);
+            Assert.Contains("font-family: \"Segoe UI\", Roboto, sans-serif", texto);
+            foreach (var c in new[] { "#1a2230", "#566173", "#eceef1", "#1f3a6e" })
+                Assert.Contains(c, texto);
+        }
+
+        private static readonly string[] FondosOscuros = { "primary", "info", "success", "danger", "secondary", "dark" };
+
+        /// <summary>
+        /// (m) .badge de Bootstrap 4 no define color: un "badge bg-primary" heredaba el texto oscuro (1,44:1). Todo badge
+        /// con fondo oscuro en aspx, cs y js lleva texto blanco, por la regla de sgv-base.css o por text-white.
+        /// </summary>
+        [Fact]
+        public void M_BadgesConFondoOscuroLlevanTextoBlanco()
+        {
+            var css = Enmascarar(Leer(Base)).Replace("\r", "");
+            var conBlanco = new HashSet<string>(Regex.Matches(css, @"([^{}]+)\{([^{}]*)\}").Cast<Match>()
+                .Where(m => Regex.IsMatch(m.Groups[2].Value, @"(^|;)\s*color:\s*var\(--sgv-blanco\)"))
+                .SelectMany(m => m.Groups[1].Value.Split(',').Select(s => s.Trim()))
+                .Select(s => Regex.Match(s, @"^\.badge\.bg-([a-z]+)$").Groups[1].Value)
+                .Where(s => s.Length > 0));
+            foreach (var f in FondosOscuros)
+                Assert.True(conBlanco.Contains(f), ".badge.bg-" + f + " sin color: var(--sgv-blanco) en sgv-base.css");
+
+            // Cada uso en el código: o lo cubre la regla, o lleva text-white.
+            var raiz = RaizWeb();
+            var fallas = new List<string>();
+            var clase = new Regex(@"[""']([^""'<>]*\bbadge\b[^""'<>]*)[""']");
+            var archivos = Directory.GetFiles(raiz, "*.*", SearchOption.AllDirectories)
+                .Where(a => new[] { ".aspx", ".master", ".ascx", ".cs", ".js" }.Contains(Path.GetExtension(a).ToLowerInvariant()))
+                .Where(a => { var r = Relativo(raiz, a); return !r.StartsWith("obj/") && !r.StartsWith("bin/") && !r.StartsWith("Scripts/lib/") && !r.Contains(".min."); });
+            int usos = 0;
+            foreach (var a in archivos)
+                foreach (Match m in clase.Matches(File.ReadAllText(a)))
+                    foreach (Match bg in Regex.Matches(m.Groups[1].Value, @"\bbg-(primary|info|success|danger|secondary|dark)\b"))
+                    {
+                        usos++;
+                        if (!conBlanco.Contains(bg.Groups[1].Value) && !Regex.IsMatch(m.Groups[1].Value, @"\btext-white\b"))
+                            fallas.Add(Relativo(raiz, a) + ": " + m.Groups[1].Value);
+                    }
+            Assert.True(usos >= 3, "El detector no encontró los badge bg-* conocidos (RegistroDespacho, ListaDespachos); encontró " + usos);
+            Assert.True(fallas.Count == 0, "badge con fondo oscuro sin texto blanco:\n" + Lista(fallas));
         }
 
         // ------------------------------------------------------------------ el lector mismo

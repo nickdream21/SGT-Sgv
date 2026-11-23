@@ -2,9 +2,10 @@
 .sf-contenedor {
     max-width: 460px;
     margin: 40px auto;
-    background-color: var(--sgv-bs-gris-100);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(var(--sgv-negro-rgb), 0.1);
+    background-color: var(--sgv-superficie);
+    border-radius: var(--sgv-radio);
+    box-shadow: none;
+    border: 1px solid var(--sgv-borde);
     padding: 28px;
 }
 
@@ -16,7 +17,7 @@
 }
 
 .sf-subtitulo {
-    color: var(--sgv-suelto-555555);
+    color: var(--sgv-texto-suave);
     font-size: 14px;
     text-align: center;
     margin-bottom: 20px;

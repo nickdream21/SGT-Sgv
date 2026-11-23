@@ -82,7 +82,7 @@
 
 .form-control:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(var(--sgv-azul-700-rgb), 0.1);
+    box-shadow: 0 0 0 3px rgba(var(--sgv-primario-rgb), 0.1);
 }
 
 .text-muted { color: var(--neutral-color) !important; }
@@ -98,7 +98,7 @@
 
 /* === Modales: cabecera blanca, el color solo en una línea inferior === */
 /* Cabeceras: base clara de App.css; aquí solo el tinte según la acción. */
-.modal-header.modal-header-info { background-color: var(--sgv-suelto-f0f7ff) !important; }
+.modal-header.modal-header-info { background-color: var(--sgv-primario-claro) !important; }
 .modal-header.modal-header-danger { background-color: var(--sgv-rojo-50) !important; border-top-color: var(--danger-color) !important; }
 .modal-header.modal-header-corregir { background-color: var(--sgv-ambar-50) !important; border-top-color: var(--warning-color) !important; }
 
@@ -137,7 +137,7 @@
     padding: 1rem 1.25rem;
     background: var(--sgv-superficie);
     border: 1px solid var(--medium-gray);
-    border-radius: 6px;
+    border-radius: var(--sgv-radio);
     margin-bottom: 1rem;
 }
 
@@ -163,9 +163,9 @@
 
 .financial-card {
     border: 1px solid var(--medium-gray);
-    border-radius: 6px;
+    border-radius: var(--sgv-radio);
     padding: 0.875rem 1rem;
-    background: var(--sgv-suelto-f0f7ff);
+    background: var(--sgv-primario-claro);
     border-color: var(--sgv-azul-200);
 }
 
@@ -245,7 +245,7 @@
 /* === Ajustes administrativos === */
 .ajuste-card {
     border: 1px solid var(--medium-gray);
-    border-radius: 6px;
+    border-radius: var(--sgv-radio);
     padding: 0.875rem 1rem;
     height: 100%;
     background: var(--sgv-superficie);
@@ -262,9 +262,9 @@
 
 /* Dinero entregado al conductor (lo registra la administración) */
 .ajuste-entregado { background: var(--sgv-primario-claro); border-color: var(--sgv-azul-200); border-left: 3px solid var(--primary-color); height: auto; }
-.ajuste-sub { display: block; font-weight: 400; font-size: 0.8rem; color: var(--dark-gray); margin-top: 2px; }
+.ajuste-sub { display: block; font-weight: 400; font-size: 0.8rem; color: var(--sgv-texto-suave); margin-top: 2px; }
 .tabla-entregado { margin-top: 0.5rem; background: transparent; }
-.tabla-entregado th { font-size: 0.75rem; font-weight: 600; color: var(--dark-gray); border-top: 0; }
+.tabla-entregado th { font-size: 0.75rem; font-weight: 600; color: var(--sgv-texto-suave); border-top: 0; }
 .tabla-entregado td { vertical-align: middle; border-color: var(--sgv-azul-100); font-size: 0.85rem; }
 .tabla-entregado .col-monto { width: 22%; min-width: 96px; }
 
@@ -273,7 +273,7 @@
     background: var(--sgv-verde-50);
     border: 1px solid var(--sgv-verde-200);
     border-left: 3px solid var(--success-color);
-    border-radius: 6px;
+    border-radius: var(--sgv-radio);
     padding: 0.75rem 1rem;
     margin-bottom: 1rem;
 }
@@ -316,7 +316,7 @@
     background: var(--sgv-superficie);
     border: 1px solid var(--border-color);
     border-top: none;
-    border-radius: 0 0 0.375rem 0.375rem;
+    border-radius: 0 0 var(--sgv-radio) var(--sgv-radio);
     box-shadow: 0 4px 12px rgba(var(--sgv-negro-rgb), 0.08);
     z-index: 1050;
     max-height: 220px;
@@ -372,7 +372,7 @@
 .valores-actuales-panel {
     background: var(--light-gray);
     border: 1px solid var(--medium-gray);
-    border-radius: 6px;
+    border-radius: var(--sgv-radio);
     padding: 0.75rem 1rem;
 }
 
@@ -500,7 +500,7 @@
 .vi-obs-alerta {
     background: var(--sgv-ambar-50);
     border: 1px solid var(--sgv-ambar-200);
-    border-radius: 0.375rem;
+    border-radius: var(--sgv-radio);
     padding: 0.5rem 0.75rem;
     flex-wrap: wrap;
 }
@@ -534,7 +534,7 @@
 .tabla-movimientos .mov-sub { display: block; font-size: 0.72rem; color: var(--sgv-texto-suave); }
 
 .campo-con-error {
-    border-color: var(--sgv-bs-rojo) !important;
+    border-color: var(--sgv-peligro) !important;
 }
 
 /* === Salida registrada / corrección === */
@@ -579,7 +579,7 @@
     font-size: 0.8125rem;
     font-weight: 500;
     padding: 0.35rem 0.75rem;
-    border-radius: 6px;
+    border-radius: var(--sgv-radio);
     white-space: nowrap;
 }
 
@@ -613,7 +613,7 @@
 }
 
 .rf-cell {
-    border-radius: 6px;
+    border-radius: var(--sgv-radio);
     padding: 0.75rem 1rem;
     border: 1px solid var(--medium-gray);
     background: var(--light-gray);
@@ -673,7 +673,7 @@
     background: var(--sgv-verde-50);
     border: 1px solid var(--sgv-verde-200);
     border-left: 4px solid var(--success-color);
-    border-radius: 6px;
+    border-radius: var(--sgv-radio);
     padding: 0.75rem 1rem;
     margin-bottom: 1rem;
 }

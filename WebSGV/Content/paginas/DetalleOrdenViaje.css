@@ -29,7 +29,7 @@
     padding: 10px 12px;
     background: var(--dc-primario-claro);
     border-left: 3px solid var(--dc-primario);
-    border-radius: 6px;
+    border-radius: var(--sgv-radio);
     font-weight: 600;
     font-size: 0.92rem;
 }

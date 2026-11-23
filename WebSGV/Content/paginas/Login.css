@@ -19,13 +19,14 @@
 .subheader {
     font-size: 16px;
     margin-bottom: 30px;
-    color: var(--sgv-suelto-666666);
+    color: var(--sgv-texto-suave);
 }
 
 .login-container {
-    background-color: var(--sgv-bs-gris-100);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(var(--sgv-negro-rgb), 0.1);
+    background-color: var(--sgv-superficie);
+    border-radius: var(--sgv-radio);
+    box-shadow: none;
+    border: 1px solid var(--sgv-borde);
     padding: 30px;
     max-width: 500px;
     margin: 0 auto;
@@ -52,7 +53,7 @@
     width: 100%;
     padding: 10px 15px;
     font-size: 16px;
-    border: 1px solid var(--sgv-bs-gris-400);
+    border: 1px solid var(--sgv-borde-fuerte);
     border-radius: 4px;
 }
 
@@ -66,7 +67,7 @@
 }
 
 .login-btn {
-    background-color: var(--sgv-bs-azul);
+    background-color: var(--sgv-primario);
     color: var(--sgv-blanco);
     border: none;
     padding: 12px 20px;
@@ -78,7 +79,7 @@
 }
 
 .login-btn:hover {
-    background-color: var(--sgv-bs-azul-hover);
+    background-color: var(--sgv-primario-osc);
 }
 
 .forgot-password {
@@ -87,7 +88,7 @@
 }
 
 .forgot-password a {
-    color: var(--sgv-bs-azul);
+    color: var(--sgv-primario);
     text-decoration: none;
 }
 
@@ -117,7 +118,7 @@ input[type="password"]::-ms-clear {
     background: none;
     border: none;
     cursor: pointer;
-    color: var(--sgv-bs-gris-600);
+    color: var(--sgv-texto-suave);
     padding: 0;
     font-size: 15px;
     line-height: 1;
@@ -141,13 +142,13 @@ input[type="password"]::-ms-clear {
 }
 
 .btn-toggle-pass:hover {
-    color: var(--sgv-bs-gris-800);
+    color: var(--sgv-texto);
 }
 
 .login-error {
-    background-color: var(--sgv-bs-alerta-peligro-fondo);
-    color: var(--sgv-bs-alerta-peligro-texto);
-    border: 1px solid var(--sgv-bs-alerta-peligro-borde);
+    background-color: var(--sgv-peligro-fondo);
+    color: var(--sgv-peligro-texto);
+    border: 1px solid var(--sgv-peligro-borde);
     border-radius: 4px;
     padding: 10px 15px;
     margin-bottom: 20px;

@@ -6,9 +6,9 @@
     justify-content: center;
     padding: 3rem 1rem;
     min-height: 80vh;
-    background: var(--sgv-pizarra-50);
+    background: var(--sgv-superficie);
     border: 1px solid var(--sgv-borde);
-    border-radius: 6px;
+    border-radius: var(--sgv-radio);
     margin: 20px;
 }
 
@@ -43,7 +43,7 @@
     background: var(--sgv-alerta-fondo);
     color: var(--sgv-alerta-texto);
     border: 1px solid var(--sgv-alerta-borde);
-    border-radius: 6px;
+    border-radius: var(--sgv-radio);
     font-weight: 600;
     text-decoration: none;
 }

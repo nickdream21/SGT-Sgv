@@ -4,17 +4,17 @@
     --azul: var(--sgv-primario);
     --azul-osc: var(--sgv-primario-osc);
     --rojo: var(--sgv-peligro);
-    --gris-900: var(--sgv-gris-800);
-    --gris-600: var(--sgv-gris-500);
-    --gris-300: var(--sgv-gris-200);
-    --gris-100: var(--sgv-gris-100);
+    --gris-900: var(--sgv-texto);
+    --gris-600: var(--sgv-texto-suave);
+    --gris-300: var(--sgv-borde);
+    --gris-100: var(--sgv-fondo-pagina);
     --azul-claro: var(--sgv-primario-claro);
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body {
     margin: 0; padding: 0;
     height: 100%;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--sgv-fuente);
     background: var(--gris-100);
     color: var(--gris-900);
     overscroll-behavior: none;
@@ -24,19 +24,20 @@ h1, h2, h3, h4 { margin: 0; }
 
 /* ---------- Encabezado (claro, como la barra del sistema) ---------- */
 .fl-header {
-    background: var(--sgv-bs-gris-100);
+    background: var(--sgv-fondo);
     color: var(--gris-900);
     padding: 12px 16px;
     display: flex;
     align-items: center;
     gap: 12px;
     border-bottom: 1px solid var(--gris-300);
-    box-shadow: 0 1px 3px rgba(var(--sgv-negro-rgb), .06);
+    box-shadow: none;
+    border: 1px solid var(--sgv-borde);
 }
 .fl-header .logo {
     width: 40px; height: 40px;
     background: var(--azul);
-    border-radius: 8px;
+    border-radius: var(--sgv-radio);
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; color: var(--sgv-blanco);
     font-size: 13px; letter-spacing: .5px;
@@ -55,7 +56,7 @@ h1, h2, h3, h4 { margin: 0; }
     background: var(--sgv-superficie);
     border: 1px solid var(--gris-300);
     padding: 3px 8px;
-    border-radius: 999px;
+    border-radius: var(--sgv-radio);
     white-space: nowrap;
 }
 
@@ -66,7 +67,7 @@ h1, h2, h3, h4 { margin: 0; }
 .fl-card {
     background: var(--sgv-superficie);
     border: 1px solid var(--gris-300);
-    border-radius: 10px;
+    border-radius: var(--sgv-radio);
     padding: 16px;
     margin-bottom: 12px;
 }
@@ -100,7 +101,7 @@ h1, h2, h3, h4 { margin: 0; }
     background: var(--sgv-ambar-50);
     border: 1px solid var(--sgv-ambar-200);
     border-left: 4px solid var(--sgv-alerta);
-    border-radius: 8px;
+    border-radius: var(--sgv-radio);
     padding: 12px 14px;
     font-size: 0.9rem;
     line-height: 1.5;
@@ -113,7 +114,7 @@ h1, h2, h3, h4 { margin: 0; }
     padding: 12px;
     background: var(--sgv-superficie);
     border: 1px solid var(--gris-300);
-    border-radius: 8px;
+    border-radius: var(--sgv-radio);
     margin-bottom: 14px;
     cursor: pointer;
     transition: border-color .15s;
@@ -125,7 +126,7 @@ h1, h2, h3, h4 { margin: 0; }
 /* ---------- Contraseña y avisos legales ---------- */
 .fl-clave { margin: 14px 0; }
 .fl-clave label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--gris-600); margin-bottom: 6px; }
-.fl-clave input { height: 46px; font-size: 16px; border-radius: 8px; }
+.fl-clave input { height: 46px; font-size: 16px; border-radius: var(--sgv-radio); }
 .fl-legal { text-align: center; font-size: 0.75rem; color: var(--gris-600); margin-top: 16px; line-height: 1.45; }
 
 /* ---------- Canvas de firma ---------- */
@@ -136,8 +137,8 @@ h1, h2, h3, h4 { margin: 0; }
 .fl-canvas-box {
     position: relative;
     background: var(--sgv-superficie);
-    border: 2px dashed var(--sgv-pizarra-300);
-    border-radius: 10px;
+    border: 2px dashed var(--sgv-borde-fuerte);
+    border-radius: var(--sgv-radio);
     height: 240px;
     overflow: hidden;
     touch-action: none;
@@ -191,7 +192,7 @@ h1, h2, h3, h4 { margin: 0; }
     min-height: 44px;
     padding: 0 14px;
     font-size: 0.9rem; font-weight: 600;
-    border-radius: 8px;
+    border-radius: var(--sgv-radio);
     border: 1px solid var(--sgv-azul-200);
     background: var(--sgv-superficie);
     color: var(--azul);
@@ -211,7 +212,7 @@ a.fl-btn { display: inline-flex; align-items: center; justify-content: center; }
     background: var(--azul);
     color: var(--sgv-blanco);
     border: none;
-    border-radius: 8px;
+    border-radius: var(--sgv-radio);
     cursor: pointer;
     transition: background-color .15s;
 }
@@ -224,7 +225,7 @@ a.fl-btn { display: inline-flex; align-items: center; justify-content: center; }
 /* ---------- Feedback ---------- */
 .fl-alert {
     padding: 12px 14px;
-    border-radius: 8px;
+    border-radius: var(--sgv-radio);
     font-size: 0.9rem;
     margin-bottom: 14px;
     display: none;

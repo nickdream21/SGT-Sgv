@@ -1,21 +1,27 @@
 #!/usr/bin/env node
 /*
- * Variables de color de SGV (E5-11). Herramienta de desarrollo: no se publica.
+ * Variables de color de SGV (E5-11 y E5-12). Herramienta de desarrollo: no se publica.
  *
  *   node herramientas/estilos/colores.js aplicar
- *       Cambia cada color literal (#hex, rgb(), rgba(), white) de las hojas propias por una
- *       variable con el MISMO valor exacto: la semántica si coinciden propiedad y valor, si no
- *       la de la paleta. La paleta vive en el :root de WebSGV/Content/sgv-base.css (se
- *       regenera). Los :root de las otras hojas pasan a ser alias. Se puede repetir: la
- *       segunda vez no cambia nada.
+ *       Paso de E5-11 (ya hecho, queda en el historial): cambiaba cada color literal de las hojas
+ *       por una variable de una paleta Tailwind/Bootstrap regenerada en el :root de sgv-base.css.
+ *       Desde E5-12 el :root es la escala de la dirección "Expediente", escrita a mano: aplicar se
+ *       niega a correr para no pisarla. Un color nuevo se agrega a la escala y se usa con var().
  *
  *   node herramientas/estilos/colores.js verificar [revision]
- *       Expande cada var() con los :root de todas las hojas y exige, hoja por hoja, el mismo
- *       texto que `git show <revision>:<hoja>` (HEAD si no se indica) expandido igual. Los
- *       colores se comparan en forma canónica (#fff = white = #ffffff, rgba con sus números),
- *       el resto del texto debe ser idéntico, también en hover, @media y modales. Además
- *       cuenta los literales fuera de los :root permitidos antes y ahora. Sale con 1 si hay
- *       una diferencia.
+ *       Para cambios que NO deben verse (mover reglas, unir hojas, renombrar variables): expande
+ *       cada var() con los :root de todas las hojas y exige, hoja por hoja, el mismo texto que
+ *       `git show <revision>:<hoja>` (HEAD si no se indica) expandido igual. Los colores se
+ *       comparan en forma canónica (#fff = white = #ffffff, rgba con sus números), el resto del
+ *       texto debe ser idéntico, también en hover, @media y modales. Además cuenta los literales
+ *       fuera de los :root permitidos antes y ahora. Sale con 1 si hay una diferencia. Contra una
+ *       revisión anterior a E5-12 (fd6042d o antes) da diferencias a propósito: use `cambios`.
+ *
+ *   node herramientas/estilos/colores.js cambios <revision> [--detalle]
+ *       Para cambios que SÍ deben verse (como E5-12): compara declaración por declaración, con las
+ *       var() resueltas, contra <revision> y resume por propiedad cuántas cambiaron de valor, cuántas
+ *       se agregaron y cuántas se quitaron. Sirve para revisar que solo cambió lo que se quería
+ *       (colores, radios, sombras, fuente) y no la disposición. --detalle lista cada una.
  *
  * Hojas: WebSGV/Content/*.css y WebSGV/Content/paginas/**\/*.css (no Content/lib).
  * Quedan como literales: los data-URI (dentro de url()) y --de-f-* (los lee
@@ -301,6 +307,12 @@ function esPermitido(nombre) { return LITERALES_PERMITIDOS.some(re => re.test(no
 function aplicar() {
     const hojas = listarHojas();
     const base = leer(BASE);
+    if (/--sgv-exp-/.test(base)) {
+        console.log('aplicar fue el paso de E5-11. Desde E5-12 el :root de sgv-base.css es la escala "Expediente" escrita a mano;');
+        console.log('agregue el color a la escala y úselo con var(). No se cambió nada.');
+        process.exitCode = 2;
+        return;
+    }
     const paleta = new Map();   // hex -> nombre
     const triples = new Map();  // hex -> nombre-rgb
 
@@ -478,10 +490,66 @@ function verificar(rev) {
     process.exitCode = difs === 0 ? 0 : 1;
 }
 
+// ---------------------------------------------------------------------------------------------
+// cambios
+// ---------------------------------------------------------------------------------------------
+/** Declaraciones fuera de :root con su valor resuelto: clave selector|propiedad#n → valor. */
+function valoresResueltos(t, tabla) {
+    const { m, decls } = declaraciones(t);
+    const res = new Map();
+    const vistos = {};
+    for (const d of decls) {
+        if (d.raiz) continue;
+        const sel = d.selector.replace(/\s+/g, ' ');
+        const base = sel + ' | ' + d.prop;
+        const n = vistos[base] = (vistos[base] || 0) + 1;
+        const v = normalizar('a{x:' + expandir(m.slice(d.ini, d.fin).trim(), tabla) + '}').slice(4, -1).replace(/\s+/g, ' ');
+        res.set(base + '#' + n, v);
+    }
+    return res;
+}
+
+function cambios(rev, detalle) {
+    const hojas = listarHojas();
+    const lf = s => s.replace(/\r\n/g, '\n');
+    const antes = {}, ahora = {};
+    for (const rel of hojas) {
+        try { antes[rel] = lf(cp.execFileSync('git', ['show', rev + ':' + rel], { cwd: RAIZ, encoding: 'utf8', maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'] })); }
+        catch (e) { antes[rel] = ''; }
+        ahora[rel] = lf(leer(rel));
+    }
+    const tablaAntes = definicionesRaiz(hojas.map(h => antes[h]));
+    const tablaAhora = definicionesRaiz(hojas.map(h => ahora[h]));
+    const porProp = {};
+    const suma = (p, k) => { porProp[p] = porProp[p] || { cambia: 0, nueva: 0, quitada: 0 }; porProp[p][k]++; };
+    let hojasDistintas = 0;
+    for (const rel of hojas) {
+        const a = valoresResueltos(antes[rel], tablaAntes), b = valoresResueltos(ahora[rel], tablaAhora);
+        let distinta = false;
+        for (const [k, v] of b) {
+            const p = k.split(' | ').pop().replace(/#\d+$/, '');
+            if (!a.has(k)) { suma(p, 'nueva'); distinta = true; if (detalle) console.log('+ ' + rel + ' ' + k + ': ' + v); }
+            else if (a.get(k) !== v) { suma(p, 'cambia'); distinta = true; if (detalle) console.log('~ ' + rel + ' ' + k + ': ' + a.get(k) + ' → ' + v); }
+        }
+        for (const [k, v] of a) {
+            if (b.has(k)) continue;
+            const p = k.split(' | ').pop().replace(/#\d+$/, '');
+            suma(p, 'quitada'); distinta = true;
+            if (detalle) console.log('- ' + rel + ' ' + k + ': ' + v);
+        }
+        if (distinta) hojasDistintas++;
+    }
+    console.log('Hojas con cambios: ' + hojasDistintas + ' de ' + hojas.length + ' contra ' + rev + ' (valores con var() resueltas, sin los :root).');
+    console.log('Propiedad'.padEnd(28) + 'cambia  nueva  quitada');
+    for (const p of Object.keys(porProp).sort((x, y) => (porProp[y].cambia + porProp[y].nueva + porProp[y].quitada) - (porProp[x].cambia + porProp[x].nueva + porProp[x].quitada)))
+        console.log(p.padEnd(28) + String(porProp[p].cambia).padStart(6) + String(porProp[p].nueva).padStart(7) + String(porProp[p].quitada).padStart(9));
+}
+
 const modo = process.argv[2];
 if (modo === 'aplicar') aplicar();
 else if (modo === 'verificar') verificar(process.argv[3] || 'HEAD');
+else if (modo === 'cambios' && process.argv[3]) cambios(process.argv[3], process.argv.includes('--detalle'));
 else {
-    console.log('Uso: node herramientas/estilos/colores.js aplicar | verificar [revision]');
+    console.log('Uso: node herramientas/estilos/colores.js aplicar | verificar [revision] | cambios <revision> [--detalle]');
     process.exitCode = 2;
 }

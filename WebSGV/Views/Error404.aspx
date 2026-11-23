@@ -10,18 +10,18 @@
         }
         .error-icon {
             font-size: 5rem;
-            color: #f59e0b;
+            color: #7a5200;
             margin-bottom: 20px;
         }
         .error-title {
             font-size: 1.75rem;
             font-weight: 700;
-            color: #1e293b;
+            color: #1a2230;
             margin-bottom: 10px;
         }
         .error-message {
             font-size: 1rem;
-            color: #64748b;
+            color: #566173;
             margin-bottom: 30px;
             line-height: 1.6;
         }
@@ -29,22 +29,22 @@
             margin: 5px;
         }
         .btn-primary-custom {
-            background-color: #2563eb;
-            border-color: #2563eb;
+            background-color: #1f3a6e;
+            border-color: #1f3a6e;
             color: white;
             font-weight: 500;
             padding: 10px 24px;
         }
         .btn-secondary-custom {
             background-color: white;
-            border: 1px solid #cbd5e1;
-            color: #64748b;
+            border: 1px solid #a8b0bc;
+            color: #566173;
             font-weight: 500;
             padding: 10px 24px;
         }
         .error-code {
             font-size: 0.85rem;
-            color: #94a3b8;
+            color: #566173;
             margin-top: 30px;
         }
     </style>

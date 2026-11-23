@@ -4,7 +4,10 @@
     var contenedor = document.getElementById('rutaMapa');
     if (!contenedor || !SGV.idSeguimiento || typeof L === 'undefined') return;
 
-    var COLORES = { carga: '#1d4ed8', descarga: '#c2410c' };
+    // Mismo origen que la leyenda (.sx-capa-carga/descarga): las variables --sgv-mapa-* de sgv-base.css.
+    var raizCss = window.getComputedStyle(document.documentElement);
+    function colorCss(nombre, respaldo) { return (raizCss.getPropertyValue(nombre) || '').trim() || respaldo; }
+    var COLORES = { carga: colorCss('--sgv-mapa-carga', '#1f3a6e'), descarga: colorCss('--sgv-mapa-descarga', '#c2410c') };
     var estado = document.getElementById('rutaEstado');
     var reloj = document.getElementById('rutaReloj');
     var control = document.getElementById('rutaControl');

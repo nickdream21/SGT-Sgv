@@ -16,7 +16,7 @@
     --dc-alerta-claro: var(--sgv-ambar-50);
     --dc-peligro: var(--sgv-peligro);
     --dc-peligro-claro: var(--sgv-rojo-50);
-    --dc-radio: 10px;
+    --dc-radio: var(--sgv-radio);
 }
 
 .dc {
@@ -40,7 +40,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     padding: 4px 10px;
-    border-radius: 999px;
+    border-radius: var(--sgv-radio);
     border: 1px solid transparent;
 }
 .dc-estado-activo { background: var(--dc-ok-claro); color: var(--dc-ok); border-color: var(--sgv-verde-200); }
@@ -50,7 +50,7 @@
 .dc-mensajes .alert { font-size: 0.9rem; margin-bottom: 0; }
 
 /* Liquidaciones revisadas que esperan la conformidad del conductor */
-.dc-conformar { background: var(--dc-alerta-claro); border: 1px solid var(--sgv-ambar-200); border-left: 4px solid var(--dc-alerta); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+.dc-conformar { background: var(--dc-alerta-claro); border: 1px solid var(--sgv-ambar-200); border-left: 4px solid var(--dc-alerta); border-radius: var(--sgv-radio); padding: 12px 14px; margin-bottom: 12px; }
 .dc-conformar-tit { font-weight: 700; color: var(--dc-alerta); }
 .dc-conformar-txt { font-size: 0.85rem; margin: 4px 0 0; color: var(--sgv-texto-medio); }
 
@@ -71,14 +71,14 @@
     justify-content: center;
     gap: 6px;
     min-height: 44px;
-    border-radius: 8px;
+    border-radius: var(--sgv-radio);
     color: var(--dc-suave);
     font-size: 0.875rem;
     font-weight: 600;
     text-decoration: none;
 }
 .dc-tab:hover { color: var(--dc-texto); text-decoration: none; }
-.dc-tab.active { background: var(--dc-card); color: var(--dc-primario); box-shadow: 0 1px 2px rgba(var(--sgv-negro-rgb), .08); }
+.dc-tab.active { background: var(--dc-card); color: var(--dc-primario); box-shadow: none; }
 .dc-tab i { font-size: 0.85rem; }
 .dc-tab-num {
     min-width: 18px;
@@ -165,14 +165,14 @@
     color: var(--dc-ok);
     background: var(--dc-ok-claro);
     border: 1px solid var(--sgv-verde-200);
-    border-radius: 999px;
+    border-radius: var(--sgv-radio);
     padding: 3px 9px;
 }
 .dc-hito-manual .dc-ayuda { margin-bottom: 8px; color: var(--dc-alerta); }
 
 .dc-par { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .dc-par > *, .dc-par .form-control { min-width: 0; }
-.dc .form-control { min-height: 44px; font-size: 16px; border-radius: 8px; } /* 16 px: iOS no hace zoom */
+.dc .form-control { min-height: 44px; font-size: 16px; border-radius: var(--sgv-radio); } /* 16 px: iOS no hace zoom */
 .dc textarea.form-control { min-height: 0; }
 .dc-lbl { display: block; font-size: 0.8rem; font-weight: 500; color: var(--dc-suave); margin: 10px 0 4px; }
 
@@ -200,11 +200,11 @@ body:not(.dc-nacional) .dc-montos:has(> .dc-monto + .dc-monto) { grid-template-c
     display: flex;
     align-items: center;
     border: 1px solid var(--sgv-borde-fuerte);
-    border-radius: 8px;
+    border-radius: var(--sgv-radio);
     background: var(--sgv-superficie);
     overflow: hidden;
 }
-.dc-monto:focus-within { border-color: var(--dc-primario); box-shadow: 0 0 0 3px rgba(var(--sgv-azul-700-rgb), .15); }
+.dc-monto:focus-within { border-color: var(--dc-primario); box-shadow: 0 0 0 3px rgba(var(--sgv-primario-rgb), .15); }
 .dc-monto span {
     padding: 0 10px;
     align-self: stretch;
@@ -234,7 +234,7 @@ body:not(.dc-nacional) .dc-montos:has(> .dc-monto + .dc-monto) { grid-template-c
     width: 40px;
     height: 40px;
     border: 1px solid var(--dc-borde);
-    border-radius: 8px;
+    border-radius: var(--sgv-radio);
     background: var(--sgv-superficie);
     color: var(--dc-peligro);
 }
@@ -251,7 +251,7 @@ body.dc-nacional .solo-intl { display: none !important; }
     gap: 8px;
     min-height: 44px;
     padding: 0 18px;
-    border-radius: 8px;
+    border-radius: var(--sgv-radio);
     border: 1px solid transparent;
     font-weight: 600;
     font-size: 0.95rem;
@@ -309,7 +309,7 @@ body.dc-con-barra { padding-bottom: 84px; }
 /* En el celular los modales salen desde abajo, como una hoja */
 @media (max-width: 575.98px) {
     .dc-hoja.modal-dialog { margin: 0; min-height: 100%; align-items: flex-end; }
-    .dc-hoja .modal-content { border-radius: 14px 14px 0 0; border: 0; padding-bottom: env(safe-area-inset-bottom); }
+    .dc-hoja .modal-content { border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; border: 0; padding-bottom: env(safe-area-inset-bottom); }
     .dc-hoja.modal-dialog-scrollable { max-height: 100%; height: auto; }
     .dc-hoja.modal-dialog-scrollable .modal-content { max-height: 88vh; }
 }
@@ -343,7 +343,7 @@ body.dc-con-barra { padding-bottom: 84px; }
     font-size: 0.75rem; /* mínimo 12 px (E5-4) */
     font-weight: 600;
     padding: 2px 9px;
-    border-radius: 999px;
+    border-radius: var(--sgv-radio);
     border: 1px solid transparent;
     white-space: nowrap;
 }
@@ -378,7 +378,7 @@ body.dc-con-barra { padding-bottom: 84px; }
 
 /* ---------- Vacío ---------- */
 .dc-vacio { text-align: center; padding: 40px 16px; color: var(--dc-suave); }
-.dc-vacio i { font-size: 1.8rem; color: var(--sgv-pizarra-300); margin-bottom: 10px; }
+.dc-vacio i { font-size: 1.8rem; color: var(--sgv-texto-suave); margin-bottom: 10px; }
 .dc-vacio-tit { font-weight: 600; color: var(--dc-texto); margin-bottom: 4px; }
 .dc-vacio p { margin-bottom: 0; font-size: 0.9rem; }
 
@@ -401,7 +401,7 @@ body.dc-con-barra { padding-bottom: 84px; }
     .dc-card { padding: 14px; }
 }
 
-.dc-dinero { padding: 6px 0; border-bottom: 1px solid var(--sgv-pizarra-100); font-size: 0.9rem; }
+.dc-dinero { padding: 6px 0; border-bottom: 1px solid var(--sgv-borde); font-size: 0.9rem; }
 
 /* Monto que no se pudo leer (E5-1): el borde está en el envoltorio, no en el input. */
 .dc-monto:has(> input.is-invalid) { border-color: var(--dc-peligro); }

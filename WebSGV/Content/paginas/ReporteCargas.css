@@ -1,53 +1,53 @@
 /* Reporte de cargas */
-.rc-titulo { color: var(--sgv-pizarra-800); font-weight: 600; }
+.rc-titulo { color: var(--sgv-texto); font-weight: 600; }
 .rc-titulo i { color: var(--sgv-azul-600); }
 
 .rc-acciones { gap: .5rem; }
 
 .rc-tarjeta {
     background: var(--sgv-superficie);
-    border: 1px solid var(--sgv-pizarra-200);
+    border: 1px solid var(--sgv-borde);
     border-left: 4px solid var(--sgv-azul-600);
-    border-radius: .375rem;
+    border-radius: var(--sgv-radio);
     padding: .65rem .9rem;
     height: 100%;
 }
-.rc-tarjeta span { display: block; font-size: .8rem; color: var(--sgv-pizarra-500); }
-.rc-tarjeta strong { display: block; font-size: 1.35rem; color: var(--sgv-pizarra-800); font-weight: 600; }
+.rc-tarjeta span { display: block; font-size: .8rem; color: var(--sgv-texto-suave); }
+.rc-tarjeta strong { display: block; font-size: 1.35rem; color: var(--sgv-texto); font-weight: 600; }
 .rc-tarjeta-destacada { border-left-color: var(--sgv-verde-600); background: var(--sgv-verde-50); }
 .rc-tarjeta-destacada strong { font-size: 1.05rem; line-height: 1.35; }
 .rc-tarjeta-ok { border-left-color: var(--sgv-verde-600); }
 .rc-tarjeta-aviso { border-left-color: var(--sgv-ambar-600); background: var(--sgv-ambar-50); }
 
 /* Variación frente al período anterior */
-.rc-var { display: block; font-size: .75rem; color: var(--sgv-pizarra-500); margin-top: .1rem; }
+.rc-var { display: block; font-size: .75rem; color: var(--sgv-texto-suave); margin-top: .1rem; }
 .rc-var-sube { color: var(--sgv-ok); }
 .rc-var-baja { color: var(--sgv-peligro); }
 
 /* Pestañas */
-.rc-pestanas .nav-link { color: var(--sgv-pizarra-600); font-weight: 500; }
+.rc-pestanas .nav-link { color: var(--sgv-texto-suave); font-weight: 500; }
 .rc-pestanas .nav-link.active { color: var(--sgv-primario); font-weight: 600; }
 .rc-contenido { padding-top: 1rem; }
 
 /* Resumen: gráficos y tablas */
 .rc-canvas { position: relative; height: 300px; }
 .rc-tabla { font-size: .875rem; }
-.rc-tabla th { background: var(--sgv-pizarra-50); color: var(--sgv-pizarra-600); font-weight: 600; white-space: nowrap; border-top: 0; }
-.rc-tabla tfoot th { background: var(--sgv-pizarra-100); color: var(--sgv-pizarra-800); }
+.rc-tabla th { background: var(--sgv-fondo); color: var(--sgv-texto-suave); font-weight: 600; white-space: nowrap; border-top: 0; }
+.rc-tabla tfoot th { background: var(--sgv-fondo-pagina); color: var(--sgv-texto); }
 .rc-tabla td, .rc-tabla th { vertical-align: middle; padding-left: .9rem; padding-right: .9rem; }
 .rc-tabla-alta { max-height: 460px; overflow-y: auto; }
 .rc-tabla-alta thead th { position: sticky; top: 0; z-index: 1; }
 .rc-col-barra { min-width: 150px; }
 
-.rc-barra { position: relative; background: var(--sgv-suelto-eef2f7); border-radius: 3px; height: 1.15rem; min-width: 120px; }
+.rc-barra { position: relative; background: var(--sgv-fondo-pagina); border-radius: 3px; height: 1.15rem; min-width: 120px; }
 .rc-barra-relleno { position: absolute; left: 0; top: 0; bottom: 0; background: var(--sgv-azul-200); border-radius: 3px; }
 .rc-barra span { position: relative; font-size: .75rem; color: var(--sgv-azul-900); padding-left: .4rem; line-height: 1.15rem; }
 
 /* Documentación */
 .rc-docs { gap: .75rem; }
-.rc-doc { border: 1px solid var(--sgv-pizarra-200); border-radius: .375rem; padding: .5rem .9rem; min-width: 10rem; background: var(--sgv-superficie); }
-.rc-doc strong { display: block; font-size: 1.25rem; color: var(--sgv-pizarra-800); }
-.rc-doc span { font-size: .8rem; color: var(--sgv-pizarra-500); }
+.rc-doc { border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); padding: .5rem .9rem; min-width: 10rem; background: var(--sgv-superficie); }
+.rc-doc strong { display: block; font-size: 1.25rem; color: var(--sgv-texto); }
+.rc-doc span { font-size: .8rem; color: var(--sgv-texto-suave); }
 .rc-doc-ok { background: var(--sgv-verde-50); border-color: var(--sgv-verde-200); }
 .rc-doc-aviso { background: var(--sgv-ambar-50); border-color: var(--sgv-ambar-200); }
 .rc-doc-mal { background: var(--sgv-rojo-50); border-color: var(--sgv-rojo-200); }
@@ -62,33 +62,33 @@
     gap: .75rem;
 }
 .rc-cabecera {
-    background: var(--sgv-pizarra-100);
-    color: var(--sgv-pizarra-600);
+    background: var(--sgv-fondo-pagina);
+    color: var(--sgv-texto-suave);
     font-size: .8rem;
     font-weight: 600;
-    border-bottom: 1px solid var(--sgv-pizarra-200);
+    border-bottom: 1px solid var(--sgv-borde);
 }
-.rc-grupo { border-bottom: 1px solid var(--sgv-pizarra-200); }
+.rc-grupo { border-bottom: 1px solid var(--sgv-borde); }
 .rc-resumen { cursor: pointer; list-style: none; }
 .rc-resumen::-webkit-details-marker { display: none; }
-.rc-resumen:hover { background: var(--sgv-pizarra-50); }
+.rc-resumen:hover { background: var(--sgv-fondo); }
 .rc-grupo[open] > .rc-resumen { background: var(--sgv-primario-claro); border-bottom: 1px solid var(--sgv-azul-100); }
 
-.rc-flecha { color: var(--sgv-pizarra-400); font-size: .75rem; margin-right: .5rem; transition: transform .15s; }
+.rc-flecha { color: var(--sgv-texto-suave); font-size: .75rem; margin-right: .5rem; transition: transform .15s; }
 .rc-grupo[open] .rc-flecha { transform: rotate(90deg); color: var(--sgv-azul-600); }
 
-.rc-c-pedido { flex: 0 0 9.5rem; font-weight: 600; color: var(--sgv-pizarra-800); }
+.rc-c-pedido { flex: 0 0 9.5rem; font-weight: 600; color: var(--sgv-texto); }
 .rc-c-fecha { flex: 0 0 6rem; }
 .rc-c-cliente { flex: 1 1 8rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rc-c-factura { flex: 0 0 8.5rem; }
 .rc-c-num { flex: 0 0 5.5rem; text-align: right; }
 .rc-c-valor { flex: 0 0 9rem; }
-.rc-c-descarga { flex: 0 0 10rem; color: var(--sgv-pizarra-600); font-size: .85rem; }
+.rc-c-descarga { flex: 0 0 10rem; color: var(--sgv-texto-suave); font-size: .85rem; }
 
 .rc-detalle { font-size: .875rem; background: var(--sgv-superficie); }
-.rc-detalle th { background: var(--sgv-suelto-fafafa); color: var(--sgv-pizarra-500); font-weight: 600; border-top: 0; }
+.rc-detalle th { background: var(--sgv-fondo); color: var(--sgv-texto-suave); font-weight: 600; border-top: 0; }
 .rc-detalle td, .rc-detalle th { white-space: nowrap; vertical-align: middle; padding-left: 1rem; }
-.rc-sin-viaje { color: var(--sgv-pizarra-500); font-style: italic; }
+.rc-sin-viaje { color: var(--sgv-texto-suave); font-style: italic; }
 
 /* Pantallas angostas: la fila del pedido pasa a dos líneas */
 @media (max-width: 991.98px) {

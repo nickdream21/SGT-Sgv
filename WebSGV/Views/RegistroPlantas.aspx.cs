@@ -135,7 +135,7 @@ namespace WebSGV.Views
         protected string ObtenerClaseAmbito(object esInternacional)
         {
             bool esInt = esInternacional != null && esInternacional != DBNull.Value && Convert.ToBoolean(esInternacional);
-            return esInt ? "badge-info" : "badge-primary";
+            return esInt ? "badge-info sgv-sello" : "badge-primary";
         }
 
         protected string ObtenerTextoAmbito(object esInternacional)

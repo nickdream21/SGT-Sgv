@@ -1,19 +1,19 @@
 /* Verificación pública de documentos firmados. */
-body { background: var(--sgv-fondo-pagina); font-family: "Open Sans", Arial, sans-serif; color: var(--sgv-texto); }
+body { background: var(--sgv-fondo-pagina); font-family: var(--sgv-fuente); color: var(--sgv-texto); }
 
-.vd-header { display: flex; align-items: center; gap: 14px; background: var(--sgv-suelto-0b3d91); color: var(--sgv-blanco); padding: 14px 18px; }
+.vd-header { display: flex; align-items: center; gap: 14px; background: var(--sgv-primario-osc); color: var(--sgv-blanco); padding: 14px 18px; }
 .vd-header h1 { font-size: 18px; margin: 0; font-weight: 700; }
 .vd-sub { font-size: 12px; opacity: .85; }
-.vd-logo { background: var(--sgv-superficie); color: var(--sgv-suelto-0b3d91); font-weight: 800; border-radius: 6px; padding: 6px 10px; }
+.vd-logo { background: var(--sgv-superficie); color: var(--sgv-primario-osc); font-weight: 800; border-radius: var(--sgv-radio); padding: 6px 10px; }
 
 .vd-wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
-.vd-card { background: var(--sgv-superficie); border: 1px solid var(--sgv-borde); border-radius: 8px; padding: 16px; margin-bottom: 14px; }
-.vd-card h2 { font-size: 15px; font-weight: 700; color: var(--sgv-suelto-0b3d91); margin-bottom: 8px; }
+.vd-card { background: var(--sgv-superficie); border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); padding: 16px; margin-bottom: 14px; }
+.vd-card h2 { font-size: 15px; font-weight: 700; color: var(--sgv-primario-osc); margin-bottom: 8px; }
 
 .vd-busqueda { display: flex; gap: 8px; }
 .vd-busqueda .form-control { text-transform: uppercase; letter-spacing: 1px; font-size: 16px; }
 
-.vd-estado { border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-weight: 600; border: 1px solid; overflow-wrap: anywhere; }
+.vd-estado { border-radius: var(--sgv-radio); padding: 12px 14px; margin-bottom: 14px; font-weight: 600; border: 1px solid; overflow-wrap: anywhere; }
 .vd-estado-ok { background: var(--sgv-esmeralda-50); border-color: var(--sgv-esmeralda-200); color: var(--sgv-esmeralda-800); }
 .vd-estado-info { background: var(--sgv-primario-claro); border-color: var(--sgv-azul-200); color: var(--sgv-azul-900); }
 .vd-estado-alerta { background: var(--sgv-ambar-50); border-color: var(--sgv-ambar-200); color: var(--sgv-alerta-texto); }

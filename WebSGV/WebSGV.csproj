@@ -159,6 +159,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\favicon.png" />
+    <Content Include="Content\fonts\ibm-plex-sans-latin-400-normal.woff2" />
+    <Content Include="Content\fonts\ibm-plex-sans-latin-500-normal.woff2" />
+    <Content Include="Content\fonts\ibm-plex-sans-latin-600-normal.woff2" />
+    <Content Include="Content\fonts\OFL.txt" />
     <Content Include="Content\logo-sgv.png" />
     <Content Include="Content\responsive-mobile.css" />
     <Content Include="Content\sgv-base.css" />
