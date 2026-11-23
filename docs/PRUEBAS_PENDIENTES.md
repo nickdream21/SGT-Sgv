@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-068 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-070 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -81,6 +81,8 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-066** Panel del conductor sin ViewState en las listas (E5-9) — con un conductor que tenga viaje activo, despachos, dinero recibido e historial, a 390 px: Buscar del historial y un envío de liquidación rechazado por validación dejan los 4 bloques llenos y no pisan las fechas escritas; si los viajes cambiaron, la lista de despachos se oculta. · B
 - [ ] **P-067** ReportesOrdenesViaje con datos reales (E5-9) — con liquidaciones y viajes activos: Buscar en una pestaña deja llena la grilla de la otra y los totales del pie bien; con fechas inválidas los totales quedan en 0. · C
 - [ ] **P-068** Contabilidad paginada con datos reales (E5-10) — con más de 50 liquidaciones aprobadas, con el rol contabilidad a 1366 y 390 px: abre con 90 días, la página 2 trae otras filas, "Todo el historial" suma las antiguas y el PDF se abre en el iframe. · B
+- [ ] **P-069** Firma, conformidad y segundo factor antes y después de los cambios de estilo (E5-11 a E5-14) — FirmarLiquidacion y ConformarLiquidacion con una orden real PENDIENTE y POR_CONFORMAR del conductor de prueba (la `OrdenViaje` de pruebas está vacía: puede hacerse en un `sgvEnsayo_*`), y SegundoFactor con un administrador de sistema que tenga el factor activo: capturas a 1366 y 390 px antes y después de cada tarea, sin diferencias en E5-11. · B
+- [ ] **P-070** MovimientosViaje tras los cambios de estilo (E5-11 a E5-14) — no se puede revisar mientras `MovimientosViajeService.Habilitado` esté apagado: al encenderlo (solo local), capturas a 1366 y 390 px del registro y del modal Anular. · C
 
 ## Reglas
 

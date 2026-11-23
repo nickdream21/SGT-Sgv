@@ -8,8 +8,8 @@
 
     /* Tarjeta de montos de LiquidacionesPendientes (.financial-card) */
     .financial-card {
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
+        background: var(--sgv-bs-gris-100);
+        border: 1px solid var(--sgv-bs-gris-300);
         border-radius: 8px;
         padding: 1rem;
         margin-bottom: 1rem;
@@ -18,7 +18,7 @@
 
     /* Mejorar contraste de textos en pantallas pequeñas */
     .text-muted {
-        color: #495057 !important;
+        color: var(--sgv-bs-gris-700) !important;
     }
 
     /* Headers más grandes en móvil */

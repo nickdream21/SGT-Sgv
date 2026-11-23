@@ -1,9 +1,9 @@
 ﻿.aud-page-header {
     padding-bottom: 1rem;
-    border-bottom: 2px solid #cbd5e1;
+    border-bottom: 2px solid var(--sgv-pizarra-300);
 }
 .aud-page-title {
-    color: #1e293b;
+    color: var(--sgv-pizarra-800);
     font-weight: 600;
     font-size: 1.75rem;
     margin: 0;
@@ -15,9 +15,9 @@
     align-items: center;
     padding: 1rem;
     border-radius: 0.5rem;
-    background: white;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    background: var(--sgv-superficie);
+    border: 1px solid var(--sgv-pizarra-200);
+    box-shadow: 0 1px 3px rgba(var(--sgv-negro-rgb), 0.06);
 }
 .aud-stat-icon {
     width: 48px;
@@ -30,38 +30,38 @@
     margin-right: 1rem;
     flex-shrink: 0;
 }
-.aud-stat-primary .aud-stat-icon { background: #dbeafe; color: #2563eb; }
-.aud-stat-info .aud-stat-icon { background: #e0f2fe; color: #0891b2; }
-.aud-stat-warning .aud-stat-icon { background: #fef3c7; color: #d97706; }
-.aud-stat-danger .aud-stat-icon { background: #fef2f2; color: #dc2626; }
-.aud-stat-number { font-size: 1.5rem; font-weight: 700; color: #1e293b; line-height: 1; }
-.aud-stat-label { font-size: 0.75rem; color: #64748b; font-weight: 500; }
+.aud-stat-primary .aud-stat-icon { background: var(--sgv-info-fondo); color: var(--sgv-azul-600); }
+.aud-stat-info .aud-stat-icon { background: var(--sgv-cielo-100); color: var(--sgv-cian-600); }
+.aud-stat-warning .aud-stat-icon { background: var(--sgv-alerta-fondo); color: var(--sgv-ambar-600); }
+.aud-stat-danger .aud-stat-icon { background: var(--sgv-rojo-50); color: var(--sgv-rojo-600); }
+.aud-stat-number { font-size: 1.5rem; font-weight: 700; color: var(--sgv-pizarra-800); line-height: 1; }
+.aud-stat-label { font-size: 0.75rem; color: var(--sgv-pizarra-500); font-weight: 500; }
 
 /* Secciones */
 .aud-section-card {
-    background: white;
-    border: 1px solid #cbd5e1;
+    background: var(--sgv-superficie);
+    border: 1px solid var(--sgv-pizarra-300);
     border-radius: 0.5rem;
     overflow: hidden;
 }
 .aud-section-header {
-    background: #f8fafc;
+    background: var(--sgv-pizarra-50);
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid #cbd5e1;
+    border-bottom: 1px solid var(--sgv-pizarra-300);
 }
 .aud-section-header-info {
-    background: #e0f2fe;
-    border-bottom-color: #7dd3fc;
+    background: var(--sgv-cielo-100);
+    border-bottom-color: var(--sgv-cielo-300);
 }
 .aud-section-title {
-    color: #1e293b;
+    color: var(--sgv-pizarra-800);
     font-size: 1.125rem;
     font-weight: 600;
     margin: 0;
 }
 .aud-section-body { padding: 1.25rem; }
 .aud-form-label {
-    color: #1e293b;
+    color: var(--sgv-pizarra-800);
     font-weight: 500;
     font-size: 0.8125rem;
     margin-bottom: 0.25rem;
@@ -69,25 +69,25 @@
 
 /* Tabla */
 .aud-table thead th {
-    background: #f8fafc;
-    color: #1e293b;
+    background: var(--sgv-pizarra-50);
+    color: var(--sgv-pizarra-800);
     font-weight: 600;
     font-size: 0.75rem;
     padding: 0.75rem 0.625rem;
-    border-bottom: 2px solid #cbd5e1;
+    border-bottom: 2px solid var(--sgv-pizarra-300);
     white-space: nowrap;
 }
 .aud-table tbody td {
     vertical-align: middle;
     padding: 0.5rem 0.625rem;
     font-size: 0.8125rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--sgv-pizarra-200);
 }
-.aud-table tbody tr:hover { background: #f8fafc; }
+.aud-table tbody tr:hover { background: var(--sgv-pizarra-50); }
 
 .aud-fecha { line-height: 1.3; }
 .aud-fecha-date { display: block; font-weight: 600; font-size: 0.8125rem; }
-.aud-fecha-time { display: block; color: #64748b; font-size: 0.75rem; }
+.aud-fecha-time { display: block; color: var(--sgv-pizarra-500); font-size: 0.75rem; }
 
 .aud-descripcion {
     max-width: 300px;
@@ -105,28 +105,28 @@
     font-size: 0.75rem;
     font-weight: 600;
 }
-.aud-badge-insert { background: #dcfce7; color: #166534; }
-.aud-badge-update { background: #dbeafe; color: #1e40af; }
-.aud-badge-delete { background: #fef2f2; color: #991b1b; }
-.aud-badge-login { background: #e0f2fe; color: #0c4a6e; }
-.aud-badge-login_fallido { background: #fef2f2; color: #991b1b; }
-.aud-badge-login_bloqueado { background: #fee2e2; color: #7f1d1d; }
-.aud-badge-logout { background: #f1f5f9; color: #475569; }
-.aud-badge-aprobar { background: #dcfce7; color: #166534; }
-.aud-badge-rechazar { background: #fef3c7; color: #92400e; }
-.aud-badge-liquidar { background: #ede9fe; color: #5b21b6; }
-.aud-badge-retirar { background: #fff7ed; color: #9a3412; }
-.aud-badge-default { background: #f1f5f9; color: #475569; }
+.aud-badge-insert { background: var(--sgv-ok-fondo); color: var(--sgv-ok-texto); }
+.aud-badge-update { background: var(--sgv-info-fondo); color: var(--sgv-info-texto); }
+.aud-badge-delete { background: var(--sgv-rojo-50); color: var(--sgv-peligro-texto); }
+.aud-badge-login { background: var(--sgv-cielo-100); color: var(--sgv-cielo-900); }
+.aud-badge-login_fallido { background: var(--sgv-rojo-50); color: var(--sgv-peligro-texto); }
+.aud-badge-login_bloqueado { background: var(--sgv-peligro-fondo); color: var(--sgv-rojo-900); }
+.aud-badge-logout { background: var(--sgv-pizarra-100); color: var(--sgv-pizarra-600); }
+.aud-badge-aprobar { background: var(--sgv-ok-fondo); color: var(--sgv-ok-texto); }
+.aud-badge-rechazar { background: var(--sgv-alerta-fondo); color: var(--sgv-alerta-texto); }
+.aud-badge-liquidar { background: var(--sgv-violeta-100); color: var(--sgv-violeta-800); }
+.aud-badge-retirar { background: var(--sgv-naranja-50); color: var(--sgv-naranja-800); }
+.aud-badge-default { background: var(--sgv-pizarra-100); color: var(--sgv-pizarra-600); }
 
 .aud-badge-tabla {
     display: inline-block;
     padding: 0.2rem 0.5rem;
-    background: #f1f5f9;
-    border: 1px solid #cbd5e1;
+    background: var(--sgv-pizarra-100);
+    border: 1px solid var(--sgv-pizarra-300);
     border-radius: 0.25rem;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #475569;
+    color: var(--sgv-pizarra-600);
 }
 
 .aud-btn-detalle {
@@ -141,19 +141,19 @@
     display: inline-block;
     padding: 0.375rem 0.75rem;
     margin: 0 0.125rem;
-    border: 1px solid #cbd5e1;
+    border: 1px solid var(--sgv-pizarra-300);
     border-radius: 0.25rem;
     font-size: 0.8125rem;
-    color: #2563eb;
+    color: var(--sgv-azul-600);
     text-decoration: none;
 }
 .aud-pager span {
-    background: #2563eb;
-    color: white;
-    border-color: #2563eb;
+    background: var(--sgv-azul-600);
+    color: var(--sgv-blanco);
+    border-color: var(--sgv-azul-600);
 }
 .aud-pager a:hover {
-    background: #f1f5f9;
+    background: var(--sgv-pizarra-100);
 }
 
 @media (max-width: 768px) {

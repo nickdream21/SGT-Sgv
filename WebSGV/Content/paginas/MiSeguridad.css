@@ -20,7 +20,7 @@
     width: 220px;
     height: 220px;
     max-width: 100%;
-    background: #fff;
+    background: var(--sgv-superficie);
 }
 
 .ms-secreto {

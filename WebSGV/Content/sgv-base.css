@@ -3,16 +3,181 @@
    Tintes suaves para estados y acciones; sin degradados, sombras grandes ni animaciones. */
 
 :root {
-    --sgv-texto: #1f2937;
-    --sgv-texto-suave: #6b7280;
-    --sgv-borde: #e5e7eb;
-    --sgv-borde-fuerte: #d1d5db;
-    --sgv-fondo: #f9fafb;
-    --sgv-primario: #1d4ed8;
-    --sgv-ok: #15803d;
-    --sgv-alerta: #b45309;
-    --sgv-peligro: #b91c1c;
+    /* Semánticas: lo que usan las hojas cuando coinciden propiedad y valor. Las 9 primeras
+       y --sgv-radio existían antes de E5-11 (mismo nombre y valor). E5-12 cambia sus valores. */
+    --sgv-texto: var(--sgv-gris-800);
+    --sgv-texto-suave: var(--sgv-gris-500);
+    --sgv-borde: var(--sgv-gris-200);
+    --sgv-borde-fuerte: var(--sgv-gris-300);
+    --sgv-fondo: var(--sgv-gris-50);
+    --sgv-primario: var(--sgv-azul-700);
+    --sgv-ok: var(--sgv-verde-700);
+    --sgv-alerta: var(--sgv-ambar-700);
+    --sgv-peligro: var(--sgv-rojo-700);
+    --sgv-texto-medio: var(--sgv-gris-700);
+    --sgv-superficie: var(--sgv-blanco);
+    --sgv-fondo-pagina: var(--sgv-gris-100);
+    --sgv-primario-osc: var(--sgv-azul-800);
+    --sgv-primario-claro: var(--sgv-azul-50);
+    --sgv-ok-texto: var(--sgv-verde-800);
+    --sgv-ok-fondo: var(--sgv-verde-100);
+    --sgv-ok-borde: var(--sgv-verde-300);
+    --sgv-alerta-texto: var(--sgv-ambar-800);
+    --sgv-alerta-fondo: var(--sgv-ambar-100);
+    --sgv-alerta-borde: var(--sgv-ambar-300);
+    --sgv-peligro-texto: var(--sgv-rojo-800);
+    --sgv-peligro-fondo: var(--sgv-rojo-100);
+    --sgv-peligro-borde: var(--sgv-rojo-300);
+    --sgv-info-texto: var(--sgv-azul-800);
+    --sgv-info-fondo: var(--sgv-azul-100);
+    --sgv-info-borde: var(--sgv-azul-300);
+    --sgv-foco: var(--sgv-azul-700);
     --sgv-radio: 6px;
+
+    /* Paleta exacta (sin redondeos): un valor por variable. Pasos de Tailwind por familia,
+       --sgv-bs-* de Bootstrap 4 heredado y --sgv-suelto-* fuera de toda escala (E5-12 los quita).
+       La genera herramientas/estilos/colores.js aplicar. */
+    --sgv-blanco: #ffffff;
+    --sgv-pizarra-50: #f8fafc;
+    --sgv-pizarra-100: #f1f5f9;
+    --sgv-pizarra-200: #e2e8f0;
+    --sgv-pizarra-300: #cbd5e1;
+    --sgv-pizarra-400: #94a3b8;
+    --sgv-pizarra-500: #64748b;
+    --sgv-pizarra-600: #475569;
+    --sgv-pizarra-700: #334155;
+    --sgv-pizarra-800: #1e293b;
+    --sgv-pizarra-900: #0f172a;
+    --sgv-gris-50: #f9fafb;
+    --sgv-gris-100: #f3f4f6;
+    --sgv-gris-200: #e5e7eb;
+    --sgv-gris-300: #d1d5db;
+    --sgv-gris-400: #9ca3af;
+    --sgv-gris-500: #6b7280;
+    --sgv-gris-600: #4b5563;
+    --sgv-gris-700: #374151;
+    --sgv-gris-800: #1f2937;
+    --sgv-gris-900: #111827;
+    --sgv-rojo-50: #fef2f2;
+    --sgv-rojo-100: #fee2e2;
+    --sgv-rojo-200: #fecaca;
+    --sgv-rojo-300: #fca5a5;
+    --sgv-rojo-400: #f87171;
+    --sgv-rojo-600: #dc2626;
+    --sgv-rojo-700: #b91c1c;
+    --sgv-rojo-800: #991b1b;
+    --sgv-rojo-900: #7f1d1d;
+    --sgv-naranja-50: #fff7ed;
+    --sgv-naranja-700: #c2410c;
+    --sgv-naranja-800: #9a3412;
+    --sgv-naranja-900: #7c2d12;
+    --sgv-ambar-50: #fffbeb;
+    --sgv-ambar-100: #fef3c7;
+    --sgv-ambar-200: #fde68a;
+    --sgv-ambar-300: #fcd34d;
+    --sgv-ambar-400: #fbbf24;
+    --sgv-ambar-500: #f59e0b;
+    --sgv-ambar-600: #d97706;
+    --sgv-ambar-700: #b45309;
+    --sgv-ambar-800: #92400e;
+    --sgv-ambar-900: #78350f;
+    --sgv-verde-50: #f0fdf4;
+    --sgv-verde-100: #dcfce7;
+    --sgv-verde-200: #bbf7d0;
+    --sgv-verde-300: #86efac;
+    --sgv-verde-600: #16a34a;
+    --sgv-verde-700: #15803d;
+    --sgv-verde-800: #166534;
+    --sgv-verde-900: #14532d;
+    --sgv-esmeralda-50: #ecfdf5;
+    --sgv-esmeralda-200: #a7f3d0;
+    --sgv-esmeralda-600: #059669;
+    --sgv-esmeralda-800: #065f46;
+    --sgv-turquesa-100: #ccfbf1;
+    --sgv-turquesa-700: #0f766e;
+    --sgv-turquesa-800: #115e59;
+    --sgv-cian-50: #ecfeff;
+    --sgv-cian-300: #67e8f9;
+    --sgv-cian-600: #0891b2;
+    --sgv-cian-700: #0e7490;
+    --sgv-cielo-50: #f0f9ff;
+    --sgv-cielo-100: #e0f2fe;
+    --sgv-cielo-200: #bae6fd;
+    --sgv-cielo-300: #7dd3fc;
+    --sgv-cielo-800: #075985;
+    --sgv-cielo-900: #0c4a6e;
+    --sgv-azul-50: #eff6ff;
+    --sgv-azul-100: #dbeafe;
+    --sgv-azul-200: #bfdbfe;
+    --sgv-azul-300: #93c5fd;
+    --sgv-azul-400: #60a5fa;
+    --sgv-azul-500: #3b82f6;
+    --sgv-azul-600: #2563eb;
+    --sgv-azul-700: #1d4ed8;
+    --sgv-azul-800: #1e40af;
+    --sgv-azul-900: #1e3a8a;
+    --sgv-indigo-100: #e0e7ff;
+    --sgv-indigo-800: #3730a3;
+    --sgv-violeta-50: #f5f3ff;
+    --sgv-violeta-100: #ede9fe;
+    --sgv-violeta-200: #ddd6fe;
+    --sgv-violeta-800: #5b21b6;
+    --sgv-violeta-900: #4c1d95;
+    --sgv-bs-azul: #007bff;
+    --sgv-bs-azul-hover: #0069d9;
+    --sgv-bs-enlace-hover: #0056b3;
+    --sgv-bs-foco: #80bdff;
+    --sgv-bs-verde: #28a745;
+    --sgv-bs-rojo: #dc3545;
+    --sgv-bs-gris-activo: #545b62;
+    --sgv-bs-gris-100: #f8f9fa;
+    --sgv-bs-gris-200: #e9ecef;
+    --sgv-bs-gris-300: #dee2e6;
+    --sgv-bs-gris-400: #ced4da;
+    --sgv-bs-gris-600: #6c757d;
+    --sgv-bs-gris-700: #495057;
+    --sgv-bs-gris-800: #343a40;
+    --sgv-bs-alerta-exito-fondo: #d4edda;
+    --sgv-bs-alerta-exito-borde: #c3e6cb;
+    --sgv-bs-alerta-exito-texto: #155724;
+    --sgv-bs-alerta-info-fondo: #d1ecf1;
+    --sgv-bs-alerta-info-texto: #0c5460;
+    --sgv-bs-alerta-aviso-fondo: #fff3cd;
+    --sgv-bs-alerta-aviso-texto: #856404;
+    --sgv-bs-alerta-peligro-fondo: #f8d7da;
+    --sgv-bs-alerta-peligro-borde: #f5c6cb;
+    --sgv-bs-alerta-peligro-texto: #721c24;
+    --sgv-suelto-0077cc: #0077cc;
+    --sgv-suelto-0b3d91: #0b3d91;
+    --sgv-suelto-555555: #555555;
+    --sgv-suelto-666666: #666666;
+    --sgv-suelto-b02a37: #b02a37;
+    --sgv-suelto-b6d4da: #b6d4da;
+    --sgv-suelto-badbcc: #badbcc;
+    --sgv-suelto-cccccc: #cccccc;
+    --sgv-suelto-e9f7fe: #e9f7fe;
+    --sgv-suelto-ecfdf3: #ecfdf3;
+    --sgv-suelto-eef1f5: #eef1f5;
+    --sgv-suelto-eef2f7: #eef2f7;
+    --sgv-suelto-eff4ff: #eff4ff;
+    --sgv-suelto-f0f7ff: #f0f7ff;
+    --sgv-suelto-f4f6f9: #f4f6f9;
+    --sgv-suelto-f8fbff: #f8fbff;
+    --sgv-suelto-f9f9f9: #f9f9f9;
+    --sgv-suelto-fafafa: #fafafa;
+    --sgv-suelto-ffeaa7: #ffeaa7;
+    --sgv-suelto-fff5f5: #fff5f5;
+
+    /* Triples para transparencias: rgba(var(--sgv-x-rgb), alfa). */
+    --sgv-blanco-rgb: 255, 255, 255;
+    --sgv-negro-rgb: 0, 0, 0;
+    --sgv-pizarra-900-rgb: 15, 23, 42;
+    --sgv-gris-900-rgb: 17, 24, 39;
+    --sgv-azul-600-rgb: 37, 99, 235;
+    --sgv-azul-700-rgb: 29, 78, 216;
+    --sgv-azul-800-rgb: 30, 64, 175;
+    --sgv-bs-azul-rgb: 0, 123, 255;
+    --sgv-bs-rojo-rgb: 220, 53, 69;
 }
 
 /* === Encabezado de página === */
@@ -42,7 +207,7 @@
 
 /* === Paneles === */
 .sgv-panel {
-    background: #fff;
+    background: var(--sgv-superficie);
     border: 1px solid var(--sgv-borde);
     border-radius: var(--sgv-radio);
 }
@@ -114,7 +279,7 @@
     min-width: 1.5rem;
     padding: 0 0.45rem;
     border-radius: 999px;
-    background: #f3f4f6;
+    background: var(--sgv-fondo-pagina);
     color: var(--sgv-texto-suave);
     font-size: 0.75rem;
     font-weight: 600;
@@ -124,16 +289,16 @@
 }
 
 .sgv-tab.activo .sgv-tab-contador {
-    background: #dbeafe;
-    color: #1e40af;
+    background: var(--sgv-info-fondo);
+    color: var(--sgv-info-texto);
 }
 
 .sgv-tab-alerta {
     display: inline-block;
     padding: 0 0.5rem;
     border-radius: 999px;
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--sgv-peligro-fondo);
+    color: var(--sgv-peligro-texto);
     font-size: 0.75rem;
     font-weight: 600;
     line-height: 1.25rem;
@@ -155,8 +320,8 @@
     gap: 0.375rem;
     padding: 0.125rem 0.5rem;
     border-radius: 999px;
-    background: #f3f4f6;
-    color: #374151;
+    background: var(--sgv-fondo-pagina);
+    color: var(--sgv-texto-medio);
     font-size: 0.8125rem;
     font-weight: 500;
     white-space: nowrap;
@@ -172,10 +337,10 @@
     flex-shrink: 0;
 }
 
-.sgv-estado-ok { background: #dcfce7; color: #166534; }
-.sgv-estado-alerta { background: #fef3c7; color: #92400e; }
-.sgv-estado-peligro { background: #fee2e2; color: #991b1b; }
-.sgv-estado-info { background: #dbeafe; color: #1e40af; }
+.sgv-estado-ok { background: var(--sgv-ok-fondo); color: var(--sgv-ok-texto); }
+.sgv-estado-alerta { background: var(--sgv-alerta-fondo); color: var(--sgv-alerta-texto); }
+.sgv-estado-peligro { background: var(--sgv-peligro-fondo); color: var(--sgv-peligro-texto); }
+.sgv-estado-info { background: var(--sgv-info-fondo); color: var(--sgv-info-texto); }
 
 /* === Tablas ===
    App.css pinta todas las cabeceras de azul con !important; aquí se anula solo dentro de .sgv-tabla.
@@ -183,12 +348,12 @@
 .sgv-tabla { font-size: 0.875rem; color: var(--sgv-texto); }
 
 .table.sgv-tabla th {
-    background: #f1f5f9 !important;
-    color: #475569 !important;
+    background: var(--sgv-pizarra-100) !important;
+    color: var(--sgv-pizarra-600) !important;
     font-size: 0.8125rem !important;
     font-weight: 600 !important;
     border: none !important;
-    border-bottom: 1px solid #cbd5e1 !important;
+    border-bottom: 1px solid var(--sgv-pizarra-300) !important;
     padding: 0.625rem 0.75rem !important;
     text-align: left !important;
     white-space: nowrap;
@@ -200,9 +365,9 @@
 
 .table.sgv-tabla tbody tr,
 .table.sgv-tabla tbody tr:nth-child(odd),
-.table.sgv-tabla tbody tr:nth-child(even) { background: #fff !important; }
+.table.sgv-tabla tbody tr:nth-child(even) { background: var(--sgv-superficie) !important; }
 
-.table.sgv-tabla tbody tr:hover { background: #f8fafc !important; }
+.table.sgv-tabla tbody tr:hover { background: var(--sgv-pizarra-50) !important; }
 
 .table.sgv-tabla tbody td {
     border: none !important;
@@ -236,25 +401,25 @@
     width: 2rem;
     height: 2rem;
     padding: 0;
-    background: #fff;
+    background: var(--sgv-superficie);
     border: 1px solid var(--sgv-borde-fuerte);
     border-radius: var(--sgv-radio);
-    color: #475569;
+    color: var(--sgv-pizarra-600);
     font-size: 0.8125rem;
     cursor: pointer;
     transition: color .15s, border-color .15s, background-color .15s;
 }
 
-.sgv-btn-icono:hover { border-color: #94a3b8; background: #f8fafc; text-decoration: none; color: #1f2937; }
+.sgv-btn-icono:hover { border-color: var(--sgv-pizarra-400); background: var(--sgv-pizarra-50); text-decoration: none; color: var(--sgv-texto); }
 
 .sgv-btn-icono.info { color: var(--sgv-primario); }
-.sgv-btn-icono.info:hover { background: #eff6ff; border-color: #93c5fd; color: var(--sgv-primario); }
+.sgv-btn-icono.info:hover { background: var(--sgv-primario-claro); border-color: var(--sgv-info-borde); color: var(--sgv-primario); }
 .sgv-btn-icono.alerta { color: var(--sgv-alerta); }
-.sgv-btn-icono.alerta:hover { background: #fffbeb; border-color: #fcd34d; color: var(--sgv-alerta); }
+.sgv-btn-icono.alerta:hover { background: var(--sgv-ambar-50); border-color: var(--sgv-alerta-borde); color: var(--sgv-alerta); }
 .sgv-btn-icono.ok { color: var(--sgv-ok); }
-.sgv-btn-icono.ok:hover { background: #f0fdf4; border-color: #86efac; color: var(--sgv-ok); }
+.sgv-btn-icono.ok:hover { background: var(--sgv-verde-50); border-color: var(--sgv-ok-borde); color: var(--sgv-ok); }
 .sgv-btn-icono.peligro { color: var(--sgv-peligro); }
-.sgv-btn-icono.peligro:hover { background: #fef2f2; border-color: #fca5a5; color: var(--sgv-peligro); }
+.sgv-btn-icono.peligro:hover { background: var(--sgv-rojo-50); border-color: var(--sgv-peligro-borde); color: var(--sgv-peligro); }
 
 .sgv-acciones {
     display: inline-flex;
@@ -266,9 +431,9 @@
 .sgv-panel-acento .sgv-panel-cab { border-radius: 0; }
 
 /* === Cabeceras de modal con intención (App.css pone la cabecera clara con línea azul) === */
-.modal-header.sgv-modal-peligro { background-color: #fef2f2 !important; border-top-color: var(--sgv-peligro) !important; }
-.modal-header.sgv-modal-alerta { background-color: #fffbeb !important; border-top-color: var(--sgv-alerta) !important; }
-.modal-header.sgv-modal-ok { background-color: #f0fdf4 !important; border-top-color: var(--sgv-ok) !important; }
+.modal-header.sgv-modal-peligro { background-color: var(--sgv-rojo-50) !important; border-top-color: var(--sgv-peligro) !important; }
+.modal-header.sgv-modal-alerta { background-color: var(--sgv-ambar-50) !important; border-top-color: var(--sgv-alerta) !important; }
+.modal-header.sgv-modal-ok { background-color: var(--sgv-verde-50) !important; border-top-color: var(--sgv-ok) !important; }
 
 /* === Compatibilidad: clases de Bootstrap 5 que quedaron en el markup (el sitio usa Bootstrap 4.6) === */
 .form-select {
@@ -278,16 +443,16 @@
     padding: 0.375rem 1.75rem 0.375rem 0.75rem;
     font-size: 1rem;
     line-height: 1.5;
-    color: #495057;
-    background: #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") no-repeat right 0.75rem center / 8px 10px;
-    border: 1px solid #ced4da;
+    color: var(--sgv-bs-gris-700);
+    background: var(--sgv-superficie) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") no-repeat right 0.75rem center / 8px 10px;
+    border: 1px solid var(--sgv-bs-gris-400);
     border-radius: 0.25rem;
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
 }
-.form-select:focus { border-color: #80bdff; outline: 0; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
-.form-select:disabled { background-color: #e9ecef; }
+.form-select:focus { border-color: var(--sgv-bs-foco); outline: 0; box-shadow: 0 0 0 0.2rem rgba(var(--sgv-bs-azul-rgb), 0.25); }
+.form-select:disabled { background-color: var(--sgv-bs-gris-200); }
 .fw-bold { font-weight: 700 !important; }
 .me-2 { margin-right: 0.5rem !important; }
 .ms-2 { margin-left: 0.5rem !important; }
@@ -297,11 +462,11 @@
 
 /* Botones de acción comunes. Antes solo existían en el CSS de tres páginas, y en las demás
    (p. ej. Dinero y pagos del viaje) el botón salía sin estilo. */
-.btn-primary-custom { background: var(--sgv-primario); border: 1px solid var(--sgv-primario); color: #fff; font-weight: 500; padding: 0.5rem 1rem; }
-.btn-primary-custom:hover, .btn-primary-custom:focus { background: #1e40af; border-color: #1e40af; color: #fff; }
-.btn-secondary-custom { background: #fff; border: 1px solid #d1d5db; color: #374151; font-weight: 500; }
-.btn-secondary-custom:hover, .btn-secondary-custom:focus { background: #f3f4f6; color: #1f2937; }
-.btn-danger-custom { background: var(--sgv-peligro); border: 1px solid var(--sgv-peligro); color: #fff; font-weight: 500; }
-.btn-danger-custom:hover, .btn-danger-custom:focus { background: #991b1b; border-color: #991b1b; color: #fff; }
-.btn-success-custom { background: var(--sgv-ok); border: 1px solid var(--sgv-ok); color: #fff; font-weight: 500; }
-.btn-success-custom:hover, .btn-success-custom:focus { background: #166534; border-color: #166534; color: #fff; }
+.btn-primary-custom { background: var(--sgv-primario); border: 1px solid var(--sgv-primario); color: var(--sgv-blanco); font-weight: 500; padding: 0.5rem 1rem; }
+.btn-primary-custom:hover, .btn-primary-custom:focus { background: var(--sgv-primario-osc); border-color: var(--sgv-primario-osc); color: var(--sgv-blanco); }
+.btn-secondary-custom { background: var(--sgv-superficie); border: 1px solid var(--sgv-borde-fuerte); color: var(--sgv-texto-medio); font-weight: 500; }
+.btn-secondary-custom:hover, .btn-secondary-custom:focus { background: var(--sgv-fondo-pagina); color: var(--sgv-texto); }
+.btn-danger-custom { background: var(--sgv-peligro); border: 1px solid var(--sgv-peligro); color: var(--sgv-blanco); font-weight: 500; }
+.btn-danger-custom:hover, .btn-danger-custom:focus { background: var(--sgv-rojo-800); border-color: var(--sgv-rojo-800); color: var(--sgv-blanco); }
+.btn-success-custom { background: var(--sgv-ok); border: 1px solid var(--sgv-ok); color: var(--sgv-blanco); font-weight: 500; }
+.btn-success-custom:hover, .btn-success-custom:focus { background: var(--sgv-verde-800); border-color: var(--sgv-verde-800); color: var(--sgv-blanco); }

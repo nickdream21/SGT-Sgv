@@ -3,7 +3,7 @@
     height: calc(100vh - 230px);
     min-height: 420px;
     overflow: hidden;
-    background-color: #f8f9fa;
+    background-color: var(--sgv-bs-gris-100);
 }
 
 .pdf-liquidacion-loader {
@@ -12,8 +12,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #6c757d;
-    background-color: #f8f9fa;
+    color: var(--sgv-bs-gris-600);
+    background-color: var(--sgv-bs-gris-100);
     z-index: 2;
 }
 

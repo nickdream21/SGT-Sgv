@@ -1,14 +1,14 @@
 ﻿:root {
     /* Mismos tonos que el panel del conductor (DashboardConductor.css), para que firmar y dar
        conformidad se vean como parte de la misma aplicación. */
-    --azul: #1d4ed8;
-    --azul-osc: #1e40af;
-    --rojo: #b91c1c;
-    --gris-900: #1f2937;
-    --gris-600: #6b7280;
-    --gris-300: #e5e7eb;
-    --gris-100: #f3f4f6;
-    --azul-claro: #eff6ff;
+    --azul: var(--sgv-primario);
+    --azul-osc: var(--sgv-primario-osc);
+    --rojo: var(--sgv-peligro);
+    --gris-900: var(--sgv-gris-800);
+    --gris-600: var(--sgv-gris-500);
+    --gris-300: var(--sgv-gris-200);
+    --gris-100: var(--sgv-gris-100);
+    --azul-claro: var(--sgv-primario-claro);
 }
 *, *::before, *::after { box-sizing: border-box; }
 html, body {
@@ -24,21 +24,21 @@ h1, h2, h3, h4 { margin: 0; }
 
 /* ---------- Encabezado (claro, como la barra del sistema) ---------- */
 .fl-header {
-    background: #f8f9fa;
+    background: var(--sgv-bs-gris-100);
     color: var(--gris-900);
     padding: 12px 16px;
     display: flex;
     align-items: center;
     gap: 12px;
     border-bottom: 1px solid var(--gris-300);
-    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    box-shadow: 0 1px 3px rgba(var(--sgv-negro-rgb), .06);
 }
 .fl-header .logo {
     width: 40px; height: 40px;
     background: var(--azul);
     border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
-    font-weight: 700; color: #fff;
+    font-weight: 700; color: var(--sgv-blanco);
     font-size: 13px; letter-spacing: .5px;
     flex: none;
 }
@@ -52,7 +52,7 @@ h1, h2, h3, h4 { margin: 0; }
     margin-left: auto;
     font-size: 0.75rem; /* mínimo 12 px (E5-4) */
     color: var(--gris-600);
-    background: #fff;
+    background: var(--sgv-superficie);
     border: 1px solid var(--gris-300);
     padding: 3px 8px;
     border-radius: 999px;
@@ -64,7 +64,7 @@ h1, h2, h3, h4 { margin: 0; }
 
 /* ---------- Tarjeta de resumen ---------- */
 .fl-card {
-    background: #fff;
+    background: var(--sgv-superficie);
     border: 1px solid var(--gris-300);
     border-radius: 10px;
     padding: 16px;
@@ -97,21 +97,21 @@ h1, h2, h3, h4 { margin: 0; }
 
 /* ---------- Declaración jurada ---------- */
 .fl-declaracion {
-    background: #fffbeb;
-    border: 1px solid #fde68a;
-    border-left: 4px solid #b45309;
+    background: var(--sgv-ambar-50);
+    border: 1px solid var(--sgv-ambar-200);
+    border-left: 4px solid var(--sgv-alerta);
     border-radius: 8px;
     padding: 12px 14px;
     font-size: 0.9rem;
     line-height: 1.5;
     margin-bottom: 12px;
 }
-.fl-declaracion strong { color: #b45309; }
+.fl-declaracion strong { color: var(--sgv-alerta); }
 
 .fl-check {
     display: flex; align-items: flex-start; gap: 10px;
     padding: 12px;
-    background: #fff;
+    background: var(--sgv-superficie);
     border: 1px solid var(--gris-300);
     border-radius: 8px;
     margin-bottom: 14px;
@@ -135,8 +135,8 @@ h1, h2, h3, h4 { margin: 0; }
 }
 .fl-canvas-box {
     position: relative;
-    background: #fff;
-    border: 2px dashed #cbd5e1;
+    background: var(--sgv-superficie);
+    border: 2px dashed var(--sgv-pizarra-300);
     border-radius: 10px;
     height: 240px;
     overflow: hidden;
@@ -192,8 +192,8 @@ h1, h2, h3, h4 { margin: 0; }
     padding: 0 14px;
     font-size: 0.9rem; font-weight: 600;
     border-radius: 8px;
-    border: 1px solid #bfdbfe;
-    background: #fff;
+    border: 1px solid var(--sgv-azul-200);
+    background: var(--sgv-superficie);
     color: var(--azul);
     cursor: pointer;
     transition: background-color .15s;
@@ -209,7 +209,7 @@ a.fl-btn { display: inline-flex; align-items: center; justify-content: center; }
     padding: 0 16px;
     font-size: 1rem; font-weight: 600;
     background: var(--azul);
-    color: #fff;
+    color: var(--sgv-blanco);
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -230,8 +230,8 @@ a.fl-btn { display: inline-flex; align-items: center; justify-content: center; }
     display: none;
 }
 .fl-alert.show { display: block; }
-.fl-alert.error   { background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid var(--rojo); color: #991b1b; }
-.fl-alert.success { background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #15803d; color: #166534; }
+.fl-alert.error   { background: var(--sgv-rojo-50); border: 1px solid var(--sgv-rojo-200); border-left: 4px solid var(--rojo); color: var(--sgv-peligro-texto); }
+.fl-alert.success { background: var(--sgv-verde-50); border: 1px solid var(--sgv-verde-200); border-left: 4px solid var(--sgv-ok); color: var(--sgv-ok-texto); }
 
 /* ---------- Pantalla de éxito ---------- */
 .fl-success-screen {
@@ -244,13 +244,13 @@ a.fl-btn { display: inline-flex; align-items: center; justify-content: center; }
     width: 56px; height: 56px;
     margin: 0 auto 14px;
     border-radius: 50%;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    color: #15803d;
+    background: var(--sgv-verde-50);
+    border: 1px solid var(--sgv-verde-200);
+    color: var(--sgv-ok);
     display: flex; align-items: center; justify-content: center;
     font-size: 22px;
 }
-.fl-success-screen h3 { color: #166534; font-size: 1.15rem; font-weight: 600; margin-bottom: 8px; }
+.fl-success-screen h3 { color: var(--sgv-ok-texto); font-size: 1.15rem; font-weight: 600; margin-bottom: 8px; }
 .fl-success-screen p { color: var(--gris-600); font-size: 0.9rem; margin-bottom: 20px; }
 /* Etiquetas del código y del hash tras firmar (antes 11 px en línea; mínimo 12 px, E5-4). */
 .fl-ok-etiqueta { font-size: 12px; color: var(--gris-600); text-transform: uppercase; margin-bottom: 6px; }

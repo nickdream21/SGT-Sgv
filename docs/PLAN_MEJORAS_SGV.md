@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `e90e951` — E5-10: `sp_FF_ObtenerFacturasFlete` y `sp_LD_ObtenerLotesRegistrados` con el mismo resultado y de 4 a 15 veces menos lecturas (aplicados en pruebas; paso en `PASO_A_PRODUCCION.md` §5), contabilidad paginada de a 50 con 90 días al abrir (DN-29, a confirmar), `ConsultasListadoAcotadasTests`; nuevos M-137 a M-140 y P-068. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-23**, commit anterior `2aabcac` — E5-11: variables de color sin cambio de diseño: paleta exacta (130 colores, 9 triples `-rgb`) y 28 semánticas (27 de color y el radio) en el `:root` de `sgv-base.css`, 1 319 literales de 29 de las 31 hojas cambiados por `var()` (fuera de los `:root` permitidos: 1 323 → 0), los `:root` de página como alias, `sgv-base.css` en las 3 páginas sin master; `herramientas/estilos/colores.js` (`aplicar`/`verificar`: 0 diferencias contra HEAD) y `EstilosTests`; nuevos P-069 y P-070. No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-143 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

@@ -4,7 +4,7 @@
 /* ✅ MEJORAS PARA EL NAVBAR */
 .navbar {
     padding: 0.75rem 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(var(--sgv-negro-rgb), 0.1);
 }
 
 .navbar-brand {
@@ -55,13 +55,13 @@
 
 .dropdown-menu {
     border-radius: 0.5rem;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    border: 1px solid rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(var(--sgv-negro-rgb), 0.15);
+    border: 1px solid rgba(var(--sgv-negro-rgb), 0.1);
     min-width: 220px;
 }
 
 .user-info {
-    color: #495057;
+    color: var(--sgv-bs-gris-700);
     font-weight: 500;
     margin-right: 15px;
     display: flex;
@@ -88,17 +88,17 @@
 
 /* Efecto hover mejorado */
 .nav-link:hover {
-    background-color: rgba(0,0,0,0.05);
+    background-color: rgba(var(--sgv-negro-rgb), 0.05);
     border-radius: 0.25rem;
 }
 
 .dropdown-item:hover {
-    background-color: #f8f9fa;
+    background-color: var(--sgv-bs-gris-100);
 }
 
 /* Active state */
 .nav-item.active > .nav-link {
-    color: #007bff !important;
+    color: var(--sgv-bs-azul) !important;
     font-weight: 600;
 }
 
@@ -106,7 +106,7 @@
    (escudo de SiteMaster.js, solo en páginas con campos de contraseña). Sin esto, Bootstrap pinta
    [readonly] como si estuviera deshabilitado (fondo gris) todo el tiempo. */
 input.af-shield[readonly] {
-    background-color: #fff !important;
+    background-color: var(--sgv-superficie) !important;
     opacity: 1 !important;
     cursor: text !important;
 }
@@ -153,16 +153,16 @@ body > .container, form > .container, .container.mt-4 { max-width: min(1680px, 9
 .table td, .table th { vertical-align: middle; }
 
 /* Selector de archivos con el mismo aspecto que los botones (antes salía el botón gris por defecto del navegador). */
-input[type=file] { font-size: .875rem; color: #475569; }
+input[type=file] { font-size: .875rem; color: var(--sgv-pizarra-600); }
 input[type=file]::file-selector-button {
-    margin-right: .75rem; padding: .35rem .85rem; border: 1px solid #94a3b8; border-radius: .25rem;
-    background: #fff; color: #334155; font-weight: 500; cursor: pointer; transition: background-color .15s, border-color .15s;
+    margin-right: .75rem; padding: .35rem .85rem; border: 1px solid var(--sgv-pizarra-400); border-radius: .25rem;
+    background: var(--sgv-superficie); color: var(--sgv-pizarra-700); font-weight: 500; cursor: pointer; transition: background-color .15s, border-color .15s;
 }
-input[type=file]::file-selector-button:hover { background: #f1f5f9; border-color: #64748b; }
+input[type=file]::file-selector-button:hover { background: var(--sgv-pizarra-100); border-color: var(--sgv-pizarra-500); }
 
 /* GridView: el borde duro (border="1") se suaviza en todas las grillas del sistema. */
-table[border="1"] { border: 1px solid #e2e8f0 !important; }
-table[border="1"] th, table[border="1"] td { border-color: #e2e8f0 !important; }
+table[border="1"] { border: 1px solid var(--sgv-pizarra-200) !important; }
+table[border="1"] th, table[border="1"] td { border-color: var(--sgv-pizarra-200) !important; }
 table[border="1"] td .btn { white-space: nowrap; }
 
 /* Pantallas de 1366 px (las de la oficina): con seis menús y un rol largo, la barra se salía por
@@ -195,8 +195,8 @@ table[border="1"] td .btn { white-space: nowrap; }
 }
 
 /* Montos (E5-1): un [data-monto] que no se pudo leer (SGV.normalizarMonto en SiteMaster.js). */
-input[data-monto].is-invalid { border-color: #dc3545; }
-.sgv-monto-ayuda { display: block; margin-top: .25rem; font-size: .8125rem; line-height: 1.3; color: #b02a37; }
+input[data-monto].is-invalid { border-color: var(--sgv-bs-rojo); }
+.sgv-monto-ayuda { display: block; margin-top: .25rem; font-size: .8125rem; line-height: 1.3; color: var(--sgv-suelto-b02a37); }
 
 /* Envío en curso (E5-2, SiteMaster.js): cursor de espera en toda la página y, a los 300 ms, el velo
    "Procesando…". Queda debajo de los avisos (z-index 2000) y encima de los modales (1050-1060). */
@@ -206,7 +206,7 @@ body.sgv-procesando, body.sgv-procesando * { cursor: wait !important; }
     position: fixed;
     inset: 0;
     z-index: 1990;
-    background: rgba(15, 23, 42, .35);
+    background: rgba(var(--sgv-pizarra-900-rgb), .35);
     align-items: center;
     justify-content: center;
     padding: 16px;
@@ -218,12 +218,12 @@ body.sgv-procesando-velo-visible .sgv-procesando-velo { display: flex; }
     gap: .6rem;
     padding: .9rem 1.25rem;
     border-radius: .375rem;
-    background: #fff;
-    color: #1e293b;
+    background: var(--sgv-superficie);
+    color: var(--sgv-pizarra-800);
     font-weight: 500;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, .2);
+    box-shadow: 0 8px 24px rgba(var(--sgv-pizarra-900-rgb), .2);
 }
-.sgv-procesando-caja .spinner-border { color: #1d4ed8; }
+.sgv-procesando-caja .spinner-border { color: var(--sgv-primario); }
 
 /* Saltar al contenido (E5-4): primer foco con Tab; fuera de la pantalla hasta recibir el foco. */
 .sgv-saltar {
@@ -233,11 +233,11 @@ body.sgv-procesando-velo-visible .sgv-procesando-velo { display: flex; }
     z-index: 2100;
     padding: .6rem 1rem;
     border-radius: .375rem;
-    background: #1d4ed8;
-    color: #fff;
+    background: var(--sgv-primario);
+    color: var(--sgv-blanco);
     font-weight: 600;
     text-decoration: none;
 }
-.sgv-saltar:focus { top: 8px; color: #fff; text-decoration: none; outline: 3px solid #93c5fd; outline-offset: 2px; }
+.sgv-saltar:focus { top: 8px; color: var(--sgv-blanco); text-decoration: none; outline: 3px solid var(--sgv-azul-300); outline-offset: 2px; }
 /* #contenido recibe el foco del enlace (tabindex="-1"): no es un control, sin anillo. */
 #contenido:focus { outline: none; }

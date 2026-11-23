@@ -14,18 +14,18 @@
 .cl-tabla .sub td:first-child { padding-left: 14px; }
 .cl-tabla .total td { font-weight: 700; }
 .cl-tabla .saldo td { font-weight: 700; font-size: 16px; background: var(--azul-claro); border-bottom: 2px solid var(--azul); }
-.cl-tabla .desc td { color: #B91C1C; }
-.cl-tabla .reint td { color: #166534; }
+.cl-tabla .desc td { color: var(--sgv-peligro); }
+.cl-tabla .reint td { color: var(--sgv-ok-texto); }
 
 .cl-letras { margin-top: 10px; font-size: 12px; color: var(--gris-600); }
 .cl-pdf { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--azul); }
 
-.cl-ajuste { border-left: 4px solid #B91C1C; background: #FEF2F2; border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; }
-.cl-ajuste.reintegro { border-left-color: #166534; background: #F0FDF4; }
+.cl-ajuste { border-left: 4px solid var(--sgv-peligro); background: var(--sgv-rojo-50); border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; }
+.cl-ajuste.reintegro { border-left-color: var(--sgv-verde-800); background: var(--sgv-verde-50); }
 .cl-ajuste .tipo { font-weight: 700; font-size: 13px; }
 .cl-ajuste .monto { float: right; font-weight: 700; }
-.cl-ajuste .motivo { font-size: 13px; margin-top: 4px; color: #374151; }
+.cl-ajuste .motivo { font-size: 13px; margin-top: 4px; color: var(--sgv-texto-medio); }
 
 .cl-desacuerdo { margin-top: 18px; text-align: center; }
 .cl-desacuerdo label { display: block; text-align: left; font-size: 13px; color: var(--gris-600); margin: 12px 0 6px; }
-.cl-btn-observar { margin-top: 10px; background: #FFFBEB; border-color: #F59E0B; color: #92400E; }
+.cl-btn-observar { margin-top: 10px; background: var(--sgv-ambar-50); border-color: var(--sgv-ambar-500); color: var(--sgv-alerta-texto); }

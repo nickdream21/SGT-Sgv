@@ -1,9 +1,9 @@
 ﻿.recovery-container {
     max-width: 500px;
     margin: 50px auto;
-    background-color: #f8f9fa;
+    background-color: var(--sgv-bs-gris-100);
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(var(--sgv-negro-rgb), 0.1);
     padding: 30px;
 }
 
@@ -16,7 +16,7 @@
 
 .recovery-subtitle {
     text-align: center;
-    color: #666;
+    color: var(--sgv-suelto-666666);
     margin-bottom: 25px;
     font-size: 14px;
 }
@@ -35,7 +35,7 @@
     width: 100%;
     padding: 10px 15px;
     font-size: 16px;
-    border: 1px solid #ced4da;
+    border: 1px solid var(--sgv-bs-gris-400);
     border-radius: 4px;
 }
 
@@ -50,22 +50,22 @@
 }
 
 .btn-primary {
-    background-color: #007bff;
-    color: white;
+    background-color: var(--sgv-bs-azul);
+    color: var(--sgv-blanco);
 }
 
 .btn-primary:hover {
-    background-color: #0069d9;
+    background-color: var(--sgv-bs-azul-hover);
 }
 
 .btn-secondary {
-    background-color: #6c757d;
-    color: white;
+    background-color: var(--sgv-bs-gris-600);
+    color: var(--sgv-blanco);
     margin-top: 10px;
 }
 
 .btn-secondary:hover {
-    background-color: #545b62;
+    background-color: var(--sgv-bs-gris-activo);
 }
 
 .alert {
@@ -75,13 +75,13 @@
 }
 
 .alert-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background-color: var(--sgv-bs-alerta-exito-fondo);
+    color: var(--sgv-bs-alerta-exito-texto);
+    border: 1px solid var(--sgv-bs-alerta-exito-borde);
 }
 
 .alert-danger {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: var(--sgv-bs-alerta-peligro-fondo);
+    color: var(--sgv-bs-alerta-peligro-texto);
+    border: 1px solid var(--sgv-bs-alerta-peligro-borde);
 }

@@ -14,11 +14,11 @@
 
 /* === Tablas === */
 .table thead th {
-    background-color: #f1f5f9 !important;
-    color: #475569 !important;
+    background-color: var(--sgv-pizarra-100) !important;
+    color: var(--sgv-pizarra-600) !important;
     font-weight: 600 !important;
     border: none !important;
-    border-bottom: 1px solid #cbd5e1 !important;
+    border-bottom: 1px solid var(--sgv-pizarra-300) !important;
     vertical-align: middle !important;
     padding: 10px !important;
     opacity: 1 !important;
@@ -26,16 +26,16 @@
 
 .table tbody tr:nth-child(odd),
 .table tbody tr:nth-child(even) {
-    background-color: #ffffff !important;
+    background-color: var(--sgv-superficie) !important;
 }
 
 .table tbody tr:hover {
-    background-color: #f8fafc !important;
+    background-color: var(--sgv-pizarra-50) !important;
 }
 
 .table tbody td {
     border: none !important;
-    border-bottom: 1px solid #e5e7eb !important;
+    border-bottom: 1px solid var(--sgv-borde) !important;
     padding: 8px !important;
     vertical-align: middle !important;
 }
@@ -74,14 +74,14 @@
     border: none !important;
     border-radius: 6px !important;
     overflow: hidden !important;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25) !important;
+    box-shadow: 0 10px 30px rgba(var(--sgv-pizarra-900-rgb), 0.25) !important;
 }
 
 .modal-header {
-    background-color: #f8fafc !important;
-    color: #1f2937 !important;
-    border-bottom: 1px solid #e5e7eb !important;
-    border-top: 3px solid #1d4ed8 !important;
+    background-color: var(--sgv-pizarra-50) !important;
+    color: var(--sgv-texto) !important;
+    border-bottom: 1px solid var(--sgv-borde) !important;
+    border-top: 3px solid var(--sgv-primario) !important;
     border-radius: 0 !important;
 }
 
@@ -91,7 +91,7 @@
 }
 
 .modal-header .close {
-    color: #475569 !important;
+    color: var(--sgv-pizarra-600) !important;
     text-shadow: none !important;
     opacity: 0.8 !important;
 }
@@ -107,15 +107,15 @@
 }
 
 .modal-footer.bg-light {
-    background-color: #f8fafc !important;
-    border-top: 1px solid #e5e7eb !important;
+    background-color: var(--sgv-pizarra-50) !important;
+    border-top: 1px solid var(--sgv-borde) !important;
 }
 
 /* Tablas dentro de modales */
 .modal .table {
     width: 100% !important;
     margin-bottom: 0 !important;
-    color: #1f2937 !important;
+    color: var(--sgv-texto) !important;
 }
 
 .modal .table thead th {
@@ -128,8 +128,8 @@
 
 /* Contador de registros */
 .badge.badge-info {
-    background-color: #dbeafe !important;
-    color: #1e40af !important;
+    background-color: var(--sgv-info-fondo) !important;
+    color: var(--sgv-info-texto) !important;
     font-size: 13px !important;
     padding: 6px 10px !important;
     border-radius: 999px !important;
@@ -139,7 +139,7 @@
 /* === Scroll de tablas === */
 .table-responsive {
     scrollbar-width: thin;
-    scrollbar-color: #94a3b8 #f1f5f9;
+    scrollbar-color: var(--sgv-pizarra-400) var(--sgv-pizarra-100);
 }
 
 .table-responsive::-webkit-scrollbar {
@@ -148,13 +148,13 @@
 }
 
 .table-responsive::-webkit-scrollbar-track {
-    background: #f1f5f9;
+    background: var(--sgv-pizarra-100);
 }
 
 .table-responsive::-webkit-scrollbar-thumb {
-    background-color: #94a3b8;
+    background-color: var(--sgv-pizarra-400);
     border-radius: 10px;
-    border: 2px solid #f1f5f9;
+    border: 2px solid var(--sgv-pizarra-100);
 }
 
 /* === Tablets === */
