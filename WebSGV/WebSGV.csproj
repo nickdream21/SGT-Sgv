@@ -514,6 +514,7 @@
     <Compile Include="Services\Common\MontoHelper.cs" />
     <Compile Include="Services\Common\ErrorNegocio.cs" />
     <Compile Include="Services\Common\EstadoActivoService.cs" />
+    <Compile Include="Services\Auditoria\ConsultaAuditoriaService.cs" />
     <Compile Include="Services\Common\LargoColumnas.cs" />
     <Compile Include="Services\Common\MaestrosService.cs" />
     <Compile Include="Services\Conductor\DashboardConductorService.cs" />

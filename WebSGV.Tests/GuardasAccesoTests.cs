@@ -131,6 +131,7 @@ namespace WebSGV.Tests
                 { "RolesHelper.EsConductor()",               null },
                 { "SecurityHelper.EsConductor()",            null },
                 { "SecurityHelper.EsAdminOSupervisor()",     null },
+                { "SecurityHelper.EsAdminSistema()",         null },
                 { "SecurityHelper.PuedeConsultarLiquidacionesGlobales()", null },
                 { "AccesoLiquidacion.VeTodasLasOrdenes(",    null },
             };
@@ -181,6 +182,9 @@ namespace WebSGV.Tests
                     new[] { "SecurityHelper.TieneSesionActiva()", "RolesHelper.TienePermiso(\"REGISTRO_CONDUCTORES\")" } },
                 { "Views/RegistroClientes.aspx.cs:BuscarPorRuc",
                     new[] { "SecurityHelper.TieneSesionActiva()", "RolesHelper.TienePermiso(\"REGISTRO\")" } },
+                // Mismo rol que la guarda de la página (SecurityHelper.ExigirRolAdminSistema, E5-8).
+                { "Views/Auditoria.aspx.cs:ObtenerDetalle",
+                    new[] { "SecurityHelper.TieneSesionActiva()", "SecurityHelper.EsAdminSistema()" } },
                 { "Views/ReportesOrdenesViaje.aspx.cs:ObtenerDetalleOrden",
                     new[] { "SecurityHelper.TieneSesionActiva()", "SecurityHelper.EsAdminOSupervisor()" } },
             };

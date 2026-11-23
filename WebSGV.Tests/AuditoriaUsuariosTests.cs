@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using WebSGV.Helpers;
+using WebSGV.Services.Auditoria;
 using WebSGV.Views;
 using Xunit;
 
@@ -43,24 +44,28 @@ namespace WebSGV.Tests
         }
 
         [Fact]
-        public void ConsultaDeAuditoria_EstaAcotadaConTopYOrdenadaPorFechaDescendente()
+        public void ConsultaDeExportacion_EstaAcotadaConTopYOrdenadaPorFechaDescendente()
         {
             var parametros = new List<SqlParameter>();
-            string sql = Auditoria.ConstruirConsulta(new DateTime(2026, 11, 1), new DateTime(2026, 11, 16),
-                "UPDATE", "Usuarios", "ana", Auditoria.MaximoEnPantalla, parametros);
+            var filtro = new FiltroAuditoria
+            {
+                Desde = new DateTime(2026, 11, 1), Hasta = new DateTime(2026, 11, 16),
+                Accion = "UPDATE", Tabla = "Usuarios", Usuario = "ana"
+            };
+            string sql = ConsultaAuditoriaService.ConstruirConsultaExportacion(filtro, Auditoria.MaximoAlExportar, parametros);
 
             Assert.Contains("SELECT TOP (@max)", sql);
             Assert.EndsWith("ORDER BY FechaHora DESC, IdAuditoria DESC", sql.Trim());
-            Assert.Equal(Auditoria.MaximoEnPantalla, parametros.Single(p => p.ParameterName == "@max").Value);
+            Assert.Equal(Auditoria.MaximoAlExportar, parametros.Single(p => p.ParameterName == "@max").Value);
             Assert.Equal("%ana%", parametros.Single(p => p.ParameterName == "@Usuario").Value);
             Assert.Equal(6, parametros.Count);
         }
 
         [Fact]
-        public void ConsultaDeAuditoria_SinFiltrosSoloLlevaElTope()
+        public void ConsultaDeExportacion_SinFiltrosSoloLlevaElTope()
         {
             var parametros = new List<SqlParameter>();
-            string sql = Auditoria.ConstruirConsulta(null, null, "", "", "", Auditoria.MaximoAlExportar, parametros);
+            string sql = ConsultaAuditoriaService.ConstruirConsultaExportacion(new FiltroAuditoria(), Auditoria.MaximoAlExportar, parametros);
 
             Assert.Contains("TOP (@max)", sql);
             var max = Assert.Single(parametros);

@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `068f57c` — E5-7: primer ingreso liviano (Login local de 789 a 394 KB): `urlCompression`, caché de 365 días en Content y Scripts, respaldo gzip `CompresionRespuesta` apagado (`Compresion.Respuesta`), fuera jQuery UI, `logo-sgv.png` de 34 KB, `font-display:swap`; al publicar: medir gzip (README de publicar, P-053); nuevos M-134 y P-065. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `06c5e7f` — E5-8: Auditoría paginada en SQL (25 filas con `OFFSET/FETCH`, sin `Valores*`; detalle a pedido por `ObtenerDetalle`, solo ADMINISTRADOR DE SISTEMA; HTML de 105 a 61 KB y ViewState de 19,8 a 1,1 KB); cierra M-103; nuevo M-135. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-134 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-135 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -162,6 +162,7 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 
 Las tareas de la etapa (E5-1 a E5-24) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; cada pendiente de aquí dice con qué tarea se cierra.
 
+- [ ] **M-135** Auditoría: filtro de acción incompleto y etiquetas largas — el filtro "Acción" (`Auditoria.aspx`) lista 11 valores fijos y no permite elegir otros que sí existen (`CORREGIR_DATOS`, `CONSULTAR_HORA_GPS`, `RETIRAR_LIQUIDACION_PRUEBA`…): llenarlo con `SELECT DISTINCT Accion`; en la grilla, las etiquetas de acción largas parten el icono y el texto en dos líneas. · C
 - [ ] **M-134** Peso y avisos de Login — `favicon.ico` pesa 32 KB (4 tamaños hasta 64 px) y la raíz no tiene `clientCache`: dejarlo en 16/32 px o darle caché; Login manda 4 informes a `CspInforme.ashx` por carga ("script-src bloqueó eval" de MicrosoftAjax, WebUIValidation y `setTimeout` en texto, CSP de E4-5): ver si se pueden evitar antes de aplicar la CSP (M-125). · C
 - [ ] **M-133** Accesibilidad: detalles que dejó E5-6 — (1) `ListaDespachos.aspx` ~396: el `ToolTip='<%#: … %>'` de un `asp:Label` codifica dos veces la tilde (el control ya codifica: usar `<%#`); (2) las pestañas de LiquidacionesPendientes (`<button role="tab">`) no se mueven con flechas ni tienen tabindex móvil; (3) los botones "Nota" del conductor se llaman todos "Nota" (que digan de qué gasto); (4) las reglas 4 y 8 de `AccesibilidadMarcadoTests` solo leen `.aspx`: no ven ✕ ni botones armados en `.cs` o `.js`. · C
 - [ ] **M-132** Catálogos sin índice único por nombre — RegistroPeajes, RegistroRutas y RegistroProductos comprueban el duplicado con `COUNT(*)` antes del INSERT, pero dos usuarios a la vez podrían duplicar: índices únicos sobre el nombre en mayúsculas (EstacionesPeaje; Ruta por cliente; Producto por cliente y nombre), con migración idempotente y antes la limpieza de duplicados si los hay (`DATOS_POR_CORREGIR.md`). · C
@@ -184,7 +185,6 @@ Las tareas de la etapa (E5-1 a E5-24) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-084** Registro de clientes: celda de contacto — el texto sale más bajo que el resto de la fila. Tarea E5-16. · C
 - [ ] **M-085** Expediente completo muestra igual "Para completar, suba…" — ocultar esa ayuda cuando no falta nada (`BandejaDocumentos.aspx.cs:770`). Tarea E5-17. · C
 - [ ] **M-086** Registro de despacho: tira de pasos y "Ver lotes pendientes" — "1 Word → 2 ZIP → 3 Revisar pendientes" y el botón al terminar de programar. Tarea E5-18. · C
-- [ ] **M-103** Auditoría: no volcar `ValoresAnteriores`/`ValoresNuevos` enteros en la página — `Auditoria.aspx:218` los pone completos en `data-anterior` de cada fila (la fila de D-030 del script de E3-5 pesa 274 KB y viaja dos veces, en `data-anterior` y en el ViewState: en el sitio publicado su página pesa 569 KB y cada postback ~290 KB, unos 5 s); recortarlos en la lista y traer el detalle al abrirlo. Tarea E5-8. · C
 
 ### Etapa 6 — Arquitectura y medición
 

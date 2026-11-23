@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Linq;
-using System.Text;
+using System.Web.Services;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Auditoria;
 using WebSGV.Services.Reportes;
 
 namespace WebSGV.Views
@@ -24,7 +24,7 @@ namespace WebSGV.Views
 
                 CargarFiltroTablas();
                 CargarEstadisticas();
-                CargarDatos();
+                CargarDatos(0);
             }
         }
 
@@ -74,92 +74,62 @@ namespace WebSGV.Views
             }
         }
 
-        /// <summary>Máximo de registros que se cargan para la grilla.</summary>
-        internal const int MaximoEnPantalla = 1000;
         /// <summary>Máximo de registros que se exportan a Excel.</summary>
         internal const int MaximoAlExportar = 10000;
-
-        /// <summary>
-        /// Consulta de AuditoriaLog con los filtros dados, limitada a los <paramref name="maximo"/> registros
-        /// más recientes (TOP (@max), FechaHora descendente). Agrega los parámetros a <paramref name="parametros"/>.
-        /// </summary>
-        internal static string ConstruirConsulta(DateTime? fechaDesde, DateTime? fechaHasta, string accion,
-            string tabla, string usuario, int maximo, List<SqlParameter> parametros)
-        {
-            StringBuilder sb = new StringBuilder(@"
-                    SELECT TOP (@max) IdAuditoria, FechaHora, IdUsuario, NombreUsuario, RolUsuario, Accion,
-                           TablaAfectada, IdRegistroAfectado, Descripcion,
-                           ValoresAnteriores, ValoresNuevos, DireccionIP, Navegador
-                    FROM AuditoriaLog
-                    WHERE 1=1");
-            parametros.Add(DbHelper.Param("@max", maximo));
-
-            if (fechaDesde.HasValue)
-            {
-                sb.Append(" AND FechaHora >= @FechaDesde");
-                parametros.Add(DbHelper.Param("@FechaDesde", fechaDesde.Value));
-            }
-
-            if (fechaHasta.HasValue)
-            {
-                sb.Append(" AND FechaHora < DATEADD(DAY, 1, @FechaHasta)");
-                parametros.Add(DbHelper.Param("@FechaHasta", fechaHasta.Value));
-            }
-
-            if (!string.IsNullOrEmpty(accion))
-            {
-                sb.Append(" AND Accion = @Accion");
-                parametros.Add(DbHelper.Param("@Accion", accion));
-            }
-
-            if (!string.IsNullOrEmpty(tabla))
-            {
-                sb.Append(" AND TablaAfectada = @Tabla");
-                parametros.Add(DbHelper.Param("@Tabla", tabla));
-            }
-
-            if (!string.IsNullOrEmpty(usuario))
-            {
-                sb.Append(" AND NombreUsuario LIKE @Usuario");
-                parametros.Add(DbHelper.Param("@Usuario", DbHelper.PatronContiene(usuario)));
-            }
-
-            sb.Append(" ORDER BY FechaHora DESC, IdAuditoria DESC");
-            return sb.ToString();
-        }
 
         /// <summary>Aviso cuando la consulta llegó al tope; null si no llegó.</summary>
         internal static string AvisoTope(int filas, int maximo) =>
             filas >= maximo ? $"Se muestran los {maximo} registros más recientes; acote las fechas." : null;
 
-        private void CargarDatos(int maximo = MaximoEnPantalla)
+        private FiltroAuditoria FiltroActual() => new FiltroAuditoria
         {
-            lblAvisoTope.Visible = false;
+            Desde = FechaFiltro(txtFechaDesde.Text),
+            Hasta = FechaFiltro(txtFechaHasta.Text),
+            Accion = ddlAccion.SelectedValue,
+            Tabla = ddlTabla.SelectedValue,
+            Usuario = txtUsuario.Text.Trim()
+        };
+
+        /// <summary>true cuando la grilla ya se enlazó en este pedido (ver <see cref="OnPreRender"/>).</summary>
+        private bool _grillaEnlazada;
+
+        /// <summary>
+        /// Enlaza la página <paramref name="indicePagina"/> de la grilla, paginada en SQL (E5-8): solo esas
+        /// 25 filas cortas viajan a la página; el total va a VirtualItemCount para el paginador.
+        /// </summary>
+        private void CargarDatos(int indicePagina)
+        {
+            _grillaEnlazada = true;
             try
             {
-                var parametros = new List<SqlParameter>();
-                string sql = ConstruirConsulta(
-                    string.IsNullOrEmpty(txtFechaDesde.Text) ? (DateTime?)null : DateTime.Parse(txtFechaDesde.Text),
-                    string.IsNullOrEmpty(txtFechaHasta.Text) ? (DateTime?)null : DateTime.Parse(txtFechaHasta.Text),
-                    ddlAccion.SelectedValue, ddlTabla.SelectedValue, txtUsuario.Text.Trim(), maximo, parametros);
-
-                DataTable dt = DbHelper.ConsultarTabla(sql, parametros.ToArray());
-                gvAuditoria.DataSource = dt;
+                PaginaAuditoria pagina = ConsultaAuditoriaService.ObtenerPagina(FiltroActual(), indicePagina);
+                gvAuditoria.VirtualItemCount = pagina.Total;
+                gvAuditoria.PageIndex = pagina.IndicePagina;
+                gvAuditoria.DataSource = pagina.Filas;
                 gvAuditoria.DataBind();
-                lblCantidadResultados.Text = dt.Rows.Count + " registros";
-
-                string aviso = AvisoTope(dt.Rows.Count, maximo);
-                if (aviso != null)
-                {
-                    lblAvisoTope.Text = MensajeHtml.Texto(aviso);
-                    lblAvisoTope.Visible = true;
-                }
+                lblCantidadResultados.Text = pagina.Total.ToString("N0") + (pagina.Total == 1 ? " registro" : " registros");
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Auditoria: error cargando datos de auditoría");
                 lblCantidadResultados.Text = "Error al cargar datos";
+                gvAuditoria.VirtualItemCount = 0;
+                gvAuditoria.PageIndex = 0;
+                gvAuditoria.DataSource = null;
+                gvAuditoria.DataBind();
             }
+        }
+
+        /// <summary>
+        /// La grilla va sin ViewState (EnableViewState="false"): su PageIndex y PageCount viajan en el
+        /// ControlState del GridView, pero las filas no, así que todo postback la vuelve a enlazar. Los
+        /// eventos (Buscar, paginador) ya lo hacen; este es el respaldo para cualquier otro postback.
+        /// </summary>
+        protected override void OnPreRender(EventArgs e)
+        {
+            if (IsPostBack && !_grillaEnlazada)
+                CargarDatos(gvAuditoria.PageIndex);
+            base.OnPreRender(e);
         }
 
         #endregion
@@ -168,15 +138,13 @@ namespace WebSGV.Views
 
         protected void btnBuscar_Click(object sender, EventArgs e)
         {
-            gvAuditoria.PageIndex = 0;
             CargarEstadisticas();
-            CargarDatos();
+            CargarDatos(0);
         }
 
         protected void gvAuditoria_PageIndexChanging(object sender, GridViewPageEventArgs e)
         {
-            gvAuditoria.PageIndex = e.NewPageIndex;
-            CargarDatos();
+            CargarDatos(e.NewPageIndex);
         }
 
         protected void btnExportarExcel_Click(object sender, EventArgs e)
@@ -184,11 +152,10 @@ namespace WebSGV.Views
             byte[] contenido;
             try
             {
-                var parametros = new List<SqlParameter>();
-                DateTime? desde = FechaFiltro(txtFechaDesde.Text), hasta = FechaFiltro(txtFechaHasta.Text);
-                string sql = ConstruirConsulta(desde, hasta, ddlAccion.SelectedValue, ddlTabla.SelectedValue,
-                    txtUsuario.Text.Trim(), MaximoAlExportar, parametros);
-                DataTable dt = DbHelper.ConsultarTabla(sql, parametros.ToArray());
+                // Consulta propia del Excel (no la página de la grilla): todo lo filtrado, hasta MaximoAlExportar.
+                FiltroAuditoria filtro = FiltroActual();
+                DateTime? desde = filtro.Desde, hasta = filtro.Hasta;
+                DataTable dt = ConsultaAuditoriaService.ObtenerParaExportar(filtro, MaximoAlExportar);
 
                 ReporteTabular reporte = ConstruirReporte(dt, desde, hasta,
                     ddlAccion.SelectedValue, ddlAccion.SelectedItem?.Text, ddlTabla.SelectedValue,
@@ -199,8 +166,8 @@ namespace WebSGV.Views
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Auditoria: error exportando a Excel");
+                CargarDatos(gvAuditoria.PageIndex);
                 lblCantidadResultados.Text = "No se pudo exportar a Excel";
-                CargarDatos();
                 return;
             }
 
@@ -271,6 +238,34 @@ namespace WebSGV.Views
 
         private static ColumnaReporte Columna(string titulo, TipoColumnaReporte tipo, float ancho, Func<DataRow, object> valor) =>
             new ColumnaReporte { Titulo = titulo, Tipo = tipo, Ancho = ancho, Valor = valor };
+
+        #endregion
+
+        #region Detalle
+
+        /// <summary>
+        /// Detalle de un registro al abrirlo (E5-8): descripción, IP, navegador y los Valores*, cada uno
+        /// recortado a <see cref="ConsultaAuditoriaService.MaximoCaracteresDetalle"/> caracteres con aviso.
+        /// Los WebMethods no pasan por Page_Load: sesión y rol (el mismo de la página) se comprueban aquí.
+        /// </summary>
+        [WebMethod(EnableSession = true)]
+        public static DetalleAuditoria ObtenerDetalle(int id)
+        {
+            if (!SecurityHelper.TieneSesionActiva() || !SecurityHelper.EsAdminSistema())
+            {
+                LogSGV.Advertencia("Auditoria.ObtenerDetalle sin sesión o sin permiso (registro {IdAuditoria})", id);
+                return DetalleAuditoria.Error("La sesión ya no está activa o no tiene acceso a la auditoría. Vuelva a ingresar.");
+            }
+
+            try
+            {
+                return ConsultaAuditoriaService.ObtenerDetalle(id);
+            }
+            catch (Exception ex)
+            {
+                return DetalleAuditoria.Error(MensajeErrorHelper.ParaUsuario(ex));
+            }
+        }
 
         #endregion
 

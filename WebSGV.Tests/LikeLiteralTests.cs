@@ -70,7 +70,8 @@ namespace WebSGV.Tests
         public void Auditoria_filtra_el_usuario_literal()
         {
             var parametros = new System.Collections.Generic.List<System.Data.SqlClient.SqlParameter>();
-            WebSGV.Views.Auditoria.ConstruirConsulta(null, null, "", "", "a_b%", WebSGV.Views.Auditoria.MaximoEnPantalla, parametros);
+            WebSGV.Services.Auditoria.ConsultaAuditoriaService.ConstruirConsultaPagina(
+                new WebSGV.Services.Auditoria.FiltroAuditoria { Usuario = "a_b%" }, 0, parametros);
             Assert.Equal("%a[_]b[%]%", Valor(parametros.ToArray(), "@Usuario"));
         }
 

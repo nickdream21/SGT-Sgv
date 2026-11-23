@@ -155,7 +155,6 @@
                     </span>
                 </div>
             </div>
-            <asp:Label ID="lblAvisoTope" runat="server" CssClass="alert alert-warning d-block mb-0 rounded-0" Visible="false"></asp:Label>
             <div class="aud-section-body p-0">
                 <div class="table-responsive">
                     <asp:GridView ID="gvAuditoria" runat="server"
@@ -163,6 +162,8 @@
                         AutoGenerateColumns="false"
                         EmptyDataText="No se encontraron registros de auditoría"
                         AllowPaging="true"
+                        AllowCustomPaging="true"
+                        EnableViewState="false"
                         PageSize="25"
                         OnPageIndexChanging="gvAuditoria_PageIndexChanging">
                         <PagerSettings Mode="NumericFirstLast" FirstPageText="« Primera"
@@ -172,59 +173,25 @@
                             <asp:BoundField DataField="IdAuditoria" HeaderText="ID"
                                 ItemStyle-CssClass="text-center text-muted" HeaderStyle-Width="60" />
                             <asp:TemplateField HeaderText="FECHA / HORA" HeaderStyle-Width="140">
-                                <ItemTemplate>
-                                    <div class="aud-fecha">
-                                        <span class="aud-fecha-date"><%#: Eval("FechaHora", "{0:dd/MM/yyyy}") %></span>
-                                        <span class="aud-fecha-time"><%#: Eval("FechaHora", "{0:HH:mm:ss}") %></span>
-                                    </div>
-                                </ItemTemplate>
+                                <ItemTemplate><div class="aud-fecha"><span class="aud-fecha-date"><%#: Eval("FechaHora", "{0:dd/MM/yyyy}") %></span><span class="aud-fecha-time"><%#: Eval("FechaHora", "{0:HH:mm:ss}") %></span></div></ItemTemplate>
                             </asp:TemplateField>
                             <asp:TemplateField HeaderText="USUARIO">
-                                <ItemTemplate>
-                                    <div>
-                                        <strong><%#: Eval("NombreUsuario") %></strong>
-                                        <br />
-                                        <small class="text-muted"><%#: Eval("RolUsuario") %></small>
-                                    </div>
-                                </ItemTemplate>
+                                <ItemTemplate><div><strong><%#: Eval("NombreUsuario") %></strong><br /><small class="text-muted"><%#: Eval("RolUsuario") %></small></div></ItemTemplate>
                             </asp:TemplateField>
                             <asp:TemplateField HeaderText="ACCIÓN" HeaderStyle-Width="110">
-                                <ItemTemplate>
-                                    <span class='aud-badge-accion aud-badge-<%#: ObtenerClaseAccion(Eval("Accion")) %>'>
-                                        <i class='<%#: ObtenerIconoAccion(Eval("Accion")) %> mr-1'></i><%#: Eval("Accion") %>
-                                    </span>
-                                </ItemTemplate>
+                                <ItemTemplate><span class='aud-badge-accion aud-badge-<%#: ObtenerClaseAccion(Eval("Accion")) %>'><i class='<%#: ObtenerIconoAccion(Eval("Accion")) %> mr-1'></i><%#: Eval("Accion") %></span></ItemTemplate>
                                 <ItemStyle CssClass="text-center" />
                             </asp:TemplateField>
                             <asp:TemplateField HeaderText="TABLA" HeaderStyle-Width="130">
-                                <ItemTemplate>
-                                    <span class="aud-badge-tabla">
-                                        <i class="fas fa-table mr-1"></i><%#: Eval("TablaAfectada") %>
-                                    </span>
-                                </ItemTemplate>
+                                <ItemTemplate><span class="aud-badge-tabla"><i class="fas fa-table mr-1"></i><%#: Eval("TablaAfectada") %></span></ItemTemplate>
                             </asp:TemplateField>
                             <asp:BoundField DataField="IdRegistroAfectado" HeaderText="ID REG."
                                 ItemStyle-CssClass="text-center" HeaderStyle-Width="70" />
                             <asp:TemplateField HeaderText="DESCRIPCIÓN">
-                                <ItemTemplate>
-                                    <div class="aud-descripcion" title='<%#: Eval("Descripcion") %>'>
-                                        <%#: TruncateText(Eval("Descripcion"), 100) %>
-                                    </div>
-                                </ItemTemplate>
+                                <ItemTemplate><div class="aud-descripcion" title='<%#: Eval("Descripcion") %>'><%#: TruncateText(Eval("Descripcion"), 100) %></div></ItemTemplate>
                             </asp:TemplateField>
                             <asp:TemplateField HeaderText="DETALLE" HeaderStyle-Width="80">
-                                <ItemTemplate>
-                                    <button type="button" class="btn btn-outline-info btn-sm aud-btn-detalle"
-                                        data-accion="mostrarDetalle" data-id='<%#: Eval("IdAuditoria") %>'
-                                        data-anterior='<%# Server.HtmlEncode(Eval("ValoresAnteriores")?.ToString() ?? "") %>'
-                                        data-nuevo='<%# Server.HtmlEncode(Eval("ValoresNuevos")?.ToString() ?? "") %>'
-                                        data-desc='<%# Server.HtmlEncode(Eval("Descripcion")?.ToString() ?? "") %>'
-                                        data-ip='<%#: Eval("DireccionIP") %>'
-                                        data-nav='<%# Server.HtmlEncode(TruncateText(Eval("Navegador"), 80)) %>'
-                                        title="Ver detalle" aria-label='<%#: "Ver detalle del registro " + Eval("IdAuditoria") %>'>
-                                        <i class="fas fa-search-plus" aria-hidden="true"></i>
-                                    </button>
-                                </ItemTemplate>
+                                <ItemTemplate><button type="button" class="btn btn-outline-info btn-sm aud-btn-detalle" data-accion="mostrarDetalle" data-id='<%#: Eval("IdAuditoria") %>' title="Ver detalle" aria-label='<%#: "Ver detalle del registro " + Eval("IdAuditoria") %>'><i class="fas fa-search-plus" aria-hidden="true"></i></button></ItemTemplate>
                                 <ItemStyle CssClass="text-center" />
                             </asp:TemplateField>
                         </Columns>
@@ -246,6 +213,13 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <!-- Cargando: el detalle se pide al abrir (WebMethod ObtenerDetalle) -->
+                    <div id="detalleCargando" class="text-center py-4 d-none" role="status">
+                        <div class="spinner-border text-primary" aria-hidden="true"></div>
+                        <p class="mt-2 mb-0 text-muted">Cargando detalle...</p>
+                    </div>
+                    <div id="detalleAviso" class="alert alert-warning d-none" role="alert"></div>
+                    <div id="detalleContenido">
                     <!-- Descripción -->
                     <div class="mb-3">
                         <div class="font-weight-bold text-muted small text-uppercase mb-2">Descripción</div>
@@ -278,6 +252,7 @@
                             <i class="fas fa-plus-circle mr-1"></i>Valores Nuevos
                         </div>
                         <pre id="detalleNuevos" class="p-3 rounded" style="background:#f0fdf4; border:1px solid #86efac; max-height:250px; overflow:auto; font-size:0.8rem;"></pre>
+                    </div>
                     </div>
                 </div>
                 <div class="modal-footer">
