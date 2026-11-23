@@ -3,6 +3,8 @@
     $('#seccionViajesActivos').hide();
     $('#seccionPersonalizado').hide();
     $('#tabLiquidaciones, #tabViajesActivos, #tabPersonalizado').removeClass('tab-btn-active');
+    // Recuerda la pestaña para volver a ella tras un Buscar (M-077).
+    $('#' + SGV.hdnPestana).val(tab);
 
     if (tab === 'liquidaciones') {
         $('#seccionLiquidaciones').show();
@@ -18,6 +20,9 @@
 
 $(document).ready(function () {
     establecerFechasPorDefecto();
+    // Tras un postback, la pestaña que estaba abierta (el servidor deja solo valores conocidos).
+    var pestana = $('#' + SGV.hdnPestana).val();
+    if (pestana && pestana !== 'liquidaciones') cambiarTab(pestana);
 });
 
 function establecerFechasPorDefecto() {
@@ -177,7 +182,7 @@ function validarFiltroViajesActivos(buscarConductor, estadoViaje) {
         mostrarErrorCampo('errBuscarConductor', 'Solo se permiten letras, números, espacios, punto y guion.');
         ok = false;
     }
-    if (['TODOS', 'ABIERTO'].indexOf(estadoViaje) === -1) {
+    if (estadoViaje !== 'ABIERTO') {
         mostrarErrorCampo('errEstadoViaje', 'Seleccione un estado de viaje válido.');
         ok = false;
     }

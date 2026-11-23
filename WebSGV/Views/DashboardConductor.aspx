@@ -32,7 +32,7 @@
         <asp:Panel ID="pnlPorConformar" runat="server" Visible="false" CssClass="dc-conformar">
             <div class="dc-conformar-tit"><i class="fas fa-file-signature mr-1"></i>Tienes liquidaciones para revisar y firmar</div>
             <p class="dc-conformar-txt">La administración registró el dinero que te entregaron y los descuentos o reintegros. Revisa la liquidación final y firma tu conformidad, o avisa si no estás de acuerdo.</p>
-            <asp:Repeater ID="rptPorConformar" runat="server">
+            <asp:Repeater ID="rptPorConformar" runat="server" EnableViewState="false">
                 <ItemTemplate>
                     <a class="dc-btn dc-btn-primario dc-btn-bloque mt-2" href='ConformarLiquidacion.aspx?id=<%#: Eval("IdOrdenViaje") %>'>
                         Revisar y firmar <%#: Eval("NumeroViaje") %>
@@ -66,7 +66,7 @@
                 <!-- Dinero que la administración registró a su nombre y aún no se liquidó -->
                 <asp:Panel ID="pnlDineroRecibido" runat="server" Visible="false" CssClass="dc-card">
                     <div class="dc-card-tit">Dinero recibido en este viaje</div>
-                    <asp:Repeater ID="rptDineroRecibido" runat="server">
+                    <asp:Repeater ID="rptDineroRecibido" runat="server" EnableViewState="false">
                         <ItemTemplate>
                             <div class="dc-item-fila dc-dinero">
                                 <span><%#: Eval("Texto") %><small class="d-block dc-ayuda"><%#: Eval("Detalle") %></small></span>
@@ -102,7 +102,7 @@
 
                 <asp:Panel ID="pnlDespachos" runat="server" Visible="false">
                     <div class="dc-subtit">Despachos de este viaje</div>
-                    <asp:Repeater ID="rptDespachosActivos" runat="server">
+                    <asp:Repeater ID="rptDespachosActivos" runat="server" EnableViewState="false">
                         <ItemTemplate>
                             <article class="dc-item">
                                 <div class="dc-item-fila">
@@ -370,7 +370,7 @@
                     </div>
                 </details>
 
-                <asp:Repeater ID="rptHistorial" runat="server">
+                <asp:Repeater ID="rptHistorial" runat="server" EnableViewState="false">
                     <ItemTemplate>
                         <article class="dc-item">
                             <div class="dc-item-fila">

@@ -19,7 +19,37 @@ namespace WebSGV.Views
     public partial class ReportesOrdenesViaje : PaginaBase
     {
         // "Viajes activos" solo lista viajes ABIERTO (un viaje CERRADO ya está liquidado): sin CERRADO.
-        private static readonly string[] EstadosViajePermitidos = { "TODOS", "ABIERTO" };
+        // Sin "TODOS" (M-077): la consulta siempre filtra estadoViaje = 'ABIERTO', así que daba lo mismo.
+        private static readonly string[] EstadosViajePermitidos = { "ABIERTO" };
+
+        /// <summary>
+        /// "TODOS" (la opción quitada en M-077: un enlace de exportación guardado o una página abierta antes de
+        /// publicar) se toma como "ABIERTO", que da el mismo resultado; lo demás va tal cual a la validación.
+        /// </summary>
+        public static string NormalizarEstadoViaje(string estadoViaje)
+        {
+            string e = (estadoViaje ?? string.Empty).Trim().ToUpperInvariant();
+            return e == "TODOS" ? "ABIERTO" : e;
+        }
+
+        /// <summary>Textos del resumen de liquidaciones (total en soles, en dólares, conversión y total general).</summary>
+        public static (string Soles, string Dolares, string Conversion, string Total) TextosTotales(decimal totalSoles, decimal totalDolares, decimal factorConversion)
+        {
+            decimal convertido = totalDolares * factorConversion;
+            return ($"S/ {totalSoles:N2}", $"$ {totalDolares:N2}", $"S/ {convertido:N2}", $"S/ {totalSoles + convertido:N2}");
+        }
+
+        /// <summary>Pestañas de la página (los data-tab del aspx); la primera es la de al abrir.</summary>
+        public const string PestanaLiquidaciones = "liquidaciones";
+        public const string PestanaViajesActivos = "viajesActivos";
+        public const string PestanaPersonalizado = "personalizado";
+
+        /// <summary>La pestaña que se muestra tras un postback: la enviada si es una de la página; si no, la primera.</summary>
+        public static string PestanaValida(string pestana) =>
+            pestana == PestanaViajesActivos || pestana == PestanaPersonalizado ? pestana : PestanaLiquidaciones;
+
+        private bool _liquidacionesCargadas;
+        private bool _viajesActivosCargados;
         // Estado de la liquidación (OrdenViaje.estadoAprobacion): lista blanca única en FiltroEstadoLiquidacion.
         private static readonly string[] EstadosPersonalizadoPermitidos = FiltroEstadoLiquidacion.Permitidos.ToArray();
         private static readonly string[] OrdenesPersonalizadoPermitidas = { "fecha_desc", "fecha_asc", "conductor", "cliente" };
@@ -114,11 +144,28 @@ namespace WebSGV.Views
 
         protected void btnBuscarLiquidaciones_Click(object sender, EventArgs e)
         {
+            hdnPestana.Value = PestanaLiquidaciones;
             CargarLiquidaciones();
         }
 
-        private void CargarLiquidaciones()
+        /// <summary>
+        /// Las dos grillas no guardan ViewState (E5-9): todo postback (el Buscar de una pestaña, el cambio
+        /// de contraseña del Site.Master) vuelve a enlazar la que no enlazó su botón, y la pestaña
+        /// abierta se conserva (M-077). Las exportaciones van por GET (?action=) y no pasan por aquí.
+        /// </summary>
+        protected override void OnPreRender(EventArgs e)
         {
+            base.OnPreRender(e);
+            if (!IsPostBack || Response.IsRequestBeingRedirected) return;
+            // La pestaña que no se buscó no avisa de sus filtros: no pisa el mensaje de la búsqueda real.
+            if (!_liquidacionesCargadas) CargarLiquidaciones(mostrarAvisos: false);
+            if (!_viajesActivosCargados) CargarViajesActivos(mostrarAvisos: false);
+            hdnPestana.Value = PestanaValida(hdnPestana.Value);
+        }
+
+        private void CargarLiquidaciones(bool mostrarAvisos = true)
+        {
+            _liquidacionesCargadas = true;
             try
             {
                 string mensajeValidacion;
@@ -128,7 +175,8 @@ namespace WebSGV.Views
                 if (!ValidarFiltrosLiquidaciones(txtFechaDesde.Text, txtFechaHasta.Text, txtFactorConversion.Text,
                     out fechaDesde, out fechaHasta, out factorConversion, out mensajeValidacion))
                 {
-                    MostrarMensaje(mensajeValidacion, "warning");
+                    if (mostrarAvisos) MostrarMensaje(mensajeValidacion, "warning");
+                    VaciarLiquidaciones();
                     return;
                 }
 
@@ -148,6 +196,19 @@ namespace WebSGV.Views
             {
                 MostrarMensaje($"Error al cargar liquidaciones: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
             }
+        }
+
+        /// <summary>Filtros inválidos: grilla vacía y contadores y totales en cero, no los de la búsqueda anterior.</summary>
+        private void VaciarLiquidaciones()
+        {
+            var vacia = new DataTable();
+            vacia.Columns.Add("MontoSoles", typeof(decimal));
+            vacia.Columns.Add("MontoDolares", typeof(decimal));
+            gvLiquidaciones.DataSource = vacia;
+            gvLiquidaciones.DataBind();
+            lblTotalRegistros.Text = "0";
+            lblTotalRegistrosTabla.Text = "0 registros";
+            CalcularTotalesLiquidaciones(vacia, 0m);
         }
 
         private static DataTable ObtenerLiquidaciones(DateTime fechaDesde, DateTime fechaHasta)
@@ -184,13 +245,11 @@ namespace WebSGV.Views
                 totalDolares += Convert.ToDecimal(row["MontoDolares"]);
             }
 
-            decimal totalDolaresConvertido = totalDolares * factorConversion;
-            decimal totalGeneral = totalSoles + totalDolaresConvertido;
-
-            lblResumenTotalSoles.Text = $"S/ {totalSoles:N2}";
-            lblResumenTotalDolares.Text = $"$ {totalDolares:N2}";
-            lblResumenConversion.Text = $"S/ {totalDolaresConvertido:N2}";
-            lblResumenTotal.Text = $"S/ {totalGeneral:N2}";
+            var textos = TextosTotales(totalSoles, totalDolares, factorConversion);
+            lblResumenTotalSoles.Text = textos.Soles;
+            lblResumenTotalDolares.Text = textos.Dolares;
+            lblResumenConversion.Text = textos.Conversion;
+            lblResumenTotal.Text = textos.Total;
         }
 
         protected void gvLiquidaciones_RowDataBound(object sender, GridViewRowEventArgs e)
@@ -283,20 +342,23 @@ namespace WebSGV.Views
 
         protected void btnBuscarViajesActivos_Click(object sender, EventArgs e)
         {
+            hdnPestana.Value = PestanaViajesActivos;
             CargarViajesActivos();
         }
 
-        private void CargarViajesActivos()
+        private void CargarViajesActivos(bool mostrarAvisos = true)
         {
+            _viajesActivosCargados = true;
             try
             {
                 string buscarConductor = txtBuscarConductor.Text.Trim();
-                string estadoViaje = ddlEstadoViaje.SelectedValue;
+                string estadoViaje = NormalizarEstadoViaje(ddlEstadoViaje.SelectedValue);
 
                 string mensajeValidacion;
                 if (!ValidarFiltrosViajesActivos(buscarConductor, estadoViaje, out mensajeValidacion))
                 {
-                    MostrarMensaje(mensajeValidacion, "warning");
+                    if (mostrarAvisos) MostrarMensaje(mensajeValidacion, "warning");
+                    VaciarViajesActivos();
                     return;
                 }
 
@@ -315,6 +377,16 @@ namespace WebSGV.Views
             {
                 MostrarMensaje($"Error al cargar viajes activos: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
             }
+        }
+
+        /// <summary>Filtros inválidos: grilla vacía y contadores en cero, no los de la búsqueda anterior.</summary>
+        private void VaciarViajesActivos()
+        {
+            gvViajesActivos.DataSource = new DataTable();
+            gvViajesActivos.DataBind();
+            lblTotalViajesActivos.Text = "0 conductores";
+            lblCountViajesActivos.Text = "0";
+            lblCountViajesActivosTabla.Text = "0 viajes";
         }
 
         private static DataTable ObtenerViajesActivos(string buscarConductor, string estadoViaje) =>
@@ -415,7 +487,7 @@ namespace WebSGV.Views
             try
             {
                 string buscarConductor = Request.QueryString["buscarConductor"] ?? "";
-                string estadoViaje = Request.QueryString["estadoViaje"] ?? "";
+                string estadoViaje = NormalizarEstadoViaje(Request.QueryString["estadoViaje"]);
 
                 string mensajeValidacion;
                 if (!ValidarFiltrosViajesActivos(buscarConductor, estadoViaje, out mensajeValidacion))
@@ -1346,10 +1418,10 @@ namespace WebSGV.Views
                 return false;
             }
 
-            string estadoNormalizado = (estadoViaje ?? string.Empty).Trim().ToUpperInvariant();
+            string estadoNormalizado = NormalizarEstadoViaje(estadoViaje);
             if (!EstadosViajePermitidos.Contains(estadoNormalizado))
             {
-                mensaje = "Estado del viaje inválido. Seleccione Todos o Abierto.";
+                mensaje = "Estado del viaje inválido: solo se listan los viajes abiertos.";
                 return false;
             }
 

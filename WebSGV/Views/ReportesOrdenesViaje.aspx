@@ -26,7 +26,8 @@
             </div>
         </div>
 
-        <!-- Tabs de navegación -->
+        <!-- Tabs de navegación. hdnPestana: la pestaña abierta, para volver a ella tras un Buscar (M-077). -->
+        <asp:HiddenField ID="hdnPestana" runat="server" Value="liquidaciones" />
         <div class="row mb-3">
             <div class="col-12">
                 <div class="tabs-navigation">
@@ -186,7 +187,7 @@
                 </div>
                 <div class="section-body p-0">
                     <div class="table-responsive">
-                        <asp:GridView ID="gvLiquidaciones" runat="server"
+                        <asp:GridView ID="gvLiquidaciones" runat="server" EnableViewState="false"
                             CssClass="table table-reportes mb-0"
                             AutoGenerateColumns="false"
                             EmptyDataText="No hay liquidaciones para mostrar"
@@ -262,7 +263,6 @@
                             <div class="form-group">
                                 <label for="<%= ddlEstadoViaje.ClientID %>" class="form-label">Estado del viaje</label>
                                  <asp:DropDownList ID="ddlEstadoViaje" runat="server" CssClass="form-control">
-                                    <asp:ListItem Value="TODOS" Text="Todos los estados"></asp:ListItem>
                                     <asp:ListItem Value="ABIERTO" Text="Abierto" Selected="True"></asp:ListItem>
                                 </asp:DropDownList>
                                 <small id="errEstadoViaje" class="text-danger d-none"></small>
@@ -315,7 +315,7 @@
                 </div>
                 <div class="section-body p-0">
                     <div class="table-responsive">
-                        <asp:GridView ID="gvViajesActivos" runat="server"
+                        <asp:GridView ID="gvViajesActivos" runat="server" EnableViewState="false"
                             CssClass="table table-reportes mb-0"
                             AutoGenerateColumns="false"
                             EmptyDataText="No hay viajes activos sin liquidación"
@@ -660,6 +660,7 @@
             txtFactorConversion: '<%= txtFactorConversion.ClientID %>',
             txtBuscarConductor: '<%= txtBuscarConductor.ClientID %>',
             ddlEstadoViaje: '<%= ddlEstadoViaje.ClientID %>',
+            hdnPestana: '<%= hdnPestana.ClientID %>',
             txtPersFechaDesde: '<%= txtPersFechaDesde.ClientID %>',
             txtPersFechaHasta: '<%= txtPersFechaHasta.ClientID %>',
             ddlPersEstado: '<%= ddlPersEstado.ClientID %>',

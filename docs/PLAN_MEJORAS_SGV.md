@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `06c5e7f` — E5-8: Auditoría paginada en SQL (25 filas con `OFFSET/FETCH`, sin `Valores*`; detalle a pedido por `ObtenerDetalle`, solo ADMINISTRADOR DE SISTEMA; HTML de 105 a 61 KB y ViewState de 19,8 a 1,1 KB); cierra M-103; nuevo M-135. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `1ae0495` — E5-9: 7 listas de solo lectura sin ViewState (tablero de 16,9 a 2,2 KB), `SincronizarDespachos` solo al abrir el tablero y en "Actualizar GPS", pestaña conservada y sin "Todos los estados" en ReportesOrdenesViaje; cierra M-077; nuevo M-136, P-066 y P-067. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-135 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-136 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -162,6 +162,7 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 
 Las tareas de la etapa (E5-1 a E5-24) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; cada pendiente de aquí dice con qué tarea se cierra.
 
+- [ ] **M-136** ReportesOrdenesViaje: combo "Estado del viaje" con una sola opción — tras E5-9 solo ofrece "Abierto" (la consulta siempre filtra `ABIERTO`): cambiarlo por un texto fijo y revisar los combos del reporte personalizado, que son los ~5 KB de ViewState que quedan. · C
 - [ ] **M-135** Auditoría: filtro de acción incompleto y etiquetas largas — el filtro "Acción" (`Auditoria.aspx`) lista 11 valores fijos y no permite elegir otros que sí existen (`CORREGIR_DATOS`, `CONSULTAR_HORA_GPS`, `RETIRAR_LIQUIDACION_PRUEBA`…): llenarlo con `SELECT DISTINCT Accion`; en la grilla, las etiquetas de acción largas parten el icono y el texto en dos líneas. · C
 - [ ] **M-134** Peso y avisos de Login — `favicon.ico` pesa 32 KB (4 tamaños hasta 64 px) y la raíz no tiene `clientCache`: dejarlo en 16/32 px o darle caché; Login manda 4 informes a `CspInforme.ashx` por carga ("script-src bloqueó eval" de MicrosoftAjax, WebUIValidation y `setTimeout` en texto, CSP de E4-5): ver si se pueden evitar antes de aplicar la CSP (M-125). · C
 - [ ] **M-133** Accesibilidad: detalles que dejó E5-6 — (1) `ListaDespachos.aspx` ~396: el `ToolTip='<%#: … %>'` de un `asp:Label` codifica dos veces la tilde (el control ya codifica: usar `<%#`); (2) las pestañas de LiquidacionesPendientes (`<button role="tab">`) no se mueven con flechas ni tienen tabindex móvil; (3) los botones "Nota" del conductor se llaman todos "Nota" (que digan de qué gasto); (4) las reglas 4 y 8 de `AccesibilidadMarcadoTests` solo leen `.aspx`: no ven ✕ ni botones armados en `.cs` o `.js`. · C
@@ -176,7 +177,6 @@ Las tareas de la etapa (E5-1 a E5-24) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-074** Manual de uso del sistema por rol — pedido del usuario al terminar de regularizar desde octubre: punta a punta, por rol, con capturas (programar con el Word; ZIP, PDF y Bandeja; vincular documentos; seguimiento y GPS; facturas de flete; el conductor liquida, firma y da conformidad desde el celular). Incluir que "Editar lote" no pasa un lote a una pareja factura+CPIC existente (se hace desde "Factura y CPIC por despacho"). Reemplaza la guía de una hoja de la puesta en marcha de conductores. Tarea E5-21. · B
 - [ ] **M-075** Videos de uso con voz, uno por tema — programar, subir y vincular documentos, seguimiento, revisión y aprobación, el conductor liquidando desde el celular; faltan el viaje internacional (peajes en soles y dólares), liquidación rechazada y corregida y retirar liquidación. Grabarlos con el flujo estable y datos reales de octubre en adelante. Tarea E5-22. · B
 - [ ] **M-076** "Auditoría del Sistema" sale dos veces en el menú del administrador de sistema — `Site.Master:199-200` y `241-242` (Administración y Configuración). Dejar una. Tarea E5-19. · C
-- [ ] **M-077** ReportesOrdenesViaje: vuelve a la pestaña "Liquidaciones" tras Buscar en "Viajes activos" — y en esa pestaña "Todos los estados" da lo mismo que "Abierto". Tarea E5-9. · C
 - [ ] **M-078** Mensajes de conductor duplicado con espacios de más — "NOMBRE      APELLIDO": las columnas ya son `varchar`, pero 54 de 120 conductores guardan espacios al final (D-036) y el `LTRIM(RTRIM(a+' '+b+' '+c))` deja los internos; `RTRIM` por columna en `RegistroConductorService.BuscarDuplicado`/`ObtenerDocumentos` (`RegistroConductorService.cs:126`). Tarea E5-16. · C
 - [ ] **M-079** Regex de carnet del navegador más laxa que el servidor — acepta `ABCDEFG` (sin dígitos) que el servidor rechaza: alinearla con `DocumentoConductor.EsCarnetValido`. Tarea E5-16. · C
 - [ ] **M-080** Detalles menores del emparejamiento de la bandeja (tarea 15) — el aviso de una CPIC en espera dice "no se eligió el camión" aunque las guías se pusieran en "No registrar ahora" a propósito; la lista de programados de RegistroDespacho ofrece también el que ya completa otra guía. Tarea E5-17. · C

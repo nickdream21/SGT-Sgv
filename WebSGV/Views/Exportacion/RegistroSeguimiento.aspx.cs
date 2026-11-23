@@ -75,8 +75,24 @@ namespace WebSGV.Views.Exportacion
                 string buscar = (Request.QueryString["buscar"] ?? "").Trim();
                 if (buscar.Length > 0)
                     txtBuscar.Text = buscar.Length > 60 ? buscar.Substring(0, 60) : buscar;
-                Cargar();
+                Cargar(sincronizar: true);
             }
+        }
+
+        /// <summary>Verdadero cuando este pedido ya enlazó la tabla (Cargar).</summary>
+        private bool _tableroCargado;
+
+        /// <summary>
+        /// rptViajes no guarda ViewState (E5-9): todo postback que vuelve a mostrar la página tiene que
+        /// enlazarlo. Los de esta página llaman a Cargar; uno que no (p. ej. el cambio de contraseña del
+        /// Site.Master) lo enlaza aquí, sin sincronizar. Una descarga (contenido suprimido) o una
+        /// redirección no pinta la tabla y no consulta.
+        /// </summary>
+        protected override void OnPreRender(EventArgs e)
+        {
+            base.OnPreRender(e);
+            if (IsPostBack && !_tableroCargado && !Response.SuppressContent && !Response.IsRequestBeingRedirected)
+                Cargar();
         }
 
         protected void btnFiltrar_Click(object sender, EventArgs e) => Cargar();
@@ -99,7 +115,7 @@ namespace WebSGV.Views.Exportacion
             {
                 MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex), "peligro");
             }
-            Cargar();
+            Cargar(sincronizar: true);
         }
 
         private enum TipoExcel { StatusGeneral, Status, StatusExtra }
@@ -288,10 +304,15 @@ namespace WebSGV.Views.Exportacion
             resp.SuppressContent = true;
         }
 
-        private void Cargar()
+        /// <summary>
+        /// Los viajes nacen de los despachos de carga de exportación: se crean los que falten y se
+        /// completan con su despacho de descarga (sp_SE_SincronizarDespachos, escribe en la BD). Solo al
+        /// abrir la página y en "Actualizar GPS" (E5-9): filtrar, cambiar de pestaña o exportar no
+        /// sincroniza; además la actualización automática del GPS (cada 10 min) y el registro de
+        /// despachos ya sincronizan por su cuenta.
+        /// </summary>
+        private void SincronizarDespachos()
         {
-            // Los viajes nacen de los despachos de carga de exportación: antes de listar, se
-            // crean los que falten y se completan con su despacho de descarga.
             try
             {
                 var s = SeguimientoViajesService.SincronizarDespachos(FechaHelper.Hoy().AddDays(-DiasSincronizacion));
@@ -302,6 +323,12 @@ namespace WebSGV.Views.Exportacion
             {
                 MostrarMensaje("No se pudieron traer los despachos nuevos: " + MensajeErrorHelper.ParaUsuario(ex), "alerta");
             }
+        }
+
+        private void Cargar(bool sincronizar = false)
+        {
+            _tableroCargado = true;
+            if (sincronizar) SincronizarDespachos();
 
             List<ViajeResumen> todos;
             string avisoTope = null;

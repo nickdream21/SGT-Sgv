@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-065 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-067 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -78,6 +78,8 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-063** Firma y estructura con una orden real (E5-4) — abrir FirmarLiquidacion y ConformarLiquidacion con una orden por firmar (la BD de pruebas no tiene ninguna; se probó en un arnés): el trazo con el dedo no desplaza la página, fuera del canvas se amplía con dos dedos, TalkBack o VoiceOver leen "Área de firma"; en el panel del conductor con un viaje, el botón "Nota" de cada gasto es cómodo de tocar y "Saltar al contenido" aparece con un teclado. · B
 - [ ] **P-064** Nombres accesibles donde el sitio local no llega (E5-6) — con el árbol de accesibilidad del navegador o un lector de pantalla: MovimientosViaje (apagada; grupo Tipo, Concepto y el modal Anular), la lista de gastos del conductor con un viaje activo (descripciones con nombre) y la edición de un lote en ListaDespachos (conductores, documentos por despacho, guías): 0 campos sin nombre. · C
 - [ ] **P-065** PDF en el iframe de contabilidad tras E5-7 — con una liquidación aprobada real (la BD de pruebas no tiene `OrdenViaje`), en LiquidacionesAprobadasContabilidad pulsar "Ver": el PDF se muestra en el iframe y la consola no tiene errores, en el sitio local y en el publicado. · B
+- [ ] **P-066** Panel del conductor sin ViewState en las listas (E5-9) — con un conductor que tenga viaje activo, despachos, dinero recibido e historial, a 390 px: Buscar del historial y un envío de liquidación rechazado por validación dejan los 4 bloques llenos y no pisan las fechas escritas; si los viajes cambiaron, la lista de despachos se oculta. · B
+- [ ] **P-067** ReportesOrdenesViaje con datos reales (E5-9) — con liquidaciones y viajes activos: Buscar en una pestaña deja llena la grilla de la otra y los totales del pie bien; con fechas inválidas los totales quedan en 0. · C
 
 ## Reglas
 

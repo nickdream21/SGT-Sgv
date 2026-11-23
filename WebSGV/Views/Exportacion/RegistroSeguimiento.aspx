@@ -127,7 +127,7 @@
                     <tr><th>Pedido / carreta</th><th>Carga</th><th>Descarga</th><th>Fase y avance</th><th>STATUS y último hito</th><th>Pendiente</th></tr>
                 </thead>
                 <tbody>
-                    <asp:Repeater ID="rptViajes" runat="server">
+                    <asp:Repeater ID="rptViajes" runat="server" EnableViewState="false">
                         <ItemTemplate>
                             <tr class="sx-fila" data-pedido='<%#: Eval("Pedido") %>' data-prog='<%#: Eval("Programacion") %>'>
                                 <td>

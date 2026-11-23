@@ -98,6 +98,58 @@ namespace WebSGV.Views
             }
         }
 
+        /// <summary>Verdadero cuando este pedido ya enlazó el historial y el aviso de conformidad.</summary>
+        private bool _historialCargado;
+
+        /// <summary>
+        /// Los 4 repetidores no guardan ViewState (E5-9): en un postback que vuelve a mostrar la página
+        /// (Buscar del historial, un envío de liquidación que falla, el cambio de contraseña del
+        /// Site.Master) se vuelven a enlazar aquí con los datos de la BD del conductor de la sesión. No se
+        /// llama a InicializarDashboard: pisaría las fechas y horas que el conductor escribió.
+        /// </summary>
+        protected override void OnPreRender(EventArgs e)
+        {
+            base.OnPreRender(e);
+            if (IsPostBack && !Response.IsRequestBeingRedirected)
+                EnlazarListasEnPostback();
+        }
+
+        /// <summary>Verdadero si <paramref name="ids"/> no está vacía y son los mismos viajes (sin orden) que los del campo oculto.</summary>
+        public static bool MismosViajes(IList<int> ids, string idsMostrados)
+        {
+            if (ids == null || ids.Count == 0) return false;
+            var mostrados = new HashSet<int>();
+            foreach (string s in (idsMostrados ?? "").Split(','))
+                if (int.TryParse(s.Trim(), out int id)) mostrados.Add(id);
+            return mostrados.SetEquals(ids);
+        }
+
+        private void EnlazarListasEnPostback()
+        {
+            if (!_historialCargado)
+                CargarHistorialLiquidaciones();
+            if (Services.Liquidaciones.MovimientosViajeService.Habilitado)
+                CargarDineroRecibido();
+            if (!pnlDespachos.Visible) return;
+            try
+            {
+                // Del conductor de la sesión, no de hfIdsViajesActivos (el navegador puede cambiarlo).
+                List<int> ids = ObtenerViajesActivos().Select(v => v.IdViajeProgreso).ToList();
+                // Si desde que se abrió la página cambiaron los viajes (o ya no hay), la cabecera "Viaje en
+                // curso" es la de entonces: no se muestra una lista de despachos de otros viajes.
+                if (!MismosViajes(ids, hfIdsViajesActivos.Value))
+                {
+                    pnlDespachos.Visible = false;
+                    return;
+                }
+                CargarDespachosViajesActivos(ids);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error al volver a enlazar los despachos en DashboardConductor");
+            }
+        }
+
         #endregion
 
         #region Métodos de Inicialización
@@ -898,6 +950,7 @@ namespace WebSGV.Views
 
         private void CargarHistorialLiquidaciones()
         {
+            _historialCargado = true;
             try
             {
                 DataTable dt = DbHelper.ConsultarTablaSp("sp_DC_ObtenerHistorialLiquidaciones",

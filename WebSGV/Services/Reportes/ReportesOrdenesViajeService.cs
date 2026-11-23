@@ -60,8 +60,9 @@ namespace WebSGV.Services.Reportes
 
         /// <remarks>
         /// La consulta ya fija <c>vp.estadoViaje = 'ABIERTO'</c> (un viaje CERRADO ya está liquidado):
-        /// el combo solo ofrece "Todos" y "Abierto"; el filtro por <paramref name="estadoViaje"/> queda
-        /// como defensa y no amplía el resultado.
+        /// la página solo ofrece "Abierto" (M-077: "Todos" daba lo mismo y se quitó; si llega, la página lo
+        /// normaliza a "Abierto"). El filtro por <paramref name="estadoViaje"/> queda como defensa y no amplía
+        /// el resultado; "TODOS" no agrega filtro.
         /// </remarks>
         public static DataTable ObtenerViajesActivos(string buscarConductor, string estadoViaje)
         {

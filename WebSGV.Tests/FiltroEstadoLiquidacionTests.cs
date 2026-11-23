@@ -91,9 +91,9 @@ namespace WebSGV.Tests
             string js = File.ReadAllText(Path.Combine(raiz, "Scripts", "paginas", "ReportesOrdenesViaje.js"));
             string servicio = File.ReadAllText(Path.Combine(raiz, "Services", "Reportes", "ReportesOrdenesViajeService.cs"));
 
-            // "Viajes activos" lista solo viajes ABIERTO: CERRADO siempre salía vacío.
+            // "Viajes activos" lista solo viajes ABIERTO: CERRADO siempre salía vacío, y TODOS daba lo mismo que ABIERTO (M-077).
             Assert.DoesNotContain("Value=\"CERRADO\"", aspx);
-            Assert.Contains("EstadosViajePermitidos = { \"TODOS\", \"ABIERTO\" }", cs);
+            Assert.Contains("EstadosViajePermitidos = { \"ABIERTO\" }", cs);
             Assert.DoesNotContain("'CERRADO'", js);
 
             // Reporte personalizado: sin opciones fijas en el .aspx; combo y exportación desde FiltroEstadoLiquidacion.
