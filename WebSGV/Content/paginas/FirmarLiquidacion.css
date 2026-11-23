@@ -268,7 +268,7 @@ a.fl-btn { display: inline-flex; align-items: center; justify-content: center; }
 }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 480px) {
+@media (max-width: 575.98px) {
     .fl-grid { grid-template-columns: 1fr; }
     .fl-canvas-box { height: 200px; }
 }

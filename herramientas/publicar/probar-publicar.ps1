@@ -81,13 +81,14 @@ $paginasRetiradas = 'Dashboard', 'AgregarIndicadores', 'DashboardGrifo', 'Agrega
     'RegistroEquiposMaquinaria', 'RegistroObras', 'RegistroClientesObra', 'EditarDespacho', 'TestGenerarPdfOrdenViaje', 'ConsultaAuditoria',
     'AgregarOrdenViaje', 'BuscarOrdenViaje', 'AgregarCPIC', 'BuscarCPIC', 'AgregarFactura', 'BuscarFactura'
 $cssRetirados = 'AgregarAbastecimiento', 'AgregarIndicadores', 'BuscarAbastecimiento', 'Dashboard', 'DashboardGrifo', 'DashboardOperador', 'EditarDespacho',
-    'RegistrarDespachoObra', 'RegistrarRetornoEcuador', 'ReporteAbastecimiento', 'AgregarCPIC', 'AgregarFactura', 'AgregarOrdenViaje', 'BuscarCPIC', 'BuscarFactura'
+    'RegistrarDespachoObra', 'RegistrarRetornoEcuador', 'ReporteAbastecimiento', 'AgregarCPIC', 'AgregarFactura', 'AgregarOrdenViaje', 'BuscarCPIC', 'BuscarFactura',
+    'ListaDespachos-2', 'RegistroDespacho-2'   # E5-13: unidas a su hoja principal
 $jsRetirados = 'AgregarAbastecimiento', 'BuscarAbastecimiento', 'Dashboard', 'DashboardGrifo', 'DashboardOperador', 'EditarDespacho', 'RegistrarDespachoObra',
     'RegistrarRetornoEcuador', 'AgregarCPIC', 'AgregarFactura', 'AgregarOrdenViaje', 'BuscarCPIC', 'BuscarFactura', 'BuscarOrdenViaje', 'ConsultaAuditoria'
 $sobrantesEsperados = @($paginasRetiradas | ForEach-Object { "Views/$_.aspx" }) +
                       @($cssRetirados | ForEach-Object { "Content/paginas/$_.css" }) +
                       @($jsRetirados | ForEach-Object { "Scripts/paginas/$_.js" }) +
-                      @('Scripts/BuscarOrdenViaje.js')
+                      @('Scripts/BuscarOrdenViaje.js', 'Content/responsive-mobile.css')   # E5-13: al final de App.css
 
 function New-Archivo($ruta, $tam, $sha) { New-Object PSObject -Property @{ Ruta = $ruta; Tamano = [long]$tam; Sha = $sha } }
 

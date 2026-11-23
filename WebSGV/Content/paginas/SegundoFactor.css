@@ -50,7 +50,7 @@
     user-select: all;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 575.98px) {
     .sf-contenedor {
         margin: 16px 0;
         padding: 18px 16px;

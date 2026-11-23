@@ -67,7 +67,7 @@
 }
 
 /* === Formularios === */
-.form-label {
+.sgv-etiqueta {
     color: var(--sgv-texto-medio);
     font-weight: 500;
     font-size: 0.8125rem;
@@ -167,6 +167,11 @@
     padding: 0.875rem 1rem;
     background: var(--sgv-primario-claro);
     border-color: var(--sgv-azul-200);
+}
+
+/* En el celular, margen debajo (antes en responsive-mobile.css; su fondo, borde y relleno ya los pisaba la regla de arriba). */
+@media (max-width: 767.98px) {
+    .financial-card { margin-bottom: 1rem; position: relative; }
 }
 
 .financial-header {

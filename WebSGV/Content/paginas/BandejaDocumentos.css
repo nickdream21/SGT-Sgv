@@ -117,7 +117,7 @@
 .bd-doc-falta { background: var(--sgv-alerta-fondo); color: var(--sgv-alerta-texto); }
 .bd-fila-atrasada td:first-child { box-shadow: inset 3px 0 0 var(--sgv-rojo-600); }
 
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
     .bd-card { padding: .9rem; }
     .bd-previa-acciones { width: 100%; }
     .bd-previa-acciones .btn { flex: 1; }

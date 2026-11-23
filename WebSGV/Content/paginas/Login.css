@@ -125,7 +125,7 @@ input[type="password"]::-ms-clear {
 }
 
 /* Celular: el ojo y el enlace de recuperación con un área táctil de al menos 40 px. */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
     .btn-toggle-pass {
         right: 2px;
         width: 40px;

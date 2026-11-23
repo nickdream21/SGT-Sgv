@@ -57,7 +57,7 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="form-group">
-                    <label for="<%= ddlMes.ClientID %>" class="form-label mt-3">Mes correspondiente:</label>
+                    <label for="<%= ddlMes.ClientID %>" class="sgv-etiqueta mt-3">Mes correspondiente:</label>
                     <asp:DropDownList ID="ddlMes" runat="server" CssClass="form-control">
                         <asp:ListItem Text="Enero" Value="1"></asp:ListItem>
                         <asp:ListItem Text="Febrero" Value="2"></asp:ListItem>
@@ -76,7 +76,7 @@
             </div>
             <div class="col-md-6">
                 <div class="form-group">
-                    <label for="<%= ddlAnio.ClientID %>" class="form-label mt-3">Año correspondiente:</label>
+                    <label for="<%= ddlAnio.ClientID %>" class="sgv-etiqueta mt-3">Año correspondiente:</label>
                     <asp:DropDownList ID="ddlAnio" runat="server" CssClass="form-control">
                         <asp:ListItem Text="2023" Value="2023"></asp:ListItem>
                         <asp:ListItem Text="2024" Value="2024"></asp:ListItem>
@@ -100,7 +100,7 @@
         <div class="month-filter">
             <div class="row">
                 <div class="col-md-4">
-                    <label for="<%= ddlMesFilter.ClientID %>" class="form-label">Filtrar por mes:</label>
+                    <label for="<%= ddlMesFilter.ClientID %>" class="sgv-etiqueta">Filtrar por mes:</label>
                     <asp:DropDownList ID="ddlMesFilter" runat="server" CssClass="form-control" AutoPostBack="true" OnSelectedIndexChanged="UpdateHistorial">
                         <asp:ListItem Text="Todos" Value="0"></asp:ListItem>
                         <asp:ListItem Text="Enero" Value="1"></asp:ListItem>
@@ -118,7 +118,7 @@
                     </asp:DropDownList>
                 </div>
                 <div class="col-md-4">
-                    <label for="<%= ddlAnioFilter.ClientID %>" class="form-label">Filtrar por año:</label>
+                    <label for="<%= ddlAnioFilter.ClientID %>" class="sgv-etiqueta">Filtrar por año:</label>
                     <asp:DropDownList ID="ddlAnioFilter" runat="server" CssClass="form-control" AutoPostBack="true" OnSelectedIndexChanged="UpdateHistorial">
                         <asp:ListItem Text="Todos" Value="0"></asp:ListItem>
                         <asp:ListItem Text="2023" Value="2023"></asp:ListItem>

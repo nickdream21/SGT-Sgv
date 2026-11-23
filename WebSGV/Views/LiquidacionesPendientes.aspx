@@ -47,7 +47,7 @@
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label for="txtConductorBuscar" class="form-label">Conductor</label>
+                            <label for="txtConductorBuscar" class="sgv-etiqueta">Conductor</label>
                             <div class="conductor-autocomplete-wrap">
                                  <input type="text" id="txtConductorBuscar" class="form-control" value="<%: NombreConductorFiltro %>"
                                      placeholder="Buscar conductor..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_conductor_pendiente" />
@@ -59,21 +59,21 @@
                     </div>
                     <div class="col-md-2">
                         <div class="form-group">
-                            <label for="<%= txtFechaDesde.ClientID %>" class="form-label">Desde</label>
+                            <label for="<%= txtFechaDesde.ClientID %>" class="sgv-etiqueta">Desde</label>
                              <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                              <small id="errorFechaDesde" class="text-danger d-none"></small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="form-group">
-                            <label for="<%= txtFechaHasta.ClientID %>" class="form-label">Hasta</label>
+                            <label for="<%= txtFechaHasta.ClientID %>" class="sgv-etiqueta">Hasta</label>
                              <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                              <small id="errorFechaHasta" class="text-danger d-none"></small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="form-group">
-                            <label for="<%= ddlPrioridad.ClientID %>" class="form-label">Prioridad</label>
+                            <label for="<%= ddlPrioridad.ClientID %>" class="sgv-etiqueta">Prioridad</label>
                             <asp:DropDownList ID="ddlPrioridad" runat="server" CssClass="form-control">
                                 <asp:ListItem Value="">-- Todas --</asp:ListItem>
                                 <asp:ListItem Value="URGENTE">Urgentes (>24h)</asp:ListItem>
@@ -85,7 +85,7 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <span class="form-label d-inline-block" aria-hidden="true">&nbsp;</span>
+                            <span class="sgv-etiqueta d-inline-block" aria-hidden="true">&nbsp;</span>
                             <div class="d-flex">
                                 <asp:Button ID="btnFiltrar" runat="server" Text="Buscar" 
                                     CssClass="btn btn-primary-custom btn-block mr-2" 
@@ -249,7 +249,7 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="txtConductorAprobadas" class="form-label">Conductor</label>
+                                <label for="txtConductorAprobadas" class="sgv-etiqueta">Conductor</label>
                                 <div class="conductor-autocomplete-wrap">
                                     <input type="text" id="txtConductorAprobadas" class="form-control"
                                         placeholder="Buscar conductor..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_conductor_aprobada" />
@@ -260,25 +260,25 @@
                         </div>
                         <div class="col-md-2">
                             <div class="form-group">
-                                <label for="filtroDesdeAprobadas" class="form-label">Desde</label>
+                                <label for="filtroDesdeAprobadas" class="sgv-etiqueta">Desde</label>
                                 <input type="date" id="filtroDesdeAprobadas" class="form-control" />
                             </div>
                         </div>
                         <div class="col-md-2">
                             <div class="form-group">
-                                <label for="filtroHastaAprobadas" class="form-label">Hasta</label>
+                                <label for="filtroHastaAprobadas" class="sgv-etiqueta">Hasta</label>
                                 <input type="date" id="filtroHastaAprobadas" class="form-control" />
                             </div>
                         </div>
                         <div class="col-md-2">
                             <div class="form-group">
-                                <label for="filtroOrdenAprobadas" class="form-label">N° Orden</label>
+                                <label for="filtroOrdenAprobadas" class="sgv-etiqueta">N° Orden</label>
                                 <input type="text" id="filtroOrdenAprobadas" class="form-control" placeholder="Buscar..." />
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <span class="form-label d-inline-block" aria-hidden="true">&nbsp;</span>
+                                <span class="sgv-etiqueta d-inline-block" aria-hidden="true">&nbsp;</span>
                                 <div class="d-flex">
                                     <button type="button" id="btnBuscarAprobadas" class="btn btn-primary-custom btn-block mr-2" data-accion="cargarLiquidacionesAprobadas">Buscar</button>
                                     <button type="button" class="btn btn-secondary-custom btn-block" data-accion="limpiarFiltrosAprobadas">Limpiar</button>
@@ -428,16 +428,16 @@
                         <div id="panelCorregirSalida" class="salida-edit-panel" style="display:none;">
                             <div class="row">
                                 <div class="col-12 col-md-4 form-group">
-                                    <label for="corregirSalidaFecha" class="form-label">Fecha de salida</label>
+                                    <label for="corregirSalidaFecha" class="sgv-etiqueta">Fecha de salida</label>
                                     <input type="date" class="form-control" id="corregirSalidaFecha" />
                                 </div>
                                 <div class="col-12 col-md-4 form-group">
-                                    <label for="corregirSalidaHora" class="form-label">Hora de salida</label>
+                                    <label for="corregirSalidaHora" class="sgv-etiqueta">Hora de salida</label>
                                     <input type="time" class="form-control" id="corregirSalidaHora" />
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="corregirSalidaMotivo" class="form-label">Motivo de la corrección <span class="text-danger">*</span></label>
+                                <label for="corregirSalidaMotivo" class="sgv-etiqueta">Motivo de la corrección <span class="text-danger">*</span></label>
                                 <textarea class="form-control" id="corregirSalidaMotivo" rows="2" maxlength="500"
                                     placeholder="Explique por qué corrige la salida (mín. 10 caracteres)"></textarea>
                                 <small class="text-danger" id="errorCorregirSalidaMotivo" style="display:none;"></small>
@@ -622,20 +622,20 @@
                                     </div>
                                     <div class="row mt-2">
                                         <div class="col-6">
-                                            <label for="ajusteDescuentoSoles" class="form-label">Soles (S/)</label>
+                                            <label for="ajusteDescuentoSoles" class="sgv-etiqueta">Soles (S/)</label>
                                             <input type="text" inputmode="decimal" autocomplete="off" data-monto id="ajusteDescuentoSoles" class="form-control form-control-sm"
                                                 placeholder="0.00" value=""
                                                 data-accion-input="actualizarBalanceAjustado">
                                         </div>
                                         <div class="col-6">
-                                            <label for="ajusteDescuentoDolares" class="form-label">Dólares ($)</label>
+                                            <label for="ajusteDescuentoDolares" class="sgv-etiqueta">Dólares ($)</label>
                                             <input type="text" inputmode="decimal" autocomplete="off" data-monto id="ajusteDescuentoDolares" class="form-control form-control-sm"
                                                 placeholder="0.00" value=""
                                                 data-accion-input="actualizarBalanceAjustado">
                                         </div>
                                     </div>
                                     <div class="mt-2" id="grupoMotivoDescuento">
-                                        <label class="form-label" for="ajusteMotivoDescuento">Motivo del descuento</label>
+                                        <label class="sgv-etiqueta" for="ajusteMotivoDescuento">Motivo del descuento</label>
                                         <textarea id="ajusteMotivoDescuento" class="form-control form-control-sm" rows="2" maxlength="500"
                                             placeholder="Ej.: Gasto de alimentación del 18/07 sin comprobante."></textarea>
                                         <small class="text-danger d-none" id="errorMotivoDescuento"></small>
@@ -649,20 +649,20 @@
                                     </div>
                                     <div class="row mt-2">
                                         <div class="col-6">
-                                            <label for="ajusteReintegroSoles" class="form-label">Soles (S/)</label>
+                                            <label for="ajusteReintegroSoles" class="sgv-etiqueta">Soles (S/)</label>
                                             <input type="text" inputmode="decimal" autocomplete="off" data-monto id="ajusteReintegroSoles" class="form-control form-control-sm"
                                                 placeholder="0.00" value=""
                                                 data-accion-input="actualizarBalanceAjustado">
                                         </div>
                                         <div class="col-6">
-                                            <label for="ajusteReintegroDolares" class="form-label">Dólares ($)</label>
+                                            <label for="ajusteReintegroDolares" class="sgv-etiqueta">Dólares ($)</label>
                                             <input type="text" inputmode="decimal" autocomplete="off" data-monto id="ajusteReintegroDolares" class="form-control form-control-sm"
                                                 placeholder="0.00" value=""
                                                 data-accion-input="actualizarBalanceAjustado">
                                         </div>
                                     </div>
                                     <div class="mt-2" id="grupoMotivoReintegro">
-                                        <label class="form-label" for="ajusteMotivoReintegro">Motivo del reintegro</label>
+                                        <label class="sgv-etiqueta" for="ajusteMotivoReintegro">Motivo del reintegro</label>
                                         <textarea id="ajusteMotivoReintegro" class="form-control form-control-sm" rows="2" maxlength="500"
                                             placeholder="Ej.: Peaje de Chullqui pagado y no declarado (ticket B002-2)."></textarea>
                                         <small class="text-danger d-none" id="errorMotivoReintegro"></small>
@@ -688,7 +688,7 @@
                             </div>
                         </div>
                         <div class="form-group mt-3" id="notaAprobacionGroup">
-                            <label for="notaAprobacion" class="form-label">
+                            <label for="notaAprobacion" class="sgv-etiqueta">
                                 Nota de aprobación
                                 <span class="text-muted font-weight-normal">(opcional)</span>
                             </label>
@@ -733,12 +733,12 @@
                     <input type="hidden" id="rechazarIdOrden" />
                     
                     <div class="form-group">
-                        <label for="rechazarNumeroOrden" class="form-label">N° de Orden:</label>
+                        <label for="rechazarNumeroOrden" class="sgv-etiqueta">N° de Orden:</label>
                         <input type="text" id="rechazarNumeroOrden" class="form-control" readonly />
                     </div>
 
                     <div class="form-group">
-                        <label for="rechazarObservaciones" class="form-label">Motivo del rechazo <span class="text-danger">*</span></label>
+                        <label for="rechazarObservaciones" class="sgv-etiqueta">Motivo del rechazo <span class="text-danger">*</span></label>
                         <textarea id="rechazarObservaciones" name="observacionesRechazo" class="form-control" rows="4" 
                             placeholder="Explique detalladamente qué debe corregir el conductor...&#13;&#10;Ejemplo: Los montos de peajes no coinciden con los comprobantes adjuntos. Por favor revisar."></textarea>
                         <small id="errorRechazoObservaciones" class="text-danger d-none"></small>
@@ -774,15 +774,15 @@
                     </div>
                     <input type="hidden" id="revertirIdOrden" />
                     <div class="form-group">
-                        <label for="revertirNumeroOrden" class="form-label">N° de Orden:</label>
+                        <label for="revertirNumeroOrden" class="sgv-etiqueta">N° de Orden:</label>
                         <input type="text" id="revertirNumeroOrden" class="form-control" readonly />
                     </div>
                     <div class="form-group">
-                        <label for="revertirConductor" class="form-label">Conductor:</label>
+                        <label for="revertirConductor" class="sgv-etiqueta">Conductor:</label>
                         <input type="text" id="revertirConductor" class="form-control" readonly />
                     </div>
                     <div class="form-group">
-                        <label for="revertirMotivo" class="form-label">Motivo de la reversión <span class="text-danger">*</span></label>
+                        <label for="revertirMotivo" class="sgv-etiqueta">Motivo de la reversión <span class="text-danger">*</span></label>
                         <textarea id="revertirMotivo" class="form-control" rows="4"
                             placeholder="Explique por qué se revierte esta aprobación...&#13;&#10;Ej: Se detectó que el descuento aplicado es incorrecto y necesita re-evaluación."></textarea>
                         <small id="errorRevertirMotivo" class="text-danger d-none"></small>
@@ -814,11 +814,11 @@
                     </div>
                     <input type="hidden" id="retirarIdOrden" />
                     <div class="form-group">
-                        <label for="retirarNumeroOrden" class="form-label">N° de Orden:</label>
+                        <label for="retirarNumeroOrden" class="sgv-etiqueta">N° de Orden:</label>
                         <input type="text" id="retirarNumeroOrden" class="form-control" readonly />
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="retirarMotivo">Motivo <span class="text-danger">*</span></label>
+                        <label class="sgv-etiqueta" for="retirarMotivo">Motivo <span class="text-danger">*</span></label>
                         <textarea id="retirarMotivo" class="form-control" rows="3" maxlength="500"
                             placeholder="Ej.: El adelanto registrado era S/ 800 y no S/ 900."></textarea>
                         <small id="errorRetirarMotivo" class="text-danger d-none"></small>

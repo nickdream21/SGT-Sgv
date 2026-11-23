@@ -99,8 +99,8 @@
                                         <asp:Panel ID="pnlProgramacionNueva" runat="server" Visible="false" CssClass="mt-3">
                                             <%-- El Word trae una sección de carga por cliente (Vitapro, Crisar, Novopan, Polinplast): se programa una a la vez. --%>
                                             <asp:Panel ID="pnlSeccionProg" runat="server" CssClass="form-group mb-3" Visible="false">
-                                                <label for="<%= ddlSeccionProg.ClientID %>" class="form-label small font-weight-bold mb-1">Sección del Word</label>
-                                                <asp:DropDownList ID="ddlSeccionProg" runat="server" CssClass="form-select form-select-sm"
+                                                <label for="<%= ddlSeccionProg.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Sección del Word</label>
+                                                <asp:DropDownList ID="ddlSeccionProg" runat="server" CssClass="custom-select custom-select-sm"
                                                     AutoPostBack="true" OnSelectedIndexChanged="ddlSeccionProg_SelectedIndexChanged" />
                                             </asp:Panel>
 
@@ -163,17 +163,17 @@
                                             <div class="rd-section-label"><i class="fas fa-clipboard-list mr-1"></i> Datos de la carga</div>
                                             <div class="row mb-2">
                                                 <div class="col-md-3 form-group mb-2">
-                                                    <label for="<%= ddlClienteProg.ClientID %>" class="form-label small font-weight-bold mb-1">Cliente <span class="text-danger">*</span></label>
-                                                    <asp:DropDownList ID="ddlClienteProg" runat="server" CssClass="form-select form-select-sm" />
+                                                    <label for="<%= ddlClienteProg.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Cliente <span class="text-danger">*</span></label>
+                                                    <asp:DropDownList ID="ddlClienteProg" runat="server" CssClass="custom-select custom-select-sm" />
                                                 </div>
                                                 <div class="col-md-3 form-group mb-2">
-                                                    <label for="<%= txtFechaProg.ClientID %>" class="form-label small font-weight-bold mb-1">Fecha de carga <span class="text-danger">*</span></label>
+                                                    <label for="<%= txtFechaProg.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Fecha de carga <span class="text-danger">*</span></label>
                                                     <asp:TextBox ID="txtFechaProg" runat="server" CssClass="form-control form-control-sm" TextMode="Date" />
                                                     <small class="form-text text-muted">El día del título ("CARGAN 21 DE OCTUBRE").</small>
                                                 </div>
                                                 <div class="col-md-3 form-group mb-2">
-                                                    <label for="<%= ddlPlantaProg.ClientID %>" class="form-label small font-weight-bold mb-1">Planta de carga <span class="text-danger">*</span></label>
-                                                    <asp:DropDownList ID="ddlPlantaProg" runat="server" CssClass="form-select form-select-sm" />
+                                                    <label for="<%= ddlPlantaProg.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Planta de carga <span class="text-danger">*</span></label>
+                                                    <asp:DropDownList ID="ddlPlantaProg" runat="server" CssClass="custom-select custom-select-sm" />
                                                 </div>
                                                 <div class="col-md-3 form-group mb-2 d-flex align-items-end">
                                                     <asp:CheckBox ID="chkExportacionProg" runat="server" Text="Carga para exportación (seguimiento a Ecuador)" CssClass="small" />
@@ -204,15 +204,15 @@
                                                                     </td>
                                                                     <td class="rd-col-conductor">
                                                                         <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Chofer")) %></small>
-                                                                        <asp:DropDownList ID="ddlConductorProg" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Conductor (Word: " + Eval("Chofer") + ")" %>' />
+                                                                        <asp:DropDownList ID="ddlConductorProg" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Conductor (Word: " + Eval("Chofer") + ")" %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Tracto")) %></small>
-                                                                        <asp:DropDownList ID="ddlTractoProg" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Tracto (Word: " + Eval("Tracto") + ")" %>' />
+                                                                        <asp:DropDownList ID="ddlTractoProg" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Tracto (Word: " + Eval("Tracto") + ")" %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Carreta")) %></small>
-                                                                        <asp:DropDownList ID="ddlCarretaProg" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Carreta (Word: " + Eval("Carreta") + ")" %>' />
+                                                                        <asp:DropDownList ID="ddlCarretaProg" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Carreta (Word: " + Eval("Carreta") + ")" %>' />
                                                                     </td>
                                                                     <td><asp:Literal ID="litEstadoProg" runat="server" /></td>
                                                                 </tr>
@@ -223,7 +223,7 @@
                                             </div>
                                             </asp:Panel>
 
-                                            <div class="d-flex justify-content-end gap-2">
+                                            <div class="d-flex justify-content-end rd-grupo">
                                                 <asp:Button ID="btnDescartarProgramacion" runat="server"
                                                     Text="Descartar"
                                                     CssClass="btn btn-outline-secondary"
@@ -266,18 +266,18 @@
                                             <div class="rd-section-label"><i class="fas fa-clipboard-list mr-1"></i> Datos del lote</div>
                                             <div class="row mb-2">
                                                 <div class="col-md-4 form-group mb-2">
-                                                    <label for="<%= ddlClienteImp.ClientID %>" class="form-label small font-weight-bold mb-1">Cliente <span class="text-danger">*</span></label>
-                                                    <asp:DropDownList ID="ddlClienteImp" runat="server" CssClass="form-select form-select-sm" />
+                                                    <label for="<%= ddlClienteImp.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Cliente <span class="text-danger">*</span></label>
+                                                    <asp:DropDownList ID="ddlClienteImp" runat="server" CssClass="custom-select custom-select-sm" />
                                                     <small class="form-text text-muted">Reconocido por el RUC del remitente.</small>
                                                 </div>
                                                 <div class="col-md-4 form-group mb-2">
-                                                    <label for="<%= txtFechaProgramacionImp.ClientID %>" class="form-label small font-weight-bold mb-1">Fecha de programación <span class="text-danger">*</span></label>
+                                                    <label for="<%= txtFechaProgramacionImp.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Fecha de programación <span class="text-danger">*</span></label>
                                                     <asp:TextBox ID="txtFechaProgramacionImp" runat="server" CssClass="form-control form-control-sm" TextMode="Date" />
                                                     <small class="form-text text-muted">Se propone el día de carga de la programación (o, sin ella, la fecha de traslado de las guías).</small>
                                                 </div>
                                                 <div class="col-md-4 form-group mb-2">
-                                                    <label for="<%= ddlPlantaImp.ClientID %>" class="form-label small font-weight-bold mb-1">Planta de carga <span class="text-danger">*</span></label>
-                                                    <asp:DropDownList ID="ddlPlantaImp" runat="server" CssClass="form-select form-select-sm" />
+                                                    <label for="<%= ddlPlantaImp.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Planta de carga <span class="text-danger">*</span></label>
+                                                    <asp:DropDownList ID="ddlPlantaImp" runat="server" CssClass="custom-select custom-select-sm" />
                                                     <small class="form-text text-muted">Carga nacional; el destino queda como dato de la carga.</small>
                                                 </div>
                                             </div>
@@ -306,21 +306,21 @@
                                                                         <asp:Literal ID="litYaRegistrado" runat="server" />
                                                                         <asp:Panel ID="pnlProgramadoImp" runat="server" CssClass="mt-1 rd-programado-sel">
                                                                             <small class="rd-doc-dato">Completa el despacho</small>
-                                                                            <asp:DropDownList ID="ddlProgramadoImp" runat="server" CssClass="form-select form-select-sm"
+                                                                            <asp:DropDownList ID="ddlProgramadoImp" runat="server" CssClass="custom-select custom-select-sm"
                                                                                 ToolTip="Despacho programado con el Word que esta guía completa. Si eligió uno, chofer, tracto y carreta son los del despacho." />
                                                                         </asp:Panel>
                                                                     </td>
                                                                     <td class="rd-col-conductor">
                                                                         <small class="rd-doc-dato">Documento: <%# HttpUtility.HtmlEncode(Eval("NombreChofer")) %><%#: Eval("Licencia") == null ? "" : " · Lic. " + Eval("Licencia") %></small>
-                                                                        <asp:DropDownList ID="ddlConductorImp" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Conductor del transporte " + Eval("NumeroTransporte") %>' />
+                                                                        <asp:DropDownList ID="ddlConductorImp" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Conductor del transporte " + Eval("NumeroTransporte") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato">Documento: <%# HttpUtility.HtmlEncode(Eval("Placa")) %></small>
-                                                                        <asp:DropDownList ID="ddlTractoImp" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Tracto del transporte " + Eval("NumeroTransporte") %>' />
+                                                                        <asp:DropDownList ID="ddlTractoImp" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Tracto del transporte " + Eval("NumeroTransporte") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato"><asp:Literal ID="litCarretaHint" runat="server" /></small>
-                                                                        <asp:DropDownList ID="ddlCarretaImp" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Carreta del transporte " + Eval("NumeroTransporte") %>' />
+                                                                        <asp:DropDownList ID="ddlCarretaImp" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Carreta del transporte " + Eval("NumeroTransporte") %>' />
                                                                     </td>
                                                                     <td class="rd-carga-celda"><asp:Literal ID="litCargaImp" runat="server" /></td>
                                                                 </tr>
@@ -389,7 +389,7 @@
                                                 <i class="fas fa-info-circle mr-1"></i> Archivos no usados: <asp:Literal ID="litArchivosIgnorados" runat="server" />
                                             </asp:Panel>
 
-                                            <div class="d-flex justify-content-end gap-2">
+                                            <div class="d-flex justify-content-end rd-grupo">
                                                 <asp:Button ID="btnDescartarImportacion" runat="server"
                                                     Text="Descartar"
                                                     CssClass="btn btn-outline-secondary"
@@ -411,7 +411,7 @@
 
                                         <!-- Importación ya aplicada: los conductores entran al iniciar el lote -->
                                         <asp:Panel ID="pnlImportacionAplicada" runat="server" Visible="false" CssClass="rd-notice rd-notice-ok mt-3">
-                                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                            <div class="d-flex justify-content-between align-items-center flex-wrap rd-grupo">
                                                 <span><i class="fas fa-check-circle mr-1"></i> <asp:Literal ID="litImportacionAplicada" runat="server" /></span>
                                                 <asp:Button ID="btnQuitarImportacion" runat="server"
                                                     Text="Quitar importación"
@@ -435,7 +435,7 @@
                                         <asp:Panel ID="pnlElegirPedidoDescarga" runat="server">
                                             <div class="row align-items-end">
                                                 <div class="col-md-8 mb-2 mb-md-0">
-                                                    <asp:DropDownList ID="ddlPedidosPendientes" runat="server" CssClass="form-select select2-searchable" aria-label="Pedido a descargar" />
+                                                    <asp:DropDownList ID="ddlPedidosPendientes" runat="server" CssClass="custom-select select2-searchable" aria-label="Pedido a descargar" />
                                                 </div>
                                                 <div class="col-md-4 text-md-right">
                                                     <asp:Button ID="btnVerCargasPendientes" runat="server"
@@ -486,12 +486,12 @@
                                             <div class="rd-section-label"><i class="fas fa-clipboard-list mr-1"></i> Datos del lote de descarga</div>
                                             <div class="row mb-2">
                                                 <div class="col-md-4 form-group mb-2">
-                                                    <label for="<%= txtFechaDescarga.ClientID %>" class="form-label small font-weight-bold mb-1">Fecha de programación <span class="text-danger">*</span></label>
+                                                    <label for="<%= txtFechaDescarga.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Fecha de programación <span class="text-danger">*</span></label>
                                                     <asp:TextBox ID="txtFechaDescarga" runat="server" CssClass="form-control form-control-sm" TextMode="Date" />
                                                 </div>
                                                 <div class="col-md-4 form-group mb-2">
-                                                    <label for="<%= ddlPlantaDescarga.ClientID %>" class="form-label small font-weight-bold mb-1">Planta de descarga por defecto <span class="text-danger">*</span></label>
-                                                    <asp:DropDownList ID="ddlPlantaDescarga" runat="server" CssClass="form-select form-select-sm" />
+                                                    <label for="<%= ddlPlantaDescarga.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Planta de descarga por defecto <span class="text-danger">*</span></label>
+                                                    <asp:DropDownList ID="ddlPlantaDescarga" runat="server" CssClass="custom-select custom-select-sm" />
                                                     <small class="form-text text-muted"><asp:Literal ID="litAmbitoDescarga" runat="server" /> Cada tracto usa la planta de la lista de destinos (Despacho &rsaquo; Destino de descarga) si la tiene; si no, esta.</small>
                                                 </div>
                                             </div>
@@ -522,19 +522,19 @@
                                                                     </td>
                                                                     <td class="rd-col-conductor">
                                                                         <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("NombreConductor")) %></small>
-                                                                        <asp:DropDownList ID="ddlConductorDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Conductor que descarga el transporte " + (Eval("NumeroTransporte") ?? "") %>' />
+                                                                        <asp:DropDownList ID="ddlConductorDesc" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Conductor que descarga el transporte " + (Eval("NumeroTransporte") ?? "") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("PlacaTracto")) %></small>
-                                                                        <asp:DropDownList ID="ddlTractoDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Tracto que descarga el transporte " + (Eval("NumeroTransporte") ?? "") %>' />
+                                                                        <asp:DropDownList ID="ddlTractoDesc" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Tracto que descarga el transporte " + (Eval("NumeroTransporte") ?? "") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("PlacaCarreta")) %></small>
-                                                                        <asp:DropDownList ID="ddlCarretaDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Carreta del transporte " + (Eval("NumeroTransporte") ?? "") %>' />
+                                                                        <asp:DropDownList ID="ddlCarretaDesc" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Carreta del transporte " + (Eval("NumeroTransporte") ?? "") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato"><asp:Literal ID="litDestinoDesc" runat="server" /></small>
-                                                                        <asp:DropDownList ID="ddlPlantaDesc" runat="server" CssClass="form-select form-select-sm" aria-label='<%# "Planta de descarga del transporte " + (Eval("NumeroTransporte") ?? "") %>' />
+                                                                        <asp:DropDownList ID="ddlPlantaDesc" runat="server" CssClass="custom-select custom-select-sm" aria-label='<%# "Planta de descarga del transporte " + (Eval("NumeroTransporte") ?? "") %>' />
                                                                     </td>
                                                                     <td class="rd-carga-celda"><asp:Literal ID="litCargaDesc" runat="server" /></td>
                                                                 </tr>
@@ -545,7 +545,7 @@
                                                 </table>
                                             </div>
 
-                                            <div class="d-flex justify-content-end gap-2">
+                                            <div class="d-flex justify-content-end rd-grupo">
                                                 <asp:Button ID="btnDescartarDescarga" runat="server"
                                                     Text="Descartar"
                                                     CssClass="btn btn-outline-secondary"
@@ -560,7 +560,7 @@
                                         </asp:Panel>
 
                                         <asp:Panel ID="pnlDescargaAplicada" runat="server" Visible="false" CssClass="rd-notice rd-notice-ok mt-3">
-                                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                            <div class="d-flex justify-content-between align-items-center flex-wrap rd-grupo">
                                                 <span><i class="fas fa-check-circle mr-1"></i> <asp:Literal ID="litDescargaAplicada" runat="server" /></span>
                                                 <asp:Button ID="btnQuitarDescarga" runat="server"
                                                     Text="Quitar"
@@ -590,7 +590,7 @@
                                                     
                                                     <!-- Fecha de Despacho -->
                                                     <div class="form-group mb-3">
-                                                        <label for="<%= txtFechaDespachoBase.ClientID %>" class="form-label">
+                                                        <label for="<%= txtFechaDespachoBase.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Fecha de programación:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
@@ -620,12 +620,12 @@
 
                                                     <!-- Cliente -->
                                                     <div class="form-group mb-3">
-                                                        <label for="<%= ddlClienteBase.ClientID %>" class="form-label">
+                                                        <label for="<%= ddlClienteBase.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Cliente:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
                                                         <asp:DropDownList ID="ddlClienteBase" runat="server" 
-                                                            CssClass="form-select"
+                                                            CssClass="custom-select"
                                                             DataTextField="nombre"
                                                             DataValueField="idCliente"
                                                             AppendDataBoundItems="true">
@@ -645,7 +645,7 @@
                                                     <!-- Número de Pedido - Solo para Carga Nacional -->
                                                     <asp:Panel ID="pnlNumeroPedido" runat="server" Visible="false">
                                                         <div class="form-group mb-3">
-                                                            <label for="<%= txtNumeroPedidoBase.ClientID %>" class="form-label">
+                                                            <label for="<%= txtNumeroPedidoBase.ClientID %>" class="sgv-etiqueta">
                                                                 <strong>N° de Pedido:</strong>
                                                             </label>
                                                             <asp:TextBox ID="txtNumeroPedidoBase" runat="server"
@@ -673,12 +673,12 @@
                                                     
                                                     <!-- Tipo de Operación -->
                                                     <div class="form-group mb-3">
-                                                        <label for="<%= ddlTipoOperacionBase.ClientID %>" class="form-label">
+                                                        <label for="<%= ddlTipoOperacionBase.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Tipo de operación:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
                                                         <asp:DropDownList ID="ddlTipoOperacionBase" runat="server" 
-                                                            CssClass="form-select"
+                                                            CssClass="custom-select"
                                                             AutoPostBack="true"
                                                             OnSelectedIndexChanged="ddlTipoOperacionBase_SelectedIndexChanged">
                                                             <asp:ListItem Value="" Text="-- Seleccione tipo --"></asp:ListItem>
@@ -698,7 +698,7 @@
 
                                                     <!-- Es Internacional -->
                                                     <div class="form-group mb-3">
-                                                        <span class="form-label d-inline-block mb-2" id="lblAmbitoOperacionBase">
+                                                        <span class="sgv-etiqueta d-inline-block mb-2" id="lblAmbitoOperacionBase">
                                                             <strong>Ámbito:</strong>
                                                             <span class="text-danger">*</span>
                                                         </span>
@@ -716,11 +716,11 @@
 
                                                     <!-- Lugar de Operación -->
                                                     <div class="form-group mb-3">
-                                                        <label for="<%= ddlLugarOperacionBase.ClientID %>" class="form-label">
+                                                        <label for="<%= ddlLugarOperacionBase.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Planta de operación:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
-                                                        <asp:DropDownList ID="ddlLugarOperacionBase" runat="server" CssClass="form-select">
+                                                        <asp:DropDownList ID="ddlLugarOperacionBase" runat="server" CssClass="custom-select">
                                                         </asp:DropDownList>
                                                         <asp:RequiredFieldValidator ID="rfvLugarOperacionBase" runat="server"
                                                             ControlToValidate="ddlLugarOperacionBase"
@@ -752,7 +752,7 @@
                                                                 <div class="rd-doc-title"><i class="fas fa-receipt mr-1"></i> Datos de factura</div>
 
                                                                 <div class="form-group mb-2">
-                                                                    <label for="<%= txtNumeroFacturaBase.ClientID %>" class="form-label">
+                                                                    <label for="<%= txtNumeroFacturaBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>N° Factura:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
@@ -782,7 +782,7 @@
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
-                                                                    <label for="<%= txtFechaEmisionFacturaBase.ClientID %>" class="form-label">
+                                                                    <label for="<%= txtFechaEmisionFacturaBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>Fecha emisión:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
@@ -811,7 +811,7 @@
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
-                                                                    <label for="<%= txtValorTotalFacturaBase.ClientID %>" class="form-label">
+                                                                    <label for="<%= txtValorTotalFacturaBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>Valor total:</strong>
                                                                         <span class="text-danger">*</span>
                                                                     </label>
@@ -850,7 +850,7 @@
                                                                 </div>
 
                                                                 <div class="form-group mb-0">
-                                                                    <label for="<%= fileFacturaBase.ClientID %>" class="form-label">
+                                                                    <label for="<%= fileFacturaBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>Adjuntar documento:</strong>
                                                                         <span class="text-muted small">(Opcional)</span>
                                                                     </label>
@@ -866,7 +866,7 @@
                                                                 <div class="rd-doc-title"><i class="fas fa-shipping-fast mr-1"></i> Datos de CPIC</div>
 
                                                                 <div class="form-group mb-2">
-                                                                    <label for="<%= txtNumeroCPICBase.ClientID %>" class="form-label">
+                                                                    <label for="<%= txtNumeroCPICBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>N° CPIC:</strong>
                                                                         <span class="text-danger rd-req">*</span>
                                                                         <span class="text-muted small rd-opcional">(Opcional: si llega después, agréguelo en Lista de despachos)</span>
@@ -897,7 +897,7 @@
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
-                                                                    <label for="<%= txtFechaEmisionCPICBase.ClientID %>" class="form-label">
+                                                                    <label for="<%= txtFechaEmisionCPICBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>Fecha emisión CPIC:</strong>
                                                                         <span class="text-danger rd-req">*</span>
                                                                     </label>
@@ -926,7 +926,7 @@
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
-                                                                    <label for="<%= txtValorFleteBase.ClientID %>" class="form-label">
+                                                                    <label for="<%= txtValorFleteBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>Valor flete (S/):</strong>
                                                                         <span class="text-danger rd-req">*</span>
                                                                     </label>
@@ -957,7 +957,7 @@
                                                                 </div>
 
                                                                 <div class="form-group mb-0">
-                                                                    <label for="<%= fileCPICBase.ClientID %>" class="form-label">
+                                                                    <label for="<%= fileCPICBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>Adjuntar documento:</strong>
                                                                         <span class="text-muted small">(Opcional)</span>
                                                                     </label>
@@ -973,7 +973,7 @@
                                             <!-- Botón para iniciar lote -->
                                             <div class="row">
                                                 <div class="col-md-12">
-                                                    <div class="d-flex justify-content-end gap-2">
+                                                    <div class="d-flex justify-content-end rd-grupo">
                                                         <asp:Button ID="btnIniciarLote" runat="server" 
                                                             Text="Iniciar lote de despachos" 
                                                             CssClass="btn btn-primary rd-btn-leer"
@@ -1009,7 +1009,7 @@
                                                     </asp:PlaceHolder>
                                                 </div>
                                                 <div class="col-md-4">
-                                                    <p class="mb-1"><strong>Conductores agregados:</strong> <asp:Label ID="lblResumenCantidad" runat="server" CssClass="badge bg-primary fs-6">0</asp:Label></p>
+                                                    <p class="mb-1"><strong>Conductores agregados:</strong> <asp:Label ID="lblResumenCantidad" runat="server" CssClass="badge bg-primary">0</asp:Label></p>
                                                     <div class="mt-2">
                                                         <asp:Button ID="btnCancelarLote" runat="server" 
                                                             Text="Cancelar lote" 
@@ -1085,7 +1085,7 @@
                                                             </asp:Panel>
                                                             
                                                             <asp:Panel ID="pnlConViajes" runat="server" Visible="false">
-                                                                <span class="form-label d-inline-block mb-2">
+                                                                <span class="sgv-etiqueta d-inline-block mb-2">
                                                                     <strong>Viaje activo encontrado:</strong>
                                                                 </span>
                                                                  <div class="rd-notice rd-notice-ok">
@@ -1110,7 +1110,7 @@
                                                                 <div class="row align-items-end">
                                                                     <div class="col-md-8">
                                                                         <asp:DropDownList ID="ddlViajesActivos" runat="server" 
-                                                                            CssClass="form-select" aria-label="Viaje activo al que se agrega el despacho"
+                                                                            CssClass="custom-select" aria-label="Viaje activo al que se agrega el despacho"
                                                                             DataTextField="Display"
                                                                             DataValueField="IdViajeProgreso">
                                                                             <asp:ListItem Value="0" Text="-- Seleccione un viaje --"></asp:ListItem>
@@ -1153,12 +1153,12 @@
 
                                                     <!-- Conductor -->
                                                     <div class="form-group mb-3">
-                                                        <label for="<%= ddlConductor.ClientID %>" class="form-label">
+                                                        <label for="<%= ddlConductor.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Conductor:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
                                                         <asp:DropDownList ID="ddlConductor" runat="server" 
-                                                            CssClass="form-select select2-searchable"
+                                                            CssClass="custom-select select2-searchable"
                                                             DataTextField="NombreCompleto"
                                                             DataValueField="idConductor"
                                                             AppendDataBoundItems="true"
@@ -1179,12 +1179,12 @@
 
                                                     <!-- Placa Tracto -->
                                                     <div class="form-group mb-3">
-                                                        <label for="<%= ddlPlacaTracto.ClientID %>" class="form-label">
+                                                        <label for="<%= ddlPlacaTracto.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Placa tracto:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
                                                         <asp:DropDownList ID="ddlPlacaTracto" runat="server" 
-                                                            CssClass="form-select select2-searchable"
+                                                            CssClass="custom-select select2-searchable"
                                                             DataTextField="placaTracto"
                                                             DataValueField="idTracto"
                                                             AppendDataBoundItems="true">
@@ -1203,12 +1203,12 @@
 
                                                     <!-- Placa Carreta -->
                                                     <div class="form-group mb-3">
-                                                        <label for="<%= ddlPlacaCarreta.ClientID %>" class="form-label">
+                                                        <label for="<%= ddlPlacaCarreta.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Placa carreta:</strong>
                                                             <span class="text-danger">*</span>
                                                         </label>
                                                         <asp:DropDownList ID="ddlPlacaCarreta" runat="server" 
-                                                            CssClass="form-select select2-searchable"
+                                                            CssClass="custom-select select2-searchable"
                                                             DataTextField="placaCarreta"
                                                             DataValueField="idCarreta"
                                                             AppendDataBoundItems="true">
@@ -1233,7 +1233,7 @@
                                                     <!-- Guía Remitente -->
                                                     <asp:Panel ID="pnlGuiaRemitenteConductor" runat="server" Visible="false">
                                                         <div class="form-group mb-3">
-                                                            <label for="<%= txtGuiaRemitente.ClientID %>" class="form-label">
+                                                            <label for="<%= txtGuiaRemitente.ClientID %>" class="sgv-etiqueta">
                                                                 <strong>Guía remitente:</strong>
                                                                 <span class="text-muted small">(Opcional)</span>
                                                             </label>
@@ -1268,7 +1268,7 @@
                                                     <!-- Guía Transportista -->
                                                     <asp:Panel ID="pnlGuiaTransportistaConductor" runat="server" Visible="false">
                                                         <div class="form-group mb-3">
-                                                            <label for="<%= txtGuiaTransportista.ClientID %>" class="form-label">
+                                                            <label for="<%= txtGuiaTransportista.ClientID %>" class="sgv-etiqueta">
                                                                 <strong>Guía transportista:</strong>
                                                                 <span class="text-danger">*</span>
                                                             </label>
@@ -1329,7 +1329,7 @@
                                             <!-- Botones de Acción -->
                                             <div class="row">
                                                 <div class="col-md-12">
-                                                    <div class="d-flex justify-content-end gap-2">
+                                                    <div class="d-flex justify-content-end rd-grupo">
                                                         <asp:Button ID="btnCancelarEdicion" runat="server"
                                                             Text="Cancelar edición"
                                                             CssClass="btn btn-outline-secondary"
@@ -1395,7 +1395,7 @@
                                                     <asp:TemplateField HeaderText="Estado viaje">
                                                         <ItemTemplate><%# ChipEstadoViaje(Eval("EstadoViaje")) %></ItemTemplate>
                                                     </asp:TemplateField>
-                                                    <asp:TemplateField HeaderText="Acciones" ItemStyle-CssClass="text-end" HeaderStyle-CssClass="text-end">
+                                                    <asp:TemplateField HeaderText="Acciones" ItemStyle-CssClass="text-right" HeaderStyle-CssClass="text-right">
                                                         <ItemTemplate>
                                                             <asp:Button runat="server"
                                                                 Text="Editar"
@@ -1527,6 +1527,5 @@
         });
     </script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/RegistroDespacho.js") %>"></script>
-    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/RegistroDespacho-2.css") %>" rel="stylesheet" />
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/RegistroDespacho-2.js") %>"></script>
 </asp:Content>

@@ -36,7 +36,7 @@
 })();
 
 // Limpiar is-invalid cuando el usuario empieza a corregir un campo
-$(document).on('input change', '.form-control.is-invalid, .form-select.is-invalid', function () {
+$(document).on('input change', '.form-control.is-invalid, .custom-select.is-invalid', function () {
     if (this.value.trim() !== '') {
         this.classList.remove('is-invalid');
         // Select2

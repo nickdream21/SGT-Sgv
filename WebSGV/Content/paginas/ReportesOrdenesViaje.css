@@ -354,7 +354,7 @@
 }
 
 /* === FORMS === */
-.form-label {
+.sgv-etiqueta {
     font-weight: 600;
     color: var(--sgv-texto-suave);
     margin-bottom: 0.5rem;
@@ -412,7 +412,7 @@
 }
 
 /* === RESPONSIVE === */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
     .tabs-navigation {
         flex-direction: column;
     }

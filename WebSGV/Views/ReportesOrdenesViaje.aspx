@@ -60,21 +60,21 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= txtFechaDesde.ClientID %>" class="form-label">Fecha desde</label>
+                                <label for="<%= txtFechaDesde.ClientID %>" class="sgv-etiqueta">Fecha desde</label>
                                  <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                 <small id="errFechaDesde" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= txtFechaHasta.ClientID %>" class="form-label">Fecha hasta</label>
+                                <label for="<%= txtFechaHasta.ClientID %>" class="sgv-etiqueta">Fecha hasta</label>
                                  <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                 <small id="errFechaHasta" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= txtFactorConversion.ClientID %>" class="form-label">Factor de Conversión ($ a S/)</label>
+                                <label for="<%= txtFactorConversion.ClientID %>" class="sgv-etiqueta">Factor de Conversión ($ a S/)</label>
                                 <div class="input-group">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text">S/</span>
@@ -86,7 +86,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <span class="form-label d-inline-block" aria-hidden="true">&nbsp;</span>
+                                <span class="sgv-etiqueta d-inline-block" aria-hidden="true">&nbsp;</span>
                                 <div>
                                     <asp:Button ID="btnBuscarLiquidaciones" runat="server" Text="Buscar"
                                         CssClass="btn btn-primary-custom btn-block" OnClick="btnBuscarLiquidaciones_Click" />
@@ -252,7 +252,7 @@
                     <div class="row">
                         <div class="col-md-5">
                             <div class="form-group">
-                                <label for="<%= txtBuscarConductor.ClientID %>" class="form-label">Buscar conductor</label>
+                                <label for="<%= txtBuscarConductor.ClientID %>" class="sgv-etiqueta">Buscar conductor</label>
                                  <asp:TextBox ID="txtBuscarConductor" runat="server" CssClass="form-control"
                                      placeholder="Nombre, apellido o DNI" autocomplete="off" AutoCompleteType="Disabled"
                                      spellcheck="false" autocapitalize="off" autocorrect="off"></asp:TextBox>
@@ -261,7 +261,7 @@
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
-                                <label for="<%= ddlEstadoViaje.ClientID %>" class="form-label">Estado del viaje</label>
+                                <label for="<%= ddlEstadoViaje.ClientID %>" class="sgv-etiqueta">Estado del viaje</label>
                                  <asp:DropDownList ID="ddlEstadoViaje" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="ABIERTO" Text="Abierto" Selected="True"></asp:ListItem>
                                 </asp:DropDownList>
@@ -270,7 +270,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <span class="form-label d-inline-block" aria-hidden="true">&nbsp;</span>
+                                <span class="sgv-etiqueta d-inline-block" aria-hidden="true">&nbsp;</span>
                                 <div>
                                     <asp:Button ID="btnBuscarViajesActivos" runat="server" Text="Buscar"
                                         CssClass="btn btn-primary-custom btn-block" OnClick="btnBuscarViajesActivos_Click" />
@@ -374,21 +374,21 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= txtPersFechaDesde.ClientID %>" class="form-label">Fecha desde</label>
+                                <label for="<%= txtPersFechaDesde.ClientID %>" class="sgv-etiqueta">Fecha desde</label>
                                  <asp:TextBox ID="txtPersFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                 <small id="errPersFechaDesde" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= txtPersFechaHasta.ClientID %>" class="form-label">Fecha hasta</label>
+                                <label for="<%= txtPersFechaHasta.ClientID %>" class="sgv-etiqueta">Fecha hasta</label>
                                  <asp:TextBox ID="txtPersFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
                                 <small id="errPersFechaHasta" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= ddlPersEstado.ClientID %>" class="form-label">Estado de la liquidación</label>
+                                <label for="<%= ddlPersEstado.ClientID %>" class="sgv-etiqueta">Estado de la liquidación</label>
                                  <%-- Opciones: FiltroEstadoLiquidacion.Opciones (CargarEstadosPersonalizado). --%>
                                  <asp:DropDownList ID="ddlPersEstado" runat="server" CssClass="form-control">
                                  </asp:DropDownList>
@@ -397,7 +397,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= ddlPersConductor.ClientID %>" class="form-label">Conductor</label>
+                                <label for="<%= ddlPersConductor.ClientID %>" class="sgv-etiqueta">Conductor</label>
                                  <asp:DropDownList ID="ddlPersConductor" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="0" Text="Todos los conductores"></asp:ListItem>
                                 </asp:DropDownList>
@@ -408,7 +408,7 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= ddlPersCliente.ClientID %>" class="form-label">Cliente</label>
+                                <label for="<%= ddlPersCliente.ClientID %>" class="sgv-etiqueta">Cliente</label>
                                  <asp:DropDownList ID="ddlPersCliente" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="0" Text="Todos los clientes"></asp:ListItem>
                                 </asp:DropDownList>
@@ -417,14 +417,14 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= txtPersPlacaTracto.ClientID %>" class="form-label">Placa tracto</label>
+                                <label for="<%= txtPersPlacaTracto.ClientID %>" class="sgv-etiqueta">Placa tracto</label>
                                  <asp:TextBox ID="txtPersPlacaTracto" runat="server" CssClass="form-control" placeholder="Ej. ABC-123"></asp:TextBox>
                                 <small id="errPersPlaca" class="text-danger d-none"></small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= txtPersCategoria.ClientID %>" class="form-label">
+                                <label for="<%= txtPersCategoria.ClientID %>" class="sgv-etiqueta">
                                     Categoría de Gasto Adicional
                                     <i class="fas fa-info-circle ml-1 text-muted" title="Solo incluye viajes con la categoría indicada (ej: propina, cochera, lavado)"></i>
                                 </label>
@@ -434,7 +434,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= ddlPersOrden.ClientID %>" class="form-label">Ordenar por</label>
+                                <label for="<%= ddlPersOrden.ClientID %>" class="sgv-etiqueta">Ordenar por</label>
                                  <asp:DropDownList ID="ddlPersOrden" runat="server" CssClass="form-control">
                                     <asp:ListItem Value="fecha_desc" Text="Fecha (más reciente primero)" Selected="True"></asp:ListItem>
                                     <asp:ListItem Value="fecha_asc" Text="Fecha (más antigua primero)"></asp:ListItem>
@@ -446,7 +446,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= txtPersFactor.ClientID %>" class="form-label">Factor de Conversión ($ a S/)</label>
+                                <label for="<%= txtPersFactor.ClientID %>" class="sgv-etiqueta">Factor de Conversión ($ a S/)</label>
                                 <div class="input-group">
                                     <div class="input-group-prepend">
                                         <span class="input-group-text">S/</span>
@@ -460,7 +460,7 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div class="form-group">
-                                <label for="<%= txtPersTitulo.ClientID %>" class="form-label">Título del reporte</label>
+                                <label for="<%= txtPersTitulo.ClientID %>" class="sgv-etiqueta">Título del reporte</label>
                                  <asp:TextBox ID="txtPersTitulo" runat="server" CssClass="form-control"
                                      Text="Reporte personalizado de órdenes de viaje"></asp:TextBox>
                                 <small id="errPersTitulo" class="text-danger d-none"></small>

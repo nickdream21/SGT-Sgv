@@ -27,7 +27,7 @@ body { background: var(--sgv-fondo-pagina); font-family: var(--sgv-fuente); colo
 .vd-tabla { font-size: 13px; }
 .vd-legal { text-align: center; font-size: 11px; color: var(--sgv-texto-suave); }
 
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
     .vd-datos { grid-template-columns: 1fr; }
     .vd-busqueda { flex-direction: column; }
 }

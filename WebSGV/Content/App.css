@@ -40,20 +40,14 @@
     vertical-align: middle !important;
 }
 
-/* === Tarjetas === */
+/* === Tarjetas ===
+   .card.shadow-sm (unas 45 tarjetas de catálogos y reportes) y .mb-0.font-weight-bold (hoy solo la etiqueta
+   "Placas de los tractos" de ReporteGps) siguen vivas: quitarlas cambia lo que se ve; se van con esas páginas
+   en E5-16/E5-17 (M-144). .card-body.p-3 y .card-title.mb-1 se quitaron en E5-13 (sin usos). */
 .card.shadow-sm {
     border-radius: var(--sgv-radio) !important;
     overflow: hidden !important;
     margin-bottom: 1rem !important;
-}
-
-.card-body.p-3 {
-    padding: 15px !important;
-}
-
-.card-title.mb-1 {
-    margin-bottom: 5px !important;
-    font-size: 0.9rem !important;
 }
 
 .mb-0.font-weight-bold {
@@ -157,8 +151,8 @@
     border: 2px solid var(--sgv-borde);
 }
 
-/* === Tablets === */
-@media (max-width: 768px) {
+/* === Tablets y celular (< 768 px) === */
+@media (max-width: 767.98px) {
     .table thead th {
         font-size: 12px !important;
     }
@@ -167,17 +161,13 @@
         padding: 10px !important;
     }
 
-    .card-title.mb-1 {
-        font-size: 0.8rem !important;
-    }
-
     .mb-0.font-weight-bold {
         font-size: 1.2rem !important;
     }
 }
 
-/* === Móviles === */
-@media (max-width: 576px) {
+/* === Celular (< 576 px) === */
+@media (max-width: 575.98px) {
     .table thead th {
         font-size: 11px !important;
         padding: 6px 4px !important;
@@ -191,10 +181,6 @@
         padding: 8px !important;
     }
 
-    .card-title.mb-1 {
-        font-size: 0.7rem !important;
-    }
-
     .mb-0.font-weight-bold {
         font-size: 1rem !important;
     }
@@ -205,5 +191,68 @@
     .table thead th {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+    }
+}
+
+/* ===== Ajustes generales para celular (antes responsive-mobile.css, unida en E5-13: se cargaba justo
+   después de esta hoja, antes que sgv-base.css, SiteMaster.css y el CSS de cada página) =====
+   La tarjeta de montos .financial-card pasó a LiquidacionesPendientes.css (su única página). */
+
+/* ===== Celular (< 768 px) ===== */
+@media (max-width: 767.98px) {
+    /* El .text-muted más oscuro del celular está en sgv-base.css (aquí perdía por orden de carga). */
+
+    /* Headers más grandes en móvil */
+    .page-title {
+        font-size: 1.5rem !important;
+    }
+
+    .section-title {
+        font-size: 1.1rem !important;
+    }
+}
+
+/* ===== Celular angosto (< 576 px) ===== */
+@media (max-width: 575.98px) {
+    .page-title {
+        font-size: 1.25rem !important;
+    }
+}
+
+/* ===== Campos y botones en el celular (< 768 px) ===== */
+@media (max-width: 767.98px) {
+
+    /* 16px evita el zoom automático de iOS al enfocar (incluye date/datetime-local/select2).
+       Los botones <input type=submit|button> (asp:Button) quedan fuera: no reciben teclado. */
+    input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=submit]):not([type=button]):not([type=reset]):not([type=image]):not([type=hidden]),
+    select,
+    textarea,
+    .select2-selection,
+    .select2-search__field {
+        font-size: 16px !important;
+    }
+
+    /* Área táctil cómoda sin recortar el texto: el alto crece con el contenido.
+       Sin !important: la especificidad (0,3,1) ya le gana a .form-control y .form-control-sm de
+       Bootstrap, y los estilos inline compactos de una página siguen mandando. */
+    .form-control:not(textarea):not([multiple]):not([size]),
+    .custom-select:not([multiple]):not([size]) {
+        height: auto;
+        min-height: 44px;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    /* Botones más grandes */
+    .btn {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        min-height: 44px;
+    }
+
+    .btn-sm {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+        min-height: 38px;
     }
 }

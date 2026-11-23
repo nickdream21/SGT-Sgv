@@ -25,7 +25,7 @@ namespace WebSGV.Tests
         private static readonly string[] EnvoltoriosConDesplazamiento =
         {
             "data-grid-container",   // ListaDespachos.css
-            "tabla-scroll-wrapper",  // ListaDespachos-2.css
+            "tabla-scroll-wrapper",  // ListaDespachos.css (antes ListaDespachos-2.css)
             "de-table-wrap",         // Exportacion/DashboardExportacion.css
             "sx-tabla-caja",         // Exportacion/SeguimientoExportacion.css
         };
@@ -122,14 +122,17 @@ namespace WebSGV.Tests
         }
 
         [Fact]
-        public void ResponsiveMobileCss_NoFuerzaRellenoEnLosInputs()
+        public void AjustesDeCelular_NoFuerzanRellenoEnLosInputs()
         {
             // El bloque anterior (padding: .75rem !important en todos los inputs) recortaba el texto de
             // los .form-control de 38 px y pisaba los estilos compactos de cada página.
-            string css = File.ReadAllText(Path.Combine(RaizWeb(), "Content", "responsive-mobile.css"));
+            // Desde E5-13 los ajustes de celular (antes responsive-mobile.css) están al final de App.css.
+            Assert.False(File.Exists(Path.Combine(RaizWeb(), "Content", "responsive-mobile.css")),
+                "responsive-mobile.css se unió al final de App.css en E5-13: no debe volver.");
+            string css = File.ReadAllText(Path.Combine(RaizWeb(), "Content", "App.css"));
             Assert.DoesNotMatch(new Regex(@"select\s*\{[^}]*padding:\s*0\.75rem\s*!important", RegexOptions.IgnoreCase), css);
             Assert.Contains("font-size: 16px !important", css);
-            Assert.Contains("Ó", css);   // guardado en UTF-8 (antes estaba en Windows-1252)
+            Assert.Contains("automático", css);   // guardado en UTF-8 (antes estaba en Windows-1252)
             // .total-row también puede ser un <tr> en un tfoot: un display:flex sin acotar
             // a <div> desarmaba los anchos de la tabla de ingresos y gastos.
             // La regla :where(div).total-row se quitó en E3-8 (M-057): ninguna página usa ya esa clase.

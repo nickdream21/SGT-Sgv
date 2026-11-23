@@ -9,7 +9,7 @@
                 <asp:Panel ID="pnlFormulario" runat="server">
                     <!-- Cliente asociado -->
                     <div class="form-group">
-                        <label for="<%= ddlCliente.ClientID %>" class="form-label">Cliente: <span class="text-danger">*</span></label>
+                        <label for="<%= ddlCliente.ClientID %>" class="sgv-etiqueta">Cliente: <span class="text-danger">*</span></label>
                         <asp:DropDownList ID="ddlCliente" runat="server" CssClass="form-control" required="required"></asp:DropDownList>
                         <asp:RequiredFieldValidator ID="rfvCliente" runat="server" 
                             ControlToValidate="ddlCliente"
@@ -22,7 +22,7 @@
 
                     <!-- Nombre del producto -->
                     <div class="form-group">
-                        <label for="<%= txtNombre.ClientID %>" class="form-label">Nombre del producto: <span class="text-danger">*</span></label>
+                        <label for="<%= txtNombre.ClientID %>" class="sgv-etiqueta">Nombre del producto: <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control" required="required"></asp:TextBox>
                         <asp:RequiredFieldValidator ID="rfvNombre" runat="server" 
                             ControlToValidate="txtNombre" 
@@ -34,7 +34,7 @@
 
                     <!-- Descripción -->
                     <div class="form-group">
-                        <label for="<%= txtDescripcion.ClientID %>" class="form-label">Descripción (opcional):</label>
+                        <label for="<%= txtDescripcion.ClientID %>" class="sgv-etiqueta">Descripción (opcional):</label>
                         <asp:TextBox ID="txtDescripcion" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="3"></asp:TextBox>
                     </div>
 

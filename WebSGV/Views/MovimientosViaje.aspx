@@ -19,14 +19,14 @@
                     <div class="sgv-panel-cab"><h5>Nuevo registro</h5></div>
                     <div class="sgv-panel-cuerpo">
                         <div class="form-group">
-                            <label class="form-label" for="<%= ddlConductor.ClientID %>">Conductor <span class="text-danger">*</span></label>
+                            <label class="sgv-etiqueta" for="<%= ddlConductor.ClientID %>">Conductor <span class="text-danger">*</span></label>
                             <asp:DropDownList ID="ddlConductor" runat="server" CssClass="form-control" AutoPostBack="true"
                                 OnSelectedIndexChanged="ddlConductor_SelectedIndexChanged" />
                             <small class="sgv-suave"><asp:Literal ID="litViajeEnCurso" runat="server" /></small>
                         </div>
 
                         <div class="form-group">
-                            <span class="form-label d-block mb-2" id="lblTipoMovimiento">Tipo</span>
+                            <span class="sgv-etiqueta d-block mb-2" id="lblTipoMovimiento">Tipo</span>
                             <div role="radiogroup" aria-labelledby="lblTipoMovimiento">
                                 <asp:RadioButtonList ID="rblTipo" runat="server" RepeatDirection="Horizontal" CssClass="mv-tipo" ClientIDMode="Static">
                                     <asp:ListItem Value="ENTREGA" Selected="True">Entrega de dinero al conductor</asp:ListItem>
@@ -39,11 +39,11 @@
 
                         <div class="form-row">
                             <div class="form-group col-12 col-sm-6">
-                                <label class="form-label" for="<%= txtFecha.ClientID %>">Fecha y hora <span class="text-danger">*</span></label>
+                                <label class="sgv-etiqueta" for="<%= txtFecha.ClientID %>">Fecha y hora <span class="text-danger">*</span></label>
                                 <asp:TextBox ID="txtFecha" runat="server" CssClass="form-control" TextMode="DateTimeLocal" />
                             </div>
                             <div class="form-group col-12 col-sm-6">
-                                <label for="<%= ddlConceptoEntrega.ClientID %>" class="form-label">Concepto <span class="text-danger">*</span></label>
+                                <label for="<%= ddlConceptoEntrega.ClientID %>" class="sgv-etiqueta">Concepto <span class="text-danger">*</span></label>
                                 <asp:DropDownList ID="ddlConceptoEntrega" runat="server" CssClass="form-control mv-solo-entrega" />
                                 <asp:DropDownList ID="ddlConceptoPago" runat="server" CssClass="form-control mv-solo-pago" style="display:none;" aria-label="Concepto" />
                             </div>
@@ -51,22 +51,22 @@
 
                         <div class="form-row">
                             <div class="form-group col-12 col-sm-6">
-                                <label class="form-label" for="<%= txtSoles.ClientID %>">Soles (S/)</label>
+                                <label class="sgv-etiqueta" for="<%= txtSoles.ClientID %>">Soles (S/)</label>
                                 <asp:TextBox ID="txtSoles" runat="server" CssClass="form-control" inputmode="decimal" autocomplete="off" data-monto="true" placeholder="0.00" />
                             </div>
                             <div class="form-group col-12 col-sm-6">
-                                <label class="form-label" for="<%= txtDolares.ClientID %>">Dólares (US$)</label>
+                                <label class="sgv-etiqueta" for="<%= txtDolares.ClientID %>">Dólares (US$)</label>
                                 <asp:TextBox ID="txtDolares" runat="server" CssClass="form-control" inputmode="decimal" autocomplete="off" data-monto="true" placeholder="0.00" />
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group col-12 col-sm-6">
-                                <label class="form-label" for="<%= ddlMedio.ClientID %>">Medio <span class="text-danger">*</span></label>
+                                <label class="sgv-etiqueta" for="<%= ddlMedio.ClientID %>">Medio <span class="text-danger">*</span></label>
                                 <asp:DropDownList ID="ddlMedio" runat="server" CssClass="form-control" />
                             </div>
                             <div class="form-group col-12 col-sm-6">
-                                <label class="form-label" for="<%= txtOperacion.ClientID %>">N.° de operación</label>
+                                <label class="sgv-etiqueta" for="<%= txtOperacion.ClientID %>">N.° de operación</label>
                                 <asp:TextBox ID="txtOperacion" runat="server" CssClass="form-control" MaxLength="50" placeholder="Yape / transferencia" />
                             </div>
                         </div>
@@ -74,27 +74,27 @@
                         <div class="mv-solo-pago" style="display:none;">
                             <div class="form-row">
                                 <div class="form-group col-12 col-sm-7">
-                                    <label class="form-label" for="<%= txtProveedor.ClientID %>">Proveedor <span class="text-danger">*</span></label>
+                                    <label class="sgv-etiqueta" for="<%= txtProveedor.ClientID %>">Proveedor <span class="text-danger">*</span></label>
                                     <asp:TextBox ID="txtProveedor" runat="server" CssClass="form-control" MaxLength="150" placeholder="Ej.: Llantería El Rápido" />
                                 </div>
                                 <div class="form-group col-12 col-sm-5">
-                                    <label class="form-label" for="<%= txtRuc.ClientID %>">RUC</label>
+                                    <label class="sgv-etiqueta" for="<%= txtRuc.ClientID %>">RUC</label>
                                     <asp:TextBox ID="txtRuc" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="11" placeholder="11 dígitos" />
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label class="form-label" for="<%= txtComprobante.ClientID %>">Comprobante (factura / boleta)</label>
+                                <label class="sgv-etiqueta" for="<%= txtComprobante.ClientID %>">Comprobante (factura / boleta)</label>
                                 <asp:TextBox ID="txtComprobante" runat="server" CssClass="form-control" MaxLength="30" placeholder="Ej.: F001-000123" />
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="<%= txtDescripcion.ClientID %>">Detalle</label>
+                            <label class="sgv-etiqueta" for="<%= txtDescripcion.ClientID %>">Detalle</label>
                             <asp:TextBox ID="txtDescripcion" runat="server" CssClass="form-control" MaxLength="250" placeholder="Opcional: dónde, por qué, autorizado por…" />
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label" for="<%= fuAdjunto.ClientID %>">Captura del Yape o comprobante (PDF o imagen, opcional)</label>
+                            <label class="sgv-etiqueta" for="<%= fuAdjunto.ClientID %>">Captura del Yape o comprobante (PDF o imagen, opcional)</label>
                             <asp:FileUpload ID="fuAdjunto" runat="server" CssClass="form-control-file" accept=".pdf,.jpg,.jpeg,.png" />
                         </div>
 
@@ -156,7 +156,7 @@
                     <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button></div>
                 <div class="modal-body">
                     <asp:HiddenField ID="hfIdAnular" runat="server" ClientIDMode="Static" />
-                    <label class="form-label" for="<%= txtMotivoAnular.ClientID %>">Motivo <span class="text-danger">*</span></label>
+                    <label class="sgv-etiqueta" for="<%= txtMotivoAnular.ClientID %>">Motivo <span class="text-danger">*</span></label>
                     <asp:TextBox ID="txtMotivoAnular" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="2" MaxLength="250"
                         placeholder="Ej.: Se registró dos veces." />
                     <small class="sgv-suave">Queda registrado; no se borra.</small>

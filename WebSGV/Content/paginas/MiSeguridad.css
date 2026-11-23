@@ -55,7 +55,7 @@
     padding: 2px 0;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 575.98px) {
     .ms-codigos {
         columns: 1;
     }

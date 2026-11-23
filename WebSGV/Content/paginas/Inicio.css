@@ -55,7 +55,7 @@
 }
 
 /* Media query para dispositivos móviles */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
     .inicio-titulo {
         font-size: 1.75rem;
     }

@@ -1524,7 +1524,7 @@ namespace WebSGV.Views
             foreach (DataRow r in RegistroDespachoService.ObtenerPlantasPorAmbito(false).Rows)
                 ddlPlantaImp.Items.Add(new ListItem(r["nombre"].ToString(), r["idPlanta"].ToString()));
             RestaurarSeleccion(ddlPlantaImp, imp.IdPlantaSugerida?.ToString());
-            ddlPlantaImp.CssClass = "form-select form-select-sm" + (imp.IdPlantaSugerida.HasValue ? "" : " is-invalid");
+            ddlPlantaImp.CssClass = "custom-select custom-select-sm" + (imp.IdPlantaSugerida.HasValue ? "" : " is-invalid");
         }
 
         protected void rptTractosImportados_ItemDataBound(object sender, RepeaterItemEventArgs e)

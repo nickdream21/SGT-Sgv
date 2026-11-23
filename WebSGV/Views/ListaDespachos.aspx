@@ -2,6 +2,8 @@
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
+<%-- select2.min.css va antes de la hoja de la página: sus reglas de select2 (antes en ListaDespachos-2.css, que se cargaba al final) deben ganarle. --%>
+<link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/select2-4.0.13/select2.min.css") %>" rel="stylesheet" />
 <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/ListaDespachos.css") %>" rel="stylesheet" />
 
     <div class="container-fluid">
@@ -614,7 +616,7 @@
                                                 <div class="row mb-3">
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label for="<%= txtFechaProgramacionEdit.ClientID %>" class="form-label required">Fecha de programación:</label>
+                                                            <label for="<%= txtFechaProgramacionEdit.ClientID %>" class="sgv-etiqueta required">Fecha de programación:</label>
                                                             <asp:TextBox ID="txtFechaProgramacionEdit" runat="server" 
                                                                 CssClass="form-control" 
                                                                 TextMode="Date">
@@ -630,7 +632,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label for="<%= txtClienteEdit.ClientID %>" class="form-label">Cliente:</label>
+                                                            <label for="<%= txtClienteEdit.ClientID %>" class="sgv-etiqueta">Cliente:</label>
                                                             <asp:TextBox ID="txtClienteEdit" runat="server" 
                                                                 CssClass="form-control readonly-field" 
                                                                 ReadOnly="true">
@@ -640,7 +642,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label for="<%= txtNumeroPedidoEdit.ClientID %>" class="form-label">N° de Pedido:</label>
+                                                            <label for="<%= txtNumeroPedidoEdit.ClientID %>" class="sgv-etiqueta">N° de Pedido:</label>
                                                             <asp:TextBox ID="txtNumeroPedidoEdit" runat="server" 
                                                                 CssClass="form-control" 
                                                                 placeholder="Ej: 1234567890"
@@ -651,9 +653,9 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label for="<%= ddlPlantaEdit.ClientID %>" class="form-label required">Planta de operación:</label>
+                                                            <label for="<%= ddlPlantaEdit.ClientID %>" class="sgv-etiqueta required">Planta de operación:</label>
                                                             <%-- Opciones cargadas desde el catálogo Planta en CargarPlantasFiltro(). --%>
-                                                            <asp:DropDownList ID="ddlPlantaEdit" runat="server" CssClass="form-select">
+                                                            <asp:DropDownList ID="ddlPlantaEdit" runat="server" CssClass="custom-select">
                                                             </asp:DropDownList>
                                                             <asp:RequiredFieldValidator ID="rfvPlantaEdit" runat="server"
                                                                 ControlToValidate="ddlPlantaEdit"
@@ -671,8 +673,8 @@
                                                 <div class="row mb-3">
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label for="<%= ddlTipoOperacionEdit.ClientID %>" class="form-label required">Tipo de operación:</label>
-                                                            <asp:DropDownList ID="ddlTipoOperacionEdit" runat="server" CssClass="form-select"
+                                                            <label for="<%= ddlTipoOperacionEdit.ClientID %>" class="sgv-etiqueta required">Tipo de operación:</label>
+                                                            <asp:DropDownList ID="ddlTipoOperacionEdit" runat="server" CssClass="custom-select"
                                                                 AutoPostBack="true" OnSelectedIndexChanged="ddlTipoOperacionEdit_SelectedIndexChanged">
                                                                 <asp:ListItem Value="" Text="-- Seleccione --"></asp:ListItem>
                                                                 <asp:ListItem Value="CARGA" Text="Carga"></asp:ListItem>
@@ -680,7 +682,7 @@
                                                             </asp:DropDownList>
                                                         </div>
                                                         <div class="form-group mt-2">
-                                                            <span class="form-label required" id="lblAmbitoEdit">Ámbito:</span>
+                                                            <span class="sgv-etiqueta required" id="lblAmbitoEdit">Ámbito:</span>
                                                             <div role="radiogroup" aria-labelledby="lblAmbitoEdit">
                                                                 <asp:RadioButtonList ID="rblAmbitoEdit" runat="server" CssClass="rbl-inline"
                                                                     AutoPostBack="true" OnSelectedIndexChanged="rblAmbitoEdit_SelectedIndexChanged"
@@ -702,21 +704,21 @@
                                                             </div>
                                                             <div class="doc-panel-content">
                                                                 <div class="form-group">
-                                                                    <label for="<%= txtNumeroFacturaEdit.ClientID %>" class="form-label">N° Factura:</label>
+                                                                    <label for="<%= txtNumeroFacturaEdit.ClientID %>" class="sgv-etiqueta">N° Factura:</label>
                                                                     <asp:TextBox ID="txtNumeroFacturaEdit" runat="server" 
                                                                         CssClass="form-control" 
                                                                         placeholder="Ej: F222 - 00004267">
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label for="<%= txtFechaEmisionFacturaEdit.ClientID %>" class="form-label">Fecha emisión:</label>
+                                                                    <label for="<%= txtFechaEmisionFacturaEdit.ClientID %>" class="sgv-etiqueta">Fecha emisión:</label>
                                                                     <asp:TextBox ID="txtFechaEmisionFacturaEdit" runat="server" 
                                                                         CssClass="form-control" 
                                                                         TextMode="Date">
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label for="<%= txtValorTotalFacturaEdit.ClientID %>" class="form-label">Valor total:</label>
+                                                                    <label for="<%= txtValorTotalFacturaEdit.ClientID %>" class="sgv-etiqueta">Valor total:</label>
                                                                     <asp:TextBox ID="txtValorTotalFacturaEdit" runat="server"
                                                                         CssClass="form-control"
                                                                         placeholder="0.00"
@@ -724,8 +726,8 @@
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label for="<%= ddlMonedaFacturaEdit.ClientID %>" class="form-label">Moneda:</label>
-                                                                    <asp:DropDownList ID="ddlMonedaFacturaEdit" runat="server" CssClass="form-select">
+                                                                    <label for="<%= ddlMonedaFacturaEdit.ClientID %>" class="sgv-etiqueta">Moneda:</label>
+                                                                    <asp:DropDownList ID="ddlMonedaFacturaEdit" runat="server" CssClass="custom-select">
                                                                         <asp:ListItem Value="PEN" Text="Soles (PEN)"></asp:ListItem>
                                                                         <asp:ListItem Value="USD" Text="Dólares (USD)"></asp:ListItem>
                                                                     </asp:DropDownList>
@@ -745,7 +747,7 @@
                                                             </div>
                                                             <div class="doc-panel-content">
                                                                 <div class="form-group">
-                                                                    <label for="<%= txtNumeroCPICEdit.ClientID %>" class="form-label">N° CPIC:</label>
+                                                                    <label for="<%= txtNumeroCPICEdit.ClientID %>" class="sgv-etiqueta">N° CPIC:</label>
                                                                     <asp:TextBox ID="txtNumeroCPICEdit" runat="server" 
                                                                         CssClass="form-control" 
                                                                         placeholder="Ej: 1234567"
@@ -753,14 +755,14 @@
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label for="<%= txtFechaEmisionCPICEdit.ClientID %>" class="form-label">Fecha emisión CPIC:</label>
+                                                                    <label for="<%= txtFechaEmisionCPICEdit.ClientID %>" class="sgv-etiqueta">Fecha emisión CPIC:</label>
                                                                     <asp:TextBox ID="txtFechaEmisionCPICEdit" runat="server" 
                                                                         CssClass="form-control" 
                                                                         TextMode="Date">
                                                                     </asp:TextBox>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <label for="<%= txtValorFleteEdit.ClientID %>" class="form-label">Valor flete:</label>
+                                                                    <label for="<%= txtValorFleteEdit.ClientID %>" class="sgv-etiqueta">Valor flete:</label>
                                                                     <asp:TextBox ID="txtValorFleteEdit" runat="server"
                                                                         CssClass="form-control"
                                                                         placeholder="0.00"
@@ -808,7 +810,7 @@
                                                                             <asp:BoundField DataField="IdDespacho" HeaderText="ID" Visible="false" />
 
                                                                             <asp:BoundField DataField="NumeroDespacho" HeaderText="N° Despacho" 
-                                                                                ItemStyle-CssClass="despacho-number fw-bold" />
+                                                                                ItemStyle-CssClass="despacho-number font-weight-bold" />
 
                                                                             <asp:BoundField DataField="FechaDespacho" HeaderText="Fecha" 
                                                                                 DataFormatString="{0:dd/MM/yyyy}" />
@@ -824,7 +826,7 @@
                                                                             <asp:TemplateField HeaderText="Cambiar conductor">
                                                                                 <ItemTemplate>
                                                                                     <asp:DropDownList ID="ddlConductorDespacho" runat="server" 
-                                                                                        CssClass="form-select conductor-select" aria-label='<%# "Conductor del despacho " + Eval("NumeroDespacho") %>'>
+                                                                                        CssClass="custom-select conductor-select" aria-label='<%# "Conductor del despacho " + Eval("NumeroDespacho") %>'>
                                                                                     </asp:DropDownList>
                                                                                 </ItemTemplate>
                                                                             </asp:TemplateField>
@@ -839,7 +841,7 @@
                                                 <!-- Botones de Acción -->
                                                 <div class="form-actions">
                                                     <div class="row">
-                                                        <div class="col-md-6 text-start">
+                                                        <div class="col-md-6 text-left">
                                                             <asp:Button ID="btnAnularLote" runat="server"
                                                                 Text="Anular lote"
                                                                 CssClass="btn btn-warning"
@@ -851,7 +853,7 @@
                                                                 data-confirmar-aceptar="Anular lote"
                                                                 data-confirmar-peligro="true" />
                                                         </div>
-                                                        <div class="col-md-6 text-end">
+                                                        <div class="col-md-6 text-right">
                                                             <asp:Button ID="btnGuardarCambios" runat="server" 
                                                                 Text="Guardar cambios" 
                                                                 CssClass="btn btn-primary"
@@ -1436,8 +1438,6 @@
 </asp:Content>
 
 <asp:Content ID="Content2" ContentPlaceHolderID="ScriptsSection" runat="server">
-    <!-- Select2 CSS -->
-    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/select2-4.0.13/select2.min.css") %>" rel="stylesheet" />
     <!-- Select2 JS -->
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/select2-4.0.13.min.js") %>"></script>
     
@@ -1450,6 +1450,4 @@
         });
     </script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/ListaDespachos.js") %>"></script>
-    
-    <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/ListaDespachos-2.css") %>" rel="stylesheet" />
 </asp:Content>

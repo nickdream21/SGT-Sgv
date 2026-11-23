@@ -100,7 +100,7 @@
 .sx-manuales { border-top: 1px solid var(--sgv-borde); padding: 0.75rem 1rem 1rem; display: flex; flex-direction: column; gap: 0.625rem; }
 .sx-manuales h3 { margin: 0; font-size: 0.8125rem; font-weight: 600; color: var(--sgv-gris-600); text-transform: uppercase; letter-spacing: 0.04em; }
 .sx-rejilla { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.625rem; }
-@media (max-width: 520px) { .sx-rejilla { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 575.98px) { .sx-rejilla { grid-template-columns: minmax(0, 1fr); } }
 
 .sx-evidencia { padding: 0.875rem 1rem; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem; }
 .sx-evidencia dl { margin: 0; display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 0.375rem 0.625rem; }

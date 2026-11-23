@@ -24,6 +24,10 @@
  *       (colores, radios, sombras, fuente) y no la disposición. --detalle lista cada una.
  *
  * Hojas: WebSGV/Content/*.css y WebSGV/Content/paginas/**\/*.css (no Content/lib).
+ * Hojas unidas (E5-13, UNIDAS): contra una revisión en la que aún existían por separado, la hoja de
+ * antes es la concatenación de sus partes en el orden de carga, y verificar la compara sin comentarios
+ * ni diferencias de espacios (el texto de las reglas y su orden deben ser los mismos). En cambios, una
+ * hoja que existía en la revisión y ya no (ni está dentro de una unida) cuenta como quitada entera.
  * Quedan como literales: los data-URI (dentro de url()) y --de-f-* (los lee
  * DashboardExportacion.js para pintar las fases).
  */
@@ -38,6 +42,31 @@ const BASE = 'WebSGV/Content/sgv-base.css';
 
 // Variables de otras hojas que se quedan con su literal (lista cerrada; la repite EstilosTests).
 const LITERALES_PERMITIDOS = [/^--de-f-/];
+
+// Hojas unidas en E5-13: la hoja contiene, en este orden, las de antes (se cargaban seguidas).
+const UNIDAS = {
+    'WebSGV/Content/App.css': ['WebSGV/Content/App.css', 'WebSGV/Content/responsive-mobile.css'],
+    'WebSGV/Content/paginas/ListaDespachos.css': ['WebSGV/Content/paginas/ListaDespachos.css', 'WebSGV/Content/paginas/ListaDespachos-2.css'],
+    'WebSGV/Content/paginas/RegistroDespacho.css': ['WebSGV/Content/paginas/RegistroDespacho.css', 'WebSGV/Content/paginas/RegistroDespacho-2.css']
+};
+
+/** Texto de una hoja en <rev> ('' si no existía); si es una hoja unida y sus partes existían, las concatena. */
+function hojaEnRevision(rev, rel) {
+    const leerRev = r => {
+        try {
+            return cp.execFileSync('git', ['show', rev + ':' + r], { cwd: RAIZ, encoding: 'utf8', maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'] })
+                .replace(/^﻿/, '').replace(/\r\n/g, '\n');
+        } catch (e) { return null; }
+    };
+    const partes = (UNIDAS[rel] || [rel]).map(leerRev);
+    const unida = partes.length > 1 && partes.slice(1).every(p => p !== null);
+    return { texto: (unida ? partes : [partes[0]]).map(p => p || '').join('\n'), unida };
+}
+
+/** Sin comentarios y con los espacios reducidos: para comparar una hoja unida con sus partes. */
+function compacto(t) {
+    return t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\s+/g, ' ').replace(/\s*([{};:,>])\s*/g, '$1').trim();
+}
 
 // ---------------------------------------------------------------------------------------------
 // Paletas de referencia (valores exactos). El nombre solo describe; el valor es el literal.
@@ -455,8 +484,13 @@ function contarFuera(t, rel) {
 function verificar(rev) {
     const hojas = listarHojas();
     const antes = {};
-    const lf = s => s.replace(/\r\n/g, '\n');
-    for (const rel of hojas) antes[rel] = lf(cp.execFileSync('git', ['show', rev + ':' + rel], { cwd: RAIZ, encoding: 'utf8', maxBuffer: 1 << 26 }));
+    const unidas = new Set();
+    const lf = s => s.replace(/^﻿/, '').replace(/\r\n/g, '\n');
+    for (const rel of hojas) {
+        const h = hojaEnRevision(rev, rel);
+        antes[rel] = h.texto;
+        if (h.unida) unidas.add(rel);
+    }
     const ahora = {};
     for (const rel of hojas) ahora[rel] = lf(leer(rel));
     const tablaAntes = definicionesRaiz(hojas.map(h => antes[h]));
@@ -467,8 +501,9 @@ function verificar(rev) {
         let a = antes[rel], b = ahora[rel];
         if (rel === BASE) { a = sinRaiz(a); b = sinRaiz(b); }
         // Fuera de :root, cada var() resuelta con la tabla de su versión.
-        const na = normalizar(expandir(a, tablaAntes));
-        const nb = normalizar(expandir(b, tablaAhora));
+        let na = normalizar(expandir(a, tablaAntes));
+        let nb = normalizar(expandir(b, tablaAhora));
+        if (unidas.has(rel)) { na = compacto(na).replace(/}/g, '}\n'); nb = compacto(nb).replace(/}/g, '}\n'); }
         if (na !== nb) {
             difs++;
             const la = na.split('\n'), lb = nb.split('\n');
@@ -485,7 +520,8 @@ function verificar(rev) {
     }
     const fueraAntes = hojas.reduce((s, h) => s + contarFuera(antes[h], h), 0);
     const fueraAhora = hojas.reduce((s, h) => s + contarFuera(ahora[h], h), 0);
-    console.log('Hojas comparadas: ' + hojas.length + ' contra ' + rev + '. Diferencias: ' + difs + '.');
+    console.log('Hojas comparadas: ' + hojas.length + ' contra ' + rev
+        + (unidas.size ? ' (' + unidas.size + ' unidas, comparadas con sus partes concatenadas)' : '') + '. Diferencias: ' + difs + '.');
     console.log('Literales de color fuera de los :root permitidos: ' + rev + ' ' + fueraAntes + ', ahora ' + fueraAhora + '.');
     process.exitCode = difs === 0 ? 0 : 1;
 }
@@ -511,13 +547,17 @@ function valoresResueltos(t, tabla) {
 
 function cambios(rev, detalle) {
     const hojas = listarHojas();
-    const lf = s => s.replace(/\r\n/g, '\n');
+    const lf = s => s.replace(/^﻿/, '').replace(/\r\n/g, '\n');
     const antes = {}, ahora = {};
     for (const rel of hojas) {
-        try { antes[rel] = lf(cp.execFileSync('git', ['show', rev + ':' + rel], { cwd: RAIZ, encoding: 'utf8', maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'] })); }
-        catch (e) { antes[rel] = ''; }
+        antes[rel] = hojaEnRevision(rev, rel).texto;
         ahora[rel] = lf(leer(rel));
     }
+    // Hojas que existían en <rev> y ya no (ni están dentro de una unida): todo lo suyo cuenta como quitado.
+    const enUnidas = new Set([].concat(...Object.keys(UNIDAS).map(k => UNIDAS[k])));
+    const rastreadas = cp.execFileSync('git', ['ls-tree', '-r', '--name-only', rev, 'WebSGV/Content'], { cwd: RAIZ, encoding: 'utf8' })
+        .split('\n').filter(r => /\.css$/i.test(r) && !r.includes('/lib/') && !hojas.includes(r) && !enUnidas.has(r));
+    for (const rel of rastreadas) { hojas.push(rel); antes[rel] = hojaEnRevision(rev, rel).texto; ahora[rel] = ''; }
     const tablaAntes = definicionesRaiz(hojas.map(h => antes[h]));
     const tablaAhora = definicionesRaiz(hojas.map(h => ahora[h]));
     const porProp = {};

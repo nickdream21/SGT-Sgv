@@ -450,31 +450,6 @@ summary:focus-visible,
 .modal-header.sgv-modal-alerta { background-color: var(--sgv-ambar-50) !important; border-top-color: var(--sgv-alerta) !important; }
 .modal-header.sgv-modal-ok { background-color: var(--sgv-verde-50) !important; border-top-color: var(--sgv-ok) !important; }
 
-/* === Compatibilidad: clases de Bootstrap 5 que quedaron en el markup (el sitio usa Bootstrap 4.6) === */
-.form-select {
-    display: block;
-    width: 100%;
-    height: calc(1.5em + 0.75rem + 2px);
-    padding: 0.375rem 1.75rem 0.375rem 0.75rem;
-    font-size: 1rem;
-    line-height: 1.5;
-    color: var(--sgv-texto-medio);
-    background: var(--sgv-superficie) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%23343a40' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") no-repeat right 0.75rem center / 8px 10px;
-    border: 1px solid var(--sgv-borde-fuerte);
-    border-radius: 0.25rem;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-}
-.form-select:focus { border-color: var(--sgv-foco); outline: 0; box-shadow: 0 0 0 0.2rem rgba(var(--sgv-primario-rgb), 0.25); }
-.form-select:disabled { background-color: var(--sgv-fondo-pagina); }
-.fw-bold { font-weight: 700 !important; }
-.me-2 { margin-right: 0.5rem !important; }
-.ms-2 { margin-left: 0.5rem !important; }
-.text-end { text-align: right !important; }
-.text-start { text-align: left !important; }
-.gap-2 { gap: 0.5rem !important; }
-
 /* Botones de acción comunes. Antes solo existían en el CSS de tres páginas, y en las demás
    (p. ej. Dinero y pagos del viaje) el botón salía sin estilo. */
 .btn-primary-custom { background: var(--sgv-primario); border: 1px solid var(--sgv-primario); color: var(--sgv-blanco); font-weight: 500; padding: 0.5rem 1rem; }
@@ -536,13 +511,13 @@ a:hover { color: var(--sgv-primario-osc); }
 .form-control, .custom-select { border-color: var(--sgv-borde-fuerte); border-radius: var(--sgv-radio); color: var(--sgv-texto); }
 .form-control:focus, .custom-select:focus { border-color: var(--sgv-foco); box-shadow: 0 0 0 0.2rem rgba(var(--sgv-primario-rgb), 0.2); color: var(--sgv-texto); }
 .form-control::placeholder { color: var(--sgv-texto-suave); opacity: 1; }
-.form-control:disabled, .form-control[readonly] { background-color: var(--sgv-fondo); }
+.form-control:disabled, .form-control[readonly], .custom-select:disabled { background-color: var(--sgv-fondo); }
 .custom-control-input:checked ~ .custom-control-label::before { background-color: var(--sgv-primario); border-color: var(--sgv-primario); }
 .custom-control-input:focus ~ .custom-control-label::before { box-shadow: 0 0 0 0.2rem rgba(var(--sgv-primario-rgb), 0.25); }
 .input-group-text { background-color: var(--sgv-fondo); border-color: var(--sgv-borde-fuerte); color: var(--sgv-texto-medio); }
 .text-muted { color: var(--sgv-texto-suave) !important; }
-/* En el celular el texto apagado se oscurece un paso más (antes en responsive-mobile.css, que se carga antes y perdía). */
-@media (max-width: 768px) { .text-muted { color: var(--sgv-texto-medio) !important; } }
+/* En el celular el texto apagado se oscurece un paso más (antes en responsive-mobile.css, hoy al final de App.css, que se carga antes y perdía). */
+@media (max-width: 767.98px) { .text-muted { color: var(--sgv-texto-medio) !important; } }
 
 /* Pestañas: la activa en azul tinta, con una línea arriba (como la ceja de una carpeta). */
 .nav-tabs { border-bottom-color: var(--sgv-borde); }
