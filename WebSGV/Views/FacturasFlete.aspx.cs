@@ -116,7 +116,7 @@ namespace WebSGV.Views
             litResultadoCarga.Text = HtmlResultadoCarga(resultados);
             pnlResultadoCarga.Visible = true;
             int ok = resultados.Count(r => r.Ok);
-            MostrarMensaje($"{ok} de {resultados.Count} factura(s) registradas o al día.", ok == resultados.Count ? "success" : "warning");
+            MostrarMensaje($"{ok} de {resultados.Count} factura(s) registradas o al día.", ok == resultados.Count ? "success" : "warning", enPagina: true);
 
             // Muestra el período de las facturas subidas si no entran en el actual.
             var fechas = resultados.Where(r => r.Ok && r.Factura?.FechaEmision != null).Select(r => r.Factura.FechaEmision.Value).ToList();
@@ -457,10 +457,9 @@ namespace WebSGV.Views
 
         private static string H(string s) => HttpUtility.HtmlEncode(s ?? "");
 
-        private void MostrarMensaje(string mensaje, string tipo)
+        private void MostrarMensaje(string mensaje, string tipo, bool enPagina = false)
         {
-            pnlMensaje.Visible = true;
-            litMensaje.Text = $"<div class='alert alert-{tipo}'>{H(mensaje)}</div>";
+            AvisoHelper.Mostrar(Page, pnlMensaje, litMensaje, mensaje, tipo, enPagina: enPagina);
         }
     }
 }

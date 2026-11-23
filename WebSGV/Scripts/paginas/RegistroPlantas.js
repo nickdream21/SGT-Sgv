@@ -12,17 +12,9 @@
 });
 
 document.addEventListener('DOMContentLoaded', function () {
-    var msgPanel = document.getElementById(SGV.pnlMensaje);
     // Edición rechazada (B5-7): el error está dentro del modal, que se reabre con lo escrito
     if (document.getElementById(SGV.pnlErrorModal))
         $('#modalEditar').modal('show');
-    if (msgPanel && msgPanel.querySelector('.alert-success')) {
-        var ok = msgPanel.querySelector('.alert-success');
-        setTimeout(function () {
-            ok.style.transition = 'opacity .5s'; ok.style.opacity = '0';
-            setTimeout(function () { msgPanel.style.display = 'none'; }, 500);
-        }, 4000);
-    }
 });
 
 function filtrarTabla(valor, id) {

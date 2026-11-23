@@ -48,9 +48,9 @@
                                 </div>
 
                                 <!-- Mensajes -->
-                                <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-3">
+                                <asp:Panel ID="pnlMensajes" runat="server" Visible="false" EnableViewState="false" CssClass="mb-3">
                                     <div class="position-relative">
-                                        <asp:Label ID="lblMensaje" runat="server" CssClass="alert d-block mb-0 pr-5"></asp:Label>
+                                        <asp:Label ID="lblMensaje" runat="server" EnableViewState="false" CssClass="alert d-block mb-0 pr-5"></asp:Label>
                                         <button type="button" class="close position-absolute" style="top:.65rem;right:.75rem;"
                                             data-accion="cerrarBloqueMensaje" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                                     </div>
@@ -91,8 +91,8 @@
                                         </asp:Panel>
 
                                         <!-- Mensajes de la importación -->
-                                        <asp:Panel ID="pnlMensajeImportacion" runat="server" Visible="false" CssClass="mt-3">
-                                            <asp:Label ID="lblMensajeImportacion" runat="server" CssClass="alert d-block mb-0"></asp:Label>
+                                        <asp:Panel ID="pnlMensajeImportacion" runat="server" Visible="false" EnableViewState="false" CssClass="mt-3">
+                                            <asp:Label ID="lblMensajeImportacion" runat="server" EnableViewState="false" CssClass="alert d-block mb-0"></asp:Label>
                                         </asp:Panel>
 
                                         <!-- Programar con el Word: despachos de carga sin documentos todavía -->
@@ -447,8 +447,8 @@
                                             </div>
                                         </asp:Panel>
 
-                                        <asp:Panel ID="pnlMensajeDescarga" runat="server" Visible="false" CssClass="mt-3">
-                                            <asp:Label ID="lblMensajeDescarga" runat="server" CssClass="alert d-block mb-0"></asp:Label>
+                                        <asp:Panel ID="pnlMensajeDescarga" runat="server" Visible="false" EnableViewState="false" CssClass="mt-3">
+                                            <asp:Label ID="lblMensajeDescarga" runat="server" EnableViewState="false" CssClass="alert d-block mb-0"></asp:Label>
                                         </asp:Panel>
 
                                         <asp:Panel ID="pnlVistaDescarga" runat="server" Visible="false" CssClass="mt-3">
@@ -1054,9 +1054,9 @@
 
                                             <!-- Mensajes de esta sección: se muestran acá y no al tope de la página,
                                                  para que el usuario no tenga que subir a enterarse del error. -->
-                                            <asp:Panel ID="pnlMensajeConductor" runat="server" Visible="false" CssClass="mb-3">
+                                            <asp:Panel ID="pnlMensajeConductor" runat="server" Visible="false" EnableViewState="false" CssClass="mb-3">
                                                 <div class="position-relative">
-                                                    <asp:Label ID="lblMensajeConductor" runat="server" CssClass="alert d-block mb-0 pr-5"></asp:Label>
+                                                    <asp:Label ID="lblMensajeConductor" runat="server" EnableViewState="false" CssClass="alert d-block mb-0 pr-5"></asp:Label>
                                                     <button type="button" class="close position-absolute" style="top:.65rem;right:.75rem;"
                                                         data-accion="cerrarBloqueMensaje" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                                                 </div>

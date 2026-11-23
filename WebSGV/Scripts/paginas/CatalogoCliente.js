@@ -11,7 +11,6 @@
 });
 
 document.addEventListener('DOMContentLoaded', function () {
-    var msgPanel = document.getElementById(SGV.pnlMensaje);
     // Edición rechazada (B5-7): el error está dentro del modal, que se reabre con lo escrito
     if (document.getElementById(SGV.pnlErrorModal))
         $('#modalEditar').modal('show');

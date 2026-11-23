@@ -144,7 +144,7 @@ namespace WebSGV.Views
                 Session.Remove(SesionOrigen);
                 pnlVistaPrevia.Visible = false;
                 txtLista.Text = string.Empty;
-                MostrarMensaje($"Se guardaron {guardados} destino(s): {vista.Nuevos} nuevo(s) y {vista.Cambian} con cambio de planta.", true);
+                MostrarMensaje($"Se guardaron {guardados} destino(s): {vista.Nuevos} nuevo(s) y {vista.Cambian} con cambio de planta.", true, enPagina: true);
                 CargarDestinos();
             }
             catch (Exception ex)
@@ -242,11 +242,9 @@ namespace WebSGV.Views
             CargarDestinos();
         }
 
-        private void MostrarMensaje(string mensaje, bool esExito = false)
+        private void MostrarMensaje(string mensaje, bool esExito = false, bool enPagina = false)
         {
-            pnlMensaje.Visible = true;
-            string css = esExito ? "alert alert-success" : "alert alert-danger";
-            lblMensaje.Text = $"<div class='{css}'>{HttpUtility.HtmlEncode(mensaje)}</div>";
+            AvisoHelper.Mostrar(Page, pnlMensaje, lblMensaje, mensaje, esExito ? AvisoHelper.Exito : AvisoHelper.Peligro, enPagina: enPagina);
         }
     }
 }

@@ -885,8 +885,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            pnlMensaje.Visible = true;
-            litMensaje.Text = $"<div class='alert alert-{tipo} bd-alerta'>{H(mensaje)}</div>";
+            AvisoHelper.Mostrar(Page, pnlMensaje, litMensaje, mensaje, tipo, "bd-alerta");
         }
     }
 }

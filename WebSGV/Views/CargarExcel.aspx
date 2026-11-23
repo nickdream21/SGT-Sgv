@@ -7,8 +7,8 @@
         <h2 class="mt-4 mb-4">Carga de indicadores vía Excel</h2>
         
         <!-- Mensaje de alerta -->
-        <asp:Panel ID="alertPanel" runat="server" CssClass="alert alert-info" Visible="false">
-            <asp:Literal ID="alertMessage" runat="server"></asp:Literal>
+        <asp:Panel ID="alertPanel" runat="server" EnableViewState="false" Visible="false">
+            <asp:Literal ID="alertMessage" runat="server" EnableViewState="false"></asp:Literal>
         </asp:Panel>
         
         <!-- Instrucciones -->

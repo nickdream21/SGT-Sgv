@@ -12,8 +12,8 @@
             <a href="RegistroSeguimiento.aspx" class="sx-btn">← Volver al tablero</a>
         </div>
 
-        <asp:Panel ID="pnlMensaje" runat="server" Visible="false">
-            <asp:Literal ID="litMensaje" runat="server" />
+        <asp:Panel ID="pnlMensaje" runat="server" EnableViewState="false" Visible="false">
+            <asp:Literal ID="litMensaje" runat="server" EnableViewState="false" />
         </asp:Panel>
 
         <div class="sgv-panel">

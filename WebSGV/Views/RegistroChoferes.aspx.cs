@@ -121,11 +121,9 @@ namespace WebSGV.Views
             txtTelefono.Text = string.Empty;
         }
 
-        private void MostrarMensaje(string mensaje, bool esExito = false)
+        private void MostrarMensaje(string mensaje, bool esExito = false, bool enPagina = false)
         {
-            pnlMensaje.Visible = true;
-            string css = esExito ? "alert alert-success" : "alert alert-danger";
-            lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(mensaje)}</div>";
+            AvisoHelper.Mostrar(Page, pnlMensaje, lblMensaje, mensaje, esExito ? AvisoHelper.Exito : AvisoHelper.Peligro, enPagina: enPagina);
         }
 
         /// <summary>CommandArgument del botón Activar/Desactivar: "id|estadoDestino" (B5-3).</summary>
@@ -258,7 +256,7 @@ namespace WebSGV.Views
                 txtListaChoferes.Text = string.Empty;
                 var resumen = elegidos.GroupBy(c => c.Tipo)
                     .Select(g => $"{ListaChoferesService.TextoTipo(g.Key).ToLowerInvariant()}: {g.Count()}");
-                MostrarMensaje("Lista aplicada (" + string.Join(", ", resumen) + ").", true);
+                MostrarMensaje("Lista aplicada (" + string.Join(", ", resumen) + ").", true, enPagina: true);
                 CargarConductores();
             }
             catch (Exception ex)

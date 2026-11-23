@@ -18,22 +18,13 @@ function inicializarSelect2Conductores() {
 
 $(document).ready(function () {
     inicializarSelect2Conductores();
-    autoHideMessages();
     establecerFechasPorDefecto();
 });
 
 var prm = Sys.WebForms.PageRequestManager.getInstance();
 prm.add_endRequest(function () {
     inicializarSelect2Conductores();
-    autoHideMessages();
 });
-
-function autoHideMessages() {
-    setTimeout(function () {
-        // Los avisos de SGV.avisar (.sgv-aviso) tienen su propio tiempo.
-        $('.alert').not('.sgv-aviso').fadeOut('slow');
-    }, 5000);
-}
 
 function establecerFechasPorDefecto() {
     var hoy = new Date();

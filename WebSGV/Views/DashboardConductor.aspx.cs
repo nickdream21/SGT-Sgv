@@ -1123,19 +1123,14 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            // M-4: whitelist de tipos Bootstrap válidos para evitar CSS injection
-            var tiposPermitidos = new System.Collections.Generic.HashSet<string>
-                { "success", "danger", "warning", "info", "primary", "secondary" };
-            string tipoSeguro = tiposPermitidos.Contains(tipo) ? tipo : "info";
-
-            MostrarMensajeHtml(MensajeHtml.Texto(mensaje), tipoSeguro);
+            // M-4: AvisoHelper solo acepta tipos conocidos (lo demás es "info"): nada de texto libre en la clase.
+            AvisoHelper.Mostrar(Page, pnlMensajes, lblMensaje, mensaje, tipo);
         }
 
         // Solo para HTML armado aquí mismo con los datos ya codificados (MostrarResultadoExitoso).
         private void MostrarMensajeHtml(string htmlDeConfianza, string tipoSeguro)
         {
-            lblMensaje.Text = htmlDeConfianza;
-            lblMensaje.CssClass = $"alert alert-{tipoSeguro} alert-dismissible fade show";
+            AvisoHelper.PintarHtml(lblMensaje, htmlDeConfianza, tipoSeguro);
             pnlMensajes.Visible = true;
         }
 

@@ -1073,7 +1073,7 @@ namespace WebSGV.Views
                 MostrarListaLotes();
                 CargarLotesRegistrados();
                 string msgViajes = viajesAnulados > 0 ? $" Se anularon {viajesAnulados} viaje(s) sin despachos." : "";
-                MostrarMensaje($"Lote anulado. {lote.IdsDespachos.Count} despacho(s) quedaron como ANULADO y salieron de la liquidación y del seguimiento.{msgViajes}", "success");
+                MostrarMensaje($"Lote anulado. {lote.IdsDespachos.Count} despacho(s) quedaron como ANULADO y salieron de la liquidación y del seguimiento.{msgViajes}", "success", enPagina: true);
             }
             catch (Exception ex)
             {
@@ -2045,8 +2045,7 @@ namespace WebSGV.Views
 
         private void MostrarMensajeManifiesto(string mensaje, string tipo)
         {
-            lblMensajeManifiesto.Text = HttpUtility.HtmlEncode(mensaje ?? string.Empty);
-            lblMensajeManifiesto.CssClass = $"alert d-block alert-{tipo}";
+            AvisoHelper.Pintar(lblMensajeManifiesto, mensaje, tipo);
             pnlMensajeManifiesto.Visible = true;
         }
 
@@ -2183,12 +2182,12 @@ namespace WebSGV.Views
             }
         }
 
-        private void MostrarMensaje(string mensaje, string tipo)
+        private void MostrarMensaje(string mensaje, string tipo, bool enPagina = false)
         {
-            lblMensaje.Text = HttpUtility.HtmlEncode(mensaje ?? string.Empty);
-            // Conserva las clases base del marcado (bloque, sin margen, espacio para la ×).
-            lblMensaje.CssClass = $"alert alert-{tipo} d-block mb-0 pr-5";
-            pnlMensajes.Visible = true;
+            // Éxito flotante (salvo enPagina: un resumen que hay que leer); lo demás en la página con las clases
+            // base del marcado (sin margen, espacio para la ×).
+            AvisoHelper.Mostrar(Page, pnlMensajes, lblMensaje, mensaje, tipo, "mb-0 pr-5", enPagina);
+            if (AvisoHelper.EsExito(tipo) && !enPagina) return;
 
             // Tras un postback parcial el mensaje puede quedar arriba, fuera de la vista: llevarlo a la vista.
             ScriptManager.RegisterStartupScript(this, GetType(), "ldVerMensaje",

@@ -209,9 +209,9 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, bool esExito)
         {
-            lblMensaje.Text = MensajeHtml.Texto(mensaje);
+            // En la página también el éxito: es la indicación de qué hacer después (acceso sin sesión).
+            AvisoHelper.Pintar(lblMensaje, mensaje, esExito ? AvisoHelper.Exito : AvisoHelper.Peligro);
             pnlMensaje.Visible = true;
-            pnlMensaje.CssClass = esExito ? "alert alert-success" : "alert alert-danger";
         }
 
         private void MostrarError(string mensaje)

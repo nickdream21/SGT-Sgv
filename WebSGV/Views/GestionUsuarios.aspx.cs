@@ -241,9 +241,8 @@ namespace WebSGV.Views
             txtContrasenaAdmin.Text = "";
             if (error != null)
             {
-                lblMensajeReaut.Text     = MensajeHtml.Texto(error);
-                lblMensajeReaut.CssClass = "alert alert-danger d-block mb-0";
-                pnlMensajeReaut.Visible  = true;
+                AvisoHelper.Pintar(lblMensajeReaut, error, AvisoHelper.Peligro, "mb-0");
+                pnlMensajeReaut.Visible = true;
                 AbrirModal("modalReautenticar");
                 return;
             }
@@ -710,9 +709,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            lblMensaje.Text     = MensajeHtml.Texto(mensaje);
-            lblMensaje.CssClass = $"alert alert-{tipo} d-block mb-0";
-            pnlMensaje.Visible  = true;
+            AvisoHelper.Mostrar(Page, pnlMensaje, lblMensaje, mensaje, tipo, "mb-0");
         }
 
         /// <summary>
@@ -730,16 +727,14 @@ namespace WebSGV.Views
 
         private void MostrarMensajeModal(string mensaje, string tipo)
         {
-            lblMensajeModal.Text     = MensajeHtml.Texto(mensaje);
-            lblMensajeModal.CssClass = $"alert alert-{tipo} d-block mb-0";
-            pnlMensajeModal.Visible  = true;
+            AvisoHelper.Pintar(lblMensajeModal, mensaje, tipo, "mb-0");
+            pnlMensajeModal.Visible = true;
         }
 
         private void MostrarMensajeReset(string mensaje, string tipo)
         {
-            lblMensajeReset.Text     = MensajeHtml.Texto(mensaje);
-            lblMensajeReset.CssClass = $"alert alert-{tipo} d-block mb-0";
-            pnlMensajeReset.Visible  = true;
+            AvisoHelper.Pintar(lblMensajeReset, mensaje, tipo, "mb-0");
+            pnlMensajeReset.Visible = true;
         }
 
         private void AbrirModal(string idModal)

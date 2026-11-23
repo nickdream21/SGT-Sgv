@@ -109,8 +109,11 @@ select.rd-select-sugerido, select.rd-select-sugerido + .select2-container .selec
     border-bottom: 2px solid rgba(var(--sgv-negro-rgb), 0.1);
 }
 
+/* Variante de la página: tamaño y color del texto que la rodea (la regla común de sgv-base es más chica). */
 .sgv-etiqueta {
+    font-size: inherit;
     font-weight: 500;
+    color: inherit;
     margin-bottom: 0.5rem;
 }
 

@@ -345,9 +345,8 @@ namespace WebSGV
 
         private void MostrarMensajeContrasena(string mensaje, string tipo)
         {
-            lblMensajeContrasena.Text = mensaje;
-            // d-block: el Label es un <span>; sin esto un aviso de varias líneas se ve cortado.
-            lblMensajeContrasena.CssClass = $"alert alert-{tipo} d-block mb-0";
+            // Dentro del modal también el éxito; el texto se codifica (antes iba tal cual).
+            AvisoHelper.Pintar(lblMensajeContrasena, mensaje, tipo, "mb-0");
             pnlMensajeContrasena.Visible = true;
         }
 

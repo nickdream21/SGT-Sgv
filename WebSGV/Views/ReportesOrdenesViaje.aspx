@@ -89,7 +89,7 @@
                                 <span class="sgv-etiqueta d-inline-block" aria-hidden="true">&nbsp;</span>
                                 <div>
                                     <asp:Button ID="btnBuscarLiquidaciones" runat="server" Text="Buscar"
-                                        CssClass="btn btn-primary-custom btn-block" OnClick="btnBuscarLiquidaciones_Click" />
+                                        CssClass="btn btn-primary btn-block" OnClick="btnBuscarLiquidaciones_Click" />
                                 </div>
                             </div>
                         </div>
@@ -273,7 +273,7 @@
                                 <span class="sgv-etiqueta d-inline-block" aria-hidden="true">&nbsp;</span>
                                 <div>
                                     <asp:Button ID="btnBuscarViajesActivos" runat="server" Text="Buscar"
-                                        CssClass="btn btn-primary-custom btn-block" OnClick="btnBuscarViajesActivos_Click" />
+                                        CssClass="btn btn-primary btn-block" OnClick="btnBuscarViajesActivos_Click" />
                                 </div>
                             </div>
                         </div>
@@ -478,10 +478,10 @@
                             <i class="fas fa-columns mr-2"></i>Columnas del Reporte
                         </h5>
                         <div>
-                            <button type="button" class="btn btn-sm btn-secondary-custom" data-accion="marcarTodasColumnas" data-marcar="true">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-accion="marcarTodasColumnas" data-marcar="true">
                                 <i class="fas fa-check-square mr-1"></i>Marcar todas
                             </button>
-                            <button type="button" class="btn btn-sm btn-secondary-custom ml-1" data-accion="marcarTodasColumnas" data-marcar="false">
+                            <button type="button" class="btn btn-sm btn-outline-secondary ml-1" data-accion="marcarTodasColumnas" data-marcar="false">
                                 <i class="fas fa-square mr-1"></i>Desmarcar todas
                             </button>
                         </div>
@@ -644,7 +644,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>

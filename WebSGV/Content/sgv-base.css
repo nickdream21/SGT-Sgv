@@ -217,6 +217,7 @@ summary:focus-visible,
     border-bottom: 1px solid var(--sgv-borde);
 }
 
+.sgv-encabezado h1,
 .sgv-encabezado h2 {
     font-size: 1.375rem;
     font-weight: 600;
@@ -228,6 +229,114 @@ summary:focus-visible,
     font-size: 0.875rem;
     color: var(--sgv-texto-suave);
     margin: 0.125rem 0 0;
+}
+
+/* Plantilla (E5-14), la adoptan las páginas en E5-15:
+   <div class="sgv-encabezado">
+     <div class="sgv-encabezado-titulo">
+       <a class="sgv-volver" href="...">Volver a ...</a>
+       <h1 class="h2">Título <span class="sgv-encabezado-contador">12</span></h1>
+       <p>Una línea que dice para qué es la página.</p>
+     </div>
+     <div class="sgv-encabezado-acciones">
+       <button class="btn btn-primary">Acción</button>
+       <button type="button" class="sgv-ayuda" aria-label="Ayuda de esta página">?</button>
+     </div>
+   </div> */
+.sgv-encabezado-titulo { min-width: 0; }
+
+.sgv-encabezado-contador {
+    display: inline-block;
+    margin-left: 0.375rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--sgv-borde-fuerte);
+    border-radius: var(--sgv-radio);
+    background: var(--sgv-fondo);
+    color: var(--sgv-texto-medio);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.375rem;
+    vertical-align: middle;
+    font-variant-numeric: tabular-nums;
+}
+
+.sgv-encabezado-contador:empty { display: none; }
+
+.sgv-encabezado-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sgv-volver {
+    display: inline-block;
+    margin-bottom: 0.25rem;
+    font-size: 0.8125rem;
+    color: var(--sgv-texto-suave);
+}
+
+.sgv-volver::before { content: "\2190\00a0"; }
+.sgv-volver:hover { color: var(--sgv-primario); }
+
+/* "?" de ayuda: botón redondo de 2 rem (2,75 rem en el celular, para el dedo). */
+.sgv-ayuda {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid var(--sgv-borde-fuerte);
+    border-radius: 50%;
+    background: var(--sgv-superficie);
+    color: var(--sgv-primario);
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.sgv-ayuda:hover { background: var(--sgv-primario-claro); border-color: var(--sgv-info-borde); text-decoration: none; }
+
+@media (max-width: 767.98px) {
+    .sgv-encabezado { align-items: flex-start; }
+    .sgv-ayuda { width: 2.75rem; height: 2.75rem; }
+}
+
+/* === Filtros plegables (E5-14) ===
+   <details class="sgv-filtros" open>
+     <summary>Filtros <span class="sgv-filtros-cuenta"></span></summary>
+     <div class="sgv-filtros-cuerpo"> campos y botón de buscar </div>
+   </details>
+   SiteMaster.js escribe "(n)" con los campos llenos y, en el celular (≤ 767.98 px), lo pliega tras buscar. */
+details.sgv-filtros {
+    margin-bottom: 1rem;
+    background: var(--sgv-superficie);
+    border: 1px solid var(--sgv-borde);
+    border-radius: var(--sgv-radio);
+}
+
+details.sgv-filtros > summary {
+    padding: 0.625rem 1rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--sgv-texto);
+    cursor: pointer;
+}
+
+details.sgv-filtros[open] > summary { border-bottom: 1px solid var(--sgv-borde); }
+
+.sgv-filtros-cuenta { font-weight: 500; color: var(--sgv-texto-suave); }
+
+.sgv-filtros-cuerpo { padding: 1rem; }
+
+/* === Etiqueta de campo (E5-14): regla común; una página con otra medida la redefine en su hoja,
+   que se carga después (LiquidacionesPendientes, ReportesOrdenesViaje, ListaDespachos, RegistroDespacho). */
+.sgv-etiqueta {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--sgv-texto-medio);
+    margin-bottom: 0.25rem;
 }
 
 /* === Paneles === */
@@ -450,17 +559,6 @@ summary:focus-visible,
 .modal-header.sgv-modal-alerta { background-color: var(--sgv-ambar-50) !important; border-top-color: var(--sgv-alerta) !important; }
 .modal-header.sgv-modal-ok { background-color: var(--sgv-verde-50) !important; border-top-color: var(--sgv-ok) !important; }
 
-/* Botones de acción comunes. Antes solo existían en el CSS de tres páginas, y en las demás
-   (p. ej. Dinero y pagos del viaje) el botón salía sin estilo. */
-.btn-primary-custom { background: var(--sgv-primario); border: 1px solid var(--sgv-primario); color: var(--sgv-blanco); font-weight: 500; padding: 0.5rem 1rem; }
-.btn-primary-custom:hover, .btn-primary-custom:focus { background: var(--sgv-primario-osc); border-color: var(--sgv-primario-osc); color: var(--sgv-blanco); }
-.btn-secondary-custom { background: var(--sgv-superficie); border: 1px solid var(--sgv-borde-fuerte); color: var(--sgv-texto-medio); font-weight: 500; }
-.btn-secondary-custom:hover, .btn-secondary-custom:focus { background: var(--sgv-fondo-pagina); color: var(--sgv-texto); }
-.btn-danger-custom { background: var(--sgv-peligro); border: 1px solid var(--sgv-peligro); color: var(--sgv-blanco); font-weight: 500; }
-.btn-danger-custom:hover, .btn-danger-custom:focus { background: var(--sgv-rojo-800); border-color: var(--sgv-rojo-800); color: var(--sgv-blanco); }
-.btn-success-custom { background: var(--sgv-ok); border: 1px solid var(--sgv-ok); color: var(--sgv-blanco); font-weight: 500; }
-.btn-success-custom:hover, .btn-success-custom:focus { background: var(--sgv-verde-800); border-color: var(--sgv-verde-800); color: var(--sgv-blanco); }
-
 /* === Bootstrap 4.6.2 con la dirección "Expediente" ===
    bootstrap.min.css trae sus colores fijos (#007bff, #28a745, #6c757d...); aquí se re-tiñe lo que se ve
    en todas las pantallas con las variables, sin tocar el archivo de la librería. sgv-base.css se carga
@@ -476,7 +574,9 @@ a:hover { color: var(--sgv-primario-osc); }
 .dropdown-item { color: var(--sgv-texto); }
 .dropdown-item.active, .dropdown-item:active { background-color: var(--sgv-primario); color: var(--sgv-blanco); }
 
-/* Botones: un solo azul; verde, ámbar y rojo de los estados; gris secundario. Texto blanco con 6:1 o más. */
+/* Botones: un solo azul; verde, ámbar y rojo de los estados; gris secundario. Texto blanco con 6:1 o más.
+   Son los únicos botones del sitio: los *-custom de cada página se retiraron en E5-14 (primario → btn-primary,
+   secundario → btn-outline-secondary, peligro → btn-danger, éxito → btn-success). */
 .btn { border-radius: var(--sgv-radio); }
 .btn-primary, .btn-primary.disabled, .btn-primary:disabled { background-color: var(--sgv-primario); border-color: var(--sgv-primario); color: var(--sgv-blanco); }
 .btn-primary:hover, .btn-primary:focus, .btn-primary.focus,
@@ -502,7 +602,7 @@ a:hover { color: var(--sgv-primario-osc); }
 .btn-secondary, .btn-secondary.disabled, .btn-secondary:disabled { background-color: var(--sgv-texto-suave); border-color: var(--sgv-texto-suave); color: var(--sgv-blanco); }
 .btn-secondary:hover, .btn-secondary:focus, .btn-secondary:not(:disabled):not(.disabled):active { background-color: var(--sgv-texto-medio); border-color: var(--sgv-texto-medio); color: var(--sgv-blanco); }
 .btn-outline-secondary { color: var(--sgv-texto-medio); border-color: var(--sgv-borde-fuerte); }
-.btn-outline-secondary:hover, .btn-outline-secondary:not(:disabled):not(.disabled):active { background-color: var(--sgv-fondo-pagina); border-color: var(--sgv-borde-fuerte); color: var(--sgv-texto); }
+.btn-outline-secondary:hover, .btn-outline-secondary:focus, .btn-outline-secondary:not(:disabled):not(.disabled):active { background-color: var(--sgv-fondo-pagina); border-color: var(--sgv-borde-fuerte); color: var(--sgv-texto); }
 .btn-link { color: var(--sgv-primario); }
 .btn-link:hover { color: var(--sgv-primario-osc); }
 .btn:focus, .btn.focus, .btn:not(:disabled):not(.disabled):active:focus { box-shadow: 0 0 0 0.2rem rgba(var(--sgv-primario-rgb), 0.25); }

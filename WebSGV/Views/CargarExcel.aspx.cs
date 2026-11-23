@@ -57,7 +57,7 @@ namespace WebSGV.Views
 
                     AuditoriaHelper.Registrar("INSERT", "Indicadores", descripcion:
                         $"Carga de indicadores desde Excel - Archivo: {Path.GetFileName(fileUpload.FileName)}, Periodo: {selectedMonth:00}/{selectedYear}, Registros: {rowsProcessed}");
-                    ShowAlert($"Proceso completado exitosamente. Se procesaron {rowsProcessed} registros.", "success");
+                    ShowAlert($"Proceso completado exitosamente. Se procesaron {rowsProcessed} registros.", "success", enPagina: true);
 
                     // Refrescar la grilla
                     LoadUploadHistory();
@@ -555,26 +555,9 @@ namespace WebSGV.Views
             }
         }
 
-        private void ShowAlert(string message, string type)
+        private void ShowAlert(string message, string type, bool enPagina = false)
         {
-            alertMessage.Text = MensajeHtml.Texto(message);
-            alertPanel.Visible = true;
-
-            switch (type.ToLower())
-            {
-                case "success":
-                    alertPanel.CssClass = "alert alert-success";
-                    break;
-                case "warning":
-                    alertPanel.CssClass = "alert alert-warning";
-                    break;
-                case "danger":
-                    alertPanel.CssClass = "alert alert-danger";
-                    break;
-                default:
-                    alertPanel.CssClass = "alert alert-info";
-                    break;
-            }
+            AvisoHelper.Mostrar(Page, alertPanel, alertMessage, message, type, enPagina: enPagina);
         }
     }
 }

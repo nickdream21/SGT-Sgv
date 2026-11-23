@@ -6,7 +6,7 @@
         <h2 class="recovery-title">Recuperar contraseña</h2>
         <p class="recovery-subtitle">Ingrese su usuario o correo electrónico y le enviaremos un enlace para restablecer su contraseña.</p>
 
-        <asp:Panel ID="pnlMensaje" runat="server" CssClass="alert" Visible="false">
+        <asp:Panel ID="pnlMensaje" runat="server" Visible="false">
             <asp:Label ID="lblMensaje" runat="server"></asp:Label>
         </asp:Panel>
 

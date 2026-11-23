@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-074 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-075 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -86,6 +86,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-068** Contabilidad paginada con datos reales (E5-10) — con más de 50 liquidaciones aprobadas, con el rol contabilidad a 1366 y 390 px: abre con 90 días, la página 2 trae otras filas, "Todo el historial" suma las antiguas y el PDF se abre en el iframe. · B
 - [ ] **P-069** Firma, conformidad y segundo factor antes y después de los cambios de estilo (E5-11 a E5-14) — FirmarLiquidacion y ConformarLiquidacion con una orden real PENDIENTE y POR_CONFORMAR del conductor de prueba (la `OrdenViaje` de pruebas está vacía: puede hacerse en un `sgvEnsayo_*`), y SegundoFactor con un administrador de sistema que tenga el factor activo: capturas a 1366 y 390 px antes y después de cada tarea, sin diferencias en E5-11. · B
 - [ ] **P-070** MovimientosViaje tras los cambios de estilo (E5-11 a E5-14) — no se puede revisar mientras `MovimientosViajeService.Habilitado` esté apagado: al encenderlo (solo local), capturas a 1366 y 390 px del registro y del modal Anular. · C
+- [ ] **P-075** Avisos de E5-14 que no se pudieron probar con datos de pruebas — (1) éxito flotante en RegistroDespacho tras un postback asíncrono ("Crear lote con estos datos") con un ZIP de un pedido que no esté en la BD de pruebas; (2) plegado de `details.sgv-filtros` a ≤ 767 px tras Buscar, con su rótulo "Filtros (n)", cuando una página lo use (E5-17), también con un validador que cancele el envío (no debe plegar). · C
 - [ ] **P-074** Anchos que cambiaron con los puntos de corte de E5-13 — las reglas de celular pasaron de `max-width: 768px/576px/992px` a `767.98/575.98/991.98px` (cambia solo exactamente a 768, 576 y 992 px, donde ahora coinciden con la rejilla de Bootstrap) y las de 480, 520 y 560 px a 575.98 px (cambia entre 481 y 575 px): con el ancho exacto, mirar Login, Inicio, Auditoría, ReportesOrdenesViaje, ListaDespachos, RegistroDespacho y LiquidacionesPendientes a 768 px (tablet vertical), y MiSeguridad, SegundoFactor, FirmarLiquidacion, DashboardExportacion y SeguimientoExportacion a 540 px: sin desbordes ni cortes. Además, en RegistroDespacho los 8 desplegables con `custom-select-sm` (Sección del Word, Cliente y Planta de programar e importar, Completa el despacho, Planta de descarga) quedan de 31 px como los campos de su fila. · C
 
 ## Reglas

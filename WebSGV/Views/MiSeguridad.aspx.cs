@@ -241,8 +241,8 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            lblMensaje.Text = MensajeHtml.Texto(mensaje);
-            lblMensaje.CssClass = "alert alert-" + tipo + " d-block mb-0";
+            // En la página también los éxitos: hablan de los códigos de recuperación que se ven debajo.
+            AvisoHelper.Pintar(lblMensaje, mensaje, tipo, "mb-0");
             pnlMensaje.Visible = true;
         }
     }

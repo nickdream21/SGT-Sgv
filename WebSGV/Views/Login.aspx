@@ -8,7 +8,7 @@
         <div class="login-container" data-enter="<%= btnLogin.ClientID %>">
             <h2 class="title">Iniciar sesión</h2>
 
-            <asp:Panel ID="pnlError" runat="server" Visible="false" CssClass="login-error">
+            <asp:Panel ID="pnlError" runat="server" Visible="false" CssClass="login-error" role="alert">
                 <i class="fas fa-exclamation-circle"></i>
                 <asp:Label ID="lblError" runat="server"></asp:Label>
             </asp:Panel>

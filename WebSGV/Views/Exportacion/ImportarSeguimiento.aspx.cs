@@ -113,7 +113,7 @@ namespace WebSGV.Views.Exportacion
                     resumen += $" {_fechasDeducidas} hito(s) tenían hora sin fecha: la fecha se dedujo por el orden del viaje.";
                 if (_rechazadas.Count > 0)
                     resumen += $" {_rechazadas.Count} celda(s) de fecha/hora no se pudieron leer (detalle abajo).";
-                MostrarAlerta(resumen, _rechazadas.Count > 0 || _filasSinProgramacion > 0 ? "warning" : "success");
+                MostrarAlerta(resumen, _rechazadas.Count > 0 || _filasSinProgramacion > 0 ? "warning" : "success", enPagina: true);
 
                 pnlReporteImportacion.Visible = _rechazadas.Count > 0;
                 litReporteImportacion.Text = _rechazadas.Count > 0 ? ReporteRechazadasHtml(40) : string.Empty;
@@ -730,18 +730,9 @@ namespace WebSGV.Views.Exportacion
         // ============================================================
         //  Helpers
         // ============================================================
-        private void MostrarAlerta(string mensaje, string tipo)
+        private void MostrarAlerta(string mensaje, string tipo, bool enPagina = false)
         {
-            string clase;
-            switch ((tipo ?? "info").ToLower())
-            {
-                case "success": clase = "sx-mensaje sx-mensaje-ok"; break;
-                case "warning": clase = "sx-mensaje sx-mensaje-alerta"; break;
-                case "danger":  clase = "sx-mensaje sx-mensaje-peligro"; break;
-                default:        clase = "sx-mensaje sx-mensaje-info"; break;
-            }
-            litMensaje.Text = $"<div class=\"{clase}\" role=\"status\">{System.Web.HttpUtility.HtmlEncode(mensaje)}</div>";
-            pnlMensaje.Visible = true;
+            AvisoHelper.Mostrar(Page, pnlMensaje, litMensaje, mensaje, tipo, enPagina: enPagina);
         }
 
         private static int? ObtenerIdUsuarioSesion()

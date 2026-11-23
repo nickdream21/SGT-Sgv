@@ -103,17 +103,13 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, bool esExito = false)
         {
-            // Aviso no bloqueante (SGV.avisar); el texto va como cadena JS segura.
-            string script = $"SGV.avisar('{System.Web.HttpUtility.JavaScriptStringEncode((esExito ? "✅ " : "") + mensaje)}');";
-
-            // Si es un mensaje de éxito, podemos agregar redireccionamiento o acciones adicionales
+            // Éxito flotante; el error queda arriba del formulario hasta el siguiente envío (E5-14).
             if (esExito)
             {
-                // Opcional: redirigir a otra página o actualizar la lista de productos
-                // script += "window.location = 'ListaProductos.aspx';";
+                AvisoHelper.Avisar(Page, mensaje);
+                return;
             }
-
-            ScriptManager.RegisterStartupScript(this, GetType(), "alertMessage", script, true);
+            AvisoHelper.Pintar(lblMensaje, mensaje, AvisoHelper.Peligro);
         }
     }
 }

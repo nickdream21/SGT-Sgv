@@ -17,8 +17,8 @@
         .error-debug pre { font-size: 0.78rem; margin: 8px 0 0; white-space: pre-wrap; background: #f5f6f8; padding: 10px; border-radius: 3px; max-height: 320px; overflow: auto; }
         .error-actions { text-align: center; margin-top: 18px; }
         .error-actions a { display: inline-block; margin: 4px; padding: 9px 18px; border-radius: 3px; text-decoration: none; font-weight: 500; }
-        .btn-primary-custom { background: #1f3a6e; color: #fff; }
-        .btn-secondary-custom { background: #fff; border: 1px solid #a8b0bc; color: #3b4656; }
+        .error-btn-primario { background: #1f3a6e; color: #fff; }
+        .error-btn-secundario { background: #fff; border: 1px solid #a8b0bc; color: #3b4656; }
         .error-code { text-align: center; color: #566173; font-size: 0.85rem; margin-top: 12px; }
     </style>
 </head>
@@ -48,8 +48,8 @@
             <% } %>
 
             <div class="error-actions">
-                <a href="javascript:history.back()" class="btn-secondary-custom">&larr; Volver</a>
-                <a href="/Views/Login.aspx" class="btn-primary-custom">Ir al inicio</a>
+                <a href="javascript:history.back()" class="error-btn-secundario">&larr; Volver</a>
+                <a href="/Views/Login.aspx" class="error-btn-primario">Ir al inicio</a>
             </div>
             <p class="error-code">Error 500 &mdash; <%= WebSGV.Helpers.FechaHelper.Ahora().ToString("dd/MM/yyyy HH:mm") %></p>
         </div>

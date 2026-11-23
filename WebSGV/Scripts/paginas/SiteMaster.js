@@ -297,8 +297,9 @@
 
 // ── Avisos no bloqueantes ───────────────────────────────────────────
 // Reemplazo de alert(): un alert() detiene la página hasta que se cierra (y bloquea la
-// automatización de pruebas). SGV.avisar(mensaje) muestra el aviso arriba a la derecha y se
-// cierra solo; el tipo sale del emoji inicial (✅ éxito, ❌ error, ⚠️ advertencia; sin emoji:
+// automatización de pruebas). SGV.avisar(mensaje) muestra el aviso arriba a la derecha; se
+// cierra solo a los 10 s (pausa con el cursor o el foco encima), salvo los errores (danger), que
+// esperan a que el usuario los cierre. Desde el servidor: AvisoHelper.Avisar. El tipo sale del emoji inicial (✅ éxito, ❌ error, ⚠️ advertencia; sin emoji:
 // "Error..." es error y lo demás advertencia) o de opciones.tipo. Con { trasRecargar: true } el aviso se guarda y aparece después de un
 // location.reload().
 (function () {
@@ -341,8 +342,32 @@
         aviso.appendChild(cerrar);
         aviso.appendChild(texto);
         contenedor().appendChild(aviso);
-        // Los errores se quedan más tiempo para que se alcancen a leer.
-        setTimeout(function () { aviso.remove(); }, tipo === 'danger' ? 12000 : 6000);
+        // E5-14: un error no se cierra solo (se cierra con la X). Los demás duran 10 s y el tiempo se
+        // detiene mientras el cursor o el foco están encima; al salir corre lo que faltaba.
+        if (tipo !== 'danger') cerrarSolo(aviso, 10000);
+    }
+
+    function cerrarSolo(aviso, ms) {
+        var restante = ms, inicio = 0, reloj = null, cursor = false, foco = false;
+        function correr() {
+            if (reloj || cursor || foco) return;
+            inicio = Date.now();
+            reloj = setTimeout(function () { aviso.remove(); }, restante);
+        }
+        function pausar() {
+            if (!reloj) return;
+            clearTimeout(reloj);
+            reloj = null;
+            restante = Math.max(1000, restante - (Date.now() - inicio));
+        }
+        aviso.addEventListener('mouseenter', function () { cursor = true; pausar(); });
+        aviso.addEventListener('mouseleave', function () { cursor = false; correr(); });
+        aviso.addEventListener('focusin', function () { foco = true; pausar(); });
+        aviso.addEventListener('focusout', function (e) {
+            if (e.relatedTarget && aviso.contains(e.relatedTarget)) return;
+            foco = false; correr();
+        });
+        correr();
     }
 
     SGV.avisar = function (mensaje, opciones) {
@@ -374,6 +399,81 @@
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mostrarPendiente);
     else mostrarPendiente();
+})();
+
+// ── Filtros plegables (details.sgv-filtros, E5-14) ─────────────────
+// El rótulo dice cuántos filtros tienen valor ("Filtros (2)") en <span class="sgv-filtros-cuenta">.
+// En el celular (≤ 767.98 px), tras enviar con un botón de los filtros (submit o data-filtros-buscar;
+// cuenta el envío real, no el clic), al volver la página (postback completo o parcial) los filtros quedan plegados
+// para que el primer resultado se vea sin desplazarse. Un campo con data-filtro-ignorar no cuenta.
+(function () {
+    var CLAVE = 'sgvFiltrosPlegar';
+    var MOVIL = '(max-width: 767.98px)';
+
+    function cuenta(d) {
+        var n = 0;
+        d.querySelectorAll('input, select, textarea').forEach(function (c) {
+            if (c.disabled || c.hasAttribute('data-filtro-ignorar')) return;
+            var tipo = (c.type || '').toLowerCase();
+            if (tipo === 'hidden' || tipo === 'submit' || tipo === 'button' || tipo === 'reset' || tipo === 'image') return;
+            if (tipo === 'checkbox' || tipo === 'radio') { if (c.checked && c.value !== '') n++; return; }
+            if (c.tagName === 'SELECT') { if (c.selectedIndex > 0 && c.value !== '') n++; return; }
+            if (String(c.value || '').trim() !== '') n++;
+        });
+        return n;
+    }
+
+    function rotular(d) {
+        var r = d.querySelector('.sgv-filtros-cuenta');
+        if (!r) return;
+        var n = cuenta(d);
+        r.textContent = n > 0 ? '(' + n + ')' : '';
+    }
+
+    function preparar() {
+        var plegar = false;
+        try { plegar = sessionStorage.getItem(CLAVE) === '1'; sessionStorage.removeItem(CLAVE); } catch (e) { }
+        var movil = window.matchMedia && window.matchMedia(MOVIL).matches;
+        document.querySelectorAll('details.sgv-filtros').forEach(function (d) {
+            rotular(d);
+            if (plegar && movil) d.open = false;
+        });
+    }
+
+    var BUSCAR = 'details.sgv-filtros [data-filtros-buscar], details.sgv-filtros input[type=submit], details.sgv-filtros button[type=submit]';
+    function esBuscar(el) { return !!(el && el.closest && el.closest(BUSCAR)); }
+    function marcar() { try { sessionStorage.setItem(CLAVE, '1'); } catch (err) { } }
+
+    // La marca se guarda solo cuando el envío sale de verdad: un clic que cancelan los validadores o
+    // SGV.confirmar no envía el formulario ni dispara beginRequest. El clic solo recuerda el botón para los
+    // navegadores sin e.submitter.
+    var pulsado = null;
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest(BUSCAR);
+        pulsado = b || null;
+        if (b) setTimeout(function () { if (pulsado === b) pulsado = null; }, 0);
+    }, true);
+
+    // Postback completo. En uno parcial el PageRequestManager cancela el submit (defaultPrevented) y avisa en beginRequest.
+    document.addEventListener('submit', function (e) {
+        if (e.defaultPrevented) return;
+        if (esBuscar(e.submitter || pulsado)) marcar();
+    });
+
+    ['input', 'change'].forEach(function (ev) {
+        document.addEventListener(ev, function (e) {
+            var d = e.target.closest && e.target.closest('details.sgv-filtros');
+            if (d) rotular(d);
+        });
+    });
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', preparar);
+    else preparar();
+    if (window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager) {
+        var prm = Sys.WebForms.PageRequestManager.getInstance();
+        prm.add_beginRequest(function (s, a) { if (esBuscar(a.get_postBackElement())) marcar(); });
+        prm.add_endRequest(preparar);
+    }
 })();
 
 // ── Confirmaciones no bloqueantes ───────────────────────────────────

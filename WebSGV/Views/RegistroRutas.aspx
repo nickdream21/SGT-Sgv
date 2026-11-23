@@ -6,6 +6,7 @@
                 <h2 class="registro-header-title">Registro de rutas</h2>
             </div>
             <div class="card-body">
+                <asp:Label ID="lblMensaje" runat="server" Visible="false" EnableViewState="false" />
                 <asp:Panel ID="pnlFormulario" runat="server">
                     <!-- Nombre de la Ruta -->
                     <div class="form-group">

@@ -6,7 +6,7 @@
         <h2 class="reset-title">Restablecer contraseña</h2>
         <p class="reset-subtitle">Ingrese su nueva contraseña.</p>
 
-        <asp:Panel ID="pnlMensaje" runat="server" CssClass="alert" Visible="false">
+        <asp:Panel ID="pnlMensaje" runat="server" Visible="false">
             <asp:Label ID="lblMensaje" runat="server"></asp:Label>
         </asp:Panel>
 

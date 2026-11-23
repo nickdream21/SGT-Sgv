@@ -190,9 +190,7 @@ namespace WebSGV.Views
 
         private void Mostrar(string texto, string tipo)
         {
-            pnlMensaje.Visible = true;
-            pnlMensaje.CssClass = "alert alert-" + tipo + " mb-3";
-            lblMensaje.Text = HttpUtility.HtmlEncode(texto);
+            AvisoHelper.Mostrar(Page, pnlMensaje, lblMensaje, texto, tipo, "mb-0");
         }
 
         private static string Css(string sentido) =>

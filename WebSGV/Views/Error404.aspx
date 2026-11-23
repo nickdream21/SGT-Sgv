@@ -28,14 +28,14 @@
         .error-actions .btn {
             margin: 5px;
         }
-        .btn-primary-custom {
+        .error-actions .btn-primary {
             background-color: #1f3a6e;
             border-color: #1f3a6e;
             color: white;
             font-weight: 500;
             padding: 10px 24px;
         }
-        .btn-secondary-custom {
+        .error-actions .btn-outline-secondary {
             background-color: white;
             border: 1px solid #a8b0bc;
             color: #566173;
@@ -60,10 +60,10 @@
             Verifica la dirección o regresa al inicio.
         </p>
         <div class="error-actions">
-            <a href="javascript:history.back()" class="btn btn-secondary-custom">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left mr-2"></i>Volver
             </a>
-            <a href="/Views/Login.aspx" class="btn btn-primary-custom">
+            <a href="/Views/Login.aspx" class="btn btn-primary">
                 <i class="fas fa-home mr-2"></i>Ir al Inicio
             </a>
         </div>

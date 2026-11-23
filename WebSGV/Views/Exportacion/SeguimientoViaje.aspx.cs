@@ -274,7 +274,7 @@ namespace WebSGV.Views.Exportacion
                 var r = SeguimientoExportacionGpsService.ConsultarYActualizar(IdSeguimiento);
                 // El resultado del GPS es un texto variable (placas, horas): se muestra en esta misma respuesta
                 // en vez de pasarlo por ?msg= (B6-8). Repetir la consulta con F5 no cambia nada que no cambie el GPS.
-                MostrarMensaje(r.Mensaje, r.Exito ? "ok" : "alerta");
+                MostrarMensaje(r.Mensaje, r.Exito ? "ok" : "alerta", enPagina: true);
             }
             catch (Exception ex)
             {
@@ -401,11 +401,9 @@ namespace WebSGV.Views.Exportacion
             }
         }
 
-        private void MostrarMensaje(string texto, string tipo)
+        private void MostrarMensaje(string texto, string tipo, bool enPagina = false)
         {
-            string clase = tipo == "alerta" || tipo == "peligro" || tipo == "info" ? tipo : "ok";
-            litMensaje.Text = $"<div class=\"sx-mensaje sx-mensaje-{clase}\" role=\"status\">{Html(texto)}</div>";
-            pnlMensaje.Visible = true;
+            AvisoHelper.Mostrar(Page, pnlMensaje, litMensaje, texto, tipo, enPagina: enPagina);
         }
     }
 }

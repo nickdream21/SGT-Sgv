@@ -392,8 +392,7 @@ namespace WebSGV.Views
         private void MostrarMensaje(string mensaje)
         {
             pnlResultados.Visible = pnlResultados.Visible && litTarjetas.Text != "";
-            pnlMensaje.Visible = true;
-            lblMensaje.Text = $"<div class='alert alert-danger'>{HttpUtility.HtmlEncode(mensaje)}</div>";
+            AvisoHelper.Mostrar(Page, pnlMensaje, lblMensaje, mensaje, AvisoHelper.Peligro);
         }
     }
 }

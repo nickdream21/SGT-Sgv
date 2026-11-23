@@ -1,7 +1,6 @@
 ﻿$(document).ready(function () {
     initializeSelect2();
     setDefaultDate();
-    autoHideMessages();
     actualizarGuardiaLote();
     actualizarStepper();
     inicializarValidacionNumeroPedido();
@@ -77,18 +76,9 @@ var prm = Sys.WebForms.PageRequestManager.getInstance();
 prm.add_endRequest(function () {
     initializeSelect2();
     setDefaultDate();
-    autoHideMessages();
     actualizarGuardiaLote();
     actualizarStepper();
 });
-
-// Auto-oculta los avisos de éxito o información a los 5 segundos. Los errores y
-// advertencias se quedan hasta que el usuario los cierra (si no, se perdían sin leerlos).
-function autoHideMessages() {
-    setTimeout(function () {
-        $('.alert-dismissible.alert-success, .alert-dismissible.alert-info').closest('.mb-3').fadeOut('slow');
-    }, 5000);
-}
 
 // Función para scroll automático a la sección de conductores
 function scrollToConductores() {

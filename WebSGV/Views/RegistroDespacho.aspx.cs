@@ -541,10 +541,10 @@ namespace WebSGV.Views
                     {
                         // Vienen de la importación: los selectores no deben ofrecerlos de nuevo
                         RecargarSelectoresConductor();
-                        MostrarMensaje($"Lote iniciado con {LoteActual.CantidadConductores} tracto(s) importados. Revíselos y pulse \"Finalizar lote\" para guardar.", "success");
+                        MostrarMensaje($"Lote iniciado con {LoteActual.CantidadConductores} tracto(s) importados. Revíselos y pulse \"Finalizar lote\" para guardar.", "success", enPagina: true);
                     }
                     else
-                        MostrarMensaje("Lote iniciado exitosamente. Ahora puede agregar conductores.", "success");
+                        MostrarMensaje("Lote iniciado exitosamente. Ahora puede agregar conductores.", "success", enPagina: true);
 
                     // Scroll a la sección de conductores
                     LlamarFuncionJsAlCargar("scrollToConductores", "scrollToConductores");
@@ -2477,8 +2477,7 @@ namespace WebSGV.Views
 
         private void MostrarMensajeImportacion(string mensaje, string tipo)
         {
-            lblMensajeImportacion.Text = Html(mensaje);
-            lblMensajeImportacion.CssClass = $"alert alert-{tipo} d-block mb-0";
+            AvisoHelper.Pintar(lblMensajeImportacion, mensaje, tipo, "mb-0");
             pnlMensajeImportacion.Visible = true;
             UpdatePanelMain.Update();
 
@@ -3018,8 +3017,7 @@ namespace WebSGV.Views
 
         private void MostrarMensajeDescarga(string mensaje, string tipo)
         {
-            lblMensajeDescarga.Text = Html(mensaje);
-            lblMensajeDescarga.CssClass = $"alert alert-{tipo} d-block mb-0";
+            AvisoHelper.Pintar(lblMensajeDescarga, mensaje, tipo, "mb-0");
             pnlMensajeDescarga.Visible = true;
             UpdatePanelMain.Update();
             ScriptManager.RegisterStartupScript(this, GetType(), "verMensajeDescarga",
@@ -3334,8 +3332,7 @@ namespace WebSGV.Views
         /// </summary>
         private void MostrarMensajeConductor(string mensaje, string tipo)
         {
-            lblMensajeConductor.Text = HttpUtility.HtmlEncode(mensaje ?? string.Empty);
-            lblMensajeConductor.CssClass = $"alert alert-{tipo} alert-dismissible fade show d-block mb-0 pr-5";
+            AvisoHelper.Pintar(lblMensajeConductor, mensaje, tipo, "alert-dismissible mb-0 pr-5");
             pnlMensajeConductor.Visible = true;
             pnlMensajes.Visible = false;   // evitar el mismo aviso duplicado arriba
             UpdatePanelMain.Update();
@@ -3378,8 +3375,21 @@ namespace WebSGV.Views
             return $"<span class=\"{clase}\">{HttpUtility.HtmlEncode(estado)}</span>";
         }
 
-        private void MostrarMensaje(string mensaje, string tipo) =>
-            MostrarMensajeHtml(HttpUtility.HtmlEncode(mensaje ?? string.Empty), tipo);
+        /// <summary>
+        /// Éxito flotante (AvisoHelper.Avisar); errores y advertencias arriba de la página, sin ocultarse solos.
+        /// <paramref name="enPagina"/>: el éxito también se pinta (trae una indicación que hay que leer).
+        /// </summary>
+        private void MostrarMensaje(string mensaje, string tipo, bool enPagina = false)
+        {
+            if (AvisoHelper.EsExito(tipo) && !enPagina)
+            {
+                pnlMensajes.Visible = false;   // que no quede a la vista un error anterior
+                UpdatePanelMain.Update();
+                AvisoHelper.Avisar(Page, mensaje, tipo);
+                return;
+            }
+            MostrarMensajeHtml(MensajeHtml.Texto(mensaje), tipo);
+        }
 
         /// <summary>Un renglón por mensaje (cada uno codificado): Finalizar lote puede devolver varios errores.</summary>
         private void MostrarMensaje(string titulo, IEnumerable<string> mensajes, string tipo) =>
@@ -3392,15 +3402,15 @@ namespace WebSGV.Views
         /// </summary>
         private void MostrarMensajeHtml(string html, string tipo)
         {
-            lblMensaje.Text = html;
-            lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible d-block mb-0 pr-5";
+            AvisoHelper.PintarHtml(lblMensaje, html, tipo, "alert-dismissible mb-0 pr-5");
             pnlMensajes.Visible = true;
             UpdatePanelMain.Update();
 
             // Errores y advertencias: llevar la vista al aviso (está arriba de la página). En un
             // postback completo, MaintainScrollPositionOnPostback restaura la posición en el
             // "load": hay que desplazarse después de eso.
-            if (tipo == "danger" || tipo == "warning")
+            string tipoSeguro = AvisoHelper.TipoSeguro(tipo);
+            if (tipoSeguro == AvisoHelper.Peligro || tipoSeguro == AvisoHelper.Advertencia)
                 ScriptManager.RegisterStartupScript(this, GetType(), "verMensaje",
                     $"(function(){{function ir(){{setTimeout(function(){{var m=document.getElementById('{lblMensaje.ClientID}');if(m)m.scrollIntoView({{behavior:'smooth',block:'center'}});}},100);}}" +
                     "if(document.readyState==='complete')ir();else window.addEventListener('load',ir);})();", true);
@@ -3428,15 +3438,15 @@ namespace WebSGV.Views
                 : $"{lote.CantidadConductores} conductores agregados";
 
             // HTML controlado — los datos de usuario van codificados
-            lblMensaje.Text =
+            AvisoHelper.PintarHtml(lblMensaje,
                 $"<i class='fas fa-history mr-1'></i> <strong>Sesión recuperada.</strong> " +
                 $"Tiene un lote activo: <strong>{HttpUtility.HtmlEncode(lote.TipoOperacion)}</strong> " +
                 $"{HttpUtility.HtmlEncode(ambito)} · " +
                 $"Cliente: <strong>{HttpUtility.HtmlEncode(lote.NombreCliente)}</strong> · " +
                 $"{conductores} · " +
                 $"Iniciado: {lote.FechaCreacion:dd/MM/yyyy HH:mm}. " +
-                $"Puede continuar desde donde lo dejó.";
-            lblMensaje.CssClass = "alert alert-info alert-dismissible d-block mb-0 pr-5";
+                $"Puede continuar desde donde lo dejó.",
+                AvisoHelper.Info, "alert-dismissible mb-0 pr-5");
             pnlMensajes.Visible = true;
         }
 

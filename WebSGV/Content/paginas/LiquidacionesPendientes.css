@@ -16,56 +16,6 @@
     color: var(--primary-color);
 }
 
-/* === Botones === */
-.btn-primary-custom {
-    background: var(--primary-color);
-    border: 1px solid var(--primary-color);
-    color: var(--sgv-blanco);
-    font-weight: 500;
-    padding: 0.5rem 1rem;
-}
-
-.btn-primary-custom:hover {
-    background: var(--sgv-primario-osc);
-    color: var(--sgv-blanco);
-}
-
-.btn-secondary-custom {
-    background: var(--sgv-superficie);
-    border: 1px solid var(--border-color);
-    color: var(--sgv-texto-medio);
-    font-weight: 500;
-}
-
-.btn-secondary-custom:hover {
-    background: var(--light-gray);
-}
-
-.btn-danger-custom {
-    background: var(--danger-color);
-    border: 1px solid var(--danger-color);
-    color: var(--sgv-blanco);
-    font-weight: 500;
-}
-
-.btn-danger-custom:hover {
-    background: var(--sgv-rojo-800);
-    color: var(--sgv-blanco);
-}
-
-.btn-success-custom {
-    background: var(--success-color);
-    border: 1px solid var(--success-color);
-    color: var(--sgv-blanco);
-    font-weight: 500;
-    padding: 0.5rem 1rem;
-}
-
-.btn-success-custom:hover {
-    background: var(--sgv-verde-800);
-    color: var(--sgv-blanco);
-}
-
 /* === Formularios === */
 .sgv-etiqueta {
     color: var(--sgv-texto-medio);

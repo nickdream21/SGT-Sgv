@@ -109,7 +109,7 @@ namespace WebSGV.Views.Exportacion
             try
             {
                 var r = SeguimientoViajesService.ActualizarGpsAbiertos(SeguimientoViajesService.ListarTablero(Filtro()), ViajesGpsPorClic, PresupuestoGps);
-                MostrarMensaje(r.MensajeParaUsuario(), r.Fallas.Count > 0 ? "alerta" : "ok");
+                MostrarMensaje(r.MensajeParaUsuario(), r.Fallas.Count > 0 ? "alerta" : "ok", enPagina: true);
             }
             catch (Exception ex)
             {
@@ -486,10 +486,9 @@ namespace WebSGV.Views.Exportacion
         private static string Capital(string s) =>
             string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1).ToLowerInvariant();
 
-        private void MostrarMensaje(string texto, string tipo)
+        private void MostrarMensaje(string texto, string tipo, bool enPagina = false)
         {
-            litMensaje.Text = $"<div class=\"sx-mensaje sx-mensaje-{tipo}\" role=\"status\">{HttpUtility.HtmlEncode(texto)}</div>";
-            pnlMensaje.Visible = true;
+            AvisoHelper.Mostrar(Page, pnlMensaje, litMensaje, texto, tipo, enPagina: enPagina);
         }
     }
 }

@@ -243,7 +243,7 @@ namespace WebSGV.Views
 
                 MostrarMensaje(
                     $"Liquidación {numeroOrdenViaje} rechazada exitosamente. El viaje ha sido reabierto para correcciones del conductor.",
-                    "warning"
+                    "success"
                 );
 
                 // Cerrar el modal
@@ -403,17 +403,8 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, string tipo)
         {
-            lblMensaje.Text = MensajeHtml.Texto(mensaje);
-            lblMensaje.CssClass = $"alert alert-{tipo} alert-dismissible fade show";
-            pnlMensajes.Visible = true;
-
-            // Auto-ocultar después de 5 segundos
-            string script = @"
-                setTimeout(function() {
-                    $('#" + pnlMensajes.ClientID + @"').fadeOut('slow');
-                }, 5000);
-            ";
-            ScriptManager.RegisterStartupScript(this, GetType(), "HideMensaje", script, true);
+            // Éxito flotante; errores y advertencias en la página, sin ocultarse solos (E5-14).
+            AvisoHelper.Mostrar(Page, pnlMensajes, lblMensaje, mensaje, tipo);
         }
 
         #endregion

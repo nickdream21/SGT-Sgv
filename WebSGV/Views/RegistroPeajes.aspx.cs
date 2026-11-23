@@ -190,9 +190,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, bool esExito = false)
         {
-            pnlMensaje.Visible = true;
-            string css = esExito ? "alert alert-success" : "alert alert-danger";
-            lblMensaje.Text = $"<div class='{css}'>{MensajeHtml.Texto(mensaje)}</div>";
+            AvisoHelper.Mostrar(Page, pnlMensaje, lblMensaje, mensaje, esExito ? AvisoHelper.Exito : AvisoHelper.Peligro);
         }
 
         /// <summary>CommandArgument del botón Activar/Desactivar: "id|estadoDestino" (B5-3).</summary>

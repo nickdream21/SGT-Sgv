@@ -58,8 +58,8 @@
             </div>
         </div>
 
-        <asp:Panel ID="pnlMensaje" runat="server" Visible="false">
-            <asp:Literal ID="litMensaje" runat="server" />
+        <asp:Panel ID="pnlMensaje" runat="server" EnableViewState="false" Visible="false">
+            <asp:Literal ID="litMensaje" runat="server" EnableViewState="false" />
         </asp:Panel>
         <%-- La actualización automática trajo datos nuevos mientras la página estaba abierta. --%>
         <div class="sx-mensaje sx-mensaje-info sx-aviso-gps" id="avisoGpsNuevo" role="status" hidden>

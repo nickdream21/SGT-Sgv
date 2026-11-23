@@ -190,7 +190,7 @@ namespace WebSGV.Views
                     $"{(tipo == MovimientosViajeService.PagoDirecto ? "Pago directo" : "Entrega")} {m.Concepto} S/ {m.MontoSoles:0.00} US$ {m.MontoDolares:0.00} " +
                     $"({m.Medio}) al conductor {m.IdConductor}");
 
-                MostrarMensaje("Registrado. Se unirá a la liquidación del conductor cuando la administración la revise.", "success");
+                MostrarMensaje("Registrado. Se unirá a la liquidación del conductor cuando la administración la revise.", "success", enPagina: true);
                 txtSoles.Text = txtDolares.Text = txtOperacion.Text = txtProveedor.Text = txtRuc.Text = txtComprobante.Text = txtDescripcion.Text = "";
                 CargarMovimientos();
             }
@@ -269,10 +269,9 @@ namespace WebSGV.Views
             return t.Length == 0 ? null : (t.Length <= max ? t : t.Substring(0, max));
         }
 
-        private void MostrarMensaje(string mensaje, string tipo)
+        private void MostrarMensaje(string mensaje, string tipo, bool enPagina = false)
         {
-            pnlMensaje.Visible = true;
-            lblMensaje.Text = "<div class=\"alert alert-" + tipo + " mb-0\">" + HttpUtility.HtmlEncode(mensaje) + "</div>";
+            AvisoHelper.Mostrar(Page, pnlMensaje, lblMensaje, mensaje, tipo, "mb-0", enPagina);
         }
     }
 }

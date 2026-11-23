@@ -4,8 +4,8 @@
 
     <asp:HiddenField ID="hfIdConductor" runat="server" />
 
-    <asp:Panel ID="pnlMensaje" runat="server" Visible="false">
-        <asp:Label ID="lblMensaje" runat="server"></asp:Label>
+    <asp:Panel ID="pnlMensaje" runat="server" EnableViewState="false" Visible="false">
+        <asp:Label ID="lblMensaje" runat="server" EnableViewState="false"></asp:Label>
     </asp:Panel>
 
     <div class="container-fluid px-3">

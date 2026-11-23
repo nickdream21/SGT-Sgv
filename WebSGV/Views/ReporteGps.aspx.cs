@@ -295,9 +295,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje, bool esExito = false)
         {
-            pnlMensaje.Visible = true;
-            string css = esExito ? "alert alert-success" : "alert alert-danger";
-            lblMensaje.Text = $"<div class='{css}'>{HttpUtility.HtmlEncode(mensaje)}</div>";
+            AvisoHelper.Mostrar(Page, pnlMensaje, lblMensaje, mensaje, esExito ? AvisoHelper.Exito : AvisoHelper.Peligro);
         }
     }
 }

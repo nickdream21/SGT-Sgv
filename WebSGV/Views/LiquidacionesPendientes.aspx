@@ -6,8 +6,8 @@
     <asp:HiddenField ID="hfIdOrdenSeleccionada" runat="server" ClientIDMode="Static" />
     <asp:HiddenField ID="hfDetallesJSON" runat="server" ClientIDMode="Static" />
 
-    <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-4">
-        <asp:Label ID="lblMensaje" runat="server"></asp:Label>
+    <asp:Panel ID="pnlMensajes" runat="server" Visible="false" EnableViewState="false" CssClass="mb-4">
+        <asp:Label ID="lblMensaje" runat="server" EnableViewState="false"></asp:Label>
     </asp:Panel>
 
     <div class="container-fluid px-4">
@@ -88,10 +88,10 @@
                             <span class="sgv-etiqueta d-inline-block" aria-hidden="true">&nbsp;</span>
                             <div class="d-flex">
                                 <asp:Button ID="btnFiltrar" runat="server" Text="Buscar" 
-                                    CssClass="btn btn-primary-custom btn-block mr-2" 
+                                    CssClass="btn btn-primary flex-fill mr-2" 
                                     OnClick="btnFiltrar_Click" />
                                 <asp:Button ID="btnLimpiar" runat="server" Text="Limpiar" 
-                                    CssClass="btn btn-secondary-custom btn-block" 
+                                    CssClass="btn btn-outline-secondary flex-fill" 
                                     OnClick="btnLimpiar_Click" />
                             </div>
                         </div>
@@ -280,8 +280,8 @@
                             <div class="form-group">
                                 <span class="sgv-etiqueta d-inline-block" aria-hidden="true">&nbsp;</span>
                                 <div class="d-flex">
-                                    <button type="button" id="btnBuscarAprobadas" class="btn btn-primary-custom btn-block mr-2" data-accion="cargarLiquidacionesAprobadas">Buscar</button>
-                                    <button type="button" class="btn btn-secondary-custom btn-block" data-accion="limpiarFiltrosAprobadas">Limpiar</button>
+                                    <button type="button" id="btnBuscarAprobadas" class="btn btn-primary flex-fill mr-2" data-accion="cargarLiquidacionesAprobadas">Buscar</button>
+                                    <button type="button" class="btn btn-outline-secondary flex-fill" data-accion="limpiarFiltrosAprobadas">Limpiar</button>
                                 </div>
                             </div>
                         </div>
@@ -700,11 +700,11 @@
 
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary-custom" data-accion="imprimirDetalle">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" data-accion="imprimirDetalle">
                         <i class="fas fa-print mr-1"></i>Imprimir
                     </button>
-                    <button type="button" id="btnAprobarDesdeModal" class="btn btn-success-custom"
+                    <button type="button" id="btnAprobarDesdeModal" class="btn btn-success"
                         data-accion="aprobarDesdeModal" style="display:none;">
                         <i class="fas fa-paper-plane mr-1"></i>Aprobar y enviar al conductor
                     </button>
@@ -745,9 +745,9 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>
                     <asp:Button ID="btnConfirmarRechazo" runat="server" 
-                        CssClass="btn btn-danger-custom" 
+                        CssClass="btn btn-danger" 
                         Text="Rechazar liquidación"
                         OnClick="btnConfirmarRechazo_Click"
                         data-accion="validarRechazo" />
@@ -789,8 +789,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger-custom" id="btnConfirmarReversion" data-accion="confirmarReversion">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmarReversion" data-accion="confirmarReversion">
                         <i class="fas fa-undo mr-1"></i>Confirmar reversión
                     </button>
                 </div>
@@ -825,8 +825,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary-custom" id="btnConfirmarRetiro" data-accion="confirmarRetiroEnvio">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmarRetiro" data-accion="confirmarRetiroEnvio">
                         <i class="fas fa-undo mr-1"></i>Retirar envío
                     </button>
                 </div>

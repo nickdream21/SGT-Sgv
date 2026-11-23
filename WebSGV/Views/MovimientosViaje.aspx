@@ -8,8 +8,8 @@
                y cada pago que la empresa hace directamente a un proveedor del viaje. Al aprobar la liquidación se unen solos.</p>
         </div>
 
-        <asp:Panel ID="pnlMensaje" runat="server" Visible="false" CssClass="mb-3">
-            <asp:Label ID="lblMensaje" runat="server"></asp:Label>
+        <asp:Panel ID="pnlMensaje" runat="server" EnableViewState="false" Visible="false" CssClass="mb-3">
+            <asp:Label ID="lblMensaje" runat="server" EnableViewState="false"></asp:Label>
         </asp:Panel>
 
         <div class="row">
@@ -100,7 +100,7 @@
 
                         <%-- Envío único (E5-3): token de un solo uso; un segundo POST del mismo formulario no registra otra vez --%>
                         <asp:HiddenField ID="hfEnvioUnico" runat="server" />
-                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar" CssClass="btn btn-primary-custom btn-block" OnClick="btnRegistrar_Click" data-espera="120" />
+                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar" CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" data-espera="120" />
                     </div>
                 </div>
             </div>
@@ -162,8 +162,8 @@
                     <small class="sgv-suave">Queda registrado; no se borra.</small>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary-custom" data-dismiss="modal">Cancelar</button>
-                    <asp:Button ID="btnAnular" runat="server" Text="Anular" CssClass="btn btn-danger-custom" OnClick="btnAnular_Click" />
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>
+                    <asp:Button ID="btnAnular" runat="server" Text="Anular" CssClass="btn btn-danger" OnClick="btnAnular_Click" />
                 </div>
             </div>
         </div>

@@ -476,6 +476,7 @@
     <Compile Include="Helpers\DbHelper.cs" />
     <Compile Include="Helpers\SesionVigenteHelper.cs" />
     <Compile Include="Helpers\ArchivoSubidoHelper.cs" />
+    <Compile Include="Helpers\AvisoHelper.cs" />
     <Compile Include="Helpers\ExcelSubidoHelper.cs" />
     <Compile Include="Helpers\ArchivosTemporalesHelper.cs" />
     <Compile Include="Helpers\ErrorAplicacionHelper.cs" />
