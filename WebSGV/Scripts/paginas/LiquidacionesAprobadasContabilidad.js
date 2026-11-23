@@ -1,4 +1,4 @@
-﻿var _urlPdfActual = '';
+var _urlPdfActual = '';
 
 function valorTexto(value) {
     var v = (value || '').toString().trim();
@@ -79,12 +79,53 @@ function renderDetallePeajes(d) {
 var _timerBusquedaProgresiva = null;
 var _timerConductor = null;
 var _ultimaClaveBusqueda = '';
+var _paginaActual = 0;
+// Filtros de la última búsqueda enviada: el paginador pide otra página de ESA búsqueda, aunque el
+// usuario haya escrito otra cosa en los filtros sin buscar todavía.
+var _ultimosFiltros = null;
+
+// U-095: la pantalla abre con los últimos 90 días por fecha de salida; "Todo el historial" quita el rango.
+var DIAS_RANGO_POR_DEFECTO = 90;
+
+function fechaIso(d) {
+    var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+    var dd = ('0' + d.getDate()).slice(-2);
+    return d.getFullYear() + '-' + mm + '-' + dd;
+}
+
+function fechaLegible(iso) {
+    var p = (iso || '').split('-');
+    return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
+}
+
+function ponerRangoPorDefecto() {
+    var hoy = new Date();
+    var desde = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - DIAS_RANGO_POR_DEFECTO);
+    $('#txtFechaDesde').val(fechaIso(desde));
+    $('#txtFechaHasta').val(fechaIso(hoy));
+}
+
+function describirRango(filtros) {
+    var texto;
+    if (filtros.desde && filtros.hasta) {
+        texto = 'Liquidaciones con salida del ' + fechaLegible(filtros.desde) + ' al ' + fechaLegible(filtros.hasta) + '.';
+    } else if (filtros.desde) {
+        texto = 'Liquidaciones con salida desde el ' + fechaLegible(filtros.desde) + '.';
+    } else if (filtros.hasta) {
+        texto = 'Liquidaciones con salida hasta el ' + fechaLegible(filtros.hasta) + '.';
+    } else {
+        texto = 'Todo el historial (sin rango de fechas).';
+    }
+    $('#lblRangoFechas').text(texto);
+}
 
 function obtenerFiltrosBusqueda() {
     return {
         idConductor: parseInt($('#hfConductorId').val() || '0', 10),
         conductor: ($('#txtConductor').val() || '').trim(),
-        numero: ($('#txtNumeroLiquidacion').val() || '').trim()
+        numero: ($('#txtNumeroLiquidacion').val() || '').trim(),
+        desde: ($('#txtFechaDesde').val() || '').trim(),
+        hasta: ($('#txtFechaHasta').val() || '').trim()
     };
 }
 
@@ -121,38 +162,124 @@ function limpiarFiltros() {
     $('#txtConductor').val('');
     $('#hfConductorId').val('');
     $('#txtNumeroLiquidacion').val('');
+    ponerRangoPorDefecto();
     _ultimaClaveBusqueda = '';
     buscarLiquidaciones(false);
 }
 
-function buscarLiquidaciones(forzarManual) {
-    var filtros = obtenerFiltrosBusqueda();
+function verTodoHistorial() {
+    $('#txtFechaDesde').val('');
+    $('#txtFechaHasta').val('');
+    buscarLiquidaciones(true);
+}
+
+function limpiarResultados(mensajeHtml) {
+    $('#lblTotalResultados').text('0');
+    $('#lblMostrando').text('');
+    $('#paginadorLiquidaciones').empty();
+    $('#tbodyLiquidaciones').html(mensajeHtml);
+}
+
+function itemPaginador(texto, pagina, opciones) {
+    opciones = opciones || {};
+    var clases = 'page-item' + (opciones.activa ? ' active' : '') + (opciones.deshabilitada ? ' disabled' : '');
+    var atributos = opciones.activa ? ' aria-current="page"' : '';
+    var etiqueta = opciones.etiqueta ? ' aria-label="' + SGV.escaparHtml(opciones.etiqueta) + '"' : '';
+    var deshabilitado = opciones.deshabilitada || opciones.activa ? ' disabled' : '';
+    return '<li class="' + clases + '"' + atributos + '>' +
+        '<button type="button" class="page-link" data-accion="irPagina" data-pagina="' + pagina + '"' + etiqueta + deshabilitado + '>' +
+        SGV.escaparHtml(texto) + '</button></li>';
+}
+
+function pintarPaginador(pagina, total, tamano) {
+    var paginas = Math.max(1, Math.ceil(total / tamano));
+    var $pag = $('#paginadorLiquidaciones');
+    if (paginas <= 1) {
+        $pag.empty();
+        return;
+    }
+
+    var html = itemPaginador('Anterior', pagina - 1, { deshabilitada: pagina <= 0, etiqueta: 'Página anterior' });
+    var inicio = Math.max(0, Math.min(pagina - 2, paginas - 5));
+    var fin = Math.min(paginas - 1, inicio + 4);
+    for (var p = inicio; p <= fin; p++) {
+        html += itemPaginador(String(p + 1), p, { activa: p === pagina, etiqueta: 'Página ' + (p + 1) + ' de ' + paginas });
+    }
+    html += itemPaginador('Siguiente', pagina + 1, { deshabilitada: pagina >= paginas - 1, etiqueta: 'Página siguiente' });
+    $pag.html(html);
+}
+
+function irPagina(pagina) {
+    if (isNaN(pagina) || pagina < 0 || !_ultimosFiltros) {
+        return;
+    }
+    buscarLiquidaciones(true, pagina, _ultimosFiltros);
+}
+
+function buscarLiquidaciones(forzarManual, pagina, filtrosGuardados) {
+    var filtros = filtrosGuardados || obtenerFiltrosBusqueda();
     var esManual = !!forzarManual;
 
     if (!esManual && !puedeBuscarAutomaticamente(filtros)) {
         return;
     }
 
-    var clave = [filtros.idConductor, filtros.conductor.toLowerCase(), filtros.numero.toLowerCase()].join('|');
+    if (filtros.desde && filtros.hasta && filtros.desde > filtros.hasta) {
+        SGV.avisar('La fecha "desde" es posterior a la fecha "hasta".', { tipo: 'warning' });
+        return;
+    }
+
+    // Cualquier cambio de filtros vuelve a la primera página; solo el paginador pide otra.
+    var paginaPedida = typeof pagina === 'number' ? pagina : 0;
+
+    var clave = [filtros.idConductor, filtros.conductor.toLowerCase(), filtros.numero.toLowerCase(), filtros.desde, filtros.hasta].join('|');
     if (!esManual && clave === _ultimaClaveBusqueda) {
         return;
     }
     _ultimaClaveBusqueda = clave;
+    _ultimosFiltros = filtros;
+    describirRango(filtros);
 
     $.ajax({
         type: 'POST',
         url: 'LiquidacionesAprobadasContabilidad.aspx/ObtenerLiquidacionesAprobadasContabilidad',
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
-        data: JSON.stringify({ idConductor: filtros.idConductor, numeroOrden: filtros.numero, nombreConductor: filtros.idConductor > 0 ? '' : filtros.conductor }),
+        data: JSON.stringify({
+            idConductor: filtros.idConductor,
+            numeroOrden: filtros.numero,
+            nombreConductor: filtros.idConductor > 0 ? '' : filtros.conductor,
+            fechaDesde: filtros.desde,
+            fechaHasta: filtros.hasta,
+            pagina: paginaPedida
+        }),
         success: function (response) {
-            var data = response && response.d ? response.d : [];
-            $('#lblTotalResultados').text(data.length);
-
-            if (!data.length) {
-                $('#tbodyLiquidaciones').html('<tr><td colspan="6" class="text-center text-muted py-4">No se encontraron liquidaciones aprobadas.</td></tr>');
+            var r = response && response.d ? response.d : null;
+            if (!r) {
+                limpiarResultados('<tr><td colspan="6" class="text-center text-danger py-4">Error al obtener liquidaciones.</td></tr>');
                 return;
             }
+            if (r.Mensaje) {
+                limpiarResultados('<tr><td colspan="6" class="text-center text-danger py-4">' + SGV.escaparHtml(r.Mensaje) + '</td></tr>');
+                return;
+            }
+
+            var data = r.Items || [];
+            var total = r.Total || 0;
+            var tamano = r.TamanoPagina || 50;
+            _paginaActual = r.Pagina || 0;
+
+            if (!data.length) {
+                limpiarResultados('<tr><td colspan="6" class="text-center text-muted py-4">No se encontraron liquidaciones aprobadas.</td></tr>');
+                $('#lblMostrando').text('Mostrando 0 de 0');
+                return;
+            }
+
+            $('#lblTotalResultados').text(total);
+            var paginas = Math.max(1, Math.ceil(total / tamano));
+            $('#lblMostrando').text('Mostrando ' + data.length + ' de ' + total +
+                (paginas > 1 ? ' · página ' + (_paginaActual + 1) + ' de ' + paginas : ''));
+            pintarPaginador(_paginaActual, total, tamano);
 
             var html = '';
             for (var i = 0; i < data.length; i++) {
@@ -172,7 +299,7 @@ function buscarLiquidaciones(forzarManual) {
             $('#tbodyLiquidaciones').html(html);
         },
         error: function () {
-            $('#tbodyLiquidaciones').html('<tr><td colspan="6" class="text-center text-danger py-4">Error al obtener liquidaciones.</td></tr>');
+            limpiarResultados('<tr><td colspan="6" class="text-center text-danger py-4">Error al obtener liquidaciones.</td></tr>');
         }
     });
 }
@@ -307,7 +434,13 @@ $('#txtNumeroLiquidacion').on('input', function () {
     programarBusquedaProgresiva();
 });
 
+$('#txtFechaDesde, #txtFechaHasta').on('change', function () {
+    programarBusquedaProgresiva();
+});
+
 $(document).ready(function () {
+    ponerRangoPorDefecto();
+
     $('#iframePdfLiquidacion').on('load', function () {
         if (!_urlPdfActual) {
             return;
@@ -346,6 +479,8 @@ window.SGV = window.SGV || {};
 SGV.acciones = Object.assign(SGV.acciones || {}, {
     buscarLiquidaciones: function () { buscarLiquidaciones(true); },
     limpiarFiltros: function () { limpiarFiltros(); },
+    verTodoHistorial: function () { verTodoHistorial(); },
+    irPagina: function (el) { irPagina(Number(el.getAttribute('data-pagina'))); },
     verPdfLiquidacion: function (el) { verPdfLiquidacion(Number(el.getAttribute('data-id'))); },
     verDetalle: function (el) { verDetalle(Number(el.getAttribute('data-id'))); }
 });

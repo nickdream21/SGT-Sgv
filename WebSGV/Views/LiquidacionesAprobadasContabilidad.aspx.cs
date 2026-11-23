@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Web.Services;
 using WebSGV.Helpers;
@@ -33,19 +34,37 @@ namespace WebSGV.Views
             SecurityHelper.AgregarHeadersSeguridad();
         }
 
+        /// <summary>Respuesta de la lista: una página, el total con los filtros y, si algo falló, el mensaje.</summary>
+        public class ResultadoLiquidacionesAprobadas
+        {
+            public List<LiquidacionAprobadaItem> Items { get; set; } = new List<LiquidacionAprobadaItem>();
+            public int Total { get; set; }
+            /// <summary>Página devuelta, desde 0.</summary>
+            public int Pagina { get; set; }
+            public int TamanoPagina { get; set; } = LiquidacionesContabilidadService.TamanoPagina;
+            /// <summary>Null si todo fue bien; si no, el texto para el usuario.</summary>
+            public string Mensaje { get; set; }
+        }
+
+        /// <summary>
+        /// Una página (50) de las liquidaciones aprobadas. <paramref name="fechaDesde"/> y
+        /// <paramref name="fechaHasta"/> filtran por fecha de salida (aaaa-mm-dd; vacías = sin límite: "Todo
+        /// el historial"). La pantalla abre con los últimos 90 días (U-095), que pone el script.
+        /// </summary>
         [WebMethod(EnableSession = true)]
-        public static List<LiquidacionAprobadaItem> ObtenerLiquidacionesAprobadasContabilidad(int idConductor, string numeroOrden, string nombreConductor)
+        public static ResultadoLiquidacionesAprobadas ObtenerLiquidacionesAprobadasContabilidad(int idConductor, string numeroOrden, string nombreConductor,
+            string fechaDesde, string fechaHasta, int pagina)
         {
             if (!SesionHelper.HaySesionActual)
-                return new List<LiquidacionAprobadaItem>();
+                return new ResultadoLiquidacionesAprobadas();
 
             // Misma regla que la página: sin esto cualquier rol logueado (p. ej. CONDUCTOR)
             // podía listar las liquidaciones de todos los conductores.
             if (!RolesHelper.TienePermiso("LIQUIDACIONES_CONTABILIDAD"))
-                return new List<LiquidacionAprobadaItem>();
+                return new ResultadoLiquidacionesAprobadas();
 
             if (idConductor < 0)
-                return new List<LiquidacionAprobadaItem>();
+                return new ResultadoLiquidacionesAprobadas();
 
             numeroOrden     = (numeroOrden ?? string.Empty).Trim();
             nombreConductor = (nombreConductor ?? string.Empty).Trim();
@@ -56,11 +75,25 @@ namespace WebSGV.Views
                 nombreConductor = nombreConductor.Substring(0, 120);
 
             if (!string.IsNullOrWhiteSpace(numeroOrden) && !Regex.IsMatch(numeroOrden, "^[A-Za-z0-9_/-]+$"))
-                return new List<LiquidacionAprobadaItem>();
+                return new ResultadoLiquidacionesAprobadas();
+
+            if (!LeerFecha(fechaDesde, out DateTime? desde) || !LeerFecha(fechaHasta, out DateTime? hasta))
+                return new ResultadoLiquidacionesAprobadas { Mensaje = "La fecha no es válida." };
+            if (desde.HasValue && hasta.HasValue && desde.Value > hasta.Value)
+                return new ResultadoLiquidacionesAprobadas { Mensaje = "La fecha \"desde\" es posterior a la fecha \"hasta\"." };
+
+            PaginaAprobadas resultado;
+            try
+            {
+                resultado = LiquidacionesContabilidadService.ObtenerPagina(idConductor, numeroOrden, nombreConductor, desde, hasta, pagina);
+            }
+            catch (Exception ex)
+            {
+                return new ResultadoLiquidacionesAprobadas { Mensaje = MensajeErrorHelper.ParaUsuario(ex) };
+            }
 
             var lista = new List<LiquidacionAprobadaItem>();
-
-            DataTable dt = LiquidacionesContabilidadService.ObtenerAprobadas(idConductor, numeroOrden, nombreConductor);
+            DataTable dt = resultado.Filas;
 
             foreach (DataRow reader in dt.Rows)
             {
@@ -85,7 +118,21 @@ namespace WebSGV.Views
                 });
             }
 
-            return lista;
+            return new ResultadoLiquidacionesAprobadas { Items = lista, Total = resultado.Total, Pagina = resultado.IndicePagina };
+        }
+
+        /// <summary>Fecha aaaa-mm-dd del input type="date"; vacía = null (sin límite). False si no se entiende.</summary>
+        internal static bool LeerFecha(string texto, out DateTime? fecha)
+        {
+            fecha = null;
+            texto = (texto ?? string.Empty).Trim();
+            if (texto.Length == 0)
+                return true;
+            if (!DateTime.TryParseExact(texto, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime f)
+                || f.Year < 2000 || f.Year > 2100)
+                return false;
+            fecha = f;
+            return true;
         }
 
         /// <summary>

@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-067 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-068 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -80,6 +80,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-065** PDF en el iframe de contabilidad tras E5-7 — con una liquidación aprobada real (la BD de pruebas no tiene `OrdenViaje`), en LiquidacionesAprobadasContabilidad pulsar "Ver": el PDF se muestra en el iframe y la consola no tiene errores, en el sitio local y en el publicado. · B
 - [ ] **P-066** Panel del conductor sin ViewState en las listas (E5-9) — con un conductor que tenga viaje activo, despachos, dinero recibido e historial, a 390 px: Buscar del historial y un envío de liquidación rechazado por validación dejan los 4 bloques llenos y no pisan las fechas escritas; si los viajes cambiaron, la lista de despachos se oculta. · B
 - [ ] **P-067** ReportesOrdenesViaje con datos reales (E5-9) — con liquidaciones y viajes activos: Buscar en una pestaña deja llena la grilla de la otra y los totales del pie bien; con fechas inválidas los totales quedan en 0. · C
+- [ ] **P-068** Contabilidad paginada con datos reales (E5-10) — con más de 50 liquidaciones aprobadas, con el rol contabilidad a 1366 y 390 px: abre con 90 días, la página 2 trae otras filas, "Todo el historial" suma las antiguas y el PDF se abre en el iframe. · B
 
 ## Reglas
 

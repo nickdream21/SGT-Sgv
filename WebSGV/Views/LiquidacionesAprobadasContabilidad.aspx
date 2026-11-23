@@ -19,21 +19,31 @@
             <div class="card-header"><strong>Filtros de búsqueda</strong></div>
             <div class="card-body" data-enter="btnBuscarLiquidaciones">
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-4 mb-2">
                         <label for="txtConductor">Conductor</label>
                         <input type="text" id="txtConductor" class="form-control" placeholder="Buscar conductor..." autocomplete="off" />
                         <input type="hidden" id="hfConductorId" value="" />
                         <div id="conductorSugg" class="conductor-autocomplete-dropdown"></div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4 mb-2">
                         <label for="txtNumeroLiquidacion">N° Liquidación</label>
                         <input type="text" id="txtNumeroLiquidacion" class="form-control" placeholder="Ej. OV-000123" maxlength="30" />
                     </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="button" id="btnBuscarLiquidaciones" class="btn btn-primary mr-2" data-accion="buscarLiquidaciones">Buscar</button>
-                        <button type="button" class="btn btn-secondary" data-accion="limpiarFiltros">Limpiar</button>
+                    <div class="col-12 col-sm-6 col-md-2 mb-2">
+                        <label for="txtFechaDesde">Salida desde</label>
+                        <input type="date" id="txtFechaDesde" class="form-control" min="2000-01-01" max="2100-12-31" />
+                    </div>
+                    <div class="col-12 col-sm-6 col-md-2 mb-2">
+                        <label for="txtFechaHasta">Salida hasta</label>
+                        <input type="date" id="txtFechaHasta" class="form-control" min="2000-01-01" max="2100-12-31" />
                     </div>
                 </div>
+                <div class="d-flex flex-wrap align-items-center">
+                    <button type="button" id="btnBuscarLiquidaciones" class="btn btn-primary mr-2 mb-2" data-accion="buscarLiquidaciones">Buscar</button>
+                    <button type="button" class="btn btn-secondary mr-2 mb-2" data-accion="limpiarFiltros">Limpiar</button>
+                    <button type="button" id="btnTodoHistorial" class="btn btn-outline-secondary mb-2" data-accion="verTodoHistorial">Todo el historial</button>
+                </div>
+                <p class="small text-muted mb-0" id="lblRangoFechas" aria-live="polite"></p>
             </div>
         </div>
 
@@ -60,6 +70,12 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+            <div class="card-footer d-flex flex-wrap justify-content-between align-items-center">
+                <span class="small text-muted mr-2 my-1" id="lblMostrando" aria-live="polite"></span>
+                <nav aria-label="Páginas de liquidaciones aprobadas" class="my-1">
+                    <ul class="pagination pagination-sm mb-0" id="paginadorLiquidaciones"></ul>
+                </nav>
             </div>
         </div>
     </div>

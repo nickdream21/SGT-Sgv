@@ -315,6 +315,16 @@ Las dos deben devolver 0 filas.
 
 **Controles de E3-2 (solo SELECT):** `SELECT COUNT(*) FROM Despachos WHERE estadoDespacho = 'EN_PROCESO'` y `SELECT estado, COUNT(*) FROM SeguimientoExportacion GROUP BY estado`. Desde E3-2 los SP dejan los despachos rechazados en `PROGRAMADO` y el seguimiento solo en `EN_CURSO`/`FINALIZADO`/`CANCELADO`; si salen `EN_PROCESO`, `COMPLETADO` o `PENDIENTE`, anotarlos como un `D-` nuevo (la corrección de pruebas es D-030).
 
+**E5-10 — 2 SP optimizados, mismo resultado** (`sp_FF_ObtenerFacturasFlete`, `sp_LD_ObtenerLotesRegistrados`): el `-SoloListar` de arriba debe mostrarlos como DISTINTO y se aplican con el resto; sin migración ni cambio de datos, y el orden respecto al código no importa (las columnas no cambian). Antes, como usan variables de tabla que toman la intercalación de la BD, comprobar que coincide con la de las columnas que comparan (deben dar el mismo valor; si no, avisar antes de aplicar):
+
+```sql
+SELECT DATABASEPROPERTYEX(DB_NAME(), 'Collation') AS bd,
+  (SELECT collation_name FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Factura') AND name = 'numeroFactura') AS factura,
+  (SELECT collation_name FROM sys.columns WHERE object_id = OBJECT_ID('dbo.Despachos') AND name = 'guiaRemitente') AS guia;
+```
+
+Control después: FacturasFlete del mes y "Lotes registrados" de ListaDespachos muestran los mismos conteos que antes de aplicar.
+
 ## 6. SP retirados
 
 Ninguno los llama el código publicado. Los 8 `sp_SE_*` sin uso que borraba `borrar-sp-se-sin-uso.sql` los borra ahora la migración 57 (paso 4); el script se quitó del repo.

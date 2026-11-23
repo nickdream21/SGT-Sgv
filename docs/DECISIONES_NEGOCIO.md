@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-28 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-29 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -48,6 +48,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-26 | Permisos del SUPERVISOR y del administrador como funcionan hoy (opción recomendada, a confirmar) |
 | DN-27 | Segundo factor: quién lo lleva, apagado por interruptor y cómo se recupera (opción recomendada, a confirmar) |
 | DN-28 | Aspecto del sistema: dirección "Expediente", iconos solo en acciones y avisos, sin emojis |
+| DN-29 | Contabilidad: liquidaciones aprobadas de los últimos 90 días al abrir, 50 por página (opción recomendada, a confirmar) |
 
 ---
 
@@ -127,6 +128,15 @@ anulado lo tenía. Al reactivarla se prueba la pantalla de nuevo (P-029).
 - Desde: 2026-11-21, migración `59_BorrarRevocarFirmaYPortador.sql`.
 - En el código: `WebSGV/Database/StoredProcedures/sp_LD_RegistrarMovimientoViaje.sql` (sin `@idConductorPortador`).
 - Estado: aplicada en pruebas (`sgvActualizada`); en producción con `docs/PASO_A_PRODUCCION.md`.
+
+### DN-29 — Contabilidad: liquidaciones aprobadas de los últimos 90 días al abrir, 50 por página (opción recomendada, a confirmar)
+La pantalla de liquidaciones aprobadas de contabilidad abre con las de los últimos 90 días por fecha de salida, de a 50
+por página, con "Todo el historial" para quitar el rango. Antes traía toda la historia sin paginar.
+- Desde: 2026-11-22. U-095: el usuario pidió terminar la Etapa 5 tomando las decisiones pendientes con la opción
+  recomendada; queda a confirmar por él.
+- En el código: `WebSGV/Services/Liquidaciones/LiquidacionesContabilidadService.cs` (`DiasRangoPorDefecto`, `TamanoPagina`)
+  y `WebSGV/Scripts/paginas/LiquidacionesAprobadasContabilidad.js` (E5-10).
+- Estado: vigente, a confirmar.
 
 ## 2. Usuarios y acceso
 

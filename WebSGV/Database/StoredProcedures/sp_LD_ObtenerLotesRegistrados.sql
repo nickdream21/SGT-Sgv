@@ -43,6 +43,20 @@
 -- ListaDespachos muestra todas, no solo el MAX.
 -- Busquedas (2026-11-17): los textos de @numeroPedido, @numeroFactura, @numeroCPIC
 -- y @nombreConductor se buscan literales: '%', '_' y '[' se escapan antes del LIKE.
+-- E5-10 (2026-11-22), mismo resultado con menos lecturas:
+--   * Despachos se lee una sola vez: los filtros por despacho (estado activo/anulado,
+--     cliente, tipo, planta, pedido y fechas) se aplican en DespachosPerfil y
+--     LotesAgrupados agrupa desde ahi, en vez de calcular los documentos de TODOS los
+--     despachos y volver a leer Despachos para filtrar.
+--   * El perfil de cada cliente (antes los CTE ClientesConPedido / ClientesConCPIC) se
+--     calcula una vez en @perfilCliente (variable de tabla con clave: el humo de
+--     aplicar-procedimientos.ps1 no puede describir una #temporal). Solo baja el filtro
+--     de cliente: el perfil depende de todos sus despachos activos, no de fechas ni planta.
+--   * DocumentosManifiesto se agrupa una vez por despacho (ManifiestosPorDespacho) en
+--     vez de tres EXISTS por fila; igual los PDF de factura y de CPIC (FacturasConPdf,
+--     CpicConPdf) en vez de un NOT EXISTS por fila.
+--   * OPTION (RECOMPILE): con tantos filtros opcionales, el plan se arma con los valores
+--     reales de cada llamada.
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_ObtenerLotesRegistrados
     @idCliente       INT          = NULL,
@@ -86,34 +100,68 @@ BEGIN
     IF @fechaHasta IS NOT NULL
         SET @fechaHastaFin = DATEADD(SECOND, -1, DATEADD(DAY, 1, CAST(@fechaHasta AS DATETIME)));
 
-    ;WITH ClientesConPedido AS (
-        -- Clientes que mandan sus documentos en el ZIP del correo (pedido, factura con PDF y guias): Vitapro.
-        SELECT DISTINCT idCliente FROM Despachos
-        WHERE activo = 1 AND NULLIF(LTRIM(RTRIM(numeroPedido)), '') IS NOT NULL
+    -- Perfil de cada cliente, calculado una vez (antes eran dos CTE que el plan repetia por despacho):
+    --   conPedido: manda sus documentos en el ZIP del correo (pedido, factura con PDF y guias): Vitapro.
+    --   conCPIC:   alguno de sus despachos activos tiene CPIC.
+    -- Depende de TODOS los despachos activos del cliente: aqui solo baja el filtro de cliente.
+    DECLARE @perfilCliente TABLE (
+        idCliente INT NOT NULL PRIMARY KEY,
+        conPedido BIT NOT NULL,
+        conCPIC   BIT NOT NULL
+    );
+    INSERT INTO @perfilCliente (idCliente, conPedido, conCPIC)
+    SELECT idCliente,
+           MAX(CASE WHEN NULLIF(LTRIM(RTRIM(numeroPedido)), '') IS NOT NULL THEN 1 ELSE 0 END),
+           MAX(CASE WHEN idCPIC IS NOT NULL THEN 1 ELSE 0 END)
+    FROM Despachos
+    WHERE activo = 1
+      AND (@idCliente IS NULL OR idCliente = @idCliente)
+    GROUP BY idCliente
+    OPTION (RECOMPILE);
+
+    ;WITH ManifiestosPorDespacho AS (
+        -- Una fila por despacho con manifiesto: cuales tiene (cruce, retorno).
+        SELECT idDespacho,
+               MAX(CASE WHEN tipoManifiesto = 'CRUCE'   THEN 1 ELSE 0 END) AS TieneCruce,
+               MAX(CASE WHEN tipoManifiesto = 'RETORNO' THEN 1 ELSE 0 END) AS TieneRetorno
+        FROM DocumentosManifiesto
+        GROUP BY idDespacho
     ),
-    ClientesConCPIC AS (
-        SELECT DISTINCT idCliente FROM Despachos WHERE activo = 1 AND idCPIC IS NOT NULL
+    FacturasConPdf AS (
+        -- Facturas con su PDF activo (una fila por factura).
+        SELECT DISTINCT idFactura FROM DocumentosFactura WHERE activo = 1
+    ),
+    CpicConPdf AS (
+        SELECT DISTINCT idCPIC FROM DocumentosCPIC WHERE activo = 1
     ),
     DespachosPerfil AS (
         -- Que documentos se esperan de cada carga (2026-11-06):
         --   PEDIDO: cliente con pedido (ZIP del correo).
         --   CPIC:   tercero que cruza la frontera (Crisar, Novopan): su factura comercial la cita la CPIC.
         --   GUIA:   tercero nacional (Polinplast): nuestra GRE transportista (cita la guia del remitente).
-        SELECT d.idDespacho, d.estadoDespacho, d.tipoOperacion, d.numeroPedido, d.guiaRemitente, d.guiaTransportista, d.idFactura,
+        -- Aqui se filtran los despachos (una sola lectura de Despachos para el listado).
+        SELECT d.idDespacho, d.idCliente, d.fechaDespacho, d.idPlanta, d.fechaCreacion, d.usuarioCreacion,
+               d.estadoDespacho, d.tipoOperacion, d.numeroPedido, d.guiaRemitente, d.guiaTransportista, d.idFactura,
                d.esInternacional, d.idCPIC,
-               CASE WHEN cpe.idCliente IS NOT NULL THEN 'PEDIDO'
-                    WHEN d.esInternacional = 1 OR ccp.idCliente IS NOT NULL THEN 'CPIC'
+               CASE WHEN pc.conPedido = 1 THEN 'PEDIDO'
+                    WHEN d.esInternacional = 1 OR pc.conCPIC = 1 THEN 'CPIC'
                     ELSE 'GUIA' END AS perfil
         FROM Despachos d
-        LEFT JOIN ClientesConPedido cpe ON cpe.idCliente = d.idCliente
-        LEFT JOIN ClientesConCPIC   ccp ON ccp.idCliente = d.idCliente
+        LEFT JOIN @perfilCliente pc ON pc.idCliente = d.idCliente
         WHERE ((@verAnulados = 0 AND d.activo = 1) OR (@verAnulados = 1 AND d.activo = 0 AND d.estadoDespacho = 'ANULADO'))
+          AND (@idCliente      IS NULL OR d.idCliente      = @idCliente)
+          AND (@tipoOperacion  IS NULL OR d.tipoOperacion  = @tipoOperacion)
+          AND (@idPlanta       IS NULL OR d.idPlanta       = @idPlanta)
+          AND (@numeroPedido   IS NULL OR d.numeroPedido LIKE @pedidoLike)
+          AND (@fechaDesde     IS NULL OR d.fechaDespacho  >= @fechaDesde)
+          AND (@fechaHastaFin  IS NULL OR d.fechaDespacho  <= @fechaHastaFin)
     ),
     DespachosDocumentos AS (
         -- Un 1 por documento que le falta al despacho (0 si esta anulado:
         -- un anulado no espera documentos).
         SELECT
-            d.idDespacho,
+            d.idDespacho, d.idCliente, d.numeroPedido, d.fechaDespacho, d.tipoOperacion, d.esInternacional,
+            d.idPlanta, d.idFactura, d.idCPIC, d.estadoDespacho, d.fechaCreacion, d.usuarioCreacion,
             d.perfil,
             CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.tipoOperacion = 'CARGA' AND d.perfil = 'PEDIDO'
                       AND NULLIF(LTRIM(RTRIM(d.numeroPedido)), '') IS NULL THEN 1 ELSE 0 END AS SinPedido,
@@ -125,23 +173,22 @@ BEGIN
             CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.tipoOperacion = 'CARGA' AND d.perfil IN ('PEDIDO', 'CPIC')
                       AND d.idFactura IS NULL THEN 1 ELSE 0 END AS SinFactura,
             CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.idFactura IS NOT NULL AND d.perfil = 'PEDIDO'
-                      AND NOT EXISTS (SELECT 1 FROM DocumentosFactura df
-                                      WHERE df.idFactura = d.idFactura AND df.activo = 1) THEN 1 ELSE 0 END AS SinPdfFactura,
+                      AND fpdf.idFactura IS NULL THEN 1 ELSE 0 END AS SinPdfFactura,
             CASE WHEN d.estadoDespacho <> 'ANULADO'
                       AND (d.esInternacional = 1 OR (d.perfil = 'CPIC' AND d.tipoOperacion = 'CARGA'))
                       AND d.idCPIC IS NULL THEN 1 ELSE 0 END AS SinCPIC,
             CASE WHEN d.estadoDespacho <> 'ANULADO' AND d.idCPIC IS NOT NULL
-                      AND NOT EXISTS (SELECT 1 FROM DocumentosCPIC dcp
-                                      WHERE dcp.idCPIC = d.idCPIC AND dcp.activo = 1) THEN 1 ELSE 0 END AS SinPdfCPIC,
+                      AND cpdf.idCPIC IS NULL THEN 1 ELSE 0 END AS SinPdfCPIC,
             CASE WHEN d.estadoDespacho <> 'ANULADO'
                       AND (d.esInternacional = 1 OR (d.perfil = 'CPIC' AND d.tipoOperacion = 'CARGA'))
-                      AND NOT EXISTS (SELECT 1 FROM DocumentosManifiesto dm
-                                      WHERE dm.idDespacho = d.idDespacho) THEN 1 ELSE 0 END AS SinManifiesto,
+                      AND mpd.idDespacho IS NULL THEN 1 ELSE 0 END AS SinManifiesto,
             -- Manifiesto completo: el de cruce y el de retorno (estado del manifiesto en ListaDespachos).
-            CASE WHEN EXISTS (SELECT 1 FROM DocumentosManifiesto dm WHERE dm.idDespacho = d.idDespacho AND dm.tipoManifiesto = 'CRUCE')
-                      AND EXISTS (SELECT 1 FROM DocumentosManifiesto dm WHERE dm.idDespacho = d.idDespacho AND dm.tipoManifiesto = 'RETORNO')
+            CASE WHEN mpd.TieneCruce = 1 AND mpd.TieneRetorno = 1
                  THEN 1 ELSE 0 END AS ManifiestoCompleto
         FROM DespachosPerfil d
+        LEFT JOIN ManifiestosPorDespacho mpd ON mpd.idDespacho = d.idDespacho
+        LEFT JOIN FacturasConPdf         fpdf ON fpdf.idFactura = d.idFactura
+        LEFT JOIN CpicConPdf             cpdf ON cpdf.idCPIC    = d.idCPIC
     ),
     LotesAgrupados AS (
         SELECT
@@ -177,14 +224,14 @@ BEGIN
             MAX(cp.valorTotalFlete)   AS ValorFlete,
 
             SUM(CASE WHEN d.estadoDespacho <> 'ANULADO' THEN 1 ELSE 0 END) AS DespachosVigentes,
-            SUM(dd.SinPedido)         AS DespachosSinPedido,
-            SUM(dd.SinGuia)           AS DespachosSinGuia,
-            SUM(dd.SinFactura)        AS DespachosSinFactura,
-            SUM(dd.SinPdfFactura)     AS DespachosSinPdfFactura,
-            SUM(dd.SinCPIC)           AS DespachosSinCPIC,
-            SUM(dd.SinPdfCPIC)        AS DespachosSinPdfCPIC,
-            SUM(dd.SinManifiesto)     AS DespachosSinManifiesto,
-            MAX(dd.perfil)            AS PerfilDocumentos,
+            SUM(d.SinPedido)          AS DespachosSinPedido,
+            SUM(d.SinGuia)            AS DespachosSinGuia,
+            SUM(d.SinFactura)         AS DespachosSinFactura,
+            SUM(d.SinPdfFactura)      AS DespachosSinPdfFactura,
+            SUM(d.SinCPIC)            AS DespachosSinCPIC,
+            SUM(d.SinPdfCPIC)         AS DespachosSinPdfCPIC,
+            SUM(d.SinManifiesto)      AS DespachosSinManifiesto,
+            MAX(d.perfil)             AS PerfilDocumentos,
 
             CASE
                 WHEN SUM(CASE WHEN d.estadoDespacho = 'ANULADO' THEN 1 ELSE 0 END) = COUNT(*)
@@ -193,24 +240,16 @@ BEGIN
             END AS EstadoLote,
 
             -- Al final del resultset: la version anterior de la aplicacion lee las columnas por nombre.
-            SUM(dd.ManifiestoCompleto) AS DespachosManifiestoCompleto,
+            SUM(d.ManifiestoCompleto) AS DespachosManifiestoCompleto,
             STRING_AGG(CAST(f.numeroFactura AS NVARCHAR(MAX)), '|') AS NumerosFactura,
             STRING_AGG(CAST(cp.numeroCPIC AS NVARCHAR(MAX)), '|') AS NumerosCPIC
 
-        FROM Despachos d
-        INNER JOIN DespachosDocumentos dd ON dd.idDespacho = d.idDespacho
+        FROM DespachosDocumentos d
         INNER JOIN Cliente cl ON d.idCliente = cl.idCliente
         LEFT  JOIN Planta  pl ON d.idPlanta  = pl.idPlanta
         LEFT  JOIN Factura f  ON d.idFactura = f.idFactura
         LEFT  JOIN CPIC    cp ON d.idCPIC    = cp.idCPIC
-        WHERE ((@verAnulados = 0 AND d.activo = 1) OR (@verAnulados = 1 AND d.activo = 0 AND d.estadoDespacho = 'ANULADO'))
-          AND (@idCliente      IS NULL OR d.idCliente      = @idCliente)
-          AND (@tipoOperacion  IS NULL OR d.tipoOperacion  = @tipoOperacion)
-          AND (@idPlanta       IS NULL OR d.idPlanta        = @idPlanta)
-          AND (@numeroPedido   IS NULL OR d.numeroPedido LIKE @pedidoLike)
-          AND (@fechaDesde     IS NULL OR d.fechaDespacho  >= @fechaDesde)
-          AND (@fechaHastaFin  IS NULL OR d.fechaDespacho  <= @fechaHastaFin)
-          AND (@numeroFactura  IS NULL OR f.numeroFactura LIKE @facturaLike)
+        WHERE (@numeroFactura  IS NULL OR f.numeroFactura LIKE @facturaLike)
           AND (@numeroCPIC     IS NULL OR cp.numeroCPIC LIKE @cpicLike)
         GROUP BY
             d.idCliente, cl.nombre, d.numeroPedido, d.fechaDespacho,
@@ -239,5 +278,6 @@ BEGIN
               AND CONCAT(c2.nombre, ' ', ISNULL(c2.apPaterno, ''), ' ', ISNULL(c2.apMaterno, ''))
                     LIKE @conductorLike
       ))
-    ORDER BY la.FechaCreacion DESC;
+    ORDER BY la.FechaCreacion DESC
+    OPTION (RECOMPILE);
 END

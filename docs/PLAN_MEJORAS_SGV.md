@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `1ae0495` — E5-9: 7 listas de solo lectura sin ViewState (tablero de 16,9 a 2,2 KB), `SincronizarDespachos` solo al abrir el tablero y en "Actualizar GPS", pestaña conservada y sin "Todos los estados" en ReportesOrdenesViaje; cierra M-077; nuevo M-136, P-066 y P-067. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `e90e951` — E5-10: `sp_FF_ObtenerFacturasFlete` y `sp_LD_ObtenerLotesRegistrados` con el mismo resultado y de 4 a 15 veces menos lecturas (aplicados en pruebas; paso en `PASO_A_PRODUCCION.md` §5), contabilidad paginada de a 50 con 90 días al abrir (DN-29, a confirmar), `ConsultasListadoAcotadasTests`; nuevos M-137 a M-140 y P-068. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-136 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-140 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -162,6 +162,10 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 
 Las tareas de la etapa (E5-1 a E5-24) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; cada pendiente de aquí dice con qué tarea se cierra.
 
+- [ ] **M-137** Control de aprobadas sin tope cuando no hay fechas — `LiquidacionesPendientesService.ObtenerAprobadas` (pestaña "Control de aprobadas" de LiquidacionesPendientes) abre con 30 días, pero si se vacían las fechas trae todas las aprobadas sin `TOP` ni paginado: paginar como contabilidad (E5-10) y quitar su excepción de `ConsultasListadoAcotadasTests`. · C
+- [ ] **M-138** Lotes registrados sin rango de fechas — `sp_LD_ObtenerLotesRegistrados` se llama sin fechas en los contadores (`ListaDespachos.aspx.cs` `EstablecerContadores`, en cada carga), en "documentos pendientes" y si el usuario vacía las fechas: contadores con una consulta propia de conteo y un tope o paginado para el listado; quitar su excepción de `ConsultasListadoAcotadasTests`. · C
+- [ ] **M-139** Historial de CargarExcel sin tope — `CargarExcel.aspx.cs` `LoadUploadHistory` lista todo `UploadHistory` si no se elige mes ni año (hoy 0 filas): `TOP` o paginado y quitar su excepción. · C
+- [ ] **M-140** FacturasFlete con rango amplio sobre el objetivo de lecturas — tras E5-10 el mes típico lee 1 498 páginas, pero con el rango completo 1 594 y "solo por carga" 1 584 (búsquedas por fila en Cliente, FacturaFleteItem y Factura): un índice (migración) si crece; y declarar `COLLATE` en las variables de tabla de `sp_FF_ObtenerFacturasFlete` si la BD de producción tuviera otra intercalación. · C
 - [ ] **M-136** ReportesOrdenesViaje: combo "Estado del viaje" con una sola opción — tras E5-9 solo ofrece "Abierto" (la consulta siempre filtra `ABIERTO`): cambiarlo por un texto fijo y revisar los combos del reporte personalizado, que son los ~5 KB de ViewState que quedan. · C
 - [ ] **M-135** Auditoría: filtro de acción incompleto y etiquetas largas — el filtro "Acción" (`Auditoria.aspx`) lista 11 valores fijos y no permite elegir otros que sí existen (`CORREGIR_DATOS`, `CONSULTAR_HORA_GPS`, `RETIRAR_LIQUIDACION_PRUEBA`…): llenarlo con `SELECT DISTINCT Accion`; en la grilla, las etiquetas de acción largas parten el icono y el texto en dos líneas. · C
 - [ ] **M-134** Peso y avisos de Login — `favicon.ico` pesa 32 KB (4 tamaños hasta 64 px) y la raíz no tiene `clientCache`: dejarlo en 16/32 px o darle caché; Login manda 4 informes a `CspInforme.ashx` por carga ("script-src bloqueó eval" de MicrosoftAjax, WebUIValidation y `setTimeout` en texto, CSP de E4-5): ver si se pueden evitar antes de aplicar la CSP (M-125). · C
