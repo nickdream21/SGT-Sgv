@@ -604,6 +604,36 @@
     };
 })();
 
+// ── Nombre accesible de un Select2 ──────────────────────────────────
+// Select2 oculta el <select> y muestra un combobox nombrado solo por la opción elegida: el lector
+// decía "Seleccione…" sin saber de qué campo. SGV.nombrarSelect2(select) toma el aria-label del
+// <select> (o el texto de su <label for>) y lo antepone: "Pedido a descargar, 4500123". Llamarlo
+// tras cada .select2(...).
+(function () {
+    var SGV = window.SGV = window.SGV || {};
+    SGV.nombrarSelect2 = function (select) {
+        if (!select || !select.id || !window.jQuery) return;
+        var etiqueta = document.querySelector('label[for="' + select.id + '"]');
+        var nombre = (select.getAttribute('aria-label') || (etiqueta ? etiqueta.textContent : '')).replace(/\s+/g, ' ').trim();
+        if (!nombre) return;
+        var $cont = jQuery(select).next('.select2');
+        var combo = $cont.find('.select2-selection')[0], visto = $cont.find('.select2-selection__rendered')[0];
+        if (!combo || !visto || !visto.id) return;
+        var idNombre = select.id + '_nombreSelect2';
+        var span = document.getElementById(idNombre);
+        if (!span) {
+            span = document.createElement('span');
+            span.id = idNombre;
+            span.className = 'sr-only';
+            select.parentNode.insertBefore(span, select);
+        }
+        span.textContent = nombre;
+        var ids = idNombre + ' ' + visto.id;
+        combo.setAttribute('aria-labelledby', ids);
+        visto.setAttribute('aria-labelledby', ids);
+    };
+})();
+
 // ── Sesión cerrada o cambio de contraseña pendiente en llamadas AJAX ──
 // Global.asax responde 401 { sesionCerrada } cuando cambiaron los datos de acceso del usuario
 // (desactivado, otro rol, otra contraseña) y 403 { requiereCambioContrasena } si aún debe cambiar

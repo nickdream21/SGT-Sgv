@@ -32,7 +32,7 @@
                             Volver a subir una factura no la duplica: se actualiza si cambi&#xF3; algo. Hasta 10 MB por PDF y 45 MB en total.
                         </p>
                         <div class="form-group">
-                            <asp:FileUpload ID="fuFacturas" runat="server" AllowMultiple="true" accept=".pdf,application/pdf" CssClass="form-control-file" data-max-mb="45" />
+                            <asp:FileUpload ID="fuFacturas" runat="server" AllowMultiple="true" aria-label="Facturas en PDF de SUNAT" accept=".pdf,application/pdf" CssClass="form-control-file" data-max-mb="45" />
                         </div>
                         <asp:Button ID="btnSubir" runat="server" CssClass="btn btn-primary" Text="Leer y registrar" OnClick="btnSubir_Click" data-espera="300" />
                     </div>
@@ -91,15 +91,15 @@
 
             <ul class="nav nav-tabs ff-pestanas" role="tablist">
                 <li class="nav-item">
-                    <a class="nav-link" id="ffTabConciliacion" data-toggle="tab" href="#ffConciliacion" role="tab" aria-controls="ffConciliacion" data-pestana="conciliacion">
+                    <a class="nav-link" id="ffTabConciliacion" data-toggle="tab" href="#ffConciliacion" role="tab" aria-controls="ffConciliacion" aria-selected="false" data-pestana="conciliacion">
                         <i class="fas fa-balance-scale mr-1"></i>Conciliaci&#xF3;n <span class="ff-cuenta"></span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" id="ffTabPorFacturar" data-toggle="tab" href="#ffPorFacturar" role="tab" aria-controls="ffPorFacturar" data-pestana="porfacturar">
+                    <a class="nav-link" id="ffTabPorFacturar" data-toggle="tab" href="#ffPorFacturar" role="tab" aria-controls="ffPorFacturar" aria-selected="false" data-pestana="porfacturar">
                         <i class="fas fa-hourglass-half mr-1"></i>Por facturar <span class="ff-cuenta"></span></a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" id="ffTabFacturas" data-toggle="tab" href="#ffFacturas" role="tab" aria-controls="ffFacturas" data-pestana="facturas">
+                    <a class="nav-link" id="ffTabFacturas" data-toggle="tab" href="#ffFacturas" role="tab" aria-controls="ffFacturas" aria-selected="false" data-pestana="facturas">
                         <i class="fas fa-file-invoice mr-1"></i>Facturas y vencimientos <span class="ff-cuenta"></span></a>
                 </li>
             </ul>

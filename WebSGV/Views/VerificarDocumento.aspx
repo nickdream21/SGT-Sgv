@@ -25,7 +25,7 @@
             <p class="mb-2">Ingrese el <strong>código de verificación</strong> que aparece en el pie de página del documento.</p>
             <asp:Panel runat="server" DefaultButton="btnVerificar" CssClass="vd-busqueda">
                 <asp:TextBox ID="txtCodigo" runat="server" CssClass="form-control" MaxLength="20"
-                    placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" />
+                    placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false" aria-label="Código de verificación" />
                 <asp:Button ID="btnVerificar" runat="server" Text="Verificar" CssClass="btn btn-primary" OnClick="btnVerificar_Click" />
             </asp:Panel>
         </section>
@@ -54,7 +54,7 @@
                 <p class="vd-ayuda">Seleccione el PDF que recibió. Su huella se calcula en este navegador (el archivo no se envía)
                    y se compara con la registrada: si coinciden, el archivo es exactamente el documento firmado.</p>
                 <asp:HiddenField ID="hfHash" runat="server" ClientIDMode="Static" />
-                <input type="file" id="archivoPdf" accept="application/pdf,.pdf" class="form-control-file" />
+                <input type="file" id="archivoPdf" aria-label="PDF recibido" accept="application/pdf,.pdf" class="form-control-file" />
                 <div id="resultadoArchivo" class="vd-estado mt-3" style="display:none;"></div>
             </section>
 

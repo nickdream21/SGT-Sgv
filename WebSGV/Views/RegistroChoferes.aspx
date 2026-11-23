@@ -148,7 +148,7 @@
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Conductores registrados</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
-                            style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_conductores"
+                            style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_conductores" aria-label="Buscar conductores"
                             data-accion-input="filtrarTabla" data-contenedor="contenedorConductores">
                     </div>
                     <div class="card-body p-0">
@@ -203,12 +203,12 @@
     </div>
 
     <!-- Modal Editar Conductor -->
-    <div class="modal fade" id="modalEditar" tabindex="-1" role="dialog">
+    <div class="modal fade" id="modalEditar" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalEditarTitulo">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content" data-enter="<%= btnActualizarConductor.ClientID %>">
                 <div class="modal-header" style="background:#0ea5e9;color:#fff;">
-                    <h5 class="modal-title"><i class="fas fa-user-edit mr-2"></i>Editar conductor</h5>
-                    <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>
+                    <h5 class="modal-title" id="modalEditarTitulo"><i class="fas fa-user-edit mr-2" aria-hidden="true"></i>Editar conductor</h5>
+                    <button type="button" class="close" style="color:#fff;" data-dismiss="modal" aria-label="Cerrar">&times;</button>
                 </div>
                 <div class="modal-body">
                     <asp:Panel ID="pnlErrorModal" runat="server" Visible="false" EnableViewState="false" CssClass="alert alert-danger" role="alert">

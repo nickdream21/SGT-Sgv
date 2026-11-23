@@ -132,7 +132,7 @@
                     </div>
                     <div class="col-12 col-md-2">
                         <div class="form-group">
-                            <label class="aud-form-label d-none d-md-block">&nbsp;</label>
+                            <span class="aud-form-label d-none d-md-block" aria-hidden="true">&nbsp;</span>
                             <div>
                                 <asp:Button ID="btnBuscar" runat="server" Text="Buscar"
                                     CssClass="btn btn-primary btn-sm btn-block" OnClick="btnBuscar_Click" />
@@ -220,8 +220,9 @@
                                         data-nuevo='<%# Server.HtmlEncode(Eval("ValoresNuevos")?.ToString() ?? "") %>'
                                         data-desc='<%# Server.HtmlEncode(Eval("Descripcion")?.ToString() ?? "") %>'
                                         data-ip='<%#: Eval("DireccionIP") %>'
-                                        data-nav='<%# Server.HtmlEncode(TruncateText(Eval("Navegador"), 80)) %>'>
-                                        <i class="fas fa-search-plus"></i>
+                                        data-nav='<%# Server.HtmlEncode(TruncateText(Eval("Navegador"), 80)) %>'
+                                        title="Ver detalle" aria-label='<%#: "Ver detalle del registro " + Eval("IdAuditoria") %>'>
+                                        <i class="fas fa-search-plus" aria-hidden="true"></i>
                                     </button>
                                 </ItemTemplate>
                                 <ItemStyle CssClass="text-center" />
@@ -235,47 +236,47 @@
     </div>
 
     <!-- Modal Detalle -->
-    <div class="modal fade" id="modalDetalle" tabindex="-1">
+    <div class="modal fade" id="modalDetalle" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalDetalleTitulo">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header" style="background: #1e293b; color: white;">
-                    <h5 class="modal-title"><i class="fas fa-search-plus mr-2"></i>Detalle de Auditoría #<span id="detalleId"></span></h5>
-                    <button type="button" class="close" data-dismiss="modal" style="color: white;">
-                        <span>&times;</span>
+                    <h5 class="modal-title" id="modalDetalleTitulo"><i class="fas fa-search-plus mr-2" aria-hidden="true"></i>Detalle de Auditoría #<span id="detalleId"></span></h5>
+                    <button type="button" class="close" data-dismiss="modal" style="color: white;" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <!-- Descripción -->
                     <div class="mb-3">
-                        <label class="font-weight-bold text-muted small text-uppercase">Descripción</label>
+                        <div class="font-weight-bold text-muted small text-uppercase mb-2">Descripción</div>
                         <div id="detalleDescripcion" class="p-2 bg-light rounded" style="white-space: pre-wrap;"></div>
                     </div>
 
                     <!-- Info técnica -->
                     <div class="row mb-3">
                         <div class="col-6">
-                            <label class="font-weight-bold text-muted small text-uppercase">Dirección IP</label>
+                            <div class="font-weight-bold text-muted small text-uppercase mb-2">Dirección IP</div>
                             <div id="detalleIP" class="p-2 bg-light rounded"></div>
                         </div>
                         <div class="col-6">
-                            <label class="font-weight-bold text-muted small text-uppercase">Navegador</label>
+                            <div class="font-weight-bold text-muted small text-uppercase mb-2">Navegador</div>
                             <div id="detalleNavegador" class="p-2 bg-light rounded" style="word-break: break-all;"></div>
                         </div>
                     </div>
 
                     <!-- Valores anteriores -->
                     <div class="mb-3" id="seccionAnteriores" style="display:none;">
-                        <label class="font-weight-bold small text-uppercase" style="color:#dc2626;">
+                        <div class="font-weight-bold small text-uppercase mb-2" style="color:#dc2626;">
                             <i class="fas fa-minus-circle mr-1"></i>Valores Anteriores
-                        </label>
+                        </div>
                         <pre id="detalleAnteriores" class="p-3 rounded" style="background:#fef2f2; border:1px solid #fca5a5; max-height:250px; overflow:auto; font-size:0.8rem;"></pre>
                     </div>
 
                     <!-- Valores nuevos -->
                     <div class="mb-3" id="seccionNuevos" style="display:none;">
-                        <label class="font-weight-bold small text-uppercase" style="color:#059669;">
+                        <div class="font-weight-bold small text-uppercase mb-2" style="color:#059669;">
                             <i class="fas fa-plus-circle mr-1"></i>Valores Nuevos
-                        </label>
+                        </div>
                         <pre id="detalleNuevos" class="p-3 rounded" style="background:#f0fdf4; border:1px solid #86efac; max-height:250px; overflow:auto; font-size:0.8rem;"></pre>
                     </div>
                 </div>

@@ -85,7 +85,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="form-label">&nbsp;</label>
+                                <span class="form-label d-inline-block" aria-hidden="true">&nbsp;</span>
                                 <div>
                                     <asp:Button ID="btnBuscarLiquidaciones" runat="server" Text="Buscar"
                                         CssClass="btn btn-primary-custom btn-block" OnClick="btnBuscarLiquidaciones_Click" />
@@ -270,7 +270,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="form-label">&nbsp;</label>
+                                <span class="form-label d-inline-block" aria-hidden="true">&nbsp;</span>
                                 <div>
                                     <asp:Button ID="btnBuscarViajesActivos" runat="server" Text="Buscar"
                                         CssClass="btn btn-primary-custom btn-block" OnClick="btnBuscarViajesActivos_Click" />
@@ -622,14 +622,14 @@
     </div>
 
     <!-- Modal Detalle de Orden -->
-    <div class="modal fade" id="modalDetalleOrden" tabindex="-1" role="dialog">
+    <div class="modal fade" id="modalDetalleOrden" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalDetalleOrdenTitulo">
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content">
                 <div class="modal-header modal-header-info">
-                    <h5 class="modal-title">
-                        <i class="fas fa-file-invoice mr-2"></i>Detalle de Orden de Viaje
+                    <h5 class="modal-title" id="modalDetalleOrdenTitulo">
+                        <i class="fas fa-file-invoice mr-2" aria-hidden="true"></i>Detalle de Orden de Viaje
                     </h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>

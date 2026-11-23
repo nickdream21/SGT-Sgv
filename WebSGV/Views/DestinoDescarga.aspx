@@ -92,7 +92,7 @@
                     <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap">
                         <h5 class="mb-0"><i class="fas fa-list-ul mr-2"></i>Destinos registrados</h5>
                         <div class="form-inline" data-enter="<%= btnBuscar.ClientID %>">
-                            <asp:TextBox ID="txtBuscarPedido" runat="server" CssClass="form-control form-control-sm mr-2" MaxLength="12" placeholder="Filtrar por pedido"></asp:TextBox>
+                            <asp:TextBox ID="txtBuscarPedido" runat="server" CssClass="form-control form-control-sm mr-2" MaxLength="12" placeholder="Filtrar por pedido" aria-label="Filtrar por pedido"></asp:TextBox>
                             <asp:Button ID="btnBuscar" runat="server" CssClass="btn btn-outline-primary btn-sm" Text="Buscar" OnClick="btnBuscar_Click" />
                         </div>
                     </div>

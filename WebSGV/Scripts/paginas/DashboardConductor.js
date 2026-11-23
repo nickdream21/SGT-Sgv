@@ -130,7 +130,7 @@ function agregarGasto(datos) {
                 <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00"
                      class="gasto-dolares" name="gastoDolares_${n}" aria-label="Monto en dólares"></div>
             </div>
-            <input type="text" class="form-control dc-nota" name="descGasto_${n}" maxlength="250" placeholder="Detalle (opcional)">
+            <input type="text" class="form-control dc-nota" name="descGasto_${n}" maxlength="250" placeholder="Detalle (opcional)" aria-label="Detalle del gasto">
         </div>`);
     $fila.find('.dc-concepto').val(datos.concepto || '');
     $fila.find('[name^="gastoSoles_"]').val(datos.soles > 0 ? Number(datos.soles).toFixed(2) : '');

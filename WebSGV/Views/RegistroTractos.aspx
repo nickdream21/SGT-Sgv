@@ -77,7 +77,7 @@
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-list mr-2"></i>Tractos registrados</h5>
                         <input type="text" id="txtBuscar" class="form-control form-control-sm ml-3"
-                            style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_tractos"
+                            style="max-width:200px;" placeholder="Buscar..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_tractos" aria-label="Buscar tractos"
                             data-accion-input="filtrarTabla" data-contenedor="contenedorTractos">
                     </div>
                     <div class="card-body p-0">
@@ -134,12 +134,12 @@
     </div>
 
     <!-- Modal Editar Tracto -->
-    <div class="modal fade" id="modalEditar" tabindex="-1" role="dialog">
+    <div class="modal fade" id="modalEditar" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalEditarTitulo">
         <div class="modal-dialog" role="document">
             <div class="modal-content" data-enter="<%= btnActualizarTracto.ClientID %>">
                 <div class="modal-header" style="background:#0ea5e9;color:#fff;">
-                    <h5 class="modal-title"><i class="fas fa-truck mr-2"></i>Editar tracto</h5>
-                    <button type="button" class="close" style="color:#fff;" data-dismiss="modal">&times;</button>
+                    <h5 class="modal-title" id="modalEditarTitulo"><i class="fas fa-truck mr-2" aria-hidden="true"></i>Editar tracto</h5>
+                    <button type="button" class="close" style="color:#fff;" data-dismiss="modal" aria-label="Cerrar">&times;</button>
                 </div>
                 <div class="modal-body">
                     <asp:Panel ID="pnlErrorModal" runat="server" Visible="false" EnableViewState="false" CssClass="alert alert-danger" role="alert">

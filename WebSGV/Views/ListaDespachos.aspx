@@ -680,13 +680,15 @@
                                                             </asp:DropDownList>
                                                         </div>
                                                         <div class="form-group mt-2">
-                                                            <label class="form-label required">Ámbito:</label>
-                                                            <asp:RadioButtonList ID="rblAmbitoEdit" runat="server" CssClass="rbl-inline"
-                                                                AutoPostBack="true" OnSelectedIndexChanged="rblAmbitoEdit_SelectedIndexChanged"
-                                                                RepeatDirection="Horizontal" RepeatLayout="Flow">
-                                                                <asp:ListItem Value="0" Text="Nacional &nbsp;"></asp:ListItem>
-                                                                <asp:ListItem Value="1" Text="Internacional"></asp:ListItem>
-                                                            </asp:RadioButtonList>
+                                                            <span class="form-label required" id="lblAmbitoEdit">Ámbito:</span>
+                                                            <div role="radiogroup" aria-labelledby="lblAmbitoEdit">
+                                                                <asp:RadioButtonList ID="rblAmbitoEdit" runat="server" CssClass="rbl-inline"
+                                                                    AutoPostBack="true" OnSelectedIndexChanged="rblAmbitoEdit_SelectedIndexChanged"
+                                                                    RepeatDirection="Horizontal" RepeatLayout="Flow">
+                                                                    <asp:ListItem Value="0" Text="Nacional &nbsp;"></asp:ListItem>
+                                                                    <asp:ListItem Value="1" Text="Internacional"></asp:ListItem>
+                                                                </asp:RadioButtonList>
+                                                            </div>
                                                         </div>
                                                         <small class="form-text text-warning mt-1">
                                                             <i class="fas fa-exclamation-triangle"></i> Al cambiar estos valores los paneles de documentos se actualizan automáticamente.
@@ -822,7 +824,7 @@
                                                                             <asp:TemplateField HeaderText="Cambiar conductor">
                                                                                 <ItemTemplate>
                                                                                     <asp:DropDownList ID="ddlConductorDespacho" runat="server" 
-                                                                                        CssClass="form-select conductor-select">
+                                                                                        CssClass="form-select conductor-select" aria-label='<%# "Conductor del despacho " + Eval("NumeroDespacho") %>'>
                                                                                     </asp:DropDownList>
                                                                                 </ItemTemplate>
                                                                             </asp:TemplateField>
@@ -1181,7 +1183,7 @@
                                                                     <ItemTemplate>
                                                                         <tr>
                                                                             <td class="ld-col-marca">
-                                                                                <asp:CheckBox ID="chkDespachoDoc" runat="server" CssClass="ld-marca-despacho" />
+                                                                                <label class="mb-0"><asp:CheckBox ID="chkDespachoDoc" runat="server" CssClass="ld-marca-despacho" /><span class="sr-only"><%#: "Marcar el despacho " + Eval("NumeroDespacho") %></span></label>
                                                                                 <asp:HiddenField ID="hidIdDespachoDoc" runat="server" Value='<%# Eval("IdDespacho") %>' />
                                                                             </td>
                                                                             <td data-label="Chofer"><%#: Eval("Chofer") %><div class="text-muted small"><%#: Eval("NumeroDespacho") %></div></td>
@@ -1291,13 +1293,13 @@
                                                             <asp:TemplateField HeaderText="Guía remitente">
                                                                 <ItemTemplate>
                                                                     <asp:TextBox ID="txtGuiaRemitenteFila" runat="server" CssClass="form-control form-control-sm ld-guia-input"
-                                                                        MaxLength="50" placeholder="Ej: T660-00016530" Text='<%# Eval("GuiaRemitente") %>'></asp:TextBox>
+                                                                        MaxLength="50" placeholder="Ej: T660-00016530" aria-label='<%# "Guía remitente del despacho " + Eval("NumeroDespacho") %>' Text='<%# Eval("GuiaRemitente") %>'></asp:TextBox>
                                                                 </ItemTemplate>
                                                             </asp:TemplateField>
                                                             <asp:TemplateField HeaderText="Guía transportista">
                                                                 <ItemTemplate>
                                                                     <asp:TextBox ID="txtGuiaTransportistaFila" runat="server" CssClass="form-control form-control-sm ld-guia-input"
-                                                                        MaxLength="50" placeholder="Opcional" Text='<%# Eval("GuiaTransportista") %>'></asp:TextBox>
+                                                                        MaxLength="50" placeholder="Opcional" aria-label='<%# "Guía transportista del despacho " + Eval("NumeroDespacho") %>' Text='<%# Eval("GuiaTransportista") %>'></asp:TextBox>
                                                                 </ItemTemplate>
                                                             </asp:TemplateField>
                                                         </Columns>

@@ -187,16 +187,17 @@ namespace WebSGV.Tests
         //
         // Cada regla tiene un tope igual a lo que quedaba al cerrar E5-5. El tope solo baja: la prueba
         // falla si la cifra sube (algo nuevo sin etiqueta) y también si baja sin bajar el tope (así
-        // queda ajustado y nadie gasta el margen sin darse cuenta). E5-6 los lleva a 0 (salvo <h1>,
-        // E5-15).
+        // queda ajustado y nadie gasta el margen sin darse cuenta). E5-6 los llevó a 0 (salvo <h1>,
+        // E5-15) sin excepciones: lo nuevo debe cumplir cada regla (la regla 8, de E5-6, nació en 0).
 
-        private const int TopeLabelSinForNiControl = 14;
+        private const int TopeLabelSinForNiControl = 0;
         private const int TopeForConIdDeServidor = 0;
-        private const int TopeCampoSinEtiqueta = 65;
-        private const int TopeCerrarSinAriaLabel = 14;
-        private const int TopeModalSinRoleNiTitulo = 17;
-        private const int TopePestanaSinAriaSelected = 8;
+        private const int TopeCampoSinEtiqueta = 0;
+        private const int TopeCerrarSinAriaLabel = 0;
+        private const int TopeModalSinRoleNiTitulo = 0;
+        private const int TopePestanaSinAriaSelected = 0;
         private const int TopePaginaSinUnSoloH1 = 34;
+        private const int TopeBotonSoloIconoSinNombre = 0;
 
         /// <summary>Etiqueta de apertura: nombre, atributos y posición. Admite <c>&lt;% %&gt;</c> dentro y fuera de comillas.</summary>
         internal sealed class Elemento
@@ -316,8 +317,11 @@ namespace WebSGV.Tests
 
             foreach (var c in campos)
             {
+                // En asp:CheckBox / asp:RadioButton los atributos del marcado (y ToolTip) van al <span> que envuelve
+                // el <input>, no al <input>: no le dan nombre. Se nombran con Text, un <label> que los envuelve o un for.
+                bool envuelto = c.Nombre == "asp:checkbox" || c.Nombre == "asp:radiobutton";
                 bool tieneNombre =
-                    c.Tiene("aria-label") || c.Tiene("aria-labelledby") || c.Tiene("title") || c.Tiene("ToolTip")
+                    (!envuelto && (c.Tiene("aria-label") || c.Tiene("aria-labelledby") || c.Tiene("title") || c.Tiene("ToolTip")))
                     // asp:CheckBox / asp:RadioButton con Text generan su propio <label for>; las listas, uno por opción.
                     || ((c.Nombre == "asp:checkbox" || c.Nombre == "asp:radiobutton") && c.Tiene("Text"))
                     || c.Nombre == "asp:checkboxlist" || c.Nombre == "asp:radiobuttonlist"
@@ -395,6 +399,37 @@ namespace WebSGV.Tests
                 .Select(e => p.Ruta + ":" + p.Linea(e.Indice) + " <" + e.Nombre + (e.Tiene("id") ? " id=" + e.Id : "") + " role=\"tab\">")
                 .ToList();
 
+        private static readonly HashSet<string> Pulsables = new HashSet<string> { "button", "a", "asp:linkbutton", "asp:hyperlink" };
+        private static readonly Regex IconoFa = new Regex(@"<(i|span)\b[^>]*\bclass\s*=\s*[""'][^""']*\bfa[srlbd]?\b[^""']*\bfa-[\w-]+", RegexOptions.IgnoreCase);
+
+        /// <summary>
+        /// Regla 8: botón o enlace cuyo contenido es solo un icono (&lt;i class="fa…"&gt;) sin texto: necesita
+        /// aria-label, aria-labelledby, title o ToolTip (el lector diría solo "botón"). Cuentan como texto el
+        /// atributo Text de asp:LinkButton / asp:HyperLink, un &lt;span class="sr-only"&gt; y los bloques &lt;%# %&gt;.
+        /// </summary>
+        internal static List<string> BotonSoloIconoSinNombre(Pagina p)
+        {
+            var malas = new List<string>();
+            foreach (var e in Elementos(p.Texto).Where(x => Pulsables.Contains(x.Nombre)))
+            {
+                if (e.Cerrado || e.Tiene("Text")) continue;
+                if (e.Tiene("aria-label") || e.Tiene("aria-labelledby") || e.Tiene("title") || e.Tiene("ToolTip")) continue;
+                if (string.Equals(e.Attr("aria-hidden"), "true", StringComparison.OrdinalIgnoreCase)) continue;
+                int cierre = p.Texto.IndexOf("</" + e.Nombre + ">", e.Fin, StringComparison.OrdinalIgnoreCase);
+                if (cierre < 0) continue;
+                string interior = p.Texto.Substring(e.Fin, cierre - e.Fin);
+                if (!IconoFa.IsMatch(interior)) continue;
+                // <%= %>, <%: %> y <%# %> escriben texto; <% %> (código) no.
+                string texto = Regex.Replace(interior, @"<%[=:#].*?%>", "T", RegexOptions.Singleline);
+                texto = Regex.Replace(texto, @"<%.*?%>", "", RegexOptions.Singleline);
+                texto = Regex.Replace(texto, @"<asp:(Label|Literal|Localize)\b", "T<", RegexOptions.IgnoreCase);   // texto puesto en el servidor
+                texto = Regex.Replace(texto, @"<[^>]*>|&nbsp;|&#160;|\s+", "");
+                if (texto.Length == 0)
+                    malas.Add(p.Ruta + ":" + p.Linea(e.Indice) + " <" + e.Nombre + (e.Tiene("id") ? " id=" + e.Id : "") + " class=\"" + e.Clase.Trim() + "\">");
+            }
+            return malas;
+        }
+
         /// <summary>
         /// Regla 7: un solo &lt;h1&gt; en cada .aspx que muestra algo (con master o con &lt;body&gt;). Site.Master no
         /// pone &lt;h1&gt;: lo pone cada página.
@@ -462,6 +497,13 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Regla8_TodoBotonDeSoloIcono_TieneNombre()
+        {
+            var casos = Paginas().SelectMany(BotonSoloIconoSinNombre).ToList();
+            CumpleTope("Botón o enlace de solo icono sin aria-label ni title", TopeBotonSoloIconoSinNombre, casos);
+        }
+
+        [Fact]
         public void Regla7_CadaPagina_TieneUnSoloH1()
         {
             var casos = Paginas().SelectMany(PaginaSinUnSoloH1).ToList();
@@ -518,6 +560,35 @@ namespace WebSGV.Tests
             Assert.Single(CerrarSinAriaLabel(p));
             Assert.Equal(new[] { "X.aspx:1 #m sin role=\"dialog\", sin aria-labelledby" }, ModalSinRoleNiTitulo(p));
             Assert.Single(PestanaSinAriaSelected(p));
+        }
+
+        [Fact]
+        public void Analizador_CheckBoxDeServidor_SoloLoNombranTextOUnLabel()
+        {
+            // aria-label o ToolTip en asp:CheckBox van al <span> que envuelve el <input>: no cuentan.
+            var r = AnalizarEtiquetas(De(
+                "<asp:CheckBox ID=\"a\" runat=\"server\" aria-label=\"A\" />\n" +
+                "<asp:CheckBox ID=\"b\" runat=\"server\" ToolTip=\"B\" />\n" +
+                "<label class=\"mb-0\"><asp:CheckBox ID=\"c\" runat=\"server\" /><span class=\"sr-only\"><%#: Eval(\"X\") %></span></label>\n" +
+                "<asp:CheckBox ID=\"d\" runat=\"server\" Text=\"D\" />"));
+            Assert.Equal(new[] { "X.aspx:1 <asp:checkbox id=a>", "X.aspx:2 <asp:checkbox id=b>" }, r.CampoSinEtiqueta);
+            Assert.Empty(r.LabelSinForNiControl);
+        }
+
+        [Fact]
+        public void Analizador_BotonDeSoloIcono()
+        {
+            var p = De(
+                "<button type=\"button\" class=\"btn\"><i class=\"fas fa-search-plus\"></i></button>\n" +
+                "<a href=\"#\" class=\"x\">\n  <span class=\"fa fa-trash\"></span>&nbsp;</a>\n" +
+                "<button type=\"button\" aria-label=\"Ver\"><i class=\"fas fa-eye\"></i></button>" +
+                "<button type=\"button\" title=\"Ver\"><i class=\"fas fa-eye\"></i></button>" +
+                "<button type=\"button\"><i class=\"fas fa-eye\"></i> Ver</button>" +
+                "<button type=\"button\"><i class=\"fas fa-eye\"></i><span class=\"sr-only\">Ver</span></button>" +
+                "<a href=\"#\"><i class=\"fas fa-eye\"></i><%#: Eval(\"N\") %></a>" +
+                "<asp:HyperLink runat=\"server\"><i class=\"fas fa-eye\"></i><asp:Label runat=\"server\" /></asp:HyperLink>" +
+                "<asp:LinkButton runat=\"server\" Text=\"Ver\" /><a href=\"#\">Sin icono</a><button type=\"button\"></button>");
+            Assert.Equal(new[] { "X.aspx:1 <button class=\"btn\">", "X.aspx:2 <a class=\"x\">" }, BotonSoloIconoSinNombre(p));
         }
 
         [Fact]

@@ -32,6 +32,7 @@ function initializeSelect2() {
             width: '100%',
             minimumResultsForSearch: 0   // el buscador siempre visible
         });
+        SGV.nombrarSelect2(this);
     });
 }
 

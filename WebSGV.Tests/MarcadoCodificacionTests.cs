@@ -57,7 +57,10 @@ namespace WebSGV.Tests
         /// </summary>
         private static readonly HashSet<string> ControlesQueCodifican = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "asp:TextBox.Text", "asp:HiddenField.Value", "asp:Button.Text"
+            "asp:TextBox.Text", "asp:HiddenField.Value", "asp:Button.Text",
+            // Atributos sueltos (E5-6): el control los pinta con HtmlTextWriter.AddAttribute, que codifica;
+            // con <%#: una tilde saldría como "&#211;" en lo que lee el lector de pantalla.
+            "asp:TextBox.aria-label", "asp:DropDownList.aria-label"
         };
 
         /// <summary>
@@ -190,6 +193,8 @@ namespace WebSGV.Tests
             Assert.True(pasa("<asp:LinkButton runat=\"server\" CommandArgument='<%# Eval(\"Id\") %>' Visible='<%# Eval(\"Id\") != null %>' CssClass='<%# Clase(Eval(\"Estado\")) %>' />"));
             Assert.True(pasa("<asp:TextBox runat=\"server\" Text='<%# Bind(\"Cantidad\") %>' />"));
             Assert.True(pasa("<asp:Button runat=\"server\" Text='<%# Eval(\"Accion\") %>' />"));
+            Assert.True(pasa("<asp:DropDownList runat=\"server\" aria-label='<%# \"Conductor \" + Eval(\"N\") %>' />"));
+            Assert.False(pasa("<select aria-label='<%# Eval(\"N\") %>'></select>"));
             Assert.True(pasa("<span class='<%# (bool)Eval(\"Activo\") ? \"activo\" : \"\" %>'></span>"));
             Assert.True(pasa("<td><%# MostrarDato(Eval(\"Guia\")) %></td>"));
             Assert.True(pasa("<td><%# Container.ItemIndex + 1 %></td>"));

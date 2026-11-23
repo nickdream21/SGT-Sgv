@@ -70,11 +70,11 @@
 
             <ul class="nav nav-tabs rc-pestanas" role="tablist">
                 <li class="nav-item">
-                    <a class="nav-link" id="rcTabResumen" data-toggle="tab" href="#rcResumen" role="tab" aria-controls="rcResumen" data-pestana="resumen">
+                    <a class="nav-link" id="rcTabResumen" data-toggle="tab" href="#rcResumen" role="tab" aria-controls="rcResumen" aria-selected="false" data-pestana="resumen">
                         <i class="fas fa-chart-bar mr-1"></i>Resumen</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" id="rcTabPedidos" data-toggle="tab" href="#rcPedidos" role="tab" aria-controls="rcPedidos" data-pestana="pedidos">
+                    <a class="nav-link" id="rcTabPedidos" data-toggle="tab" href="#rcPedidos" role="tab" aria-controls="rcPedidos" aria-selected="false" data-pestana="pedidos">
                         <i class="fas fa-layer-group mr-1"></i>Por pedido</a>
                 </li>
             </ul>

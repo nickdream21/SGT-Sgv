@@ -794,9 +794,9 @@ function cambiarTab(tab) {
     $('#seccionPendientes').toggle(tab === 'pendientes');
     $('#seccionPorConformar').toggle(tab === 'porConformar');
     $('#seccionAprobadas').toggle(tab === 'aprobadas');
-    $('#tabPendientes').toggleClass('activo', tab === 'pendientes');
-    $('#tabPorConformar').toggleClass('activo', tab === 'porConformar');
-    $('#tabAprobadas').toggleClass('activo', tab === 'aprobadas');
+    $('#tabPendientes').toggleClass('activo', tab === 'pendientes').attr('aria-selected', String(tab === 'pendientes'));
+    $('#tabPorConformar').toggleClass('activo', tab === 'porConformar').attr('aria-selected', String(tab === 'porConformar'));
+    $('#tabAprobadas').toggleClass('activo', tab === 'aprobadas').attr('aria-selected', String(tab === 'aprobadas'));
     mostrarTabActiva();
 
     if (tab === 'porConformar') {

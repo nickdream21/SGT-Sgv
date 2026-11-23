@@ -20,13 +20,13 @@
             <div class="row align-items-end" data-enter="<%= btnBuscar.ClientID %>">
                 <div class="col-md-4 mb-2 mb-md-0">
                     <asp:TextBox ID="txtBuscar" runat="server" CssClass="form-control form-control-sm"
-                        placeholder="Buscar por usuario o nombre..." />
+                        placeholder="Buscar por usuario o nombre..." aria-label="Buscar por usuario o nombre" />
                 </div>
                  <div class="col-md-3 mb-2 mb-md-0">
-                      <asp:DropDownList ID="ddlFiltroRol" runat="server" CssClass="form-control form-control-sm" />
+                      <asp:DropDownList ID="ddlFiltroRol" runat="server" CssClass="form-control form-control-sm" aria-label="Filtrar por rol" />
                  </div>
                 <div class="col-md-2 mb-2 mb-md-0">
-                    <asp:DropDownList ID="ddlFiltroEstado" runat="server" CssClass="form-control form-control-sm">
+                    <asp:DropDownList ID="ddlFiltroEstado" runat="server" CssClass="form-control form-control-sm" aria-label="Filtrar por estado">
                         <asp:ListItem Value="">-- Estado --</asp:ListItem>
                         <asp:ListItem Value="1">Activos</asp:ListItem>
                         <asp:ListItem Value="0">Inactivos</asp:ListItem>
@@ -188,15 +188,15 @@
     <!-- ======================================================
          MODAL: Restablecer Contraseña
          ====================================================== -->
-    <div class="modal fade" id="modalResetPass" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal fade" id="modalResetPass" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalResetPassTitulo" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content" data-enter="<%= btnResetPass.ClientID %>">
                 <div class="modal-header sgv-modal-alerta">
-                    <h5 class="modal-title">
-                        <i class="fas fa-key mr-2"></i>Restablecer Contraseña
+                    <h5 class="modal-title" id="modalResetPassTitulo">
+                        <i class="fas fa-key mr-2" aria-hidden="true"></i>Restablecer Contraseña
                     </h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">

@@ -197,22 +197,22 @@
                                                         <asp:Repeater ID="rptProgramacionNueva" runat="server" OnItemDataBound="rptProgramacionNueva_ItemDataBound">
                                                             <ItemTemplate>
                                                                 <tr>
-                                                                    <td><asp:CheckBox ID="chkIncluirProg" runat="server" /></td>
+                                                                    <td><label class="mb-0"><asp:CheckBox ID="chkIncluirProg" runat="server" /><span class="sr-only"><%#: "Incluir a " + Eval("Chofer") %></span></label></td>
                                                                     <td class="rd-col-hora">
                                                                         <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Horario") ?? "—") %></small>
-                                                                        <asp:TextBox ID="txtHoraProg" runat="server" CssClass="form-control form-control-sm" TextMode="Time" />
+                                                                        <asp:TextBox ID="txtHoraProg" runat="server" CssClass="form-control form-control-sm" TextMode="Time" aria-label='<%# "Hora de " + Eval("Chofer") %>' />
                                                                     </td>
                                                                     <td class="rd-col-conductor">
                                                                         <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Chofer")) %></small>
-                                                                        <asp:DropDownList ID="ddlConductorProg" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                        <asp:DropDownList ID="ddlConductorProg" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Conductor (Word: " + Eval("Chofer") + ")" %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Tracto")) %></small>
-                                                                        <asp:DropDownList ID="ddlTractoProg" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                        <asp:DropDownList ID="ddlTractoProg" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Tracto (Word: " + Eval("Tracto") + ")" %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Carreta")) %></small>
-                                                                        <asp:DropDownList ID="ddlCarretaProg" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                        <asp:DropDownList ID="ddlCarretaProg" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Carreta (Word: " + Eval("Carreta") + ")" %>' />
                                                                     </td>
                                                                     <td><asp:Literal ID="litEstadoProg" runat="server" /></td>
                                                                 </tr>
@@ -299,7 +299,7 @@
                                                         <asp:Repeater ID="rptTractosImportados" runat="server" OnItemDataBound="rptTractosImportados_ItemDataBound">
                                                             <ItemTemplate>
                                                                 <tr class="<%#: (bool)Eval("YaRegistrado") ? "rd-fila-registrada" : "" %>">
-                                                                    <td><asp:CheckBox ID="chkIncluir" runat="server" /></td>
+                                                                    <td><label class="mb-0"><asp:CheckBox ID="chkIncluir" runat="server" /><span class="sr-only"><%#: "Incluir el transporte " + Eval("NumeroTransporte") %></span></label></td>
                                                                     <td>
                                                                         <div class="rd-placa"><%# HttpUtility.HtmlEncode(Eval("NumeroTransporte")) %></div>
                                                                         <small class="text-muted"><%# HttpUtility.HtmlEncode(Eval("NumeroGuia") ?? "sin guía") %></small>
@@ -312,15 +312,15 @@
                                                                     </td>
                                                                     <td class="rd-col-conductor">
                                                                         <small class="rd-doc-dato">Documento: <%# HttpUtility.HtmlEncode(Eval("NombreChofer")) %><%#: Eval("Licencia") == null ? "" : " · Lic. " + Eval("Licencia") %></small>
-                                                                        <asp:DropDownList ID="ddlConductorImp" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                        <asp:DropDownList ID="ddlConductorImp" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Conductor del transporte " + Eval("NumeroTransporte") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato">Documento: <%# HttpUtility.HtmlEncode(Eval("Placa")) %></small>
-                                                                        <asp:DropDownList ID="ddlTractoImp" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                        <asp:DropDownList ID="ddlTractoImp" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Tracto del transporte " + Eval("NumeroTransporte") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato"><asp:Literal ID="litCarretaHint" runat="server" /></small>
-                                                                        <asp:DropDownList ID="ddlCarretaImp" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                        <asp:DropDownList ID="ddlCarretaImp" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Carreta del transporte " + Eval("NumeroTransporte") %>' />
                                                                     </td>
                                                                     <td class="rd-carga-celda"><asp:Literal ID="litCargaImp" runat="server" /></td>
                                                                 </tr>
@@ -342,7 +342,7 @@
                                                             <div class="form-row align-items-center mb-1">
                                                                 <div class="col-auto"><span class="rd-placa small"><%# HttpUtility.HtmlEncode(Eval("Codigo") ?? "—") %></span></div>
                                                                 <div class="col">
-                                                                    <asp:TextBox ID="txtNombreProducto" runat="server" CssClass="form-control form-control-sm" MaxLength="50"
+                                                                    <asp:TextBox ID="txtNombreProducto" runat="server" CssClass="form-control form-control-sm" MaxLength="50" aria-label='<%# "Nombre del producto " + (Eval("Codigo") ?? "") %>'
                                                                         Text='<%# Eval("Descripcion").ToString().ToUpperInvariant() %>' />
                                                                     <asp:HiddenField ID="hfCodigoProducto" runat="server" Value='<%# Eval("Codigo") %>' />
                                                                     <asp:HiddenField ID="hfDescripcionProducto" runat="server" Value='<%# Eval("Descripcion") %>' />
@@ -365,15 +365,15 @@
                                                                 </div>
                                                                 <div class="col-md-3 col-6">
                                                                     <small class="text-muted d-block">Apellido paterno</small>
-                                                                    <asp:TextBox ID="txtApPaterno" runat="server" CssClass="form-control form-control-sm" MaxLength="20" />
+                                                                    <asp:TextBox ID="txtApPaterno" runat="server" CssClass="form-control form-control-sm" MaxLength="20" aria-label='<%# "Apellido paterno, transporte " + Eval("NumeroTransporte") %>' />
                                                                 </div>
                                                                 <div class="col-md-3 col-6">
                                                                     <small class="text-muted d-block">Apellido materno</small>
-                                                                    <asp:TextBox ID="txtApMaterno" runat="server" CssClass="form-control form-control-sm" MaxLength="20" />
+                                                                    <asp:TextBox ID="txtApMaterno" runat="server" CssClass="form-control form-control-sm" MaxLength="20" aria-label='<%# "Apellido materno, transporte " + Eval("NumeroTransporte") %>' />
                                                                 </div>
                                                                 <div class="col-md-4 col-6">
                                                                     <small class="text-muted d-block">Nombres</small>
-                                                                    <asp:TextBox ID="txtNombres" runat="server" CssClass="form-control form-control-sm" MaxLength="50" />
+                                                                    <asp:TextBox ID="txtNombres" runat="server" CssClass="form-control form-control-sm" MaxLength="50" aria-label='<%# "Nombres, transporte " + Eval("NumeroTransporte") %>' />
                                                                 </div>
                                                                 <asp:Literal ID="litNombreTruncado" runat="server" />
                                                             </div>
@@ -435,7 +435,7 @@
                                         <asp:Panel ID="pnlElegirPedidoDescarga" runat="server">
                                             <div class="row align-items-end">
                                                 <div class="col-md-8 mb-2 mb-md-0">
-                                                    <asp:DropDownList ID="ddlPedidosPendientes" runat="server" CssClass="form-select select2-searchable" />
+                                                    <asp:DropDownList ID="ddlPedidosPendientes" runat="server" CssClass="form-select select2-searchable" aria-label="Pedido a descargar" />
                                                 </div>
                                                 <div class="col-md-4 text-md-right">
                                                     <asp:Button ID="btnVerCargasPendientes" runat="server"
@@ -468,7 +468,7 @@
                                             <div class="rd-section-label"><i class="fas fa-file-word mr-1"></i> Programación del día <span class="rd-chip rd-chip-wait ml-1">Opcional</span></div>
                                             <div class="row align-items-end mb-2">
                                                 <div class="col-md-8 mb-2 mb-md-0">
-                                                    <asp:FileUpload ID="fileProgramacionDescarga" runat="server" CssClass="form-control" accept=".docx" data-max-mb="5" data-max-envio-mb="24" />
+                                                    <asp:FileUpload ID="fileProgramacionDescarga" runat="server" CssClass="form-control" aria-label="Programación del día en Word" accept=".docx" data-max-mb="5" data-max-envio-mb="24" />
                                                     <small class="form-text text-muted">El Word que reparte transporte (.docx, máx. 5 MB). Se busca la sección del pedido y, por la placa de la carreta, se completan el chofer y el tracto que descargan.</small>
                                                 </div>
                                                 <div class="col-md-4 text-md-right">
@@ -514,7 +514,7 @@
                                                         <asp:Repeater ID="rptDescargas" runat="server" OnItemDataBound="rptDescargas_ItemDataBound">
                                                             <ItemTemplate>
                                                                 <tr>
-                                                                    <td><asp:CheckBox ID="chkIncluirDesc" runat="server" /></td>
+                                                                    <td><label class="mb-0"><asp:CheckBox ID="chkIncluirDesc" runat="server" /><span class="sr-only"><%#: "Incluir el transporte " + (Eval("NumeroTransporte") ?? "") %></span></label></td>
                                                                     <td>
                                                                         <div class="rd-placa"><%# HttpUtility.HtmlEncode(Eval("NumeroTransporte") ?? "—") %></div>
                                                                         <small class="text-muted"><%# HttpUtility.HtmlEncode(Eval("GuiaRemitente") ?? "") %></small>
@@ -522,19 +522,19 @@
                                                                     </td>
                                                                     <td class="rd-col-conductor">
                                                                         <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("NombreConductor")) %></small>
-                                                                        <asp:DropDownList ID="ddlConductorDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                        <asp:DropDownList ID="ddlConductorDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Conductor que descarga el transporte " + (Eval("NumeroTransporte") ?? "") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("PlacaTracto")) %></small>
-                                                                        <asp:DropDownList ID="ddlTractoDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                        <asp:DropDownList ID="ddlTractoDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Tracto que descarga el transporte " + (Eval("NumeroTransporte") ?? "") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("PlacaCarreta")) %></small>
-                                                                        <asp:DropDownList ID="ddlCarretaDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" />
+                                                                        <asp:DropDownList ID="ddlCarretaDesc" runat="server" CssClass="form-select form-select-sm select2-searchable" aria-label='<%# "Carreta del transporte " + (Eval("NumeroTransporte") ?? "") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
                                                                         <small class="rd-doc-dato"><asp:Literal ID="litDestinoDesc" runat="server" /></small>
-                                                                        <asp:DropDownList ID="ddlPlantaDesc" runat="server" CssClass="form-select form-select-sm" />
+                                                                        <asp:DropDownList ID="ddlPlantaDesc" runat="server" CssClass="form-select form-select-sm" aria-label='<%# "Planta de descarga del transporte " + (Eval("NumeroTransporte") ?? "") %>' />
                                                                     </td>
                                                                     <td class="rd-carga-celda"><asp:Literal ID="litCargaDesc" runat="server" /></td>
                                                                 </tr>
@@ -698,11 +698,11 @@
 
                                                     <!-- Es Internacional -->
                                                     <div class="form-group mb-3">
-                                                        <label class="form-label">
+                                                        <span class="form-label d-inline-block mb-2" id="lblAmbitoOperacionBase">
                                                             <strong>Ámbito:</strong>
                                                             <span class="text-danger">*</span>
-                                                        </label>
-                                                        <div>
+                                                        </span>
+                                                        <div role="radiogroup" aria-labelledby="lblAmbitoOperacionBase">
                                                             <asp:RadioButtonList ID="rblAmbitoOperacionBase" runat="server" 
                                                                 CssClass="form-check" 
                                                                 RepeatDirection="Horizontal"
@@ -1085,9 +1085,9 @@
                                                             </asp:Panel>
                                                             
                                                             <asp:Panel ID="pnlConViajes" runat="server" Visible="false">
-                                                                <label class="form-label">
+                                                                <span class="form-label d-inline-block mb-2">
                                                                     <strong>Viaje activo encontrado:</strong>
-                                                                </label>
+                                                                </span>
                                                                  <div class="rd-notice rd-notice-ok">
                                                                     <div class="row align-items-center">
                                                                         <div class="col-md-12">
@@ -1110,7 +1110,7 @@
                                                                 <div class="row align-items-end">
                                                                     <div class="col-md-8">
                                                                         <asp:DropDownList ID="ddlViajesActivos" runat="server" 
-                                                                            CssClass="form-select"
+                                                                            CssClass="form-select" aria-label="Viaje activo al que se agrega el despacho"
                                                                             DataTextField="Display"
                                                                             DataValueField="IdViajeProgreso">
                                                                             <asp:ListItem Value="0" Text="-- Seleccione un viaje --"></asp:ListItem>
@@ -1456,7 +1456,7 @@
     </div>
 
     <!-- Modal para Historial de Viajes -->
-    <div class="modal fade" id="modalHistorialViajes" tabindex="-1" aria-labelledby="modalHistorialViajesLabel" aria-hidden="true">
+    <div class="modal fade" id="modalHistorialViajes" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalHistorialViajesLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">

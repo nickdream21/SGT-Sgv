@@ -51,8 +51,8 @@
                         <a class="dropdown-item" href="DashboardExportacion.aspx"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard</a>
                     </div>
                 </div>
-                <textarea id="txtReporteLlegadas" hidden readonly><asp:Literal ID="litReporteLlegadas" runat="server" /></textarea>
-                <textarea id="txtReporteGrifo" hidden readonly><asp:Literal ID="litReporteGrifo" runat="server" /></textarea>
+                <textarea id="txtReporteLlegadas" hidden readonly aria-hidden="true"><asp:Literal ID="litReporteLlegadas" runat="server" /></textarea>
+                <textarea id="txtReporteGrifo" hidden readonly aria-hidden="true"><asp:Literal ID="litReporteGrifo" runat="server" /></textarea>
                 <asp:Button ID="btnActualizarGps" runat="server" Text="Actualizar GPS de viajes abiertos" CssClass="sx-btn sx-btn-primario" CausesValidation="false"
                     OnClick="btnActualizarGps_Click" data-accion="actualizarGps" data-espera="300" UseSubmitBehavior="false" />
             </div>

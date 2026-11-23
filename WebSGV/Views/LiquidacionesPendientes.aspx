@@ -20,24 +20,27 @@
         </div>
 
         <!-- TABS DE NAVEGACIÓN -->
-        <div class="sgv-tabs">
-            <button type="button" class="sgv-tab activo" id="tabPendientes" data-accion="cambiarTab" data-tab="pendientes">
+        <div class="sgv-tabs" role="tablist" aria-label="Liquidaciones">
+            <button type="button" class="sgv-tab activo" id="tabPendientes" data-accion="cambiarTab" data-tab="pendientes"
+                role="tab" aria-selected="true" aria-controls="seccionPendientes">
                 Pendientes de aprobación
                 <asp:Label ID="lblTotalPendientes" runat="server" CssClass="sgv-tab-contador" Text="0"></asp:Label>
                 <asp:Label ID="lblTotalUrgentes" runat="server" CssClass="sgv-tab-alerta" ToolTip="Liquidaciones esperando más de 24 horas"></asp:Label>
             </button>
             <button type="button" class="sgv-tab" id="tabPorConformar" data-accion="cambiarTab" data-tab="porConformar"
+                role="tab" aria-selected="false" aria-controls="seccionPorConformar"
                 title="Revisadas y enviadas al conductor: esperan que firme su conformidad">
                 Esperando conformidad
                 <span class="sgv-tab-contador" id="lblTotalPorConformar"></span>
             </button>
-            <button type="button" class="sgv-tab" id="tabAprobadas" data-accion="cambiarTab" data-tab="aprobadas">
+            <button type="button" class="sgv-tab" id="tabAprobadas" data-accion="cambiarTab" data-tab="aprobadas"
+                role="tab" aria-selected="false" aria-controls="seccionAprobadas">
                 Control de aprobadas
             </button>
         </div>
 
         <!-- SECCIÓN PENDIENTES -->
-        <div id="seccionPendientes">
+        <div id="seccionPendientes" role="tabpanel" aria-labelledby="tabPendientes">
 
         <div class="sgv-panel mb-3">
             <div class="sgv-panel-cuerpo pb-0" data-enter="<%= btnFiltrar.ClientID %>">
@@ -82,7 +85,7 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label class="form-label">&nbsp;</label>
+                            <span class="form-label d-inline-block" aria-hidden="true">&nbsp;</span>
                             <div class="d-flex">
                                 <asp:Button ID="btnFiltrar" runat="server" Text="Buscar" 
                                     CssClass="btn btn-primary-custom btn-block mr-2" 
@@ -202,7 +205,7 @@
         </div><!-- /seccionPendientes -->
 
         <!-- SECCIÓN ESPERANDO CONFORMIDAD DEL CONDUCTOR -->
-        <div id="seccionPorConformar" style="display:none;">
+        <div id="seccionPorConformar" role="tabpanel" aria-labelledby="tabPorConformar" style="display:none;">
             <div class="sgv-panel sgv-panel-acento">
                 <div class="sgv-panel-cab">
                     <h5>Esperando la conformidad del conductor <span class="sgv-panel-nota ml-2"><span id="lblResultadosPorConformar">0</span> resultados</span></h5>
@@ -239,7 +242,7 @@
         </div><!-- /seccionPorConformar -->
 
         <!-- SECCIÓN CONTROL DE APROBADAS -->
-        <div id="seccionAprobadas" style="display:none;">
+        <div id="seccionAprobadas" role="tabpanel" aria-labelledby="tabAprobadas" style="display:none;">
 
             <div class="sgv-panel mb-3">
                 <div class="sgv-panel-cuerpo pb-0" data-enter="btnBuscarAprobadas">
@@ -275,7 +278,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label class="form-label">&nbsp;</label>
+                                <span class="form-label d-inline-block" aria-hidden="true">&nbsp;</span>
                                 <div class="d-flex">
                                     <button type="button" id="btnBuscarAprobadas" class="btn btn-primary-custom btn-block mr-2" data-accion="cargarLiquidacionesAprobadas">Buscar</button>
                                     <button type="button" class="btn btn-secondary-custom btn-block" data-accion="limpiarFiltrosAprobadas">Limpiar</button>
@@ -326,12 +329,12 @@
 
     </div>
 
-    <div class="modal fade" id="modalDetalleLiquidacion" tabindex="-1">
+    <div class="modal fade" id="modalDetalleLiquidacion" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalDetalleLiquidacionTitulo">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header modal-header-info" id="modalDetalleLiquidacionHeader">
                     <div class="d-flex align-items-center" style="flex:1;min-width:0;">
-                        <h5 class="modal-title mb-0">
+                        <h5 class="modal-title mb-0" id="modalDetalleLiquidacionTitulo">
                             <span id="modalModeLabel">Detalle de liquidación</span>
                             <span class="modal-orden-ref ml-2" id="modalNumeroOrden"></span>
                         </h5>
@@ -339,8 +342,8 @@
                             En aprobación
                         </span>
                     </div>
-                    <button type="button" class="close ml-2" data-dismiss="modal">
-                        <span>&times;</span>
+                    <button type="button" class="close ml-2" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
@@ -562,27 +565,27 @@
                                     <tbody>
                                         <tr data-ingreso="Despacho">
                                             <td>Adelanto para el viaje</td>
-                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-soles" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
-                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-dolares" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
-                                            <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-soles" aria-label="Soles, adelanto para el viaje" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-dolares" aria-label="Dólares, adelanto para el viaje" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" class="form-control form-control-sm ing-desc" aria-label="Detalle, adelanto para el viaje" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
                                         <tr data-ingreso="Mensualidad">
                                             <td>Mensualidad</td>
-                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-soles" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
-                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-dolares" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
-                                            <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-soles" aria-label="Soles, mensualidad" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-dolares" aria-label="Dólares, mensualidad" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" class="form-control form-control-sm ing-desc" aria-label="Detalle, mensualidad" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
                                         <tr data-ingreso="Prestamo">
                                             <td>Préstamo</td>
-                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-soles" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
-                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-dolares" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
-                                            <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-soles" aria-label="Soles, préstamo" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-dolares" aria-label="Dólares, préstamo" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" class="form-control form-control-sm ing-desc" aria-label="Detalle, préstamo" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
                                         <tr data-ingreso="OtrosIngresos" data-ultima="1">
                                             <td>Otros autorizados</td>
-                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-soles" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
-                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-dolares" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
-                                            <td><input type="text" class="form-control form-control-sm ing-desc" maxlength="250" placeholder="Opcional"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-soles" aria-label="Soles, otros autorizados" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" inputmode="decimal" autocomplete="off" data-monto class="form-control form-control-sm ing-dolares" aria-label="Dólares, otros autorizados" placeholder="0.00" data-accion-input="actualizarBalanceAjustado"></td>
+                                            <td><input type="text" class="form-control form-control-sm ing-desc" aria-label="Detalle, otros autorizados" maxlength="250" placeholder="Opcional"></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -710,15 +713,15 @@
         </div>
     </div>
 
-    <div class="modal fade" id="modalRechazar" tabindex="-1">
+    <div class="modal fade" id="modalRechazar" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalRechazarTitulo">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header modal-header-danger">
-                    <h5 class="modal-title">
+                    <h5 class="modal-title" id="modalRechazarTitulo">
                         Rechazar liquidación
                     </h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
@@ -754,14 +757,14 @@
     </div>
 
     <!-- Modal Revertir aprobación -->
-    <div class="modal fade" id="modalRevertir" tabindex="-1">
+    <div class="modal fade" id="modalRevertir" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalRevertirTitulo">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header modal-header-danger">
-                    <h5 class="modal-title">
+                    <h5 class="modal-title" id="modalRevertirTitulo">
                         Revertir aprobación
                     </h5>
-                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-danger">
@@ -796,12 +799,12 @@
     </div>
 
     <!-- Modal Retirar envío al conductor (antes de su conformidad) -->
-    <div class="modal fade" id="modalRetirarEnvio" tabindex="-1">
+    <div class="modal fade" id="modalRetirarEnvio" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalRetirarEnvioTitulo">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header modal-header-corregir">
-                    <h5 class="modal-title">Retirar envío al conductor</h5>
-                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <h5 class="modal-title" id="modalRetirarEnvioTitulo">Retirar envío al conductor</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-warning">

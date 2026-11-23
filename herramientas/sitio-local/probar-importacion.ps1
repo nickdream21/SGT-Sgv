@@ -87,7 +87,7 @@ if ($html -match 'id="[^"]*pnlProgramacionNueva"') {
         "${id}: $(Texto ([regex]::Match($m, '<option selected="selected"[^>]*>([^<]*)<').Groups[1].Value))"
     }
     "Exportación: $([regex]::IsMatch($html, 'id="[^"]*chkExportacionProg"[^>]*checked'))"
-    foreach ($fila in [regex]::Matches($html, '<tr>\s*<td><input[^>]*chkIncluirProg.*?</tr>', 'Singleline')) {
+    foreach ($fila in [regex]::Matches($html, '<tr>\s*<td>(?:<label[^>]*>)?(?:<span[^>]*>)?<input[^>]*chkIncluirProg.*?</tr>', 'Singleline')) {
         $hora = [regex]::Match($fila.Value, 'txtHoraProg"[^>]*value="([^"]*)"').Groups[1].Value
         $elegido = [regex]::Matches($fila.Value, '<select[^>]*>.*?</select>', 'Singleline') | ForEach-Object {
             Texto ([regex]::Match($_.Value, '<option selected="selected"[^>]*>([^<]*)<').Groups[1].Value) }
@@ -96,7 +96,7 @@ if ($html -match 'id="[^"]*pnlProgramacionNueva"') {
     }
 }
 
-foreach ($fila in [regex]::Matches($html, '<tr class="[^"]*">\s*<td><input[^>]*chkIncluir.*?</tr>\s*(<tr class="rd-fila-programacion">.*?</tr>)?', 'Singleline')) {
+foreach ($fila in [regex]::Matches($html, '<tr class="[^"]*">\s*<td>(?:<label[^>]*>)?(?:<span[^>]*>)?<input[^>]*chkIncluir.*?</tr>\s*(<tr class="rd-fila-programacion">.*?</tr>)?', 'Singleline')) {
     $transporte = Texto ([regex]::Match($fila.Value, '<div class="rd-placa">([^<]*)</div>').Groups[1].Value)
     $elegido = [regex]::Matches($fila.Value, '<select[^>]*>.*?</select>', 'Singleline') | ForEach-Object {
         Texto ([regex]::Match($_.Value, '<option selected="selected"[^>]*>([^<]*)<').Groups[1].Value) }

@@ -74,7 +74,7 @@ function Resumen($html) {
     $m = [regex]::Match($html, 'id="[^"]*pnlAvisosProg"[^>]*>(.*?)</div>', 'Singleline').Groups[1].Value
     if ($m) { "AVISOS: $(Texto $m)" }
     "Fecha de carga: $(Attr ([regex]::Match($html, '<input[^>]*txtFechaProg"[^>]*>').Value) 'value')"
-    foreach ($fila in [regex]::Matches($html, '<tr>\s*<td><input[^>]*chkIncluirProg.*?</tr>', 'Singleline')) {
+    foreach ($fila in [regex]::Matches($html, '<tr>\s*<td>(?:<label[^>]*>)?(?:<span[^>]*>)?<input[^>]*chkIncluirProg.*?</tr>', 'Singleline')) {
         $hora = Attr ([regex]::Match($fila.Value, '<input[^>]*txtHoraProg"[^>]*>').Value) 'value'
         $elegido = [regex]::Matches($fila.Value, '<select[^>]*>.*?</select>', 'Singleline') | ForEach-Object {
             Texto ([regex]::Match($_.Value, '<option selected="selected"[^>]*>([^<]*)<').Groups[1].Value) }

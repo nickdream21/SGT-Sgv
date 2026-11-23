@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-22**, commit anterior `5474b0d` — E5-5: 159 etiquetas asociadas a su campo (29 `for` con el ID de servidor pasan a `ClientID` y 130 nuevos) y 7 reglas de accesibilidad con tope en `AccesibilidadMarcadoTests` (campos sin nombre de 225 a 65). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-22**, commit anterior `29b29a4` — E5-6: todo campo, ✕, modal, pestaña y botón de solo icono con nombre accesible (topes de `AccesibilidadMarcadoTests` en 0 salvo `<h1>`), `SGV.nombrarSelect2`; nuevos M-133 y P-064. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-132 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-133 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -162,6 +162,7 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 
 Las tareas de la etapa (E5-1 a E5-24) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; cada pendiente de aquí dice con qué tarea se cierra.
 
+- [ ] **M-133** Accesibilidad: detalles que dejó E5-6 — (1) `ListaDespachos.aspx` ~396: el `ToolTip='<%#: … %>'` de un `asp:Label` codifica dos veces la tilde (el control ya codifica: usar `<%#`); (2) las pestañas de LiquidacionesPendientes (`<button role="tab">`) no se mueven con flechas ni tienen tabindex móvil; (3) los botones "Nota" del conductor se llaman todos "Nota" (que digan de qué gasto); (4) las reglas 4 y 8 de `AccesibilidadMarcadoTests` solo leen `.aspx`: no ven ✕ ni botones armados en `.cs` o `.js`. · C
 - [ ] **M-132** Catálogos sin índice único por nombre — RegistroPeajes, RegistroRutas y RegistroProductos comprueban el duplicado con `COUNT(*)` antes del INSERT, pero dos usuarios a la vez podrían duplicar: índices únicos sobre el nombre en mayúsculas (EstacionesPeaje; Ruta por cliente; Producto por cliente y nombre), con migración idempotente y antes la limpieza de duplicados si los hay (`DATOS_POR_CORREGIR.md`). · C
 - [ ] **M-130** Bloqueo de envío: una descarga que tarda más de 3 s se libera antes de llegar — los controles `data-descarga` (`SiteMaster.js`, `esperaDe`) liberan a los 3 s fijos; si el PDF de ReporteCargas, el ZIP de ReporteGps o el STATUS de RegistroSeguimiento tardan más en somee, otro clic cancela la respuesta pendiente. Usar una cookie testigo: el botón manda un token, el servidor la pone al escribir el archivo y el script libera al verla (tope ~60 s). · B
 - [ ] **M-131** Bloqueo de envío: detalles menores de E5-2 — (1) `RegistroDespacho.js` `_guardiaLote` no pregunta "¿salir?" si se cierra la pestaña durante un postback parcial (`SGV.envioEnCurso()` también vale en los parciales; el lote sigue en la sesión): exponer `SGV.envioCompletoEnCurso()`; (2) `EnvioUnicoTests` (`InicioMetodo`) solo reconoce métodos `void/string/bool/int/byte[]` y no ve descargas escritas desde Services o Helpers. · C

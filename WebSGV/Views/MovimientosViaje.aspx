@@ -26,11 +26,13 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label d-block">Tipo</label>
-                            <asp:RadioButtonList ID="rblTipo" runat="server" RepeatDirection="Horizontal" CssClass="mv-tipo" ClientIDMode="Static">
-                                <asp:ListItem Value="ENTREGA" Selected="True">Entrega de dinero al conductor</asp:ListItem>
-                                <asp:ListItem Value="PAGO_DIRECTO">Pago directo a un proveedor</asp:ListItem>
-                            </asp:RadioButtonList>
+                            <span class="form-label d-block mb-2" id="lblTipoMovimiento">Tipo</span>
+                            <div role="radiogroup" aria-labelledby="lblTipoMovimiento">
+                                <asp:RadioButtonList ID="rblTipo" runat="server" RepeatDirection="Horizontal" CssClass="mv-tipo" ClientIDMode="Static">
+                                    <asp:ListItem Value="ENTREGA" Selected="True">Entrega de dinero al conductor</asp:ListItem>
+                                    <asp:ListItem Value="PAGO_DIRECTO">Pago directo a un proveedor</asp:ListItem>
+                                </asp:RadioButtonList>
+                            </div>
                             <small class="sgv-suave mv-ayuda-entrega">Suma a lo entregado en su liquidación.</small>
                             <small class="sgv-suave mv-ayuda-pago" style="display:none;">La empresa pagó al proveedor (Yape al del parchado, llantas, grúa…): es costo del viaje, sale en el PDF y no cambia el saldo del conductor.</small>
                         </div>
@@ -43,7 +45,7 @@
                             <div class="form-group col-12 col-sm-6">
                                 <label for="<%= ddlConceptoEntrega.ClientID %>" class="form-label">Concepto <span class="text-danger">*</span></label>
                                 <asp:DropDownList ID="ddlConceptoEntrega" runat="server" CssClass="form-control mv-solo-entrega" />
-                                <asp:DropDownList ID="ddlConceptoPago" runat="server" CssClass="form-control mv-solo-pago" style="display:none;" />
+                                <asp:DropDownList ID="ddlConceptoPago" runat="server" CssClass="form-control mv-solo-pago" style="display:none;" aria-label="Concepto" />
                             </div>
                         </div>
 
@@ -147,11 +149,11 @@
     </div>
 
     <!-- Anular -->
-    <div class="modal fade" id="modalAnular" tabindex="-1">
+    <div class="modal fade" id="modalAnular" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalAnularTitulo">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header"><h5 class="modal-title">Anular registro</h5>
-                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
+                <div class="modal-header"><h5 class="modal-title" id="modalAnularTitulo">Anular registro</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button></div>
                 <div class="modal-body">
                     <asp:HiddenField ID="hfIdAnular" runat="server" ClientIDMode="Static" />
                     <label class="form-label" for="<%= txtMotivoAnular.ClientID %>">Motivo <span class="text-danger">*</span></label>

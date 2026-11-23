@@ -36,7 +36,7 @@
                     </div>
                     <h4>Arrastra tu archivo Excel de conversión aquí o haz clic para seleccionar</h4>
                     <p>El sistema importará la hoja 1 (formato simplificado con 33 columnas)</p>
-                    <asp:FileUpload ID="fileUpload" runat="server" CssClass="d-none" data-accion-change="mostrarArchivoElegido" accept=".xlsx" />
+                    <asp:FileUpload ID="fileUpload" runat="server" CssClass="d-none" aria-label="Archivo Excel de conversión" data-accion-change="mostrarArchivoElegido" accept=".xlsx" />
                     <div id="fileInfo" class="file-info">Ningún archivo seleccionado</div>
                 </div>
             </div>

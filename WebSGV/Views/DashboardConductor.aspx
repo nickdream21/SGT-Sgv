@@ -43,17 +43,17 @@
 
         <!-- Pestañas -->
         <nav class="nav dc-tabs" id="conductorTabs" role="tablist">
-            <a class="dc-tab active" id="viajesActivos-tab" data-toggle="tab" href="#viajesActivos" role="tab">
+            <a class="dc-tab active" id="viajesActivos-tab" data-toggle="tab" href="#viajesActivos" role="tab" aria-controls="viajesActivos" aria-selected="true">
                 <i class="fas fa-truck"></i><span>Mi viaje</span>
                 <asp:Panel ID="pnlBadgeActivos" runat="server" CssClass="dc-tab-num" Visible="false">
                     <asp:Label ID="lblCantidadActivos" runat="server"></asp:Label>
                 </asp:Panel>
             </a>
-            <a class="dc-tab" id="liquidarViaje-tab" data-toggle="tab" href="#liquidarViaje" role="tab">
+            <a class="dc-tab" id="liquidarViaje-tab" data-toggle="tab" href="#liquidarViaje" role="tab" aria-controls="liquidarViaje" aria-selected="false">
                 <i class="fas fa-receipt"></i><span>Liquidar</span>
                 <asp:Panel ID="pnlBadgeLiquidar" runat="server" CssClass="dc-tab-punto" Visible="false"></asp:Panel>
             </a>
-            <a class="dc-tab" id="historial-tab" data-toggle="tab" href="#historial" role="tab">
+            <a class="dc-tab" id="historial-tab" data-toggle="tab" href="#historial" role="tab" aria-controls="historial" aria-selected="false">
                 <i class="fas fa-history"></i><span>Historial</span>
             </a>
         </nav>
@@ -61,7 +61,7 @@
         <div class="tab-content">
 
             <!-- ============ MI VIAJE ============ -->
-            <div class="tab-pane fade show active" id="viajesActivos" role="tabpanel">
+            <div class="tab-pane fade show active" id="viajesActivos" role="tabpanel" aria-labelledby="viajesActivos-tab">
 
                 <!-- Dinero que la administración registró a su nombre y aún no se liquidó -->
                 <asp:Panel ID="pnlDineroRecibido" runat="server" Visible="false" CssClass="dc-card">
@@ -126,7 +126,7 @@
             </div>
 
             <!-- ============ LIQUIDAR ============ -->
-            <div class="tab-pane fade" id="liquidarViaje" role="tabpanel">
+            <div class="tab-pane fade" id="liquidarViaje" role="tabpanel" aria-labelledby="liquidarViaje-tab">
 
                 <asp:Panel ID="pnlSinViajeParaLiquidar" runat="server" Visible="true">
                     <div class="dc-vacio">
@@ -193,7 +193,7 @@
                                     <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="combustibleSoles" name="combustibleSoles"></div>
                                     <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="combustibleDolares" name="combustibleDolares" aria-label="Combustible en dólares"></div>
                                 </div>
-                                <input type="text" class="form-control dc-nota" name="descCombustible" id="descCombustible" maxlength="250" placeholder="Detalle (opcional)" hidden>
+                                <input type="text" class="form-control dc-nota" name="descCombustible" id="descCombustible" aria-label="Detalle de combustible" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
 
                             <div class="dc-gasto">
@@ -205,7 +205,7 @@
                                     <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="alimentacionSoles" name="alimentacionSoles"></div>
                                     <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="alimentacionDolares" name="alimentacionDolares" aria-label="Alimentación en dólares"></div>
                                 </div>
-                                <input type="text" class="form-control dc-nota" name="descAlimentacion" id="descAlimentacion" maxlength="250" placeholder="Detalle (opcional)" hidden>
+                                <input type="text" class="form-control dc-nota" name="descAlimentacion" id="descAlimentacion" aria-label="Detalle de alimentación" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
 
                             <div class="dc-gasto solo-intl">
@@ -216,7 +216,7 @@
                                 <div class="dc-montos">
                                     <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="peajesNacSoles" name="peajesNacSoles"></div>
                                 </div>
-                                <input type="text" class="form-control dc-nota" name="descPeajesNacionales" id="descPeajesNacionales" maxlength="250" placeholder="Detalle (opcional)" hidden>
+                                <input type="text" class="form-control dc-nota" name="descPeajesNacionales" id="descPeajesNacionales" aria-label="Detalle de peajes en Perú" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
 
                             <div class="dc-gasto solo-intl">
@@ -227,7 +227,7 @@
                                 <div class="dc-montos">
                                     <div class="dc-monto"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="peajesExtDolares" name="peajesExtDolares"></div>
                                 </div>
-                                <input type="text" class="form-control dc-nota" name="descPeajesExtranjeros" id="descPeajesExtranjeros" maxlength="250" placeholder="Detalle (opcional)" hidden>
+                                <input type="text" class="form-control dc-nota" name="descPeajesExtranjeros" id="descPeajesExtranjeros" aria-label="Detalle de peajes en Ecuador" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
 
                             <div class="dc-gasto">
@@ -239,7 +239,7 @@
                                     <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="hospedajeSoles" name="hospedajeSoles"></div>
                                     <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="hospedajeDolares" name="hospedajeDolares" aria-label="Hospedaje en dólares"></div>
                                 </div>
-                                <input type="text" class="form-control dc-nota" name="descHospedaje" id="descHospedaje" maxlength="250" placeholder="Detalle (opcional)" hidden>
+                                <input type="text" class="form-control dc-nota" name="descHospedaje" id="descHospedaje" aria-label="Detalle de hospedaje" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
 
                             <div class="dc-gasto">
@@ -251,7 +251,7 @@
                                     <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="movilidadSoles" name="movilidadSoles"></div>
                                     <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="movilidadDolares" name="movilidadDolares" aria-label="Movilidad en dólares"></div>
                                 </div>
-                                <input type="text" class="form-control dc-nota" name="descMovilidad" id="descMovilidad" maxlength="250" placeholder="Detalle (opcional)" hidden>
+                                <input type="text" class="form-control dc-nota" name="descMovilidad" id="descMovilidad" aria-label="Detalle de movilidad" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
 
                             <div class="dc-gasto">
@@ -263,7 +263,7 @@
                                     <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="encapadaSoles" name="encapadaSoles"></div>
                                     <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="encapadaDolares" name="encapadaDolares" aria-label="Encarpada en dólares"></div>
                                 </div>
-                                <input type="text" class="form-control dc-nota" name="descEncapada" id="descEncapada" maxlength="250" placeholder="Detalle (opcional)" hidden>
+                                <input type="text" class="form-control dc-nota" name="descEncapada" id="descEncapada" aria-label="Detalle de encarpada / desencarpada" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
 
                             <div class="dc-gasto">
@@ -275,7 +275,7 @@
                                     <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="reparacionesSoles" name="reparacionesSoles"></div>
                                     <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="reparacionesDolares" name="reparacionesDolares" aria-label="Reparaciones en dólares"></div>
                                 </div>
-                                <input type="text" class="form-control dc-nota" name="descReparaciones" id="descReparaciones" maxlength="250" placeholder="Qué se reparó (opcional)" hidden>
+                                <input type="text" class="form-control dc-nota" name="descReparaciones" id="descReparaciones" aria-label="Qué se reparó" maxlength="250" placeholder="Qué se reparó (opcional)" hidden>
                             </div>
 
                             <div class="dc-gasto">
@@ -287,7 +287,7 @@
                                     <div class="dc-monto"><span>S/</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-soles" id="apoyoSeguridadSoles" name="apoyoSeguridadSoles"></div>
                                     <div class="dc-monto solo-intl"><span>$</span><input type="text" inputmode="decimal" autocomplete="off" data-monto placeholder="0.00" class="gasto-dolares" id="apoyoSeguridadDolares" name="apoyoSeguridadDolares" aria-label="Apoyo en dólares"></div>
                                 </div>
-                                <input type="text" class="form-control dc-nota" name="descApoyoSeguridad" id="descApoyoSeguridad" maxlength="250" placeholder="Detalle (opcional)" hidden>
+                                <input type="text" class="form-control dc-nota" name="descApoyoSeguridad" id="descApoyoSeguridad" aria-label="Detalle de apoyo / seguridad" maxlength="250" placeholder="Detalle (opcional)" hidden>
                             </div>
                         </div>
 
@@ -302,7 +302,7 @@
                     <section class="dc-card">
                         <div class="dc-card-tit"><span class="dc-paso">3</span>Observaciones <span class="dc-opcional">(opcional)</span></div>
                         <asp:TextBox ID="txtObservaciones" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="3"
-                            MaxLength="1000" placeholder="Algo que la oficina deba saber del viaje"></asp:TextBox>
+                            MaxLength="1000" aria-label="Observaciones (opcional)" placeholder="Algo que la oficina deba saber del viaje"></asp:TextBox>
                     </section>
 
                     <!-- Barra fija con el total -->
@@ -342,7 +342,7 @@
             </div>
 
             <!-- ============ HISTORIAL ============ -->
-            <div class="tab-pane fade" id="historial" role="tabpanel">
+            <div class="tab-pane fade" id="historial" role="tabpanel" aria-labelledby="historial-tab">
 
                 <details class="dc-filtros" data-enter="<%= btnBuscarHistorial.ClientID %>">
                     <summary>Filtrar <asp:Label ID="lblTotalHistorial" runat="server" CssClass="dc-filtros-num" Text="0 liquidaciones"></asp:Label></summary>

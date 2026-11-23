@@ -64,11 +64,11 @@
         </div>
     </div>
 
-    <div class="modal fade" id="modalDetalleLiquidacion" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal fade" id="modalDetalleLiquidacion" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalDetalleLiquidacionTitulo" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Detalle de liquidación</h5>
+                    <h5 class="modal-title" id="modalDetalleLiquidacionTitulo">Detalle de liquidación</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                         <span aria-hidden="true">&times;</span>
                     </button>

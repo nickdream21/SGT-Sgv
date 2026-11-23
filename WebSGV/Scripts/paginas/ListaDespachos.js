@@ -13,6 +13,7 @@ function inicializarSelect2Conductores() {
             }
         }
     });
+    $('.conductor-select').each(function () { SGV.nombrarSelect2(this); });
 }
 
 $(document).ready(function () {
