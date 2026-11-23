@@ -1,9 +1,9 @@
-﻿<%@ Page Title="Restablecer Contraseña" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RestablecerContrasena.aspx.cs" Inherits="WebSGV.Views.RestablecerContrasena" %>
+﻿<%@ Page Title="Restablecer contraseña" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RestablecerContrasena.aspx.cs" Inherits="WebSGV.Views.RestablecerContrasena" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/RestablecerContrasena.css") %>" rel="stylesheet" />
 
     <div class="reset-container" data-enter="<%= btnRestablecer.ClientID %>">
-        <h2 class="reset-title">Restablecer contraseña</h2>
+        <h1 class="reset-title">Restablecer contraseña</h1>
         <p class="reset-subtitle">Ingrese su nueva contraseña.</p>
 
         <asp:Panel ID="pnlMensaje" runat="server" Visible="false">

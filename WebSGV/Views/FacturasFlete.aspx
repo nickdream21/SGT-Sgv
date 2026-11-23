@@ -9,10 +9,10 @@
 
     <div class="ff-pagina">
 
-        <div class="ff-encabezado">
-            <div>
-                <h2 class="ff-titulo"><i class="fas fa-file-invoice-dollar mr-2"></i>Facturas de flete</h2>
-                <p class="ff-subtitulo">
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Facturas de flete</h1>
+                <p>
                     Lo que le cobramos al cliente por el transporte (facturas E001 de SUNAT) frente a lo que se carg&#xF3;: cada l&#xED;nea de la
                     factura se une a su carga por la factura comercial o la gu&#xED;a que menciona.
                 </p>

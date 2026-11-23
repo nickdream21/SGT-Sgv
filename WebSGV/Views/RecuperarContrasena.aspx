@@ -1,9 +1,9 @@
-﻿<%@ Page Title="Recuperar Contraseña" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RecuperarContrasena.aspx.cs" Inherits="WebSGV.Views.RecuperarContrasena" %>
+﻿<%@ Page Title="Recuperar contraseña" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RecuperarContrasena.aspx.cs" Inherits="WebSGV.Views.RecuperarContrasena" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/RecuperarContrasena.css") %>" rel="stylesheet" />
 
     <div class="recovery-container" data-enter="<%= btnEnviar.ClientID %>">
-        <h2 class="recovery-title">Recuperar contraseña</h2>
+        <h1 class="recovery-title">Recuperar contraseña</h1>
         <p class="recovery-subtitle">Ingrese su usuario o correo electrónico y le enviaremos un enlace para restablecer su contraseña.</p>
 
         <asp:Panel ID="pnlMensaje" runat="server" Visible="false">

@@ -202,20 +202,8 @@
 @media (max-width: 767.98px) {
     /* El .text-muted más oscuro del celular está en sgv-base.css (aquí perdía por orden de carga). */
 
-    /* Headers más grandes en móvil */
-    .page-title {
-        font-size: 1.5rem !important;
-    }
-
     .section-title {
         font-size: 1.1rem !important;
-    }
-}
-
-/* ===== Celular angosto (< 576 px) ===== */
-@media (max-width: 575.98px) {
-    .page-title {
-        font-size: 1.25rem !important;
     }
 }
 

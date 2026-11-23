@@ -1,4 +1,4 @@
-﻿<%@ Page Title="Liquidaciones Pendientes" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" 
+﻿<%@ Page Title="Liquidaciones pendientes" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" 
     CodeBehind="LiquidacionesPendientes.aspx.cs" Inherits="WebSGV.Views.LiquidacionesPendientes" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
@@ -13,8 +13,8 @@
     <div class="container-fluid px-4">
 
         <div class="sgv-encabezado">
-            <div>
-                <h2>Gestión de liquidaciones</h2>
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Liquidaciones pendientes</h1>
                 <p>Aprueba, revisa y controla las liquidaciones de los conductores</p>
             </div>
         </div>

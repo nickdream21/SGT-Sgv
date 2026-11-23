@@ -186,10 +186,8 @@ table[border="1"] td .btn { white-space: nowrap; }
     /* Se deja el relleno de Bootstrap (15 px): con menos, las .row (margen -15 px) se salen de la pantalla.
        !important para ganar también a los anchos propios de página (.container:has(...) con 97vw). */
     body > .container, form > .container, .container.mt-4 { max-width: 100% !important; }
-    /* Solo encabezados: el de página (título + botón: Registro*, CatalogoCliente, GestionUsuarios,
-       DashboardAdminSistema) y los .card-header. Las filas "etiqueta + valor" no se tocan. */
-    .container .d-flex.justify-content-between.border-bottom.pb-3,
-    .container .d-flex.justify-content-between:has(> div > h2),
+    /* Solo los .card-header (el encabezado de página es .sgv-encabezado, que ya baja de línea).
+       Las filas "etiqueta + valor" no se tocan. */
     .card-header.d-flex.justify-content-between { flex-wrap: wrap; row-gap: .5rem; column-gap: .5rem; }
     .sgv-avisos { top: 70px; left: 12px; right: 12px; width: auto; max-width: none; }
 }

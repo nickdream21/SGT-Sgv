@@ -1,4 +1,4 @@
-﻿<%@ Page Title="Mi viaje - Conductor" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DashboardConductor.aspx.cs" Inherits="WebSGV.Views.DashboardConductor" %>
+﻿<%@ Page Title="Mi viaje" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DashboardConductor.aspx.cs" Inherits="WebSGV.Views.DashboardConductor" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
@@ -15,6 +15,7 @@
         <!-- Encabezado -->
         <header class="dc-cab">
             <div class="dc-cab-texto">
+                <h1 class="dc-titulo">Mi viaje</h1>
                 <div class="dc-nombre"><asp:Label ID="lblNombreConductor" runat="server"></asp:Label></div>
                 <div class="dc-dni">DNI <asp:Label ID="lblDNIConductor" runat="server"></asp:Label></div>
             </div>

@@ -10,15 +10,13 @@
 
     <div class="container-fluid px-3">
 
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="border-bottom pb-3">
-                    <h2 class="rc-titulo mb-1"><i class="fas fa-boxes mr-2"></i>Reporte de cargas</h2>
-                    <p class="text-muted mb-0">
-                        Lo que se carg&#xF3;: viajes, clientes, productos, facturas y documentaci&#xF3;n del per&#xED;odo, y el detalle de cada pedido
-                        (unidad, chofer, gu&#xED;a, bolsas y kg). Incluye las cargas registradas con los documentos del correo que no entran a la liquidaci&#xF3;n del chofer.
-                    </p>
-                </div>
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Reporte de cargas</h1>
+                <p>
+                    Lo que se carg&#xF3;: viajes, clientes, productos, facturas y documentaci&#xF3;n del per&#xED;odo, y el detalle de cada pedido
+                    (unidad, chofer, gu&#xED;a, bolsas y kg). Incluye las cargas registradas con los documentos del correo que no entran a la liquidaci&#xF3;n del chofer.
+                </p>
             </div>
         </div>
 

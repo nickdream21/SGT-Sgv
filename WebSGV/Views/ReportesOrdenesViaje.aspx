@@ -1,4 +1,4 @@
-﻿<%@ Page Title="Reportes de Órdenes de Viaje" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ReportesOrdenesViaje.aspx.cs" Inherits="WebSGV.Views.ReportesOrdenesViaje" %>
+﻿<%@ Page Title="Reporte de liquidaciones y viajes" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ReportesOrdenesViaje.aspx.cs" Inherits="WebSGV.Views.ReportesOrdenesViaje" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
@@ -8,21 +8,10 @@
 
     <div class="container-fluid px-4">
 
-        <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="page-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="page-title mb-1">
-                                Reportes de órdenes de viaje
-                            </h2>
-                            <p class="text-muted mb-0">
-                                Consulte liquidaciones y viajes activos del sistema
-                            </p>
-                        </div>
-                    </div>
-                </div>
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Reporte de liquidaciones y viajes</h1>
+                <p>Consulte liquidaciones y viajes activos del sistema</p>
             </div>
         </div>
 

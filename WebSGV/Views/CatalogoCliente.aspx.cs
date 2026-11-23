@@ -84,7 +84,7 @@ namespace WebSGV.Views
 
             if (idCliente <= 0)
             {
-                lblResumen.Text = "Seleccione un cliente";
+                lblResumen.Text = string.Empty;
                 return;
             }
 

@@ -1,10 +1,14 @@
-﻿<%@ Page Title="Carga de Indicadores vía Excel" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="CargarExcel.aspx.cs" Inherits="WebSGV.Views.CargarExcel" %>
+﻿<%@ Page Title="Carga de indicadores vía Excel" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="CargarExcel.aspx.cs" Inherits="WebSGV.Views.CargarExcel" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/CargarExcel.css") %>" rel="stylesheet" />
 
     <div class="container">
-        <h2 class="mt-4 mb-4">Carga de indicadores vía Excel</h2>
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Carga de indicadores vía Excel</h1>
+            </div>
+        </div>
         
         <!-- Mensaje de alerta -->
         <asp:Panel ID="alertPanel" runat="server" EnableViewState="false" Visible="false">

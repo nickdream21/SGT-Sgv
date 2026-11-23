@@ -4,14 +4,13 @@
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/Exportacion/SeguimientoExportacion.css") %>" rel="stylesheet" />
 
     <div class="sx-wrap">
-        <a href="RegistroSeguimiento.aspx" class="sx-nota" style="display: inline-block; padding: 0.5rem 0;">← Volver al tablero</a>
-
         <div class="sgv-encabezado">
-            <div>
-                <h2><asp:Literal ID="litTitulo" runat="server" /> <asp:Literal ID="litFase" runat="server" /></h2>
+            <div class="sgv-encabezado-titulo">
+                <a class="sgv-volver" href="RegistroSeguimiento.aspx">Volver al tablero de seguimiento</a>
+                <h1 class="h2"><asp:Literal ID="litTitulo" runat="server" /> <asp:Literal ID="litFase" runat="server" /></h1>
                 <p><asp:Literal ID="litSubtitulo" runat="server" /></p>
             </div>
-            <asp:Panel ID="pnlAcciones" runat="server" CssClass="sx-barra-acciones">
+            <asp:Panel ID="pnlAcciones" runat="server" CssClass="sx-barra-acciones sgv-encabezado-acciones">
                 <button type="button" class="sx-btn" id="btnEditarDatos" aria-expanded="false" aria-controls="seccionDatos">Editar datos del viaje</button>
                 <asp:Button ID="btnExportar" runat="server" Text="Exportar a STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click" data-descarga="true" />
                 <asp:Button ID="btnEstado" runat="server" CssClass="sx-btn" CausesValidation="false" OnClick="btnEstado_Click" />

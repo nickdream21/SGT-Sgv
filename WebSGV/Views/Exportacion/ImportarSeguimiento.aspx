@@ -5,11 +5,11 @@
 
     <div class="sx-wrap">
         <div class="sgv-encabezado">
-            <div>
-                <h2>Importar seguimiento desde Excel</h2>
-                <p>Para cargar el STATUS GENERAL o la plantilla. Las filas que ya existen (pedido + tracto + programación) se actualizan, no se duplican. Los viajes que vienen de despachos o se crearon a mano no se modifican.</p>
+            <div class="sgv-encabezado-titulo">
+                <a class="sgv-volver" href="RegistroSeguimiento.aspx">Volver al tablero de seguimiento</a>
+                <h1 class="h2">Importar seguimiento de exportación</h1>
+                <p>Para cargar el STATUS GENERAL o la plantilla desde Excel. Las filas que ya existen (pedido + tracto + programación) se actualizan, no se duplican. Los viajes que vienen de despachos o se crearon a mano no se modifican.</p>
             </div>
-            <a href="RegistroSeguimiento.aspx" class="sx-btn">← Volver al tablero</a>
         </div>
 
         <asp:Panel ID="pnlMensaje" runat="server" EnableViewState="false" Visible="false">

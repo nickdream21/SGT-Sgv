@@ -33,7 +33,10 @@
     gap: 12px;
     padding: 4px 2px 14px;
 }
-.dc-nombre { font-size: 1.05rem; font-weight: 600; line-height: 1.25; }
+.dc-titulo { font-size: 1.05rem; font-weight: 600; line-height: 1.25; margin: 0; }
+.dc-nombre { font-size: 0.875rem; font-weight: 600; line-height: 1.25; }
+/* En el detalle de una liquidación el título es el número (h1.dc-nombre): mismo tamaño que .dc-titulo. */
+h1.dc-nombre { font-size: 1.05rem; margin: 0; }
 .dc-dni { font-size: 0.8rem; color: var(--dc-suave); }
 .dc-estado {
     flex-shrink: 0;

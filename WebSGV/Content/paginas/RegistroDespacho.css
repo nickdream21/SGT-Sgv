@@ -1,6 +1,4 @@
 /* ---- Registro Despacho - Minimal Professional ---- */
-.rd-page-header { background: var(--sgv-texto); color: var(--sgv-superficie); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: .85rem 1.25rem; }
-.rd-page-header h4 { margin: 0; font-size: 1rem; font-weight: 600; }
 .rd-step-header { background: var(--sgv-fondo); border-bottom: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: .85rem 1.25rem; }
 .rd-step-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: var(--sgv-texto); display: flex; align-items: center; gap: .45rem; }
 .rd-step-header .rd-subtitle { font-size: .77rem; color: var(--sgv-texto-suave); margin-top: 3px; margin-left: 2rem; }

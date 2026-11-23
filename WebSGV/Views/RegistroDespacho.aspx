@@ -1,25 +1,28 @@
-﻿<%@ Page Title="Registro de Despachos Unificado" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" MaintainScrollPositionOnPostback="true" CodeBehind="RegistroDespacho.aspx.cs" Inherits="WebSGV.Views.RegistroDespacho" %>
+﻿<%@ Page Title="Registro de despachos" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" MaintainScrollPositionOnPostback="true" CodeBehind="RegistroDespacho.aspx.cs" Inherits="WebSGV.Views.RegistroDespacho" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
 <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/RegistroDespacho.css") %>" rel="stylesheet" />
 
     <div class="container-fluid rd-pagina">
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Registro de despachos</h1>
+                <p>Programe o complete las cargas con los archivos del día, arme el lote con sus conductores y registre la descarga.</p>
+            </div>
+            <div class="sgv-encabezado-acciones">
+                <%-- Panel propio (UpdateMode=Always): el encabezado queda fuera de UpdatePanelMain y
+                     sin él la etiqueta no se refrescaba en los postbacks asíncronos. --%>
+                <asp:UpdatePanel ID="UpdatePanelEstadoLote" runat="server" UpdateMode="Always" RenderMode="Inline">
+                    <ContentTemplate>
+                        <asp:Label ID="lblEstadoLote" runat="server" CssClass="badge bg-success" style="font-size:.75rem;font-weight:600;" Visible="false"></asp:Label>
+                    </ContentTemplate>
+                </asp:UpdatePanel>
+            </div>
+        </div>
         <div class="row">
             <div class="col-md-12">
                 <div class="card">
-                    <div class="rd-page-header">
-                        <h4>
-                            <i class="fas fa-truck mr-2"></i> Registro de Despachos
-                            <%-- Panel propio (UpdateMode=Always): el encabezado queda fuera de UpdatePanelMain y
-                                 sin él la etiqueta no se refrescaba en los postbacks asíncronos. --%>
-                            <asp:UpdatePanel ID="UpdatePanelEstadoLote" runat="server" UpdateMode="Always" RenderMode="Inline">
-                                <ContentTemplate>
-                                    <asp:Label ID="lblEstadoLote" runat="server" CssClass="badge ml-3" style="background:#16a34a;font-size:.68rem;font-weight:600;" Visible="false"></asp:Label>
-                                </ContentTemplate>
-                            </asp:UpdatePanel>
-                        </h4>
-                    </div>
                     <div class="card-body">
                         <!-- Solo btnIniciarLote es PostBackTrigger (ver <Triggers> más abajo): ese paso incluye
                              los FileUpload de Factura/CPIC y UpdatePanel no soporta subida de archivos por AJAX

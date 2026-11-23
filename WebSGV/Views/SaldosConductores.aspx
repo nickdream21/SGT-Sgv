@@ -3,12 +3,12 @@
 
     <div class="container-fluid px-3 sc-pagina">
         <div class="sgv-encabezado">
-            <div>
-                <h2><i class="fas fa-balance-scale mr-2"></i>Descuentos y reintegros a conductores</h2>
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Descuentos y reintegros</h1>
                 <p>Saldo de cada liquidación aprobada: si le sobró dinero y no lo devolvió, <strong>se le descuenta</strong>;
                    si puso de su plata, <strong>se le reintegra</strong>. Registra cómo se saldó para que no vuelva a salir pendiente.</p>
             </div>
-            <div class="sgv-acciones">
+            <div class="sgv-acciones sgv-encabezado-acciones">
                 <asp:LinkButton ID="btnExcel" runat="server" CssClass="btn btn-outline-success btn-sm" OnClick="btnExcel_Click" data-descarga="true">
                     <i class="fas fa-file-excel mr-1"></i>Excel</asp:LinkButton>
                 <asp:LinkButton ID="btnImagen" runat="server" CssClass="btn btn-outline-secondary btn-sm" OnClick="btnImagen_Click" data-descarga="true">

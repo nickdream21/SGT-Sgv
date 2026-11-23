@@ -1,4 +1,4 @@
-﻿<%@ Page Title="Panel Admin Sistema" Language="C#" MasterPageFile="~/Site.Master"
+﻿<%@ Page Title="Panel del sistema" Language="C#" MasterPageFile="~/Site.Master"
     AutoEventWireup="true" CodeBehind="DashboardAdminSistema.aspx.cs"
     Inherits="WebSGV.Views.DashboardAdminSistema" %>
 
@@ -10,22 +10,22 @@
         .stat-card.green { border-left-color: #28a745; }
         .stat-card.red   { border-left-color: #dc3545; }
         .stat-card.cyan  { border-left-color: #17a2b8; }
-        .admin-titulo { font-size: 1.375rem; font-weight: 600; }
         .admin-kpi-etiqueta { font-size: .8125rem; color: #6b7280; }
         .admin-kpi-valor { font-size: 1.625rem; font-weight: 600; color: #1f2937; font-variant-numeric: tabular-nums; }
         .quick-link { transition: background .15s; }
         .quick-link:hover { background: #f0f4ff !important; }
     </style>
 
-    <!-- Encabezado -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="admin-titulo mb-0">Panel de administración del sistema</h2>
-            <small class="text-muted"><asp:Label ID="lblFechaHora" runat="server" /></small>
+    <div class="sgv-encabezado">
+        <div class="sgv-encabezado-titulo">
+            <h1 class="h2">Panel del sistema</h1>
+            <p><asp:Label ID="lblFechaHora" runat="server" /></p>
         </div>
-        <a href="GestionUsuarios.aspx" class="btn btn-primary">
-            <i class="fas fa-users-cog mr-1"></i>Gestión de usuarios
-        </a>
+        <div class="sgv-encabezado-acciones">
+            <a href="GestionUsuarios.aspx" class="btn btn-primary">
+                <i class="fas fa-users-cog mr-1"></i>Gestión de usuarios
+            </a>
+        </div>
     </div>
 
     <!-- Tarjetas de estadísticas -->

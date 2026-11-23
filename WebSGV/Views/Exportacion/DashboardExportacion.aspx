@@ -1,18 +1,16 @@
-﻿<%@ Page Title="Dashboard de Exportacion" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DashboardExportacion.aspx.cs" Inherits="WebSGV.Views.Exportacion.DashboardExportacion" %>
+﻿<%@ Page Title="Dashboard de exportación" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DashboardExportacion.aspx.cs" Inherits="WebSGV.Views.Exportacion.DashboardExportacion" %>
 
 <asp:Content ID="ContentDE" ContentPlaceHolderID="MainContent" runat="server">
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/chart-4.4.0.umd.min.js") %>"></script>
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/Exportacion/DashboardExportacion.css") %>" rel="stylesheet" />
 
     <div class="de-wrap">
-        <div class="de-header">
-            <div>
-                <h1 class="de-title">Dashboard de exportaci&oacute;n</h1>
-                <div class="de-subtitle">Viajes de Vitapro Per&uacute; &rarr; Ecuador &middot; tiempos medidos con los hitos del GPS</div>
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <a class="sgv-volver" href="RegistroSeguimiento.aspx">Volver al tablero de seguimiento</a>
+                <h1 class="h2">Dashboard de exportaci&oacute;n</h1>
+                <p>Viajes de Vitapro Per&uacute; &rarr; Ecuador &middot; tiempos medidos con los hitos del GPS</p>
             </div>
-            <a href="RegistroSeguimiento.aspx" class="de-btn de-btn-ghost">
-                <i class="fas fa-arrow-left"></i> Tablero del seguimiento
-            </a>
         </div>
 
         <asp:Panel ID="pnlAlert" runat="server" Visible="false" CssClass="de-alert de-alert-danger">

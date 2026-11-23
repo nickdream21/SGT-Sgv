@@ -282,7 +282,6 @@ namespace WebSGV.Views
                 gvViajesActivos.DataBind();
 
                 lblContadorViajes.Text = $"{viajes.Count}";
-                ActualizarContadorGeneral();
             }
             catch (Exception ex)
             {
@@ -408,7 +407,6 @@ namespace WebSGV.Views
                 gvLotesRegistrados.DataBind();
 
                 lblContadorLotes.Text = $"{lotes.Count}";
-                ActualizarContadorGeneral();
             }
             catch (Exception ex)
             {
@@ -2070,8 +2068,6 @@ namespace WebSGV.Views
                 divStatManifiestos.Attributes["class"] = pendientes > 0 ? "ld-stat-wrap ld-stat-alerta" : "ld-stat-wrap";
 
                 ContarDocumentosPendientes(lotesActivos);
-
-                ActualizarContadorGeneral();
             }
             catch (Exception ex)
             {
@@ -2125,22 +2121,6 @@ namespace WebSGV.Views
             txtFechaHasta.Text = string.Empty;
             ddlFiltroDocumentosLotes.SelectedValue = ListaDespachosService.DOCUMENTOS_PENDIENTES;
             CargarLotesDesdeInicio();
-        }
-
-        private void ActualizarContadorGeneral()
-        {
-            if (pnlListaViajes.Visible)
-            {
-                lblContadorGeneral.Text = "Gestión de Viajes Activos - " + lblContadorViajes.Text + " viajes";
-            }
-            else if (pnlListaLotes.Visible)
-            {
-                lblContadorGeneral.Text = "Gestión de Lotes Registrados - " + lblContadorLotes.Text + " lotes";
-            }
-            else
-            {
-                lblContadorGeneral.Text = "Sistema de Gestión";
-            }
         }
 
         private void LimpiarFiltrosViajes()

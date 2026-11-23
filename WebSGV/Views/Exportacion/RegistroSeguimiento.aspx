@@ -1,15 +1,15 @@
-<%@ Page Title="Seguimiento de exportación" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroSeguimiento.aspx.cs" Inherits="WebSGV.Views.Exportacion.RegistroSeguimiento" %>
+<%@ Page Title="Tablero de seguimiento" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroSeguimiento.aspx.cs" Inherits="WebSGV.Views.Exportacion.RegistroSeguimiento" %>
 
 <asp:Content ID="ContentSE" ContentPlaceHolderID="MainContent" runat="server">
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/Exportacion/SeguimientoExportacion.css") %>" rel="stylesheet" />
 
     <div class="sx-wrap">
         <div class="sgv-encabezado">
-            <div>
-                <h2>Seguimiento de exportación</h2>
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Tablero de seguimiento</h1>
                 <p>Un viaje por cada carreta de los despachos de exportación y de los clientes terceros. Las horas salen del GPS; tú completas lo que el GPS no sabe.</p>
             </div>
-            <div class="sx-barra-acciones">
+            <div class="sx-barra-acciones sgv-encabezado-acciones">
                 <span class="sx-nota"><asp:Literal ID="litUltimaConsulta" runat="server" /></span>
                 <%-- A la vista, los reportes que se envían y Actualizar GPS; el resto queda en "Más". --%>
                 <%-- Cada reporte en Excel y, al lado, el mismo como imagen (para mandarlo por WhatsApp desde el celular). --%>

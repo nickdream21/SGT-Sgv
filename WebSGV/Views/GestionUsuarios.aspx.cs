@@ -297,7 +297,7 @@ namespace WebSGV.Views
             DataRow r = dt.Rows[0];
 
             hfIdUsuario.Value        = r["idUsuario"].ToString();
-            lblTituloModal.Text      = "Editar Usuario";
+            lblTituloModal.Text      = "Editar usuario";
             txtNombreUsuario.Text    = r["nombreUsuario"].ToString();
             txtNombreUsuario.Enabled = false;
             txtNombre.Text           = r["nombre"].ToString();

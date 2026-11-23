@@ -6,10 +6,12 @@
          (DashboardConductor.css) y los mismos datos y cálculos que el PDF y la conformidad. --%>
     <div class="dc dv">
 
-        <a class="dv-volver" href="DashboardConductor.aspx"><i class="fas fa-arrow-left"></i>Volver a mi panel</a>
+        <a class="dv-volver" href="DashboardConductor.aspx"><i class="fas fa-arrow-left"></i>Volver a mi viaje</a>
 
         <asp:Panel ID="pnlError" runat="server" Visible="false" CssClass="dc-rechazo" role="alert">
-            <div class="dc-rechazo-tit">No se pudo mostrar la liquidación</div>
+            <%-- Título de la página cuando falla la carga (el <h1> de pnlContenido no se dibuja). Es role=heading y no
+                 otro <h1> porque la página tiene un solo <h1> en el marcado (AccesibilidadMarcadoTests, regla 7). --%>
+            <div class="dc-rechazo-tit" role="heading" aria-level="1">No se pudo mostrar la liquidación</div>
             <div class="dc-rechazo-motivo"><asp:Literal ID="litError" runat="server" Mode="Encode" /></div>
         </asp:Panel>
 
@@ -17,7 +19,7 @@
 
             <header class="dc-cab">
                 <div class="dc-cab-texto">
-                    <div class="dc-nombre">Liquidación <asp:Literal ID="litNumero" runat="server" Mode="Encode" /></div>
+                    <h1 class="dc-nombre">Liquidación <asp:Literal ID="litNumero" runat="server" Mode="Encode" /></h1>
                     <div class="dc-dni"><asp:Literal ID="litPeriodo" runat="server" Mode="Encode" /></div>
                 </div>
                 <asp:Label ID="lblEstado" runat="server" CssClass="dc-pill"></asp:Label>
@@ -121,7 +123,7 @@
                 <asp:HyperLink ID="lnkPdf" runat="server" Visible="false" Target="_blank" rel="noopener" CssClass="dc-btn dc-btn-linea dc-btn-bloque">
                     <i class="fas fa-file-pdf"></i>Ver el documento firmado (PDF)
                 </asp:HyperLink>
-                <a class="dc-btn dc-btn-primario dc-btn-bloque" href="DashboardConductor.aspx">Volver a mi panel</a>
+                <a class="dc-btn dc-btn-primario dc-btn-bloque" href="DashboardConductor.aspx">Volver a mi viaje</a>
             </div>
 
         </asp:Panel>

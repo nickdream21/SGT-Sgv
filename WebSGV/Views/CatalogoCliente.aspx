@@ -1,4 +1,4 @@
-<%@ Page Title="Catálogo del Cliente" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="CatalogoCliente.aspx.cs" Inherits="WebSGV.Views.CatalogoCliente" %>
+<%@ Page Title="Catálogo del cliente" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="CatalogoCliente.aspx.cs" Inherits="WebSGV.Views.CatalogoCliente" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
@@ -10,19 +10,10 @@
 
     <div class="container-fluid px-3">
 
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-3">
-                    <div>
-                        <h2 class="mb-1" style="color:#1e293b;font-weight:600;">
-                            <i class="fas fa-boxes mr-2" style="color:#2563eb;"></i>Cat&#xE1;logo del Cliente
-                        </h2>
-                        <p class="text-muted mb-0">Productos, plantas y rutas propias de cada cliente</p>
-                    </div>
-                    <span class="badge badge-primary px-3 py-2" style="font-size:0.9rem;">
-                        <asp:Label ID="lblResumen" runat="server" Text="Seleccione un cliente"></asp:Label>
-                    </span>
-                </div>
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Cat&#xE1;logo del cliente <asp:Label ID="lblResumen" runat="server" CssClass="sgv-encabezado-contador" /></h1>
+                <p>Productos, plantas y rutas propias de cada cliente</p>
             </div>
         </div>
 

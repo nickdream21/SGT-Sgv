@@ -24,9 +24,6 @@
 }
 
 .de-wrap { background: var(--de-bg); padding: 22px 24px 32px; margin: -20px -15px 0; min-height: calc(100vh - 56px); color: var(--de-ink); }
-.de-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-.de-title { font-size: 1.375rem; font-weight: 600; margin: 0; color: var(--de-ink); }
-.de-subtitle { font-size: 13.5px; color: var(--de-muted); margin-top: 3px; }
 
 .de-btn { padding: 8px 16px; border-radius: var(--sgv-radio); font-weight: 600; font-size: 13.5px; border: 1px solid transparent; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; line-height: 1.4; }
 .de-btn:hover { text-decoration: none; }

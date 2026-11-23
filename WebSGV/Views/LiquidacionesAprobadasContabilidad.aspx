@@ -1,4 +1,4 @@
-<%@ Page Title="Liquidaciones Aprobadas" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="LiquidacionesAprobadasContabilidad.aspx.cs" Inherits="WebSGV.Views.LiquidacionesAprobadasContabilidad" %>
+<%@ Page Title="Liquidaciones aprobadas" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="LiquidacionesAprobadasContabilidad.aspx.cs" Inherits="WebSGV.Views.LiquidacionesAprobadasContabilidad" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-3">
@@ -8,10 +8,10 @@
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/LiquidacionesAprobadasContabilidad.css") %>" rel="stylesheet" />
 
     <div class="container-fluid px-4">
-        <div class="row mb-4">
-            <div class="col-12">
-                <h2 class="mb-1"><i class="fas fa-file-invoice-dollar mr-2"></i>Liquidaciones aprobadas</h2>
-                <p class="text-muted mb-0">Consulta de liquidaciones aprobadas (solo lectura)</p>
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Liquidaciones aprobadas</h1>
+                <p>Consulta de liquidaciones aprobadas (solo lectura)</p>
             </div>
         </div>
 

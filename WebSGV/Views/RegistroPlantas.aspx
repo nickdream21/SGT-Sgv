@@ -1,4 +1,4 @@
-<%@ Page Title="Registro de Plantas" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroPlantas.aspx.cs" Inherits="WebSGV.Views.RegistroPlantas" %>
+<%@ Page Title="Plantas" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroPlantas.aspx.cs" Inherits="WebSGV.Views.RegistroPlantas" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
     <asp:HiddenField ID="hfIdPlanta" runat="server" />
@@ -11,19 +11,10 @@
 
     <div class="container-fluid px-3">
 
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center border-bottom pb-3">
-                    <div>
-                        <h2 class="mb-1" style="color:#1e293b;font-weight:600;">
-                            <i class="fas fa-industry mr-2" style="color:#2563eb;"></i>Registro de Plantas
-                        </h2>
-                        <p class="text-muted mb-0">Administra las plantas de operaci&#xF3;n disponibles para los despachos</p>
-                    </div>
-                    <span class="badge badge-primary px-3 py-2" style="font-size:0.9rem;">
-                        <asp:Label ID="lblTotalPlantas" runat="server" Text="0 registro(s)"></asp:Label>
-                    </span>
-                </div>
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Plantas <asp:Label ID="lblTotalPlantas" runat="server" CssClass="sgv-encabezado-contador" Text="0 registro(s)" /></h1>
+                <p>Administra las plantas de operaci&#xF3;n disponibles para los despachos</p>
             </div>
         </div>
 

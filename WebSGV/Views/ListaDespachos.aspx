@@ -1,4 +1,4 @@
-<%@ Page Title="Gestión de Viajes y Lotes" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ListaDespachos.aspx.cs" Inherits="WebSGV.Views.ListaDespachos" %>
+<%@ Page Title="Lista de despachos" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="ListaDespachos.aspx.cs" Inherits="WebSGV.Views.ListaDespachos" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
@@ -6,16 +6,16 @@
 <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/select2-4.0.13/select2.min.css") %>" rel="stylesheet" />
 <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/ListaDespachos.css") %>" rel="stylesheet" />
 
-    <div class="container-fluid">
+    <div class="container-fluid ld-pagina">
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Lista de despachos</h1>
+                <p>Viajes activos y lotes registrados</p>
+            </div>
+        </div>
         <div class="row">
             <div class="col-md-12">
                 <div class="card main-card">
-                    <div class="ld-page-header">
-                        <h4>
-                            Gestión de viajes y lotes
-                            <asp:Label ID="lblContadorGeneral" runat="server" CssClass="badge ml-2" style="background:#e2e8f0;color:#334155;font-size:.75rem;font-weight:600;"></asp:Label>
-                        </h4>
-                    </div>
                     <div class="card-body">
                         <!-- gvManifiestosLote está declarado como PostBackTrigger (no Async) en <Triggers> más
                              abajo: tiene FileUpload por fila (un archivo no viaja en un postback parcial de UpdatePanel) y "Ver" abre el
@@ -805,6 +805,7 @@
                                                                         AutoGenerateColumns="false"
                                                                         DataKeyNames="IdDespacho"
                                                                         OnRowDataBound="gvConductoresLote_RowDataBound"
+                                                                        EmptyDataText="Este lote no tiene despachos."
                                                                         GridLines="None">
                                                                         <Columns>
                                                                             <asp:BoundField DataField="IdDespacho" HeaderText="ID" Visible="false" />

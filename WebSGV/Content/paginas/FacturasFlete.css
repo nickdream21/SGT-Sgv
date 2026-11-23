@@ -3,12 +3,6 @@
 /* Página ancha: la conciliación tiene muchas columnas y los avisos necesitan espacio. */
 .container:has(> .ff-pagina) { max-width: min(1880px, 97vw); }
 
-.ff-encabezado { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem;
-                 border-bottom: 1px solid var(--sgv-borde); padding-bottom: .75rem; margin-bottom: 1rem; }
-.ff-titulo { color: var(--sgv-texto); font-weight: 600; font-size: 1.6rem; margin: 0 0 .15rem; }
-.ff-titulo i { color: var(--sgv-azul-600); }
-.ff-subtitulo { color: var(--sgv-texto-suave); margin: 0; max-width: 980px; font-size: .9rem; }
-
 .ff-pagina .card-header h5 { font-size: 1rem; font-weight: 600; color: var(--sgv-texto); }
 .ff-pagina .card-header { padding: .6rem 1rem; }
 .ff-pagina .form-group { margin-bottom: .75rem; }
@@ -92,7 +86,6 @@
 .ff-sin-coincidencias { padding: 1rem 1.25rem; color: var(--sgv-texto-suave); font-size: .875rem; }
 
 @media (max-width: 767.98px) {
-    .ff-titulo { font-size: 1.3rem; }
     .ff-tarjetas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .ff-tarjeta strong { font-size: 1.1rem; white-space: normal; }
     .ff-buscar { flex: 1 1 100%; }

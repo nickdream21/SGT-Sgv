@@ -5,10 +5,10 @@
 
     <div class="container-fluid px-3 bd-pagina">
 
-        <div class="bd-cabecera">
-            <div>
-                <h2 class="bd-titulo"><i class="fas fa-inbox mr-2"></i>Bandeja de documentos</h2>
-                <p class="text-muted mb-0">
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Bandeja de documentos</h1>
+                <p>
                     Suelte aqu&#xED; todo lo que lleg&#xF3; por correo: el sistema reconoce cada documento, lo une con su carga y le muestra
                     qu&#xE9; va a registrar antes de guardar. Sin escribir n&#xFA;meros a mano.
                 </p>

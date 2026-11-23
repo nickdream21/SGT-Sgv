@@ -7,11 +7,6 @@
 
 .card:hover { transform: none !important; box-shadow: none !important; }
 
-/* ---- Encabezado de página ---- */
-.ld-page-header { background: var(--sgv-fondo); color: var(--sgv-texto); border-bottom: 1px solid var(--sgv-borde); border-top: 3px solid var(--sgv-primario); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: 1rem 1.5rem; }
-.ld-page-header h4 { margin: 0; font-size: 1.05rem; font-weight: 600; display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
-.ld-page-header .badge { font-size: .68rem; font-weight: 600; padding: .35em .7em; }
-
 /* ---- Resumen general (stat tiles) ---- */
 .ld-stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.75rem; }
 .ld-stat-tile {
@@ -247,7 +242,7 @@
 }
 
 /* Página más ancha: la lista de lotes tiene muchas columnas y las acciones quedaban fuera de vista. */
-.container:has(.ld-page-header) { max-width: min(1880px, 97vw); }
+.container:has(> .ld-pagina) { max-width: min(1880px, 97vw); }
 
 /* Acciones siempre visibles aunque la tabla desborde horizontalmente */
 .ld-tabla-lotes th:last-child,

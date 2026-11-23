@@ -1,6 +1,4 @@
 /* Reporte de cargas */
-.rc-titulo { color: var(--sgv-texto); font-weight: 600; }
-.rc-titulo i { color: var(--sgv-azul-600); }
 
 .rc-acciones { gap: .5rem; }
 

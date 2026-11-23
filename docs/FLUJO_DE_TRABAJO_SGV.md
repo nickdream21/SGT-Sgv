@@ -17,7 +17,7 @@ El sistema maneja **5 roles** (6 constantes `ROL_*`: `ADMIN` y `ADMINISTRADOR DE
 | **Administrador de Transporte** | `ROL_ADMIN_TRANSPORTE` (y `ROL_ADMIN` para `ADMIN` / `ADMINISTRADOR`) | `ADMINISTRADOR DE TRANSPORTE` (también `ADMIN`, `ADMINISTRADOR`) | `Inicio.aspx` | Gestión operativa completa: despachos, viajes, liquidaciones, registros y reportes |
 | **Administrador de Sistema** | `ROL_ADMIN_SISTEMA` | `ADMINISTRADOR DE SISTEMA` | `DashboardAdminSistema.aspx` | Gestión de usuarios y auditoría; no opera despachos, liquidaciones ni reportes |
 | **Conductor** | `ROL_CONDUCTOR` | `CONDUCTOR` (también `CHOFER`) | `DashboardConductor.aspx` | Liquidación firmada de viajes asignados y consulta de historial |
-| **Contabilidad** | `ROL_CONTABILIDAD` | `CONTABILIDAD` | `LiquidacionesAprobadasContabilidad.aspx` | Consulta de liquidaciones aprobadas y sus PDF (menú propio: Liquidaciones Aprobadas) |
+| **Contabilidad** | `ROL_CONTABILIDAD` | `CONTABILIDAD` | `LiquidacionesAprobadasContabilidad.aspx` | Consulta de liquidaciones aprobadas y sus PDF (menú propio: Liquidaciones aprobadas) |
 | **Supervisor** | `ROL_SUPERVISOR` | `SUPERVISOR` | `Inicio.aspx` | Permisos similares a ADMIN en despachos, órdenes de viaje y registros, salvo Facturas de flete, Productos y Rutas (solo administración, DN-26) |
 
 > La página de inicio de cada rol sale de `RolesHelper.UrlInicioSegunRol` (login, redirecciones y logo del menú).
@@ -90,7 +90,7 @@ Admin Revisa: Aprobar / Rechazar / Editar
 
 | Página | Función |
 |--------|---------|
-| `RegistroDespacho.aspx` | **Agregar Despacho** — Programación de viajes. Crea lote con: fecha, cliente, número de pedido, tipo de operación (nacional/internacional), planta, documentación (factura, CPIC) y asignación de conductores con tractos y carretas. |
+| `RegistroDespacho.aspx` | **Registro de despachos** — Programación de viajes. Crea lote con: fecha, cliente, número de pedido, tipo de operación (nacional/internacional), planta, documentación (factura, CPIC) y asignación de conductores con tractos y carretas. |
 | `ListaDespachos.aspx` | **Listar Despachos** — Vista general de todos los despachos. Permite ver detalles, filtrar y gestionar. Muestra viajes activos y despachos por viaje. |
 
 **Flujo de Despacho:**
@@ -180,7 +180,7 @@ El conductor accede a un dashboard con **3 pestañas**:
 ### Acceso Completo
 Solo gestión de usuarios y auditoría; no opera despachos, liquidaciones ni reportes.
 
-### Auditoría del Sistema
+### Auditoría del sistema
 
 | Página | Función |
 |--------|---------|
@@ -216,9 +216,9 @@ Solo gestión de usuarios y auditoría; no opera despachos, liquidaciones ni rep
 | Función | Ubicación |
 |---------|-----------|
 | **Login** | `Login.aspx` — Autenticación con anti-fijación de sesión |
-| **Cambiar Contraseña** | Modal en `Site.Master` |
+| **Cambiar contraseña** | Modal en `Site.Master` |
 | **Recuperar Contraseña** | `RecuperarContrasena.aspx` → `RestablecerContrasena.aspx` |
-| **Cerrar Sesión** | Botón en navbar, registrado en auditoría |
+| **Cerrar sesión** | Botón en navbar, registrado en auditoría |
 
 ---
 
@@ -298,9 +298,9 @@ Gestión de usuarios y Auditoría: solo ADMINISTRADOR DE SISTEMA, en su propio m
 
 ### Menú Conductor
 ```
-├── Inicio (DashboardConductor)
+├── Mi viaje (DashboardConductor)
 └── Configuración
-    └── Cambiar Contraseña
+    └── Cambiar contraseña
 ```
 
 ---

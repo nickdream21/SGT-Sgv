@@ -187,8 +187,9 @@ namespace WebSGV.Tests
         //
         // Cada regla tiene un tope igual a lo que quedaba al cerrar E5-5. El tope solo baja: la prueba
         // falla si la cifra sube (algo nuevo sin etiqueta) y también si baja sin bajar el tope (así
-        // queda ajustado y nadie gasta el margen sin darse cuenta). E5-6 los llevó a 0 (salvo <h1>,
-        // E5-15) sin excepciones: lo nuevo debe cumplir cada regla (la regla 8, de E5-6, nació en 0).
+        // queda ajustado y nadie gasta el margen sin darse cuenta). E5-6 los llevó a 0 y E5-15 el de <h1>
+        // (plantilla sgv-encabezado, EncabezadoPaginaTests), sin excepciones: lo nuevo debe cumplir cada regla
+        // (la regla 8, de E5-6, nació en 0).
 
         private const int TopeLabelSinForNiControl = 0;
         private const int TopeForConIdDeServidor = 0;
@@ -196,7 +197,7 @@ namespace WebSGV.Tests
         private const int TopeCerrarSinAriaLabel = 0;
         private const int TopeModalSinRoleNiTitulo = 0;
         private const int TopePestanaSinAriaSelected = 0;
-        private const int TopePaginaSinUnSoloH1 = 34;
+        private const int TopePaginaSinUnSoloH1 = 0;
         private const int TopeBotonSoloIconoSinNombre = 0;
 
         /// <summary>Etiqueta de apertura: nombre, atributos y posición. Admite <c>&lt;% %&gt;</c> dentro y fuera de comillas.</summary>

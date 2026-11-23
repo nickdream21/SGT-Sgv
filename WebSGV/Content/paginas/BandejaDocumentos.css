@@ -2,9 +2,6 @@
 /* Página ancha (como Facturas de flete y la lista de despachos): el tablero tiene muchas pastillas por fila. */
 .container:has(> .bd-pagina) { max-width: min(1880px, 97vw); }
 .bd-pagina { max-width: none; }
-.bd-cabecera { margin-bottom: 1.25rem; }
-.bd-titulo { color: var(--sgv-texto); font-weight: 600; margin-bottom: .25rem; }
-.bd-titulo i { color: var(--sgv-azul-600); }
 
 .bd-card {
     background: var(--sgv-superficie);

@@ -3,8 +3,12 @@
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/MiSeguridad.css") %>" rel="stylesheet" />
 
     <div class="container ms-contenedor">
-        <h2 class="ms-titulo"><i class="fas fa-shield-alt mr-2"></i>Mi seguridad</h2>
-        <p class="text-muted">Verificación en dos pasos: además de la contraseña, al entrar se pide un código de 6 dígitos que genera una app de su celular.</p>
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Mi seguridad</h1>
+                <p>Verificación en dos pasos: además de la contraseña, al entrar se pide un código de 6 dígitos que genera una app de su celular.</p>
+            </div>
+        </div>
 
         <asp:Panel ID="pnlMensaje" runat="server" Visible="false" EnableViewState="false" CssClass="mb-3">
             <asp:Label ID="lblMensaje" runat="server" />

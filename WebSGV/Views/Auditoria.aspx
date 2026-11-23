@@ -1,29 +1,18 @@
-﻿<%@ Page Title="Auditoría del Sistema" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true"
+﻿<%@ Page Title="Auditoría del sistema" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true"
     CodeBehind="Auditoria.aspx.cs" Inherits="WebSGV.Views.Auditoria" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
     <div class="container-fluid px-4">
 
-        <!-- Header -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="aud-page-header">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap">
-                        <div>
-                            <h2 class="aud-page-title mb-1">
-                                <i class="fas fa-shield-alt mr-2"></i>Auditoría del Sistema
-                            </h2>
-                            <p class="text-muted mb-0">
-                                Registro de todos los cambios realizados en el sistema
-                            </p>
-                        </div>
-                        <div class="mt-2 mt-md-0">
-                            <asp:Button ID="btnExportarExcel" runat="server" Text="Exportar Excel"
-                                CssClass="btn btn-success btn-sm" OnClick="btnExportarExcel_Click" data-descarga="true" />
-                        </div>
-                    </div>
-                </div>
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Auditoría del sistema</h1>
+                <p>Registro de todos los cambios realizados en el sistema</p>
+            </div>
+            <div class="sgv-encabezado-acciones">
+                <asp:Button ID="btnExportarExcel" runat="server" Text="Exportar Excel"
+                    CssClass="btn btn-success btn-sm" OnClick="btnExportarExcel_Click" data-descarga="true" />
             </div>
         </div>
 

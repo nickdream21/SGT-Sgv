@@ -2,10 +2,12 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
     <div class="container-fluid px-3 mv-pagina">
-        <div class="sgv-encabezado mb-3">
-            <h2><i class="fas fa-hand-holding-usd mr-2"></i>Dinero y pagos del viaje</h2>
-            <p class="sgv-suave mb-0">Registre en el momento cada entrega de dinero al conductor (adelanto, segundo despacho, mensualidad…)
-               y cada pago que la empresa hace directamente a un proveedor del viaje. Al aprobar la liquidación se unen solos.</p>
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Dinero y pagos del viaje</h1>
+                <p>Registre en el momento cada entrega de dinero al conductor (adelanto, segundo despacho, mensualidad…)
+                   y cada pago que la empresa hace directamente a un proveedor del viaje. Al aprobar la liquidación se unen solos.</p>
+            </div>
         </div>
 
         <asp:Panel ID="pnlMensaje" runat="server" EnableViewState="false" Visible="false" CssClass="mb-3">

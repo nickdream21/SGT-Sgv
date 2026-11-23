@@ -1,4 +1,4 @@
-<%@ Page Title="Error del Sistema" Language="C#" AutoEventWireup="true" CodeBehind="Error.aspx.cs" Inherits="WebSGV.Views.Error" %>
+<%@ Page Title="Error del sistema" Language="C#" AutoEventWireup="true" CodeBehind="Error.aspx.cs" Inherits="WebSGV.Views.Error" %>
 <!DOCTYPE html>
 <html lang="es">
 <head runat="server">

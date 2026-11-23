@@ -1,10 +1,12 @@
-﻿<%@ Page Title="Registro de Productos" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroProductos.aspx.cs" Inherits="WebSGV.Views.RegistroProductos" %>
+﻿<%@ Page Title="Registro de productos" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="RegistroProductos.aspx.cs" Inherits="WebSGV.Views.RegistroProductos" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
-    <div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="sgv-encabezado">
+        <div class="sgv-encabezado-titulo">
+            <h1 class="h2">Registro de productos</h1>
+        </div>
+    </div>
+    <div class="d-flex justify-content-center">
         <div class="card registro-productos-card">
-            <div class="card-header registro-productos-header text-center">
-                <h2 class="registro-header-title">Registro de productos</h2>
-            </div>
             <div class="card-body">
                 <asp:Label ID="lblMensaje" runat="server" Visible="false" EnableViewState="false" />
                 <asp:Panel ID="pnlFormulario" runat="server">

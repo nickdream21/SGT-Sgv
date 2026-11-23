@@ -1,17 +1,18 @@
-﻿<%@ Page Title="Gestión de Usuarios" Language="C#" MasterPageFile="~/Site.Master"
+﻿<%@ Page Title="Gestión de usuarios" Language="C#" MasterPageFile="~/Site.Master"
     AutoEventWireup="true" CodeBehind="GestionUsuarios.aspx.cs"
     Inherits="WebSGV.Views.GestionUsuarios" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
-    <!-- Encabezado -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h2 class="mb-0"><i class="fas fa-users-cog text-primary mr-2"></i>Gestión de usuarios</h2>
-            <small class="text-muted">Administrar cuentas, roles y accesos al sistema</small>
+    <div class="sgv-encabezado">
+        <div class="sgv-encabezado-titulo">
+            <h1 class="h2">Gestión de usuarios</h1>
+            <p>Administrar cuentas, roles y accesos al sistema</p>
         </div>
-        <asp:Button ID="btnNuevoUsuario" runat="server" Text="+ Nuevo Usuario"
-            CssClass="btn btn-primary" OnClick="btnNuevoUsuario_Click" />
+        <div class="sgv-encabezado-acciones">
+            <asp:Button ID="btnNuevoUsuario" runat="server" Text="Nuevo usuario"
+                CssClass="btn btn-primary" OnClick="btnNuevoUsuario_Click" />
+        </div>
     </div>
 
     <!-- Filtros -->

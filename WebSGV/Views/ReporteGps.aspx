@@ -8,17 +8,13 @@
 
     <div class="container-fluid px-3">
 
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="border-bottom pb-3">
-                    <h2 class="mb-1" style="color:#1e293b;font-weight:600;">
-                        <i class="fas fa-satellite-dish mr-2" style="color:#2563eb;"></i>Reporte GPS por placas
-                    </h2>
-                    <p class="text-muted mb-0">
-                        El historial de varias unidades a la vez, un Excel por placa con las mismas columnas que
-                        <em>Reportes &#x2192; Historial &#x2192; Exportar datos</em> del portal Onway. Solo lee del GPS: no cambia nada.
-                    </p>
-                </div>
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Reporte GPS por placas</h1>
+                <p>
+                    El historial de varias unidades a la vez, un Excel por placa con las mismas columnas que
+                    <em>Reportes &#x2192; Historial &#x2192; Exportar datos</em> del portal Onway. Solo lee del GPS: no cambia nada.
+                </p>
             </div>
         </div>
 
@@ -80,7 +76,8 @@
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <asp:GridView ID="gvResultados" runat="server" AutoGenerateColumns="false" CssClass="table table-sm table-hover mb-0"
-                            GridLines="None" OnRowCommand="gvResultados_RowCommand">
+                            GridLines="None" OnRowCommand="gvResultados_RowCommand"
+                            EmptyDataText="No hay resultados para las placas y el rango elegidos.">
                             <HeaderStyle CssClass="thead-light" />
                             <Columns>
                                 <asp:BoundField DataField="Placa" HeaderText="Placa" ItemStyle-CssClass="font-weight-bold" />

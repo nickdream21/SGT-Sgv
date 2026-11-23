@@ -10,18 +10,6 @@
     --rpt-border: var(--sgv-borde-fuerte);
 }
 
-/* === PAGE HEADER === */
-.page-header {
-    padding-bottom: 0.875rem;
-    border-bottom: 1px solid var(--rpt-medium-gray);
-}
-
-.page-title {
-    color: var(--sgv-texto);
-    font-weight: 600;
-    font-size: 1.375rem;
-}
-
 /* === TABS === */
 .tabs-navigation {
     display: flex;

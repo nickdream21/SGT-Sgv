@@ -8,17 +8,13 @@
 
     <div class="container-fluid px-3">
 
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="border-bottom pb-3">
-                    <h2 class="mb-1" style="color:#1e293b;font-weight:600;">
-                        <i class="fas fa-map-marked-alt mr-2" style="color:#2563eb;"></i>Destino de descarga por unidad
-                    </h2>
-                    <p class="text-muted mb-0">
-                        A qu&#xE9; planta del cliente va cada tracto de un pedido (en Vitapro, <strong>Milagro</strong> o <strong>Jave</strong>).
-                        La descarga por pedido de Registro de Despacho usa esta lista para proponer la planta de cada unidad.
-                    </p>
-                </div>
+        <div class="sgv-encabezado">
+            <div class="sgv-encabezado-titulo">
+                <h1 class="h2">Destino de descarga</h1>
+                <p>
+                    A qu&#xE9; planta del cliente va cada tracto de un pedido (en Vitapro, <strong>Milagro</strong> o <strong>Jave</strong>).
+                    La descarga por pedido de Registro de despachos usa esta lista para proponer la planta de cada unidad.
+                </p>
             </div>
         </div>
 

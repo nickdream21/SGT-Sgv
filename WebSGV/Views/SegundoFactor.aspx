@@ -1,9 +1,9 @@
-<%@ Page Title="Código de verificación" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="SegundoFactor.aspx.cs" Inherits="WebSGV.Views.SegundoFactor" %>
+<%@ Page Title="Verificación en dos pasos" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="SegundoFactor.aspx.cs" Inherits="WebSGV.Views.SegundoFactor" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/SegundoFactor.css") %>" rel="stylesheet" />
 
     <div class="sf-contenedor">
-        <h2 class="sf-titulo">Verificación en dos pasos</h2>
+        <h1 class="sf-titulo">Verificación en dos pasos</h1>
 
         <asp:Panel ID="pnlMensaje" runat="server" Visible="false" EnableViewState="false" CssClass="mb-3">
             <asp:Label ID="lblMensaje" runat="server" />

@@ -13,6 +13,8 @@ Toda página nueva necesita **exactamente tres archivos** Y **registrarse en `We
 
 En `WebSGV.csproj` agrega una entrada `<Content>` y dos `<Compile>` (`.aspx.cs` con `<SubType>ASPXCodeBehind</SubType>` y `.aspx.designer.cs`). Sin ese registro la página no se despliega.
 
+El marcado abre con la plantilla de encabezado de `Content/sgv-base.css` (`div.sgv-encabezado > div.sgv-encabezado-titulo > h1.h2` + `p`, y las acciones en `div.sgv-encabezado-acciones`); el `Title` en estilo oración es igual a la etiqueta del menú (sin el paréntesis final) y al texto del `<h1>`, sin icono. Lo comprueba `EncabezadoPaginaTests`.
+
 El CSS/JS propio de la página va en `Content/paginas/` y `Scripts/paginas/` (ver CLAUDE.md, "Front-end libraries"), también registrados como `<Content>`.
 
 Plantilla de Page_Load:
