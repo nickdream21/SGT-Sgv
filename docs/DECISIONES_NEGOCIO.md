@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-32 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-33 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -52,6 +52,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-30 | Gráficos con su paleta propia de datos; tarjetas grandes de totales fuera (aspecto aprobado de E5-12) |
 | DN-31 | Pantallas de buscar y editar (E5-17): saldo por moneda, PDF firmado, filtros plegados en el celular (opción recomendada, a confirmar) |
 | DN-32 | Factura y CPIC registradas a mano: número y fecha obligatorios, valor opcional |
+| DN-33 | Páginas sin enlace retiradas: productos y rutas solo desde el Catálogo del cliente |
 
 ---
 
@@ -199,7 +200,7 @@ El SUPERVISOR no entra a Facturas de flete, Productos ni Rutas (solo administrac
 panel del conductor: la matriz de permisos se ajustó a lo que ya hacían las páginas y el menú; nadie ganó ni perdió acceso.
 - Desde: 2026-11-22, E4-3. El usuario pidió terminar la Etapa 4 sin decidir U-081; se aplicó la opción que el pendiente
   recomendaba. Si decide otra cosa, se cambia la matriz y `GuardasAccesoTests.AccesoEsperado` a propósito (U-090).
-- En el código: `WebSGV/Views/RolesHelper.cs` (`Matriz`), guardas de `FacturasFlete`, `RegistroProductos` y `RegistroRutas`.
+- En el código: `WebSGV/Views/RolesHelper.cs` (`Matriz`), guarda de `FacturasFlete` (RegistroProductos y RegistroRutas se retiraron en E5-19a, U-094).
 - Estado: vigente (observada, a confirmar).
 
 ### DN-27 — Segundo factor: quién lo lleva, apagado por interruptor y cómo se recupera (opción recomendada, a confirmar)
@@ -288,6 +289,16 @@ mayor que 0. Decisión del usuario (2026-11-24, E5-20).
 - Desde: 2026-11-24, E5-20b.
 - En el código: `WebSGV/Views/ListaDespachos.aspx` (grupos `vgFacturaLote` y `vgCpicLote`, sin validador en los valores);
   `WebSGV/Services/Despachos/BandejaDocumentosService.cs:1141` y `:1367` (valor leído de los documentos).
+- Estado: vigente.
+
+### DN-33 — Páginas sin enlace retiradas: productos y rutas solo desde el Catálogo del cliente
+CargarExcel (carga de `Indicadores`), RegistroProductos y RegistroRutas no tenían enlace en ningún sitio y se retiraron
+del código. Productos, rutas y lugares se gestionan solo desde `CatalogoCliente.aspx`; las tablas
+`Producto`, `Ruta`, `Indicadores` y `UploadHistory` se conservan con sus datos (`Indicadores` es historial de placas).
+Decisión del usuario (2026-11-24, U-094; cierra también U-017).
+- Desde: 2026-11-24, E5-19a.
+- En el código: las tres páginas ya no existen en `WebSGV/Views/`
+  (`ConfiguracionSeguridadTests.PaginaRetirada_NoExisteNiEstaEnElProyecto`); `WebSGV/Services/Clientes/CatalogoClienteService.cs`.
 - Estado: vigente.
 
 ## 4. Seguimiento de exportación

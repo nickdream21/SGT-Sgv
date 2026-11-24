@@ -141,8 +141,7 @@ namespace WebSGV.Tests
             // Los pide el ScriptManager sin ?v= (App_Start/BundleConfig.cs y el paquete de WebForms).
             ["Scripts/jquery-si-falta.js"] = "7.00:00:00",
             ["Scripts/WebForms"] = "7.00:00:00",
-            // Plantilla de Excel sin versión en el nombre.
-            ["Content/Templates"] = "7.00:00:00",
+            // Content/Templates salió con CargarExcel (E5-19a).
         };
 
         [Fact]

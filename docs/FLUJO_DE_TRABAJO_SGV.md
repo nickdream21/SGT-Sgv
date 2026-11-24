@@ -37,8 +37,6 @@ ADMIN\* = `ADMIN`, `ADMINISTRADOR` y `ADMINISTRADOR DE TRANSPORTE` (`RolesHelper
 | `REGISTRO_CONDUCTORES` | RegistroChoferes | ✅ | ✅ | ❌ | ❌ | ❌ |
 | `SEGUIMIENTO_EXPORTACION` | Exportacion/* y GpsAutomatico.ashx | ✅ | ✅ | ❌ | ❌ | ❌ |
 | `FACTURAS_FLETE` | FacturasFlete | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `REGISTRO_PRODUCTOS` | RegistroProductos | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `REGISTRO_RUTAS` | RegistroRutas | ✅ | ❌ | ❌ | ❌ | ❌ |
 | `LIQUIDACIONES_CONTABILIDAD` | LiquidacionesAprobadasContabilidad | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Cualquier otra sección | — | ❌ | ❌ | ❌ | ❌ | ❌ |
 
@@ -133,14 +131,14 @@ Admin Revisa: Aprobar / Rechazar / Editar
 | `RegistroClientes.aspx` | Registrar, editar y gestionar **clientes de transporte** |
 | `RegistroPeajes.aspx` | Registrar, editar y gestionar **estaciones de peaje** |
 | `RegistroPlantas.aspx` | Registrar, editar y gestionar **plantas** (puntos de carga/descarga) |
-| `RegistroRutas.aspx` | Registrar, editar y gestionar **rutas de transporte** (solo administración) |
-| `RegistroProductos.aspx` | Registrar, editar y gestionar **productos transportados** (solo administración) |
+| `CatalogoCliente.aspx` | **Productos, rutas y lugares** de cada cliente: crear, editar y activar/desactivar; las rutas de uso general (sin cliente) también se editan y se activan o desactivan |
+
+> Desde E5-19a (U-094, 2026-11-24) productos y rutas se gestionan solo en Catálogo del cliente: se retiraron `RegistroProductos.aspx` y `RegistroRutas.aspx` (no tenían enlace y repetían esa página) y `CargarExcel.aspx` (carga de la tabla `Indicadores`, nunca usada). Las tablas `Producto`, `Ruta`, `Indicadores` y `UploadHistory` siguen.
 
 ### 5. Otros Módulos del Admin
 
 | Página | Función |
 |--------|---------|
-| `CargarExcel.aspx` | Carga masiva de datos desde archivo Excel |
 | `DescargarPdfOrdenViaje.aspx` | Endpoint que sirve el PDF de una orden de viaje (QuestPDF; un PDF firmado se sirve archivado, nunca se regenera) |
 
 ---

@@ -213,7 +213,6 @@ namespace WebSGV.Tests
         /// <summary>Métodos de aviso con otro nombre que también deben delegar (archivo → método).</summary>
         private static readonly Dictionary<string, string> OtrosMetodosDeAviso = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["Views/CargarExcel.aspx.cs"] = "ShowAlert",
             ["Views/SaldosConductores.aspx.cs"] = "Mostrar",
             ["Views/Exportacion/ImportarSeguimiento.aspx.cs"] = "MostrarAlerta",
         };

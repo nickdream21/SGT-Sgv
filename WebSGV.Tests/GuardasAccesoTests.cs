@@ -33,7 +33,6 @@ namespace WebSGV.Tests
             {
                 { "Views/Auditoria.aspx",                         "SecurityHelper.ExigirRolAdminSistema()" },
                 { "Views/BandejaDocumentos.aspx",                 "SecurityHelper.ExigirRolAdminOSupervisor()" },
-                { "Views/CargarExcel.aspx",                       "SecurityHelper.ExigirRolAdminOSupervisor()" },
                 { "Views/CatalogoCliente.aspx",                   "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
                 // Conductor (su conformidad) o quien consulta la orden: el rol se decide después, en el GET.
                 { "Views/ConformarLiquidacion.aspx",              "SecurityHelper.ExigirSesion()" },
@@ -65,8 +64,6 @@ namespace WebSGV.Tests
                 { "Views/RegistroDespacho.aspx",                  "SecurityHelper.ExigirRolAdminOSupervisor()" },
                 { "Views/RegistroPeajes.aspx",                    "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
                 { "Views/RegistroPlantas.aspx",                   "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
-                { "Views/RegistroProductos.aspx",                 "RolesHelper.ValidarAccesoSeccion(\"REGISTRO_PRODUCTOS\")" },
-                { "Views/RegistroRutas.aspx",                     "RolesHelper.ValidarAccesoSeccion(\"REGISTRO_RUTAS\")" },
                 { "Views/RegistroSemiremolques.aspx",             "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
                 { "Views/RegistroTractos.aspx",                   "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
                 { "Views/ReporteCargas.aspx",                     "SecurityHelper.ExigirRolAdminOSupervisor()" },
@@ -264,8 +261,9 @@ namespace WebSGV.Tests
         // Quién entra a cada página según su guarda (GuardaEsperada), evaluada con la matriz de
         // RolesHelper.TienePermiso para las de sección. Tabla literal: dar o quitar una página a un rol
         // (en la guarda o en la matriz) debe cambiarla a propósito. U-081, opción recomendada
-        // (2026-11-22): SUPERVISOR no entra a FacturasFlete, RegistroProductos ni RegistroRutas, y la
-        // administración no tiene DashboardConductor (como hoy y como el menú).
+        // (2026-11-22): SUPERVISOR no entra a FacturasFlete, y la administración no tiene
+        // DashboardConductor (como hoy y como el menú). RegistroProductos, RegistroRutas y CargarExcel
+        // se retiraron en E5-19a (U-094): productos y rutas se gestionan en CatalogoCliente.
 
         private const string A = "ADMIN", S = "SUPERVISOR", C = "CONDUCTOR", K = "CONTABILIDAD", Y = "SISTEMA";
         private static readonly string[] Todos = { A, S, C, K, Y };
@@ -275,7 +273,6 @@ namespace WebSGV.Tests
             {
                 { "Views/Auditoria.aspx",                         new[] { Y } },
                 { "Views/BandejaDocumentos.aspx",                 new[] { A, S } },
-                { "Views/CargarExcel.aspx",                       new[] { A, S } },
                 { "Views/CatalogoCliente.aspx",                   new[] { A, S } },
                 // Solo la sesión: el permiso por orden y rol se decide después (ver GuardaEsperada).
                 { "Views/ConformarLiquidacion.aspx",              Todos },
@@ -304,8 +301,6 @@ namespace WebSGV.Tests
                 { "Views/RegistroDespacho.aspx",                  new[] { A, S } },
                 { "Views/RegistroPeajes.aspx",                    new[] { A, S } },
                 { "Views/RegistroPlantas.aspx",                   new[] { A, S } },
-                { "Views/RegistroProductos.aspx",                 new[] { A } },
-                { "Views/RegistroRutas.aspx",                     new[] { A } },
                 { "Views/RegistroSemiremolques.aspx",             new[] { A, S } },
                 { "Views/RegistroTractos.aspx",                   new[] { A, S } },
                 { "Views/ReporteCargas.aspx",                     new[] { A, S } },

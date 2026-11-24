@@ -277,7 +277,9 @@ namespace WebSGV.Tests
         // REGISTRO_RUTAS (esas páginas y el menú ya eran solo de administración) y la administración ya
         // no tiene DASHBOARD_CONDUCTOR (la página la rebotaba). Se quitaron DESPACHO, FACTURA, CPIC,
         // CONSULTAS, INDICADORES, AUDITORIA, DASHBOARD_EXPORTACION, DASHBOARD_CONDUCTOR, MIS_VIAJES y
-        // MI_PERFIL: ninguna página las consultaba (M-064). Quién entra a cada página: GuardasAccesoTests.
+        // MI_PERFIL: ninguna página las consultaba (M-064). E5-19a (U-094, 2026-11-24): fuera
+        // REGISTRO_PRODUCTOS y REGISTRO_RUTAS con sus páginas (productos y rutas en CatalogoCliente).
+        // Quién entra a cada página: GuardasAccesoTests.
         private static readonly Dictionary<string, string[]> MatrizEsperada = new Dictionary<string, string[]>
         {
             { "ORDEN_VIAJE",                Con("SUPERVISOR") },
@@ -285,8 +287,6 @@ namespace WebSGV.Tests
             { "REGISTRO_CONDUCTORES",       Con("SUPERVISOR") },
             { "SEGUIMIENTO_EXPORTACION",    Con("SUPERVISOR") },
             { "FACTURAS_FLETE",             AdminOperacion },
-            { "REGISTRO_PRODUCTOS",         AdminOperacion },
-            { "REGISTRO_RUTAS",             AdminOperacion },
             { "LIQUIDACIONES_CONTABILIDAD", Con("CONTABILIDAD", "SUPERVISOR") },
         };
 
@@ -301,9 +301,10 @@ namespace WebSGV.Tests
 
         public static IEnumerable<object[]> CasosMatriz()
         {
-            // Las quitadas en E4-3 se prueban como desconocidas: nadie entra.
+            // Las quitadas en E4-3 y E5-19a se prueban como desconocidas: nadie entra.
             var quitadas = new[] { "DESPACHO", "FACTURA", "CPIC", "CONSULTAS", "INDICADORES", "AUDITORIA",
-                                   "DASHBOARD_EXPORTACION", "DASHBOARD_CONDUCTOR", "MIS_VIAJES", "MI_PERFIL" };
+                                   "DASHBOARD_EXPORTACION", "DASHBOARD_CONDUCTOR", "MIS_VIAJES", "MI_PERFIL",
+                                   "REGISTRO_PRODUCTOS", "REGISTRO_RUTAS" };
             foreach (string seccion in MatrizEsperada.Keys.Concat(quitadas).Concat(new[] { "SECCION_DESCONOCIDA", "", null }))
             {
                 string[] permitidos = seccion != null && MatrizEsperada.TryGetValue(seccion, out var p) ? p : new string[0];

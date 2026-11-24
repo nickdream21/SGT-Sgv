@@ -40,7 +40,6 @@ namespace WebSGV.Tests
             { "Services/Clientes/CatalogoClienteService.cs::Obtener",              "catálogo de productos/rutas/lugares de UN cliente (el ?: solo elige si suma los de uso general)" },
             { "Services/Liquidaciones/LiquidacionesPendientesService.cs::ObtenerAprobadas", "pendiente M-137: Control de aprobadas abre con 30 días, pero sin fechas trae todas las aprobadas" },
             { "Services/Liquidaciones/LiquidacionesPendientesService.cs::ObtenerPorConformar", "solo las POR_CONFORMAR (salen al firmar el conductor; no crecen con el tiempo)" },
-            { "Views/CargarExcel.aspx.cs::LoadUploadHistory",                      "pendiente M-139: historial de cargas de Excel; el mes/año es opcional (0 filas hoy)" },
             { "Services/Auditoria/ConsultaAuditoriaService.cs::ObtenerAcciones",   "códigos de acción distintos (decenas)" },
             { "Services/Despachos/DestinoDescargaService.cs::ObtenerPlantas",       "catálogo de plantas" },
             { "Services/Despachos/DestinoDescargaService.cs::ObtenerPlantasDeDescarga", "catálogo de plantas internacionales" },
@@ -57,8 +56,6 @@ namespace WebSGV.Tests
             { "Views/RegistroClientes.aspx.cs::CargarClientes",                     "catálogo de clientes" },
             { "Views/RegistroPeajes.aspx.cs::CargarPeajes",                         "catálogo de estaciones de peaje" },
             { "Views/RegistroPlantas.aspx.cs::CargarPlantas",                       "catálogo de plantas" },
-            { "Views/RegistroProductos.aspx.cs::CargarClientes",                    "catálogo de clientes" },
-            { "Views/RegistroRutas.aspx.cs::CargarClientes",                        "catálogo de clientes" },
             { "Views/SaldosConductores.aspx.cs::LlenarFiltros",                     "catálogo de conductores con liquidaciones" },
         };
 

@@ -58,7 +58,7 @@ namespace WebSGV.Tests
         private static string Relativo(string raiz, string archivo) =>
             archivo.Substring(raiz.Length + 1).Replace('\\', '/');
 
-        /// <summary>Las 28 hojas propias: Content/*.css y Content/paginas/**/*.css (Content/lib es de terceros). E5-13 unió 3.</summary>
+        /// <summary>Las 27 hojas propias: Content/*.css y Content/paginas/**/*.css (Content/lib es de terceros). E5-13 unió 3 y E5-19a quitó CargarExcel.css.</summary>
         private static List<string> Hojas()
         {
             var raiz = RaizWeb();
@@ -184,11 +184,11 @@ namespace WebSGV.Tests
         // ------------------------------------------------------------------ reglas
 
         [Fact]
-        public void Hojas_SonLasVeintiochoPropias()
+        public void Hojas_SonLasVeintisietePropias()
         {
             var hojas = Hojas();
             Assert.Contains(Base, hojas);
-            Assert.True(hojas.Count == 28, "Hay " + hojas.Count + " hojas en Content; si agregaste o quitaste una, actualiza esta cifra (sus colores deben usar var(--sgv-*)).");
+            Assert.True(hojas.Count == 27, "Hay " + hojas.Count + " hojas en Content; si agregaste o quitaste una, actualiza esta cifra (sus colores deben usar var(--sgv-*)).");
         }
 
         /// <summary>(a) 0 colores literales fuera de un :root (los data-URI dentro de url() no cuentan).</summary>

@@ -295,7 +295,6 @@
     <Content Include="Global.asax" />
     <Content Include="CspInforme.ashx" />
     <Content Include="Salud.ashx" />
-    <Content Include="Content\Templates\PlantillaIndicadores.xlsx" />
     <Content Include="connectionStrings.config" />
     <Content Include="appSettings.Secrets.config" />
     <None Include="connectionStrings.config.example" />
@@ -358,7 +357,6 @@
     <Content Include="Content\paginas\ReporteCargas.css" />
     <Content Include="Content\paginas\FacturasFlete.css" />
     <Content Include="Content\paginas\BandejaDocumentos.css" />
-    <Content Include="Content\paginas\CargarExcel.css" />
     <Content Include="Content\paginas\DashboardConductor.css" />
     <Content Include="Content\paginas\DetalleOrdenViaje.css" />
     <Content Include="Content\paginas\Exportacion\DashboardExportacion.css" />
@@ -381,7 +379,6 @@
     <Content Include="Content\paginas\RestablecerContrasena.css" />
     <Content Include="Content\paginas\SiteMaster.css" />
     <Content Include="Scripts\paginas\Auditoria.js" />
-    <Content Include="Scripts\paginas\CargarExcel.js" />
     <Content Include="Scripts\paginas\GestionUsuarios.js" />
     <Content Include="Scripts\paginas\CatalogoCliente.js" />
     <Content Include="Scripts\paginas\DashboardConductor.js" />
@@ -417,7 +414,6 @@
     <Content Include="Scripts\paginas\SiteMaster-2.js" />
     <Content Include="Scripts\paginas\SiteMaster.js" />
     <Content Include="Views\Auditoria.aspx" />
-    <Content Include="Views\CargarExcel.aspx" />
     <Content Include="Views\DashboardAdminSistema.aspx" />
     <Content Include="Views\GestionUsuarios.aspx" />
     <Content Include="Views\DashboardConductor.aspx" />
@@ -457,8 +453,6 @@
     <Content Include="Views\RegistroDespacho.aspx" />
     <Content Include="Views\RegistroPeajes.aspx" />
     <Content Include="Views\RegistroPlantas.aspx" />
-    <Content Include="Views\RegistroProductos.aspx" />
-    <Content Include="Views\RegistroRutas.aspx" />
     <Content Include="Views\RegistroSemiremolques.aspx" />
     <Content Include="Views\RegistroTractos.aspx" />
     <Content Include="Views\ReportesOrdenesViaje.aspx" />
@@ -642,13 +636,6 @@
     </Compile>
     <Compile Include="Views\Auditoria.aspx.designer.cs">
       <DependentUpon>Auditoria.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\CargarExcel.aspx.cs">
-      <DependentUpon>CargarExcel.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\CargarExcel.aspx.designer.cs">
-      <DependentUpon>CargarExcel.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\Exportacion\DashboardExportacion.aspx.cs">
       <DependentUpon>DashboardExportacion.aspx</DependentUpon>
@@ -899,20 +886,6 @@
     </Compile>
     <Compile Include="Views\RegistroPlantas.aspx.designer.cs">
       <DependentUpon>RegistroPlantas.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\RegistroProductos.aspx.cs">
-      <DependentUpon>RegistroProductos.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\RegistroProductos.aspx.designer.cs">
-      <DependentUpon>RegistroProductos.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Views\RegistroRutas.aspx.cs">
-      <DependentUpon>RegistroRutas.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Views\RegistroRutas.aspx.designer.cs">
-      <DependentUpon>RegistroRutas.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\RegistroSemiremolques.aspx.cs">
       <DependentUpon>RegistroSemiremolques.aspx</DependentUpon>

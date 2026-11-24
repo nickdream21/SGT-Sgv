@@ -79,13 +79,16 @@ foreach ($r in 'Content/logo.png', 'favicon.ico', 'Global.asax', 'robots.txt', '
 $paginasRetiradas = 'Dashboard', 'AgregarIndicadores', 'DashboardGrifo', 'AgregarAbastecimiento', 'BuscarAbastecimiento', 'ReporteAbastecimiento',
     'RegistrarDespachoObra', 'RegistrarRetornoEcuador', 'DescargarPdfAbastecimiento', 'AsignacionesMaquinaria', 'DashboardOperador', 'RegistroOperadores',
     'RegistroEquiposMaquinaria', 'RegistroObras', 'RegistroClientesObra', 'EditarDespacho', 'TestGenerarPdfOrdenViaje', 'ConsultaAuditoria',
-    'AgregarOrdenViaje', 'BuscarOrdenViaje', 'AgregarCPIC', 'BuscarCPIC', 'AgregarFactura', 'BuscarFactura'
+    'AgregarOrdenViaje', 'BuscarOrdenViaje', 'AgregarCPIC', 'BuscarCPIC', 'AgregarFactura', 'BuscarFactura',
+    'CargarExcel', 'RegistroProductos', 'RegistroRutas'   # E5-19a: sin enlace (U-094); productos y rutas en CatalogoCliente
 $cssRetirados = 'AgregarAbastecimiento', 'AgregarIndicadores', 'BuscarAbastecimiento', 'Dashboard', 'DashboardGrifo', 'DashboardOperador', 'EditarDespacho',
     'RegistrarDespachoObra', 'RegistrarRetornoEcuador', 'ReporteAbastecimiento', 'AgregarCPIC', 'AgregarFactura', 'AgregarOrdenViaje', 'BuscarCPIC', 'BuscarFactura',
-    'ListaDespachos-2', 'RegistroDespacho-2'   # E5-13: unidas a su hoja principal
+    'ListaDespachos-2', 'RegistroDespacho-2',   # E5-13: unidas a su hoja principal
+    'CargarExcel'   # E5-19a
 $jsRetirados = 'AgregarAbastecimiento', 'BuscarAbastecimiento', 'Dashboard', 'DashboardGrifo', 'DashboardOperador', 'EditarDespacho', 'RegistrarDespachoObra',
     'RegistrarRetornoEcuador', 'AgregarCPIC', 'AgregarFactura', 'AgregarOrdenViaje', 'BuscarCPIC', 'BuscarFactura', 'BuscarOrdenViaje', 'ConsultaAuditoria',
-    'RegistroDespacho-2'   # E5-20a: su is-invalid lo pone SiteMaster.js
+    'RegistroDespacho-2',   # E5-20a: su is-invalid lo pone SiteMaster.js
+    'CargarExcel'   # E5-19a
 $sobrantesEsperados = @($paginasRetiradas | ForEach-Object { "Views/$_.aspx" }) +
                       @($cssRetirados | ForEach-Object { "Content/paginas/$_.css" }) +
                       @($jsRetirados | ForEach-Object { "Scripts/paginas/$_.js" }) +

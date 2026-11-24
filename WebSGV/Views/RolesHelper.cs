@@ -195,8 +195,6 @@ namespace WebSGV.Helpers
 
                 // Solo administración (U-081, 2026-11-22: SUPERVISOR no entra, como el menú)
                 { "FACTURAS_FLETE",          EsRolAdmin },         // FacturasFlete
-                { "REGISTRO_PRODUCTOS",      EsRolAdmin },         // RegistroProductos
-                { "REGISTRO_RUTAS",          EsRolAdmin },         // RegistroRutas
 
                 // Consulta para Contabilidad (solo lectura)
                 { "LIQUIDACIONES_CONTABILIDAD", r => r == ROL_CONTABILIDAD || AdminOSupervisor(r) },

@@ -169,6 +169,10 @@ namespace WebSGV.Tests
         [InlineData("RegistroEquiposMaquinaria")]
         [InlineData("RegistroObras")]
         [InlineData("RegistroClientesObra")]
+        // E5-19a (U-094): sin enlace; productos y rutas se gestionan en CatalogoCliente.
+        [InlineData("CargarExcel")]
+        [InlineData("RegistroProductos")]
+        [InlineData("RegistroRutas")]
         public void PaginaRetirada_NoExisteNiEstaEnElProyecto(string pagina)
         {
             string raiz = RaizWeb();

@@ -77,7 +77,6 @@ namespace WebSGV.Tests
         private static readonly (string Pagina, string Control, string Manejador)[] Descargas =
         {
             ("Views/Auditoria.aspx", "OnClick=\"btnExportarExcel_Click\"", "btnExportarExcel_Click"),
-            ("Views/CargarExcel.aspx", "OnClick=\"btnDescargarPlantilla_Click\"", "btnDescargarPlantilla_Click"),
             ("Views/Exportacion/ImportarSeguimiento.aspx", "OnClick=\"btnDescargarPlantilla_Click\"", "btnDescargarPlantilla_Click"),
             ("Views/Exportacion/RegistroSeguimiento.aspx", "OnClick=\"btnExportarStatus_Click\"", "btnExportarStatus_Click"),
             ("Views/Exportacion/RegistroSeguimiento.aspx", "OnClick=\"btnImagenStatus_Click\"", "btnImagenStatus_Click"),
@@ -298,7 +297,6 @@ namespace WebSGV.Tests
         private static readonly (string Pagina, string Id, int Minimo, int Maximo)[] Esperas =
         {
             ("Views/DashboardConductor.aspx", "btnEnviarLiquidacion", 60, 600),
-            ("Views/CargarExcel.aspx", "btnProcesar", 60, 600),
             ("Views/FacturasFlete.aspx", "btnSubir", 60, 600),
             ("Views/Exportacion/ImportarSeguimiento.aspx", "btnImportar", 60, 600),
             ("Views/MovimientosViaje.aspx", "btnRegistrar", 60, 600),
@@ -368,7 +366,6 @@ namespace WebSGV.Tests
         private static readonly Dictionary<string, (int Veces, string Motivo)> DeshabilitarPermitido =
             new Dictionary<string, (int, string)>(StringComparer.Ordinal)
             {
-                ["CargarExcel.js|btnProcesar.disabled = true;"] = (1, "sin archivo elegido: no es un envío"),
                 ["ConformarLiquidacion.js|btnFirmar.disabled = true;"] = (1, "firma por PageMethod (RegistrarConformidad)"),
                 ["ConformarLiquidacion.js|btn.disabled = true;"] = (1, "observación por PageMethod (ObservarLiquidacion)"),
                 ["DashboardConductor.js|$btn.prop('disabled', true).text('Retirando...');"] = (1, "$.ajax RetirarLiquidacion"),

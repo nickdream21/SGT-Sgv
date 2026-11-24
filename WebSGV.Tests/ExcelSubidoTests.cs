@@ -308,10 +308,10 @@ namespace WebSGV.Tests
             }
 
             Assert.True(fallas.Count == 0, string.Join(Environment.NewLine, fallas.Distinct()));
-            // La regla no es vacía: las aperturas conocidas, sus servicios y sus cuatro páginas quedaron revisados.
-            Assert.True(usos >= 4, $"Solo se encontraron {usos} aperturas de libro");
+            // La regla no es vacía: las aperturas conocidas, sus servicios y sus tres páginas quedaron revisados (E5-19a quitó CargarExcel).
+            Assert.True(usos >= 3, $"Solo se encontraron {usos} aperturas de libro");
             foreach (string conocida in new[] { "Views/DestinoDescarga.aspx.cs", "Views/RegistroChoferes.aspx.cs",
-                                                "Views/CargarExcel.aspx.cs", "Views/Exportacion/ImportarSeguimiento.aspx.cs",
+                                                "Views/Exportacion/ImportarSeguimiento.aspx.cs",
                                                 "Services/Conductor/ListaChoferesService.cs",
                                                 "Services/Despachos/Importacion/LectorDestinosDescarga.cs" })
                 Assert.Contains(conocida, revisados);
