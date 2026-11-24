@@ -158,7 +158,7 @@
                         <label for="<%= txtEditarPlaca.ClientID %>" class="sgv-etiqueta">N.&#xBA; de placa <span class="text-danger">*</span></label>
                         <asp:TextBox ID="txtEditarPlaca" runat="server" CssClass="form-control text-uppercase" MaxLength="10"></asp:TextBox>
                         <small id="notaPlacaHistorial" class="form-text text-muted d-none">
-                            <i class="fas fa-lock mr-1" aria-hidden="true"></i>Este tracto tiene despachos u otro historial: la placa no se puede cambiar.
+                            Este tracto tiene despachos u otro historial: la placa no se puede cambiar.
                             Si la placa est&#xE1; mal, registre el tracto correcto y desactive este.
                         </small>
                     </div>

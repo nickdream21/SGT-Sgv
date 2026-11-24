@@ -407,14 +407,14 @@ namespace WebSGV.Views
             if (texto == "—") texto = "Expediente";   // carga sin número de pedido (cliente que factura por guía)
             string url = ResolveUrl("~/Views/BandejaDocumentos.aspx") + "?lote=" + HttpUtility.UrlEncode(lote);
             return $"<a href=\"{H(url)}\" title=\"Ver el expediente: todos los documentos del pedido\">" +
-                   $"<i class=\"far fa-folder-open mr-1\"></i>{H(texto)}</a>";
+                   $"{H(texto)}</a>";
         }
 
         private string EnlaceFactura(FacturaFleteRegistrada f)
         {
             if (string.IsNullOrEmpty(f.RutaArchivo)) return H(f.NumeroFactura);
             string url = DocumentoHelper.UrlDescarga(f.RutaArchivo);
-            return $"<a href=\"{H(url)}\" target=\"_blank\" rel=\"noopener\" title=\"Ver el PDF\"><i class=\"far fa-file-pdf mr-1\"></i>{H(f.NumeroFactura)}</a>";
+            return $"<a href=\"{H(url)}\" target=\"_blank\" rel=\"noopener\" title=\"Ver el PDF\">{H(f.NumeroFactura)}</a>";
         }
 
         private static string Chip(EstadoConciliacion e)

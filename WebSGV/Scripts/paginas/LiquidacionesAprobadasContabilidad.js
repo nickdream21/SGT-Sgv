@@ -291,8 +291,8 @@ function buscarLiquidaciones(forzarManual, pagina, filtrosGuardados) {
                     '<td class="text-right">' + Number(item.BalanceSoles || 0).toFixed(2) + '</td>' +
                     '<td class="text-right">' + Number(item.BalanceDolares || 0).toFixed(2) + '</td>' +
                     '<td class="text-center">' +
-                        '<button type="button" class="btn btn-outline-primary btn-sm mr-1" data-accion="verPdfLiquidacion" data-id="' + item.IdOrdenViaje + '"><i class="fas fa-eye"></i> Ver</button>' +
-                        '<button type="button" class="btn btn-outline-secondary btn-sm" data-accion="verDetalle" data-id="' + item.IdOrdenViaje + '"><i class="fas fa-list"></i> Detalle</button>' +
+                        '<button type="button" class="btn btn-outline-primary btn-sm mr-1" data-accion="verPdfLiquidacion" data-id="' + item.IdOrdenViaje + '">Ver</button>' +
+                        '<button type="button" class="btn btn-outline-secondary btn-sm" data-accion="verDetalle" data-id="' + item.IdOrdenViaje + '">Detalle</button>' +
                     '</td>' +
                     '</tr>';
             }

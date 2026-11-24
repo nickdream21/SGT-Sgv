@@ -37,4 +37,3 @@
 .dv-texto { margin: 0; white-space: pre-line; word-break: break-word; font-size: 0.92rem; }
 
 .dv-acciones { display: grid; gap: 10px; margin: 16px 0 24px; }
-.dv-acciones .dc-btn i { margin-right: 8px; }

@@ -17,7 +17,7 @@
                     <asp:Button ID="btnExportarStatus" runat="server" Text="Excel de STATUS" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatus_Click" data-descarga="true"
                         ToolTip="Baja un Excel liviano con el STATUS de las unidades que muestra la tabla (con el pedido en Buscar, solo ese pedido)" />
                     <asp:LinkButton ID="btnImagenStatus" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenStatus_Click" data-descarga="true"
-                        ToolTip="El STATUS como imagen, para mandarlo por WhatsApp"><i class="fas fa-image" aria-hidden="true"></i><span class="sr-only">STATUS como imagen</span></asp:LinkButton>
+                        ToolTip="El STATUS como imagen, para mandarlo por WhatsApp"><span aria-hidden="true">Imagen</span><span class="sr-only">STATUS como imagen</span></asp:LinkButton>
                 </span>
                 <asp:Button ID="btnExportar" runat="server" Text="Exportar STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click" data-descarga="true"
                     ToolTip="STATUS GENERAL de Vitapro con todas las horas (sin los clientes terceros)" />
@@ -25,30 +25,30 @@
                     <asp:Button ID="btnExportarStatusExtra" runat="server" Text="Excel STATUS EXTRA" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatusExtra_Click" data-descarga="true"
                         ToolTip="Cuadro de los clientes terceros (Crisar, Novopan, Polinplast) que muestra la tabla, con las columnas del STATUS EXTRA" />
                     <asp:LinkButton ID="btnImagenStatusExtra" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenStatusExtra_Click" data-descarga="true"
-                        ToolTip="El STATUS EXTRA como imagen, para mandarlo por WhatsApp"><i class="fas fa-image" aria-hidden="true"></i><span class="sr-only">STATUS EXTRA como imagen</span></asp:LinkButton>
+                        ToolTip="El STATUS EXTRA como imagen, para mandarlo por WhatsApp"><span aria-hidden="true">Imagen</span><span class="sr-only">STATUS EXTRA como imagen</span></asp:LinkButton>
                 </span>
                 <span class="sx-par">
                     <asp:Button ID="btnExportarGrifo" runat="server" Text="Cuadro grifo Santa Rosa" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarGrifo_Click" data-descarga="true"
                         ToolTip="Excel de los carros que bajan al grifo Santa Rosa a cargar combustible (Vitapro y Crisar de vuelta de Ecuador): en camino con su hora aproximada de llegada, en el grifo y descargando" />
                     <asp:LinkButton ID="btnImagenGrifo" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenGrifo_Click" data-descarga="true"
-                        ToolTip="El cuadro del grifo Santa Rosa como imagen, para mandarlo por WhatsApp"><i class="fas fa-image" aria-hidden="true"></i><span class="sr-only">Cuadro grifo como imagen</span></asp:LinkButton>
+                        ToolTip="El cuadro del grifo Santa Rosa como imagen, para mandarlo por WhatsApp"><span aria-hidden="true">Imagen</span><span class="sr-only">Cuadro grifo como imagen</span></asp:LinkButton>
                 </span>
                 <span class="sx-par">
                     <asp:Button ID="btnExportarLlegadas" runat="server" Text="Excel de llegadas" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarLlegadas_Click" data-descarga="true"
                         ToolTip="Las unidades en camino a cargar a Trujillo o a descargar a Jave/Inbalnor, con ubicación, km restantes y llegada aproximada" />
                     <asp:LinkButton ID="btnImagenLlegadas" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenLlegadas_Click" data-descarga="true"
-                        ToolTip="Las llegadas como imagen, para mandarlas por WhatsApp"><i class="fas fa-image" aria-hidden="true"></i><span class="sr-only">Llegadas como imagen</span></asp:LinkButton>
+                        ToolTip="Las llegadas como imagen, para mandarlas por WhatsApp"><span aria-hidden="true">Imagen</span><span class="sr-only">Llegadas como imagen</span></asp:LinkButton>
                 </span>
                 <div class="dropdown sx-mas">
                     <button type="button" class="sx-btn dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Más</button>
                     <div class="dropdown-menu dropdown-menu-right">
-                        <button type="button" class="dropdown-item" id="btnReporteLlegadas" title="Copia, listo para enviar, el estado y la hora aproximada de llegada de las unidades que van en camino a cargar a Trujillo o a descargar a Jave/Inbalnor"><i class="fas fa-clock" aria-hidden="true"></i> Copiar reporte de llegadas</button>
-                        <button type="button" class="dropdown-item" id="btnReporteGrifo" title="Copia, listo para enviar al grifo, cuántos y cuáles carros bajan al grifo Santa Rosa y a qué hora llegan aprox."><i class="fas fa-gas-pump" aria-hidden="true"></i> Copiar reporte grifo Santa Rosa</button>
-                        <button type="button" class="dropdown-item" id="btnCopiarStatus" title="Copia el STATUS de cada fila de la tabla, en orden, para pegar en la columna STATUS del Excel"><i class="fas fa-copy" aria-hidden="true"></i> Copiar STATUS</button>
+                        <button type="button" class="dropdown-item" id="btnReporteLlegadas" title="Copia, listo para enviar, el estado y la hora aproximada de llegada de las unidades que van en camino a cargar a Trujillo o a descargar a Jave/Inbalnor">Copiar reporte de llegadas</button>
+                        <button type="button" class="dropdown-item" id="btnReporteGrifo" title="Copia, listo para enviar al grifo, cuántos y cuáles carros bajan al grifo Santa Rosa y a qué hora llegan aprox.">Copiar reporte grifo Santa Rosa</button>
+                        <button type="button" class="dropdown-item" id="btnCopiarStatus" title="Copia el STATUS de cada fila de la tabla, en orden, para pegar en la columna STATUS del Excel">Copiar STATUS</button>
                         <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="SeguimientoViaje.aspx?nuevo=1"><i class="fas fa-plus" aria-hidden="true"></i> Nuevo viaje</a>
-                        <a class="dropdown-item" href="ImportarSeguimiento.aspx"><i class="fas fa-file-import" aria-hidden="true"></i> Importar Excel</a>
-                        <a class="dropdown-item" href="DashboardExportacion.aspx"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard</a>
+                        <a class="dropdown-item" href="SeguimientoViaje.aspx?nuevo=1">Nuevo viaje</a>
+                        <a class="dropdown-item" href="ImportarSeguimiento.aspx">Importar Excel</a>
+                        <a class="dropdown-item" href="DashboardExportacion.aspx">Dashboard</a>
                     </div>
                 </div>
                 <textarea id="txtReporteLlegadas" hidden readonly aria-hidden="true"><asp:Literal ID="litReporteLlegadas" runat="server" /></textarea>

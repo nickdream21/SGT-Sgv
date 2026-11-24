@@ -20,7 +20,7 @@
 
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-light">
-                <h5 class="mb-0"><i class="fas fa-truck mr-2"></i>Unidades y rango</h5>
+                <h5 class="mb-0">Unidades y rango</h5>
             </div>
             <div class="card-body">
                 <div class="row">
@@ -70,7 +70,7 @@
         <asp:Panel ID="pnlResultados" runat="server" Visible="false">
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap">
-                    <h5 class="mb-0"><i class="fas fa-file-excel mr-2"></i><asp:Literal ID="litTituloResultados" runat="server" /></h5>
+                    <h5 class="mb-0"><asp:Literal ID="litTituloResultados" runat="server" /></h5>
                     <asp:Button ID="btnZip" runat="server" CssClass="btn btn-success btn-sm" Text="Descargar todos (ZIP)" OnClick="btnZip_Click" data-descarga="true" />
                 </div>
                 <div class="card-body p-0">
@@ -92,7 +92,7 @@
                                     <ItemTemplate>
                                         <asp:LinkButton ID="btnDescargar" runat="server" CommandName="Descargar" data-descarga="true" CommandArgument='<%# Container.DataItemIndex %>'
                                             Visible='<%# (bool)Eval("TieneArchivo") %>' CssClass="small">
-                                            <i class="fas fa-download"></i> <%# HttpUtility.HtmlEncode(Eval("NombreArchivo")) %>
+                                            <%# HttpUtility.HtmlEncode(Eval("NombreArchivo")) %>
                                         </asp:LinkButton>
                                         <span class="text-danger small"><%# HttpUtility.HtmlEncode(Eval("Error")) %></span>
                                     </ItemTemplate>
@@ -105,7 +105,7 @@
 
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="fas fa-envelope mr-2"></i>Para el correo</h5>
+                    <h5 class="mb-0">Para el correo</h5>
                 </div>
                 <div class="card-body">
                     <div class="form-group">

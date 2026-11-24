@@ -79,7 +79,6 @@
 
 .section-header { background: var(--sgv-fondo); border-bottom: 1px solid var(--sgv-borde); padding: 1rem 1.25rem; }
 .section-title { color: var(--sgv-texto) !important; font-weight: 600 !important; font-size: .95rem !important; margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
-.section-title i { color: var(--sgv-texto-suave); }
 .section-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .5rem; }
 .section-content { padding: 1.5rem; }
 
@@ -87,9 +86,7 @@
 .filters-container { background: var(--sgv-fondo); border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); padding: 1.1rem 1.25rem .35rem; margin-bottom: 1.5rem; }
 .filters-container .form-group { margin-bottom: .9rem; }
 .filters-heading { font-size: .72rem; font-weight: 700; color: var(--sgv-texto-suave); margin-bottom: .9rem; display: flex; align-items: center; gap: .4rem; }
-.filters-heading i { color: var(--sgv-texto-suave); }
 .sgv-etiqueta { font-weight: 600; color: var(--sgv-texto-suave); font-size: .74rem; margin-bottom: .4rem; display: flex; align-items: center; gap: .35rem; }
-.sgv-etiqueta i { color: var(--sgv-texto-suave); font-size: .75rem; }
 .form-control, .custom-select { border: 1px solid var(--sgv-borde-fuerte); border-radius: var(--sgv-radio); padding: .5rem .75rem; font-size: .85rem; background-color: var(--sgv-superficie); }
 /* Bootstrap 4 fija el alto de .form-control(-sm) y .custom-select para su propio padding; con el de arriba, el texto de
    los desplegables (Tipo de operación, Moneda) y el botón "Elegir archivo" quedaban cortados arriba y abajo. El alto
@@ -221,7 +218,6 @@
 .ld-bloque { background: var(--sgv-superficie); border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); margin-bottom: 1.25rem; overflow: hidden; box-shadow: none; }
 .ld-bloque-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: .25rem 1rem; padding: .85rem 1.1rem; border-bottom: 1px solid var(--sgv-borde); background: var(--sgv-fondo); }
 .ld-bloque-head h6 { margin: 0; font-weight: 700; color: var(--sgv-texto); }
-.ld-bloque-head h6 i { color: var(--sgv-texto-suave); margin-right: .35rem; }
 .ld-bloque-ayuda { font-size: .8rem; color: var(--sgv-texto-suave); }
 .ld-bloque .data-grid-container { margin: 0; }
 .ld-bloque-pie { display: flex; justify-content: flex-end; padding: .8rem 1.1rem; border-top: 1px solid var(--sgv-borde); background: var(--sgv-fondo); }
@@ -283,7 +279,6 @@
 
 /* Subir documentos del correo (bandeja) y escritura a mano plegada */
 .ld-subir-docs { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; background: var(--sgv-primario-claro); border: 1px solid var(--sgv-azul-200); border-radius: var(--sgv-radio); padding: .9rem 1.1rem; margin-bottom: 1rem; }
-.ld-subir-docs > i { font-size: 1.6rem; color: var(--sgv-azul-600); }
 .ld-subir-docs-texto { flex: 1 1 320px; display: flex; flex-direction: column; color: var(--sgv-azul-900); }
 .ld-subir-docs-texto span { font-size: .82rem; color: var(--sgv-texto-suave); }
 .ld-subir-docs-btn { font-weight: 600; white-space: nowrap; }
@@ -296,8 +291,7 @@
 .ld-manual > summary small { color: var(--sgv-texto-suave); }
 .ld-manual[open] > .ld-doc-registrar, .ld-manual[open] > .data-grid-container { margin-top: .4rem; }
 
-/* Pulido (2026-11-06): iconos de las etiquetas con su espacio y grillas sin el borde duro que agrega el GridView. */
-.sgv-etiqueta i { width: 1rem; text-align: center; flex: 0 0 1rem; margin-right: .1rem; }
+/* Pulido (2026-11-06): grillas sin el borde duro que agrega el GridView. */
 .data-table { border: 0 !important; border-collapse: collapse; }
 .data-table th, .data-table td { border-left: 0 !important; border-right: 0 !important; border-top: 0 !important; }
 .data-table thead th { border-bottom: 2px solid var(--sgv-borde-fuerte) !important; }
@@ -305,7 +299,6 @@
 /* Factura y CPIC por despacho (2026-11-17): separar un lote que lleva más de una factura o CPIC. */
 .ld-docs-despacho-enlace { padding: .7rem 1.1rem; }
 .ld-docs-despacho-enlace a { font-size: .85rem; font-weight: 600; color: var(--sgv-primario); }
-.ld-docs-despacho-enlace a i { margin-right: .3rem; }
 .ld-docs-despacho .ld-aviso { margin: .8rem 1.1rem 0; }
 .ld-docs-despacho-tabla { overflow-x: auto; }
 .ld-tabla-docs-despacho { margin: 0; font-size: .85rem; }
@@ -328,7 +321,7 @@
     .ld-tabla-docs-despacho, .ld-tabla-docs-despacho tbody, .ld-tabla-docs-despacho tr, .ld-tabla-docs-despacho td { display: block; width: 100%; }
     .ld-tabla-docs-despacho tr { position: relative; border-bottom: 1px solid var(--sgv-borde); padding: .6rem .75rem .6rem 2.75rem; }
     .ld-tabla-docs-despacho td { border: 0 !important; padding: .15rem 0; }
-    .ld-tabla-docs-despacho td[data-label]::before { content: attr(data-label); display: block; font-size: .7rem; font-weight: 700; color: var(--sgv-texto-suave); text-transform: uppercase; letter-spacing: .03em; }
+    .ld-tabla-docs-despacho td[data-label]::before { content: attr(data-label); display: block; font-size: .7rem; font-weight: 700; color: var(--sgv-texto-suave); letter-spacing: .03em; }
     .ld-tabla-docs-despacho td.ld-col-marca { position: absolute; left: .75rem; top: .75rem; width: auto; padding: 0; }
     .ld-asignar-docs, .ld-docs-lista { margin-left: .75rem; margin-right: .75rem; }
     .ld-docs-lista-acciones { justify-content: flex-start; }
@@ -655,9 +648,6 @@
     gap: .45rem;
 }
 
-.data-section-title i {
-    color: var(--sgv-texto-suave);
-}
 
 /* === FORMULARIOS DE EDICIÓN === */
 .edit-form {

@@ -17,7 +17,7 @@
         
         <!-- Instrucciones -->
         <div class="instructions-box">
-            <h5><i class="fas fa-info-circle mr-2"></i>Instrucciones de uso:</h5>
+            <h5>Instrucciones de uso:</h5>
             <ol>
                 <li>Descargue la plantilla Excel al final de esta página si aún no la tiene.</li>
                 <li>Pegue los datos del Excel de oficina en la <strong>Hoja 2</strong> de la plantilla.</li>
@@ -29,15 +29,12 @@
 
         <!-- Sección de carga de archivo -->
         <div class="section-header">
-            <i class="fas fa-upload mr-2"></i> Carga de Archivo Excel
+            Carga de Archivo Excel
         </div>
 
         <div class="row">
             <div class="col-md-8">
                 <div id="dropZone" class="upload-container" data-accion="elegirArchivo">
-                    <div class="upload-icon">
-                        <i class="fas fa-file-excel"></i>
-                    </div>
                     <h4>Arrastra tu archivo Excel de conversión aquí o haz clic para seleccionar</h4>
                     <p>El sistema importará la hoja 1 (formato simplificado con 33 columnas)</p>
                     <asp:FileUpload ID="fileUpload" runat="server" CssClass="d-none" aria-label="Archivo Excel de conversión" data-accion-change="mostrarArchivoElegido" accept=".xlsx" />
@@ -47,7 +44,7 @@
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-header bg-primary text-white">
-                        <i class="fas fa-info-circle mr-2"></i> Importante
+                        Importante
                     </div>
                     <div class="card-body">
                         <p><strong>Atención:</strong> Al cargar un nuevo archivo para un mes que ya tiene datos, se sobrescribirán todos los indicadores existentes para ese mes.</p>
@@ -98,7 +95,7 @@
 
         <!-- Historial de cargas -->
         <div class="section-header mt-5">
-            <i class="fas fa-history mr-2"></i> Historial de Cargas
+            Historial de Cargas
         </div>
 
         <div class="month-filter">
@@ -159,7 +156,7 @@
                                 CommandName="DeleteUpload" CommandArgument='<%# Eval("UploadID") %>'
                                 OnCommand="btnDeleteUpload_Command" 
                                 data-confirmar="¿Está seguro de que desea eliminar esta carga y todos sus registros asociados?" data-confirmar-peligro="true">
-                                <i class="fas fa-trash-alt"></i> Eliminar
+                                Eliminar
                             </asp:LinkButton>
                         </ItemTemplate>
                     </asp:TemplateField>
@@ -171,7 +168,7 @@
         <!-- Descargar Plantilla -->
         <div class="template-section">
             <div class="section-header">
-                <i class="fas fa-file-download mr-2"></i> Descargar Plantilla Excel
+                Descargar Plantilla Excel
             </div>
             <div class="row">
                 <div class="col-md-8">

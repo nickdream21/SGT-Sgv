@@ -25,8 +25,8 @@
                         <ItemTemplate><li><%#: Container.DataItem %></li></ItemTemplate>
                     </asp:Repeater>
                 </ul>
-                <button type="button" class="btn btn-outline-secondary btn-sm js-copiar-codigos"><i class="fas fa-copy mr-1"></i>Copiar los códigos</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm js-imprimir-codigos"><i class="fas fa-print mr-1"></i>Imprimir</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm js-copiar-codigos">Copiar los códigos</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm js-imprimir-codigos">Imprimir</button>
                 <asp:Button ID="btnCodigosGuardados" runat="server" CssClass="btn btn-primary btn-sm" Text="Ya los guardé"
                     OnClick="btnCodigosGuardados_Click" CausesValidation="false"
                     data-confirmar="¿Ya guardó los códigos en un lugar seguro?\nDespués no se volverán a mostrar."

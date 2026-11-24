@@ -8,11 +8,6 @@
             text-align: center;
             padding: 40px 20px;
         }
-        .error-icon {
-            font-size: 5rem;
-            color: #7a5200;
-            margin-bottom: 20px;
-        }
         .error-title {
             font-size: 1.75rem;
             font-weight: 700;
@@ -50,9 +45,6 @@
     </style>
 
     <div class="error-container">
-        <div class="error-icon">
-            <i class="fas fa-search"></i>
-        </div>
         <h1 class="error-title">Página no encontrada</h1>
         <p class="error-message">
             La página que buscas no existe o fue movida.
@@ -61,14 +53,13 @@
         </p>
         <div class="error-actions">
             <a href="javascript:history.back()" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left mr-2"></i>Volver
+                Volver
             </a>
             <a href="/Views/Login.aspx" class="btn btn-primary">
-                <i class="fas fa-home mr-2"></i>Ir al inicio
+                Ir al inicio
             </a>
         </div>
         <p class="error-code">
-            <i class="fas fa-info-circle mr-1"></i>
             Error 404 — La ruta solicitada no existe
         </p>
     </div>

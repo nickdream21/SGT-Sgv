@@ -65,7 +65,7 @@
                                      el FileUpload no viaja en un postback parcial. -->
                                 <asp:Panel ID="pnlImportarDocumentos" runat="server" CssClass="card mb-4 rd-import-card">
                                     <div class="rd-step-header">
-                                        <h5><i class="fas fa-file-import mr-1"></i> Programar o completar con los archivos del día</h5>
+                                        <h5>Programar o completar con los archivos del día</h5>
                                         <div class="rd-subtitle">El chofer, el tracto y la carreta salen del Word de la programación; la carga, de los documentos del cliente. Usted revisa todo antes de guardar.</div>
                                         <ul class="rd-casos">
                                             <li><strong>Solo el Word</strong><span>Programa los despachos del día. El seguimiento GPS empieza ya, sin esperar el correo.</span></li>
@@ -76,7 +76,6 @@
                                     <div class="card-body">
                                         <asp:Panel ID="pnlSubirDocumentos" runat="server">
                                             <label class="rd-zona">
-                                                <i class="fas fa-cloud-upload-alt rd-zona-icono"></i>
                                                 <span class="rd-zona-titulo">Arrastre aquí los archivos o haga clic para elegirlos</span>
                                                 <span class="rd-zona-ayuda">Word de la programación (.docx) que manda la jefa de flota, ZIP del correo o PDF generados por el sistema del cliente (no escaneos). Seleccione todos a la vez (hasta 20 MB en total).</span>
                                                 <span class="rd-zona-archivos"></span>
@@ -431,7 +430,7 @@
                                      el lote de DESCARGA con su carga, proponiendo el mismo conductor/tracto. -->
                                 <asp:Panel ID="pnlDescargaPedido" runat="server" CssClass="card mb-4 rd-import-card">
                                     <div class="rd-step-header">
-                                        <h5><i class="fas fa-dolly mr-1"></i> Registrar la descarga de un pedido ya cargado</h5>
+                                        <h5>Registrar la descarga de un pedido ya cargado</h5>
                                         <div class="rd-subtitle">Elija el pedido: aparecen sus tractos cargados que faltan descargar, con su carga. Cambie solo los que hicieron relevo en la base.</div>
                                     </div>
                                     <div class="card-body">
@@ -583,7 +582,10 @@
                                         <button type="button" class="rd-step-header rd-manual-toggle<%= ManualAbierto ? "" : " collapsed" %>"
                                             data-toggle="collapse" data-target="#rdManualCuerpo"
                                             aria-expanded="<%= ManualAbierto ? "true" : "false" %>" aria-controls="rdManualCuerpo">
-                                            <h5><span class="rd-step-num">1</span> Registrar un lote a mano <i class="fas fa-chevron-down rd-manual-chevron ml-auto"></i></h5>
+                                            <div class="d-flex align-items-center">
+                                                <h5 class="flex-grow-1"><span class="rd-step-num">1</span> Registrar un lote a mano</h5>
+                                                <i class="fas fa-chevron-down rd-manual-chevron ml-2" aria-hidden="true"></i>
+                                            </div>
                                             <div class="rd-subtitle">Para despachos sin Word ni documentos del correo (nacionales u otros clientes). Los de exportación se registran arriba.</div>
                                         </button>
                                         <div id="rdManualCuerpo" class="card-body collapse<%= ManualAbierto ? " show" : "" %>">
@@ -994,7 +996,7 @@
                                 <asp:Panel ID="pnlResumenLote" runat="server" Visible="false">
                                     <div class="card mb-4" style="border-top: 3px solid #16a34a;">
                                         <div class="rd-summary-header">
-                                            <h5><i class="fas fa-clipboard-check mr-2"></i> Lote activo</h5>
+                                            <h5>Lote activo</h5>
                                         </div>
                                         <div class="card-body">
                                             <div class="row">
@@ -1075,7 +1077,7 @@
                                             <asp:HiddenField ID="hfEnvioUnicoViaje" runat="server" />
                                             <asp:Panel ID="pnlViajesProgreso" runat="server" CssClass="card mb-4" style="border-top: 2px solid #6d28d9;" Visible="false">
                                                 <div class="rd-viaje-header">
-                                                    <h6><i class="fas fa-route mr-1"></i> Viajes en Progreso — <span id="spanNombreConductor" runat="server"></span></h6>
+                                                    <h6>Viajes en Progreso — <span id="spanNombreConductor" runat="server"></span></h6>
                                                 </div>
                                                 <div class="card-body">
                                                     <div class="row">
@@ -1362,7 +1364,7 @@
                                 <asp:Panel ID="pnlListaConductores" runat="server" Visible="false">
                                     <div class="card mb-4">
                                         <div class="rd-list-header">
-                                            <h5><i class="fas fa-list mr-2"></i> Conductores del lote</h5>
+                                            <h5>Conductores del lote</h5>
                                         </div>
                                         <div class="card-body">
                                             <div class="table-responsive">
@@ -1464,7 +1466,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalHistorialViajesLabel">
-                        <i class="fas fa-history"></i> Historial de viajes - <%-- Dentro de su UpdatePanel: si no, el postback parcial no refresca el nombre --%><asp:UpdatePanel ID="UpdatePanelTituloModal" runat="server" UpdateMode="Conditional" RenderMode="Inline"><ContentTemplate><span id="spanConductorModal" runat="server"></span></ContentTemplate></asp:UpdatePanel>
+                        Historial de viajes - <%-- Dentro de su UpdatePanel: si no, el postback parcial no refresca el nombre --%><asp:UpdatePanel ID="UpdatePanelTituloModal" runat="server" UpdateMode="Conditional" RenderMode="Inline"><ContentTemplate><span id="spanConductorModal" runat="server"></span></ContentTemplate></asp:UpdatePanel>
                     </h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                 </div>

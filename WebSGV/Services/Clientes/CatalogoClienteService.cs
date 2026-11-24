@@ -44,8 +44,6 @@ namespace WebSGV.Services.Clientes
             public string Etiqueta;
             /// <summary>Nombre de la pestaña en <c>CatalogoCliente.aspx</c> ("Plantas de carga").</summary>
             public string TituloPestana;
-            /// <summary>Clase Font Awesome del icono de la pestaña.</summary>
-            public string IconoPestana;
             public string EtiquetaDetalle;
             /// <summary>Género de <see cref="Etiqueta"/> para los mensajes ("la ruta", "el producto").</summary>
             public bool Femenino;
@@ -69,7 +67,6 @@ namespace WebSGV.Services.Clientes
                     ColumnaFecha = "fechaRegistro",
                     Etiqueta = "producto",
                     TituloPestana = "Productos",
-                    IconoPestana = "fa-box",
                     Femenino = false,
                     EtiquetaDetalle = "Descripción",
                     LargoNombre = 50,
@@ -84,7 +81,6 @@ namespace WebSGV.Services.Clientes
                     ColumnaFecha = "fechaCreacion",
                     Etiqueta = "planta de carga",
                     TituloPestana = "Plantas de carga",
-                    IconoPestana = "fa-truck-loading",
                     Femenino = true,
                     EtiquetaDetalle = "Dirección",
                     LargoNombre = 100,
@@ -99,7 +95,6 @@ namespace WebSGV.Services.Clientes
                     ColumnaFecha = "fechaCreacion",
                     Etiqueta = "planta de descarga",
                     TituloPestana = "Plantas de descarga",
-                    IconoPestana = "fa-dolly",
                     Femenino = true,
                     EtiquetaDetalle = "Dirección",
                     LargoNombre = 100,
@@ -114,7 +109,6 @@ namespace WebSGV.Services.Clientes
                     ColumnaFecha = "fechaRegistro",
                     Etiqueta = "ruta",
                     TituloPestana = "Rutas",
-                    IconoPestana = "fa-route",
                     Femenino = true,
                     EtiquetaDetalle = "Descripción",
                     LargoNombre = 100,
@@ -137,7 +131,7 @@ namespace WebSGV.Services.Clientes
         public static string TituloPestana(TipoCatalogo tipo) => Meta(tipo).TituloPestana;
 
         /// <summary>
-        /// HTML de la pestaña: icono + nombre + contador, con el texto codificado. Lo asigna el code-behind a
+        /// HTML de la pestaña: nombre + contador, sin icono (DN-28), con el texto codificado. Lo asigna el code-behind a
         /// <c>LinkButton.Text</c> en cada refresco (B5-9): con controles hijos (el <c>Literal</c> del contador) dentro
         /// del LinkButton, su <c>LoadViewState</c> reasigna <c>Text</c> —vacío— y eso borra los hijos en el postback
         /// de cambio de pestaña, dejando los cuatro <c>nav-link</c> sin texto. Lógica pura.
@@ -145,8 +139,7 @@ namespace WebSGV.Services.Clientes
         public static string TextoPestana(TipoCatalogo tipo, int conteo)
         {
             MetaCatalogo meta = Meta(tipo);
-            return "<i class=\"fas " + System.Web.HttpUtility.HtmlAttributeEncode(meta.IconoPestana) + " mr-1\"></i>"
-                + System.Web.HttpUtility.HtmlEncode(meta.TituloPestana)
+            return System.Web.HttpUtility.HtmlEncode(meta.TituloPestana)
                 + " <span class=\"badge badge-light ml-1\">"
                 + conteo.ToString(System.Globalization.CultureInfo.InvariantCulture) + "</span>";
         }

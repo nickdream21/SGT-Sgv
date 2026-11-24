@@ -10,11 +10,6 @@
 .upload-container:hover {
     border-color: var(--sgv-primario-osc);
 }
-.upload-icon {
-    font-size: 28px;
-    color: var(--sgv-primario-osc);
-    margin-bottom: 10px;
-}
 .file-info {
     margin-top: 15px;
     font-style: italic;

@@ -42,7 +42,7 @@
             <div class="section-card mb-4">
                 <div class="section-header">
                     <h5 class="section-title">
-                        <i class="fas fa-filter mr-2"></i>Filtros de Búsqueda
+                        Filtros de Búsqueda
                     </h5>
                 </div>
                 <div class="section-body" data-enter="<%= btnBuscarLiquidaciones.ClientID %>">
@@ -87,10 +87,10 @@
                         <div class="col-md-12">
                             <div class="d-flex" style="gap:0.5rem;">
                                 <button type="button" class="btn btn-export btn-export-excel" data-accion="exportarLiquidaciones">
-                                    <i class="fas fa-file-excel mr-1"></i>Exportar Excel
+                                    Exportar Excel
                                 </button>
                                 <button type="button" class="btn btn-export btn-export-pdf" data-accion="generarPDFLiquidaciones">
-                                    <i class="fas fa-file-pdf mr-1"></i>Exportar PDF
+                                    Exportar PDF
                                 </button>
                             </div>
                         </div>
@@ -102,7 +102,7 @@
             <div class="section-card mb-4">
                 <div class="section-header section-header-success">
                     <h5 class="section-title mb-0">
-                        <i class="fas fa-calculator mr-2"></i>Resumen Total en Soles
+                        Resumen Total en Soles
                     </h5>
                 </div>
                 <div class="section-body">
@@ -153,7 +153,6 @@
                         </div>
                     </div>
                     <div class="alert alert-info-light mt-3 mb-0">
-                        <i class="fas fa-info-circle mr-2"></i>
                         <strong>Leyenda:</strong>
                         <span class="d-block d-sm-inline ml-sm-3 monto-descuento">En rojo: descuento neto.</span>
                         <span class="d-block d-sm-inline ml-sm-3 monto-reintegro">En azul: reintegro neto.</span>
@@ -167,7 +166,7 @@
                 <div class="section-header section-header-info">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="section-title mb-0">
-                            <i class="fas fa-table mr-2"></i>Liquidaciones Registradas
+                            Liquidaciones Registradas
                         </h5>
                         <span class="badge-count">
                             <asp:Label ID="lblTotalRegistrosTabla" runat="server" Text="0 registros"></asp:Label>
@@ -184,10 +183,10 @@
                             ShowFooter="true">
                             <Columns>
                                 <asp:BoundField DataField="DNI" HeaderText="DNI" />
-                                <asp:BoundField DataField="Conductor" HeaderText="CONDUCTOR" />
-                                <asp:BoundField DataField="FechaSalida" HeaderText="FECHA" DataFormatString="{0:dd/MM/yyyy}" />
-                                <asp:BoundField DataField="NumeroLiquidacion" HeaderText="N° DE LIQ" />
-                                <asp:TemplateField HeaderText="MONTO S/ (Reintegro-Descuento)">
+                                <asp:BoundField DataField="Conductor" HeaderText="Conductor" />
+                                <asp:BoundField DataField="FechaSalida" HeaderText="Fecha" DataFormatString="{0:dd/MM/yyyy}" />
+                                <asp:BoundField DataField="NumeroLiquidacion" HeaderText="N° de liq." />
+                                <asp:TemplateField HeaderText="Monto S/ (reintegro − descuento)">
                                     <ItemTemplate>
                                         <span class='<%#: ObtenerClaseMontoSoles(Eval("MontoSoles")) %>'>
                                             <%#: FormatearMontoSoles(Eval("MontoSoles")) %>
@@ -199,7 +198,7 @@
                                     <ItemStyle CssClass="text-right" />
                                     <FooterStyle CssClass="text-right footer-total" />
                                 </asp:TemplateField>
-                                <asp:TemplateField HeaderText="MONTO $ (Reintegro-Descuento)">
+                                <asp:TemplateField HeaderText="Monto $ (reintegro − descuento)">
                                     <ItemTemplate>
                                         <span class='<%#: ObtenerClaseMontoDolares(Eval("MontoDolares")) %>'>
                                             <%#: FormatearMontoDolares(Eval("MontoDolares")) %>
@@ -211,9 +210,9 @@
                                     <ItemStyle CssClass="text-right" />
                                     <FooterStyle CssClass="text-right footer-total" />
                                 </asp:TemplateField>
-                                <asp:TemplateField HeaderText="ACCIONES">
+                                <asp:TemplateField HeaderText="Acciones">
                                     <ItemTemplate>
-                                        <button type="button" class="btn btn-info-action" data-accion="verDetalleOrden" data-id='<%#: Eval("IdOrdenViaje") %>' title="Ver detalle">
+                                        <button type="button" class="btn btn-info-action" data-accion="verDetalleOrden" data-id='<%#: Eval("IdOrdenViaje") %>' title="Ver detalle" aria-label="Ver detalle">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                     </ItemTemplate>
@@ -234,7 +233,7 @@
             <div class="section-card mb-4">
                 <div class="section-header section-header-warning">
                     <h5 class="section-title">
-                        <i class="fas fa-search mr-2"></i>Búsqueda de Viajes Activos
+                        Búsqueda de Viajes Activos
                     </h5>
                 </div>
                 <div class="section-body" data-enter="<%= btnBuscarViajesActivos.ClientID %>">
@@ -271,10 +270,10 @@
                         <div class="col-md-12">
                             <div class="d-flex" style="gap:0.5rem;">
                                 <button type="button" class="btn btn-export btn-export-excel" data-accion="exportarViajesActivos" data-formato="excel">
-                                    <i class="fas fa-file-excel mr-1"></i>Exportar Excel
+                                    Exportar Excel
                                 </button>
                                 <button type="button" class="btn btn-export btn-export-pdf" data-accion="exportarViajesActivos" data-formato="pdf">
-                                    <i class="fas fa-file-pdf mr-1"></i>Exportar PDF
+                                    Exportar PDF
                                 </button>
                             </div>
                         </div>
@@ -295,7 +294,7 @@
                 <div class="section-header section-header-warning">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="section-title mb-0">
-                            <i class="fas fa-truck mr-2"></i>Conductores con Viajes Sin Liquidación
+                            Conductores con Viajes Sin Liquidación
                         </h5>
                         <span class="badge-count">
                             <asp:Label ID="lblCountViajesActivosTabla" runat="server" Text="0 viajes"></asp:Label>
@@ -311,21 +310,21 @@
                             OnRowDataBound="gvViajesActivos_RowDataBound">
                             <Columns>
                                 <asp:BoundField DataField="DNI" HeaderText="DNI" />
-                                <asp:BoundField DataField="Conductor" HeaderText="CONDUCTOR" />
-                                <asp:BoundField DataField="PlacaTracto" HeaderText="TRACTO" />
-                                <asp:BoundField DataField="PlacaCarreta" HeaderText="CARRETA" />
-                                <asp:BoundField DataField="Cliente" HeaderText="CLIENTE" />
-                                <asp:BoundField DataField="Destino" HeaderText="DESTINO" />
-                                <asp:BoundField DataField="CantidadDespachos" HeaderText="N° DESP.">
+                                <asp:BoundField DataField="Conductor" HeaderText="Conductor" />
+                                <asp:BoundField DataField="PlacaTracto" HeaderText="Tracto" />
+                                <asp:BoundField DataField="PlacaCarreta" HeaderText="Carreta" />
+                                <asp:BoundField DataField="Cliente" HeaderText="Cliente" />
+                                <asp:BoundField DataField="Destino" HeaderText="Destino" />
+                                <asp:BoundField DataField="CantidadDespachos" HeaderText="N° desp.">
                                     <ItemStyle CssClass="text-center" />
                                 </asp:BoundField>
-                                <asp:TemplateField HeaderText="FECHA PROGRAMACIÓN">
+                                <asp:TemplateField HeaderText="Fecha de programación">
                                     <ItemTemplate>
                                         <%#: Eval("FechaProgramacion") != DBNull.Value ? Convert.ToDateTime(Eval("FechaProgramacion")).ToString("dd/MM/yyyy") : "N/A" %>
                                     </ItemTemplate>
                                     <ItemStyle CssClass="text-center" />
                                 </asp:TemplateField>
-                                <asp:TemplateField HeaderText="DÍAS EN VIAJE">
+                                <asp:TemplateField HeaderText="Días en viaje">
                                     <ItemTemplate>
                                         <span class='<%#: Convert.ToInt32(Eval("DiasEnViaje")) > 7 ? "badge-dias-alerta" : "badge-dias-normal" %>'>
                                             <%#: Eval("DiasEnViaje") %> días
@@ -333,7 +332,7 @@
                                     </ItemTemplate>
                                     <ItemStyle CssClass="text-center" />
                                 </asp:TemplateField>
-                                <asp:TemplateField HeaderText="ESTADO">
+                                <asp:TemplateField HeaderText="Estado">
                                     <ItemTemplate>
                                         <span class='<%#: "badge-estado badge-estado-" + Eval("Estado").ToString().ToLower() %>'>
                                             <%#: Eval("Estado") %>
@@ -356,7 +355,7 @@
             <div class="section-card mb-4">
                 <div class="section-header section-header-info">
                     <h5 class="section-title">
-                        <i class="fas fa-sliders-h mr-2"></i>Configuración del Reporte Personalizado
+                        Configuración del Reporte Personalizado
                     </h5>
                 </div>
                 <div class="section-body">
@@ -413,9 +412,9 @@
                         </div>
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label for="<%= txtPersCategoria.ClientID %>" class="sgv-etiqueta">
+                                <label for="<%= txtPersCategoria.ClientID %>" class="sgv-etiqueta"
+                                    title="Solo incluye viajes con la categoría indicada (ej: propina, cochera, lavado)">
                                     Categoría de Gasto Adicional
-                                    <i class="fas fa-info-circle ml-1 text-muted" title="Solo incluye viajes con la categoría indicada (ej: propina, cochera, lavado)"></i>
                                 </label>
                                  <asp:TextBox ID="txtPersCategoria" runat="server" CssClass="form-control" placeholder="Ej. propina, cochera..."></asp:TextBox>
                                 <small id="errPersCategoria" class="text-danger d-none"></small>
@@ -464,14 +463,14 @@
                 <div class="section-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="section-title mb-0">
-                            <i class="fas fa-columns mr-2"></i>Columnas del Reporte
+                            Columnas del Reporte
                         </h5>
                         <div>
                             <button type="button" class="btn btn-sm btn-outline-secondary" data-accion="marcarTodasColumnas" data-marcar="true">
-                                <i class="fas fa-check-square mr-1"></i>Marcar todas
+                                Marcar todas
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-secondary ml-1" data-accion="marcarTodasColumnas" data-marcar="false">
-                                <i class="fas fa-square mr-1"></i>Desmarcar todas
+                                Desmarcar todas
                             </button>
                         </div>
                     </div>
@@ -479,19 +478,19 @@
                 <div class="section-body">
                     <div class="row">
                         <div class="col-md-4">
-                            <h6 class="columnas-grupo"><i class="fas fa-user mr-1"></i>Datos del conductor</h6>
+                            <h6 class="columnas-grupo">Datos del conductor</h6>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="dni" checked /> DNI</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="conductor" checked /> Conductor</label>
                         </div>
                         <div class="col-md-4">
-                            <h6 class="columnas-grupo"><i class="fas fa-calendar-alt mr-1"></i>Fechas y horas</h6>
+                            <h6 class="columnas-grupo">Fechas y horas</h6>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="fechaSalida" checked /> Fecha Salida</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="fechaLlegada" checked /> Fecha Llegada</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="horaSalida" /> Hora Salida</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="horaLlegada" /> Hora Llegada</label>
                         </div>
                         <div class="col-md-4">
-                            <h6 class="columnas-grupo"><i class="fas fa-truck mr-1"></i>Vehículo y viaje</h6>
+                            <h6 class="columnas-grupo">Vehículo y viaje</h6>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="tracto" checked /> Placa Tracto</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="carreta" /> Placa Carreta</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="cliente" checked /> Cliente</label>
@@ -504,17 +503,17 @@
                     <hr />
                     <div class="row">
                         <div class="col-md-4">
-                            <h6 class="columnas-grupo"><i class="fas fa-plus-circle mr-1 text-success"></i>Ingresos</h6>
+                            <h6 class="columnas-grupo">Ingresos</h6>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="ingresosSoles" checked /> Total Ingresos S/</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="ingresosDolares" /> Total Ingresos $</label>
                         </div>
                         <div class="col-md-4">
-                            <h6 class="columnas-grupo"><i class="fas fa-minus-circle mr-1 text-danger"></i>Gastos</h6>
+                            <h6 class="columnas-grupo">Gastos</h6>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="gastosSoles" checked /> Total Gastos S/</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="gastosDolares" /> Total Gastos $</label>
                         </div>
                         <div class="col-md-4">
-                            <h6 class="columnas-grupo"><i class="fas fa-balance-scale mr-1 text-info"></i>Descuentos, Reintegros y Balance</h6>
+                            <h6 class="columnas-grupo">Descuentos, Reintegros y Balance</h6>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="descuentoSoles" checked /> Descuento S/</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="descuentoDolares" /> Descuento $</label>
                             <label class="col-check"><input type="checkbox" class="col-pers" value="reintegroSoles" checked /> Reintegro S/</label>
@@ -526,7 +525,7 @@
                     <hr />
                     <div class="row">
                         <div class="col-md-6">
-                            <h6 class="columnas-grupo"><i class="fas fa-plus-square mr-1 text-success"></i>Detalle de ingresos por categoría</h6>
+                            <h6 class="columnas-grupo">Detalle de ingresos por categoría</h6>
                             <div class="row">
                                 <div class="col-sm-6">
                                     <label class="col-check"><input type="checkbox" class="col-pers" value="iDespachoS" /> Despacho S/</label>
@@ -546,7 +545,7 @@
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <h6 class="columnas-grupo"><i class="fas fa-minus-square mr-1 text-danger"></i>Detalle de gastos por categoría</h6>
+                            <h6 class="columnas-grupo">Detalle de gastos por categoría</h6>
                             <div class="row">
                                 <div class="col-sm-6">
                                     <label class="col-check"><input type="checkbox" class="col-pers" value="gPeajesS" /> Peajes S/</label>
@@ -596,10 +595,10 @@
                         </div>
                         <div class="d-flex" style="gap:0.5rem;">
                             <button type="button" class="btn btn-export btn-export-excel" data-accion="generarPersonalizado" data-formato="excel">
-                                <i class="fas fa-file-excel mr-1"></i>Generar Excel
+                                Generar Excel
                             </button>
                             <button type="button" class="btn btn-export btn-export-pdf" data-accion="generarPersonalizado" data-formato="pdf">
-                                <i class="fas fa-file-pdf mr-1"></i>Generar PDF
+                                Generar PDF
                             </button>
                         </div>
                     </div>
@@ -616,7 +615,7 @@
             <div class="modal-content">
                 <div class="modal-header modal-header-info">
                     <h5 class="modal-title" id="modalDetalleOrdenTitulo">
-                        <i class="fas fa-file-invoice mr-2" aria-hidden="true"></i>Detalle de Orden de Viaje
+                        Detalle de Orden de Viaje
                     </h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                         <span aria-hidden="true">&times;</span>

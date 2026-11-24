@@ -302,7 +302,7 @@ namespace WebSGV.Views
                     sb.Append($"<span class=\"badge rc-faltante\">{HttpUtility.HtmlEncode(f)}</span> ");
                 sb.Append("</div>");
                 sb.Append($"<a class=\"btn btn-outline-primary btn-sm mt-3\" href=\"{ResolveUrl("~/Views/ListaDespachos.aspx?documentos=pendientes")}\">" +
-                          "<i class=\"fas fa-external-link-alt mr-1\"></i>Completar en la lista de despachos</a>");
+                          "Completar en la lista de despachos</a>");
             }
             return sb.ToString();
         }

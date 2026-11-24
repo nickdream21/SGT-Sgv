@@ -22,7 +22,6 @@
         <%-- ===== 1. Subir ===== --%>
         <asp:Panel ID="pnlSubir" runat="server" CssClass="bd-card bd-subir" DefaultButton="btnLeer">
             <label class="bd-zona" id="bdZona" for="<%= fuArchivos.ClientID %>">
-                <i class="fas fa-cloud-upload-alt bd-zona-icono"></i>
                 <span class="bd-zona-titulo">Arrastre aqu&#xED; los archivos o haga clic para elegirlos</span>
                 <span class="bd-zona-ayuda">
                     ZIP del correo del cliente (factura, packing list y gu&#xED;as) &#xB7; PDF sueltos de un pedido &#xB7;
@@ -41,7 +40,7 @@
         <asp:Panel ID="pnlVistaPrevia" runat="server" Visible="false" CssClass="bd-card bd-previa">
             <div class="bd-previa-cabecera">
                 <div>
-                    <h5 class="mb-1"><i class="fas fa-clipboard-check mr-2"></i>Revise antes de registrar</h5>
+                    <h5 class="mb-1">Revise antes de registrar</h5>
                     <asp:Literal ID="litResumenPrevia" runat="server" EnableViewState="false" />
                 </div>
                 <div class="bd-previa-acciones">
@@ -60,7 +59,7 @@
         <%-- ===== 3b. Tablero de pendientes ===== --%>
         <asp:Panel ID="pnlTablero" runat="server" CssClass="bd-card">
             <div class="bd-tablero-cabecera">
-                <h5 class="mb-0"><i class="fas fa-tasks mr-2"></i>Documentos por cliente y pedido</h5>
+                <h5 class="mb-0">Documentos por cliente y pedido</h5>
                 <asp:Literal ID="litContadorTablero" runat="server" EnableViewState="false" />
             </div>
             <asp:Panel ID="pnlFiltros" runat="server" CssClass="bd-filtros" DefaultButton="btnBuscar">

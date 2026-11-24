@@ -32,7 +32,6 @@
     transition: background-color .15s, border-color .15s;
 }
 .bd-zona:hover, .bd-zona.bd-zona-activa { background: var(--sgv-primario-claro); border-color: var(--sgv-azul-600); }
-.bd-zona-icono { font-size: 2.2rem; color: var(--sgv-azul-600); }
 .bd-zona-titulo { font-size: 1.05rem; font-weight: 600; color: var(--sgv-azul-900); }
 .bd-zona-ayuda { font-size: .85rem; color: var(--sgv-texto-suave); max-width: 640px; }
 .bd-zona-archivos { display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem; margin-top: .35rem; }
@@ -68,7 +67,7 @@
 .bd-factura-det { color: var(--sgv-texto-suave); font-size: .85rem; }
 
 .bd-tabla { margin-bottom: 0; font-size: .85rem; }
-.bd-tabla th { background: var(--sgv-superficie); color: var(--sgv-texto-suave); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .02em; border-top: 0; white-space: nowrap; }
+.bd-tabla th { background: var(--sgv-superficie); color: var(--sgv-texto-suave); font-weight: 600; font-size: .78rem; letter-spacing: .02em; border-top: 0; white-space: nowrap; }
 .bd-tabla td, .bd-tabla th { vertical-align: middle; padding: .5rem .75rem; }
 .bd-tabla .bd-num { text-align: right; white-space: nowrap; }
 .bd-cod { white-space: nowrap; font-variant-numeric: tabular-nums; }

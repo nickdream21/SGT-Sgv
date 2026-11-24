@@ -23,7 +23,6 @@
             </div>
             <div class="sgv-panel-cuerpo" style="display: flex; flex-direction: column; gap: 1rem;">
                 <div id="zonaArchivo" class="sx-zona-archivo" role="button" tabindex="0">
-                    <i class="fas fa-file-excel" aria-hidden="true" style="font-size: 1.75rem; color: #15803d;"></i>
                     <h4>Arrastra el archivo aquí o haz clic para elegirlo</h4>
                     <span class="sx-nota">Solo .xlsx, hasta 10 MB (un .xls antiguo: ábralo en Excel y guárdelo como .xlsx)</span>
                     <asp:FileUpload ID="fileExcel" runat="server" CssClass="d-none" aria-label="Archivo Excel de seguimiento" accept=".xlsx" />

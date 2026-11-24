@@ -16,23 +16,24 @@ namespace WebSGV.Tests
     public class CatalogoClientePestanasTests
     {
         [Fact]
-        public void TextoPestana_arma_icono_nombre_y_contador()
+        public void TextoPestana_arma_nombre_y_contador_sin_icono()
         {
             Assert.Equal(
-                "<i class=\"fas fa-truck-loading mr-1\"></i>Plantas de carga <span class=\"badge badge-light ml-1\">7</span>",
+                "Plantas de carga <span class=\"badge badge-light ml-1\">7</span>",
                 CatalogoClienteService.TextoPestana(TipoCatalogo.PlantaCarga, 7));
         }
 
         [Theory]
-        [InlineData(TipoCatalogo.Producto, "Productos", "fa-box")]
-        [InlineData(TipoCatalogo.PlantaCarga, "Plantas de carga", "fa-truck-loading")]
-        [InlineData(TipoCatalogo.PlantaDescarga, "Plantas de descarga", "fa-dolly")]
-        [InlineData(TipoCatalogo.Ruta, "Rutas", "fa-route")]
-        public void Cada_pestana_tiene_su_nombre_e_icono(TipoCatalogo tipo, string titulo, string icono)
+        [InlineData(TipoCatalogo.Producto, "Productos")]
+        [InlineData(TipoCatalogo.PlantaCarga, "Plantas de carga")]
+        [InlineData(TipoCatalogo.PlantaDescarga, "Plantas de descarga")]
+        [InlineData(TipoCatalogo.Ruta, "Rutas")]
+        public void Cada_pestana_tiene_su_nombre_sin_icono(TipoCatalogo tipo, string titulo)
         {
             string html = CatalogoClienteService.TextoPestana(tipo, 0);
             Assert.Equal(titulo, CatalogoClienteService.TituloPestana(tipo));
-            Assert.StartsWith("<i class=\"fas " + icono + " mr-1\"></i>" + titulo + " ", html);
+            Assert.StartsWith(titulo + " ", html);
+            Assert.DoesNotContain("<i", html);   // DN-28: las pestañas van sin icono
             Assert.EndsWith(">0</span>", html);
         }
 

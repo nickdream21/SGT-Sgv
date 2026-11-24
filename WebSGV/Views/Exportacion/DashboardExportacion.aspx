@@ -120,7 +120,7 @@
         <!-- ===== Detalle por tramo (tabla) ===== -->
         <section class="de-panel">
             <button type="button" class="de-plegable" id="btnDetalle" aria-expanded="false" aria-controls="detalleTramos">
-                <span><i class="fas fa-table"></i> Detalle por tramo <span class="de-panel-meta">mediana, rango t&iacute;pico, P90 y comparaci&oacute;n</span></span>
+                <span>Detalle por tramo <span class="de-panel-meta">mediana, rango t&iacute;pico, P90 y comparaci&oacute;n</span></span>
                 <i class="fas fa-chevron-down chev"></i>
             </button>
             <div id="detalleTramos" hidden>

@@ -37,7 +37,7 @@
 
             <!-- Resumen de la liquidación -->
             <section class="fl-card">
-                <h2><i class="fas fa-file-invoice mr-2"></i>Resumen de la liquidación</h2>
+                <h2>Resumen de la liquidación</h2>
                 <div class="fl-grid">
                     <div>
                         <div class="lbl">N° Orden</div>
@@ -69,7 +69,6 @@
 
             <!-- Declaración jurada -->
             <div class="fl-declaracion">
-                <i class="fas fa-gavel mr-1"></i>
                 <strong>Declaración jurada:</strong>
                 <%: WebSGV.Services.Liquidaciones.TextosFirma.Declaracion %>
             </div>
@@ -82,11 +81,10 @@
 
             <!-- Canvas de firma -->
             <div class="fl-canvas-label">
-                <i class="fas fa-signature mr-1"></i>Firma con el dedo o el mouse dentro del recuadro:
+                Firma con el dedo o el mouse dentro del recuadro:
             </div>
             <div id="canvasBox" class="fl-canvas-box">
                 <div class="fl-canvas-hint">
-                    <i class="fas fa-pen-nib"></i>
                     <span>Dibuja aquí tu firma</span>
                 </div>
                 <div class="fl-canvas-baseline"></div>
@@ -96,22 +94,22 @@
 
             <div class="fl-canvas-actions">
                 <button type="button" class="fl-btn" id="btnLimpiar">
-                    <i class="fas fa-eraser"></i>Limpiar
+                    Limpiar
                 </button>
                 <button type="button" class="fl-btn" id="btnDeshacer" disabled>
-                    <i class="fas fa-undo"></i>Deshacer
+                    Deshacer
                 </button>
             </div>
 
             <!-- Confirmación de identidad -->
             <div class="fl-clave">
-                <label for="txtContrasena"><i class="fas fa-lock mr-1"></i>Tu contraseña, para confirmar que eres tú quien firma</label>
+                <label for="txtContrasena">Tu contraseña, para confirmar que eres tú quien firma</label>
                 <input type="password" id="txtContrasena" class="form-control" autocomplete="current-password" maxlength="100" />
             </div>
 
             <!-- Botón enviar -->
             <button type="button" class="fl-submit" id="btnFirmar" disabled>
-                <i class="fas fa-check-circle"></i>Firmar y enviar
+                Firmar y enviar
             </button>
 
             <p class="fl-legal">
@@ -122,7 +120,6 @@
 
         <!-- Pantalla de éxito -->
         <div id="pantallaExito" class="fl-success-screen">
-            <div class="icon"><i class="fas fa-check"></i></div>
             <h3>Firma registrada correctamente</h3>
             <p>Tu declaración fue firmada y enviada a la administración. Cuando la revise, recibirás la
                liquidación final para dar tu conformidad.</p>
@@ -140,12 +137,12 @@
             </div>
             <div style="margin-top: 18px;">
                 <a href="#" id="okVerPdf" class="fl-btn" style="text-decoration:none; display:inline-flex; width:100%; max-width:220px;">
-                    <i class="fas fa-file-pdf"></i>Ver PDF firmado
+                    Ver PDF firmado
                 </a>
             </div>
             <div style="margin-top: 12px;">
                 <a href="<%= ResolveUrl("~/Views/DashboardConductor.aspx") %>" class="fl-btn" style="text-decoration:none; display:inline-flex; width:100%; max-width:220px; background: var(--azul); color:#fff; border-color: var(--azul);">
-                    <i class="fas fa-home"></i>Volver al inicio
+                    Volver al inicio
                 </a>
             </div>
         </div>

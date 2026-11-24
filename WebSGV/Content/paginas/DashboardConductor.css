@@ -82,7 +82,6 @@ h1.dc-nombre { font-size: 1.05rem; margin: 0; }
 }
 .dc-tab:hover { color: var(--dc-texto); text-decoration: none; }
 .dc-tab.active { background: var(--dc-card); color: var(--dc-primario); box-shadow: none; }
-.dc-tab i { font-size: 0.85rem; }
 .dc-tab-num {
     min-width: 18px;
     height: 18px;
@@ -381,7 +380,6 @@ body.dc-con-barra { padding-bottom: 84px; }
 
 /* ---------- Vacío ---------- */
 .dc-vacio { text-align: center; padding: 40px 16px; color: var(--dc-suave); }
-.dc-vacio i { font-size: 1.8rem; color: var(--sgv-texto-suave); margin-bottom: 10px; }
 .dc-vacio-tit { font-weight: 600; color: var(--dc-texto); margin-bottom: 4px; }
 .dc-vacio p { margin-bottom: 0; font-size: 0.9rem; }
 

@@ -31,7 +31,7 @@
 
         <!-- Liquidaciones revisadas que esperan la conformidad del conductor -->
         <asp:Panel ID="pnlPorConformar" runat="server" Visible="false" CssClass="dc-conformar">
-            <div class="dc-conformar-tit"><i class="fas fa-file-signature mr-1"></i>Tienes liquidaciones para revisar y firmar</div>
+            <div class="dc-conformar-tit">Tienes liquidaciones para revisar y firmar</div>
             <p class="dc-conformar-txt">La administración registró el dinero que te entregaron y los descuentos o reintegros. Revisa la liquidación final y firma tu conformidad, o avisa si no estás de acuerdo.</p>
             <asp:Repeater ID="rptPorConformar" runat="server" EnableViewState="false">
                 <ItemTemplate>
@@ -45,17 +45,17 @@
         <!-- Pestañas -->
         <nav class="nav dc-tabs" id="conductorTabs" role="tablist">
             <a class="dc-tab active" id="viajesActivos-tab" data-toggle="tab" href="#viajesActivos" role="tab" aria-controls="viajesActivos" aria-selected="true">
-                <i class="fas fa-truck"></i><span>Mi viaje</span>
+                <span>Mi viaje</span>
                 <asp:Panel ID="pnlBadgeActivos" runat="server" CssClass="dc-tab-num" Visible="false">
                     <asp:Label ID="lblCantidadActivos" runat="server"></asp:Label>
                 </asp:Panel>
             </a>
             <a class="dc-tab" id="liquidarViaje-tab" data-toggle="tab" href="#liquidarViaje" role="tab" aria-controls="liquidarViaje" aria-selected="false">
-                <i class="fas fa-receipt"></i><span>Liquidar</span>
+                <span>Liquidar</span>
                 <asp:Panel ID="pnlBadgeLiquidar" runat="server" CssClass="dc-tab-punto" Visible="false"></asp:Panel>
             </a>
             <a class="dc-tab" id="historial-tab" data-toggle="tab" href="#historial" role="tab" aria-controls="historial" aria-selected="false">
-                <i class="fas fa-history"></i><span>Historial</span>
+                <span>Historial</span>
             </a>
         </nav>
 
@@ -95,7 +95,6 @@
 
                 <asp:Panel ID="pnlSinViajes" runat="server" Visible="true">
                     <div class="dc-vacio">
-                        <i class="fas fa-truck"></i>
                         <p class="dc-vacio-tit">No tienes viajes activos</p>
                         <p>Cuando la oficina te programe un despacho aparecerá aquí.</p>
                     </div>
@@ -131,7 +130,6 @@
 
                 <asp:Panel ID="pnlSinViajeParaLiquidar" runat="server" Visible="true">
                     <div class="dc-vacio">
-                        <i class="fas fa-receipt"></i>
                         <p class="dc-vacio-tit">No hay viajes para liquidar</p>
                         <p>Necesitas un viaje activo para registrar tu liquidación.</p>
                     </div>
@@ -151,7 +149,7 @@
                             <div class="dc-hito-tit">Salida de base</div>
                             <asp:Panel ID="pnlSalidaGps" runat="server" Visible="false" CssClass="dc-hito-gps">
                                 <asp:Label ID="lblSalidaGps" runat="server" CssClass="dc-hito-valor"></asp:Label>
-                                <span class="dc-gps"><i class="fas fa-satellite-dish"></i>GPS</span>
+                                <span class="dc-gps">GPS</span>
                             </asp:Panel>
                             <asp:Panel ID="pnlSalidaManual" runat="server" CssClass="dc-hito-manual">
                                 <p class="dc-ayuda">El GPS no registró tu salida. Indica cuándo saliste de base.</p>
@@ -166,7 +164,7 @@
                             <div class="dc-hito-tit">Llegada a base</div>
                             <asp:Panel ID="pnlLlegadaGps" runat="server" Visible="false" CssClass="dc-hito-gps">
                                 <asp:Label ID="lblLlegadaGps" runat="server" CssClass="dc-hito-valor"></asp:Label>
-                                <span class="dc-gps"><i class="fas fa-satellite-dish"></i>GPS</span>
+                                <span class="dc-gps">GPS</span>
                             </asp:Panel>
                             <asp:Panel ID="pnlLlegadaManual" runat="server" CssClass="dc-hito-manual">
                                 <p class="dc-ayuda">El GPS aún no registra tu llegada. Indica cuándo llegaste a base.</p>
@@ -295,7 +293,7 @@
                         <div id="gastosAdicionalesBody"></div>
 
                         <button type="button" class="dc-btn dc-btn-linea dc-btn-bloque" data-accion="agregarGasto">
-                            <i class="fas fa-plus"></i>Agregar otro gasto
+                            Agregar otro gasto
                         </button>
                     </section>
 
@@ -405,7 +403,6 @@
 
                 <asp:Panel ID="pnlHistorialVacio" runat="server" Visible="false">
                     <div class="dc-vacio">
-                        <i class="fas fa-history"></i>
                         <p class="dc-vacio-tit">Sin liquidaciones</p>
                         <p>Aquí verás las liquidaciones que envíes.</p>
                     </div>

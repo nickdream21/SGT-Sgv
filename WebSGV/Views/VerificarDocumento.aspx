@@ -37,7 +37,7 @@
 
         <asp:Panel ID="pnlResultado" runat="server" Visible="false">
             <asp:Panel ID="pnlEstado" runat="server" CssClass="vd-estado vd-estado-ok">
-                <i class="fas fa-shield-alt mr-1"></i><asp:Label ID="lblEstado" runat="server" />
+                <asp:Label ID="lblEstado" runat="server" />
             </asp:Panel>
 
             <section class="vd-card">

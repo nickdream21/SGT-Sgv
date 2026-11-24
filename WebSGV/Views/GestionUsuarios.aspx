@@ -118,7 +118,6 @@
             <div class="modal-content" data-enter="<%= btnGuardarUsuario.ClientID %>">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalUsuarioLabel">
-                        <i class="fas fa-user-edit mr-2"></i>
                         <asp:Label ID="lblTituloModal" runat="server" Text="Nuevo usuario" />
                     </h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
@@ -194,7 +193,7 @@
             <div class="modal-content" data-enter="<%= btnResetPass.ClientID %>">
                 <div class="modal-header sgv-modal-alerta">
                     <h5 class="modal-title" id="modalResetPassTitulo">
-                        <i class="fas fa-key mr-2" aria-hidden="true"></i>Restablecer Contraseña
+                        Restablecer Contraseña
                     </h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                         <span aria-hidden="true">&times;</span>
@@ -240,7 +239,7 @@
             <div class="modal-content" data-enter="<%= btnConfirmarReaut.ClientID %>">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalReautenticarLabel">
-                        <i class="fas fa-user-shield mr-2"></i>Confirma que eres tú
+                        Confirma que eres tú
                     </h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                         <span aria-hidden="true">&times;</span>

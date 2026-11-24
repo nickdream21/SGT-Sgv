@@ -1141,7 +1141,6 @@ namespace WebSGV.Views
                 string mensajeCompleto = $@"
                     La liquidación {System.Web.HttpUtility.HtmlEncode(numeroOrdenViaje)} quedó enviada a la administración para su revisión.
                     <div class='alert alert-info mt-3'>
-                        <i class='fas fa-info-circle mr-2'></i>
                         <strong>Estado:</strong> Pendiente de aprobación
                     </div>";
 

@@ -6,7 +6,7 @@
          (DashboardConductor.css) y los mismos datos y cálculos que el PDF y la conformidad. --%>
     <div class="dc dv">
 
-        <a class="dv-volver" href="DashboardConductor.aspx"><i class="fas fa-arrow-left"></i>Volver a mi viaje</a>
+        <a class="dv-volver" href="DashboardConductor.aspx">Volver a mi viaje</a>
 
         <asp:Panel ID="pnlError" runat="server" Visible="false" CssClass="dc-rechazo" role="alert">
             <%-- Título de la página cuando falla la carga (el <h1> de pnlContenido no se dibuja). Es role=heading y no
@@ -26,7 +26,7 @@
             </header>
 
             <asp:Panel ID="pnlPorConformar" runat="server" Visible="false" CssClass="dc-conformar">
-                <div class="dc-conformar-tit"><i class="fas fa-file-signature mr-1"></i>Falta tu conformidad</div>
+                <div class="dc-conformar-tit">Falta tu conformidad</div>
                 <p class="dc-conformar-txt">La administración ya revisó esta liquidación. Revísala y firma tu conformidad, o avisa si no estás de acuerdo.</p>
                 <asp:HyperLink ID="lnkConformar" runat="server" CssClass="dc-btn dc-btn-primario dc-btn-bloque mt-2">Revisar y firmar</asp:HyperLink>
             </asp:Panel>
@@ -121,7 +121,7 @@
 
             <div class="dv-acciones">
                 <asp:HyperLink ID="lnkPdf" runat="server" Visible="false" Target="_blank" rel="noopener" CssClass="dc-btn dc-btn-linea dc-btn-bloque">
-                    <i class="fas fa-file-pdf"></i>Ver el documento firmado (PDF)
+                    Ver el documento firmado (PDF)
                 </asp:HyperLink>
                 <a class="dc-btn dc-btn-primario dc-btn-bloque" href="DashboardConductor.aspx">Volver a mi viaje</a>
             </div>

@@ -260,7 +260,6 @@
 /* Menú "Más" de la barra de acciones (copiar textos, nuevo viaje, importar, dashboard) */
 .sx-mas { display: inline-block; }
 .sx-mas .dropdown-item { font-size: 0.875rem; cursor: pointer; }
-.sx-mas .dropdown-item i { width: 1.1rem; color: var(--sgv-texto-suave); }
 
 .sx-llegada { color: var(--sgv-primario); font-weight: 500; }
 .sx-llegada:empty { display: none; }

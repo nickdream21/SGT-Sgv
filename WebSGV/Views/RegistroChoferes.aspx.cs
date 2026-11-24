@@ -377,7 +377,7 @@ namespace WebSGV.Views
             if (c.Cambios.Count == 0) return sb.Append("<p class=\"mb-0\">No hay cambios que aplicar.</p>").ToString();
 
             sb.Append("<div class=\"table-responsive\"><table class=\"table table-sm table-hover mb-0\"><thead><tr>" +
-                      "<th class=\"sgv-col-acciones\"><span class=\"sr-only\">Aplicar</span></th><th>CAMBIO</th><th>DOCUMENTO</th><th>CONDUCTOR</th><th>DETALLE</th></tr></thead><tbody>");
+                      "<th class=\"sgv-col-acciones\"><span class=\"sr-only\">Aplicar</span></th><th>Cambio</th><th>Documento</th><th>Conductor</th><th>Detalle</th></tr></thead><tbody>");
             foreach (var x in c.Cambios.OrderBy(x => x.Tipo))
             {
                 bool marcado = marcados != null ? marcados.Contains(x.Clave) : x.MarcadoPorDefecto;

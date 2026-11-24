@@ -22,7 +22,7 @@
 
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-light">
-                <h5 class="mb-0"><i class="fas fa-filter mr-2"></i>Filtros</h5>
+                <h5 class="mb-0">Filtros</h5>
             </div>
             <div class="card-body" data-enter="<%= btnBuscar.ClientID %>">
                 <div class="row align-items-end">
@@ -69,11 +69,11 @@
             <ul class="nav nav-tabs rc-pestanas" role="tablist">
                 <li class="nav-item">
                     <a class="nav-link" id="rcTabResumen" data-toggle="tab" href="#rcResumen" role="tab" aria-controls="rcResumen" aria-selected="false" data-pestana="resumen">
-                        <i class="fas fa-chart-bar mr-1"></i>Resumen</a>
+                        Resumen</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" id="rcTabPedidos" data-toggle="tab" href="#rcPedidos" role="tab" aria-controls="rcPedidos" aria-selected="false" data-pestana="pedidos">
-                        <i class="fas fa-layer-group mr-1"></i>Por pedido</a>
+                        Por pedido</a>
                 </li>
             </ul>
 
@@ -97,17 +97,17 @@
                     </div>
 
                     <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-light"><h6 class="mb-0"><i class="fas fa-file-alt mr-2"></i>Documentaci&#xF3;n</h6></div>
+                        <div class="card-header bg-light"><h6 class="mb-0">Documentaci&#xF3;n</h6></div>
                         <div class="card-body"><asp:Literal ID="litDocumentacion" runat="server" EnableViewState="false" /></div>
                     </div>
 
                     <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-light"><h6 class="mb-0"><i class="fas fa-building mr-2"></i>Por cliente</h6></div>
+                        <div class="card-header bg-light"><h6 class="mb-0">Por cliente</h6></div>
                         <div class="card-body p-0"><div class="table-responsive"><asp:Literal ID="litClientes" runat="server" EnableViewState="false" /></div></div>
                     </div>
 
                     <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-light"><h6 class="mb-0"><i class="fas fa-box mr-2"></i>Por producto</h6></div>
+                        <div class="card-header bg-light"><h6 class="mb-0">Por producto</h6></div>
                         <div class="card-body p-0"><div class="table-responsive rc-tabla-alta"><asp:Literal ID="litProductos" runat="server" EnableViewState="false" /></div></div>
                     </div>
                 </div>
@@ -116,7 +116,7 @@
                 <div class="tab-pane fade" id="rcPedidos" role="tabpanel" aria-labelledby="rcTabPedidos">
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap rc-acciones">
-                            <h5 class="mb-0"><i class="fas fa-layer-group mr-2"></i>Por pedido <small class="text-muted">(clic en un pedido para ver sus unidades)</small></h5>
+                            <h5 class="mb-0">Por pedido <small class="text-muted">(clic en un pedido para ver sus unidades)</small></h5>
                             <div>
                                 <button type="button" class="btn btn-outline-secondary btn-sm" id="rcExpandir">Expandir todo</button>
                                 <button type="button" class="btn btn-outline-secondary btn-sm" id="rcContraer">Contraer todo</button>

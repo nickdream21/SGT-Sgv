@@ -53,8 +53,9 @@ namespace WebSGV.Tests
             @"sgv-encabezado[^""]*"">\s*<div class=""sgv-encabezado-titulo"">(?:(?!</div>).)*?<h1 class=""h2""", RegexOptions.Singleline);
         internal static readonly Regex DirectivaPage = new Regex(@"<%@\s*Page\b[^%]*%>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
         internal static readonly Regex TitleAttr = new Regex(@"\bTitle\s*=\s*""(?<t>[^""]*)""", RegexOptions.IgnoreCase);
+        // El href lleva <%= ResolveUrl(...) %>: su '>' no cierra la etiqueta (sin el icono, E5-24b, el texto sigue al href).
         internal static readonly Regex EnlaceMenu = new Regex(
-            @"<a\b[^>]*\bclass\s*=\s*""(?:dropdown-item|nav-link)\b[^""]*""[^>]*>(?<t>.*?)</a>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            @"<a\b[^>]*\bclass\s*=\s*""(?:dropdown-item|nav-link)\b[^""]*""(?:<%.*?%>|[^>])*>(?<t>.*?)</a>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
         internal static readonly Regex UrlMenu = new Regex(@"ResolveUrl\(""~/(?<u>Views/[\w/]+\.aspx)""\)");
         internal static readonly Regex H1 = new Regex(@"<h1\b[^>]*>(?<t>.*?)</h1>", RegexOptions.Singleline | RegexOptions.IgnoreCase);
         internal static readonly Regex IconoEnH1 = new Regex(
@@ -340,6 +341,9 @@ namespace WebSGV.Tests
             Assert.Equal("Dashboard de exportación", TextoDeEnlace("\n  <i class=\"fas fa-chart-line\"></i>Dashboard de exportaci&#xF3;n\n"));
             Assert.Equal("Sin icono", TextoDeEnlace(" Sin <b>icono</b> "));
             Assert.Equal(2, EnlaceMenu.Matches("<a class=\"dropdown-item\" href='x'>A</a><a class=\"navbar-brand\">B</a><a class=\"nav-link dropdown-toggle\" href=\"#\">C</a>").Count);
+            // Sin icono el texto sigue al href con <%= %>, cuyo '>' no corta la etiqueta.
+            Assert.Equal("Lista de despachos", TextoDeEnlace(EnlaceMenu.Match(
+                "<a class=\"dropdown-item\" href='<%= ResolveUrl(\"~/Views/ListaDespachos.aspx\") %>'>\n  Lista de despachos\n</a>").Groups["t"].Value));
         }
 
         [Fact]

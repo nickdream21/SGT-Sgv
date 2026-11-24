@@ -11,7 +11,6 @@
              cliente y pedido y es donde se suben (antes, ListaDespachos con el filtro "Documentos"). --%>
         <asp:HyperLink ID="lnkDocumentosPendientes" runat="server" Visible="false"
             NavigateUrl="~/Views/BandejaDocumentos.aspx" CssClass="inicio-aviso">
-            <i class="fas fa-file-invoice"></i>
             <asp:Label ID="lblDocumentosPendientes" runat="server"></asp:Label>
         </asp:HyperLink>
     </div>

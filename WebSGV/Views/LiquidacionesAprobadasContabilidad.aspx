@@ -178,7 +178,7 @@
             <div class="modal-content shadow-sm">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalPdfLiquidacionTitle">
-                        <i class="fas fa-file-pdf text-danger mr-2"></i>PDF firmado de liquidación
+                        PDF firmado de liquidación
                     </h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                         <span aria-hidden="true">&times;</span>
@@ -199,10 +199,10 @@
                     <div class="text-muted small" id="lblEstadoPdfLiquidacion">Vista previa en línea del documento oficial.</div>
                     <div>
                         <button type="button" class="btn btn-outline-primary mr-2" id="btnAbrirPdfNuevaPestana">
-                            <i class="fas fa-external-link-alt mr-1"></i>Abrir en nueva pestaña
+                            Abrir en nueva pestaña
                         </button>
                         <button type="button" class="btn btn-primary mr-2" id="btnDescargarPdfLiquidacion">
-                            <i class="fas fa-download mr-1"></i>Descargar PDF
+                            Descargar PDF
                         </button>
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
                     </div>

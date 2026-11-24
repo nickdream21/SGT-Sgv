@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-081 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-082 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -93,6 +93,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-079** Avisos de LiquidacionesPendientes con una orden real (E5-24a) — en un `sgvEnsayo_*` con una orden PENDIENTE de prueba, a 1366 y 390 px: ajuste −5 y entregado −3 dan aviso amarillo sin emoji; aprobar, retirar o revertir con éxito dan aviso verde tras recargar (`trasRecargar`); un error del servidor da aviso rojo. En `sgvActualizada` no había órdenes pendientes ni aprobadas (2026-11-24). · B
 - [ ] **P-080** Chip "Completo" del manifiesto con un lote internacional real (E5-24a) — en RegistroDespacho, un lote con manifiestos completos muestra "Completo" (verde) sin ✓ y uno parcial "Parcial". · C
 - [ ] **P-081** Página 404 propia en el sitio publicado — en Release (`customErrors RemoteOnly` + `httpErrors Custom`) una URL inexistente muestra Error404.aspx con "Ir al inicio" (en local, Debug muestra la página de ASP.NET). · C
+- [ ] **P-082** E5-24 en un celular real con un conductor — Mi viaje con sus 3 pestañas sin icono, firma de la declaración y conformidad (pantalla de éxito sin el círculo ✓, solo el título verde) y DetalleOrdenViaje con una orden real; en la oficina, LiquidacionesPendientes con "Conformidad: fecha" y los botones de solo icono con su `aria-label` leídos por el lector del celular; y los encabezados en estilo oración de ReportesOrdenesViaje con órdenes reales (en `sgvActualizada` había 0 `OrdenViaje` y las grillas vacías no muestran `<th>`). · B
 - [ ] **P-074** Anchos que cambiaron con los puntos de corte de E5-13 — las reglas de celular pasaron de `max-width: 768px/576px/992px` a `767.98/575.98/991.98px` (cambia solo exactamente a 768, 576 y 992 px, donde ahora coinciden con la rejilla de Bootstrap) y las de 480, 520 y 560 px a 575.98 px (cambia entre 481 y 575 px): con el ancho exacto, mirar Login, Inicio, Auditoría, ReportesOrdenesViaje, ListaDespachos, RegistroDespacho y LiquidacionesPendientes a 768 px (tablet vertical), y MiSeguridad, SegundoFactor, FirmarLiquidacion, DashboardExportacion y SeguimientoExportacion a 540 px: sin desbordes ni cortes. Además, en RegistroDespacho los 8 desplegables con `custom-select-sm` (Sección del Word, Cliente y Planta de programar e importar, Completa el despacho, Planta de descarga) quedan de 31 px como los campos de su fila. · C
 
 ## Reglas

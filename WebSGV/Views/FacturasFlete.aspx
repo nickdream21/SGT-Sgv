@@ -24,7 +24,7 @@
             <div class="col-lg-4 col-xl-3 mb-3">
                 <div class="card shadow-sm h-100">
                     <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="fas fa-upload mr-2"></i>Subir facturas</h5>
+                        <h5 class="mb-0">Subir facturas</h5>
                     </div>
                     <div class="card-body">
                         <p class="small text-muted">
@@ -43,7 +43,7 @@
             <div class="col-lg-8 col-xl-9 mb-3">
                 <div class="card shadow-sm h-100">
                     <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="fas fa-filter mr-2"></i>Per&#xED;odo de carga</h5>
+                        <h5 class="mb-0">Per&#xED;odo de carga</h5>
                     </div>
                     <div class="card-body" data-enter="<%= btnBuscar.ClientID %>">
                         <div class="row align-items-end">
@@ -78,7 +78,7 @@
         </div>
 
         <asp:Panel ID="pnlResultadoCarga" runat="server" Visible="false" CssClass="card shadow-sm mb-4">
-            <div class="card-header bg-light"><h6 class="mb-0"><i class="fas fa-clipboard-check mr-2"></i>Facturas le&#xED;das</h6></div>
+            <div class="card-header bg-light"><h6 class="mb-0">Facturas le&#xED;das</h6></div>
             <div class="card-body p-0"><div class="ff-tabla-wrap ff-tabla-wrap-corta"><asp:Literal ID="litResultadoCarga" runat="server" EnableViewState="false" /></div></div>
         </asp:Panel>
 
@@ -92,23 +92,23 @@
             <ul class="nav nav-tabs ff-pestanas" role="tablist">
                 <li class="nav-item">
                     <a class="nav-link" id="ffTabConciliacion" data-toggle="tab" href="#ffConciliacion" role="tab" aria-controls="ffConciliacion" aria-selected="false" data-pestana="conciliacion">
-                        <i class="fas fa-balance-scale mr-1"></i>Conciliaci&#xF3;n <span class="ff-cuenta"></span></a>
+                        Conciliaci&#xF3;n <span class="ff-cuenta"></span></a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" id="ffTabPorFacturar" data-toggle="tab" href="#ffPorFacturar" role="tab" aria-controls="ffPorFacturar" aria-selected="false" data-pestana="porfacturar">
-                        <i class="fas fa-hourglass-half mr-1"></i>Por facturar <span class="ff-cuenta"></span></a>
+                        Por facturar <span class="ff-cuenta"></span></a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" id="ffTabFacturas" data-toggle="tab" href="#ffFacturas" role="tab" aria-controls="ffFacturas" aria-selected="false" data-pestana="facturas">
-                        <i class="fas fa-file-invoice mr-1"></i>Facturas y vencimientos <span class="ff-cuenta"></span></a>
+                        Facturas y vencimientos <span class="ff-cuenta"></span></a>
                 </li>
             </ul>
 
             <div class="ff-barra">
                 <div class="btn-group btn-group-sm ff-filtro" role="group" aria-label="Filtrar por estado">
                     <button type="button" class="btn btn-outline-secondary active" data-filtro="todos">Todos</button>
-                    <button type="button" class="btn btn-outline-secondary" data-filtro="revisar"><i class="fas fa-exclamation-circle mr-1"></i>Para revisar</button>
-                    <button type="button" class="btn btn-outline-secondary" data-filtro="ok"><i class="fas fa-check mr-1"></i>Conformes</button>
+                    <button type="button" class="btn btn-outline-secondary" data-filtro="revisar">Para revisar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-filtro="ok">Conformes</button>
                 </div>
                 <div class="ff-buscar">
                     <i class="fas fa-search"></i>

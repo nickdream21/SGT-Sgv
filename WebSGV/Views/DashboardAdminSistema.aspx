@@ -23,7 +23,7 @@
         </div>
         <div class="sgv-encabezado-acciones">
             <a href="GestionUsuarios.aspx" class="btn btn-primary">
-                <i class="fas fa-users-cog mr-1"></i>Gestión de usuarios
+                Gestión de usuarios
             </a>
         </div>
     </div>
@@ -74,11 +74,11 @@
                 </div>
                 <div class="list-group list-group-flush">
                     <a href="GestionUsuarios.aspx" class="list-group-item list-group-item-action quick-link">
-                        <i class="fas fa-users-cog text-primary mr-2"></i>Gestión de usuarios
+                        Gestión de usuarios
                         <small class="text-muted d-block">Crear, editar y desactivar cuentas</small>
                     </a>
                     <a href="Auditoria.aspx" class="list-group-item list-group-item-action quick-link">
-                        <i class="fas fa-shield-alt text-secondary mr-2"></i>Auditoría del sistema
+                        Auditoría del sistema
                         <small class="text-muted d-block">Historial completo de actividades</small>
                     </a>
                 </div>
@@ -132,7 +132,7 @@
                 </div>
                 <div class="card-footer text-right p-2">
                     <a href="Auditoria.aspx" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-external-link-alt mr-1"></i>Ver todo
+                        Ver todo
                     </a>
                 </div>
             </div>

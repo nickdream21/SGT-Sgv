@@ -2,6 +2,8 @@
 .rd-step-header { background: var(--sgv-fondo); border-bottom: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: .85rem 1.25rem; }
 .rd-step-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: var(--sgv-texto); display: flex; align-items: center; gap: .45rem; }
 .rd-step-header .rd-subtitle { font-size: .77rem; color: var(--sgv-texto-suave); margin-top: 3px; margin-left: 2rem; }
+/* Sin número delante del título (E5-24b): el subtítulo va alineado con el título. */
+.rd-import-card .rd-step-header .rd-subtitle { margin-left: 0; }
 .rd-manual-toggle { display: block; width: 100%; text-align: left; border: 0; cursor: pointer; }
 .rd-manual-toggle.collapsed { border-bottom: 0; border-radius: var(--sgv-radio); }
 .rd-manual-toggle:hover { background: var(--sgv-fondo-pagina); }
@@ -325,7 +327,6 @@ select.is-invalid + .select2-container .select2-selection--single {
     border: 2px dashed var(--sgv-info-borde); border-radius: var(--sgv-radio); background: var(--sgv-fondo); transition: background .15s, border-color .15s;
 }
 .rd-zona:hover, .rd-zona.rd-zona-activa { background: var(--sgv-primario-claro); border-color: var(--sgv-azul-600); }
-.rd-zona-icono { font-size: 1.9rem; color: var(--sgv-azul-600); }
 .rd-zona-titulo { font-size: 1rem; font-weight: 600; color: var(--sgv-azul-900); }
 .rd-zona-ayuda { font-size: .8125rem; color: var(--sgv-texto-suave); max-width: 640px; }
 .rd-zona-archivos { display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem; margin-top: .3rem; }

@@ -59,7 +59,7 @@ namespace WebSGV.Tests
             ["Content/paginas/ListaDespachos.css"] = 114,
             ["Content/paginas/RegistroDespacho.css"] = 10,
             ["Content/paginas/ReportesOrdenesViaje.css"] = 6,
-            ["Content/paginas/SiteMaster.css"] = 29,
+            ["Content/paginas/SiteMaster.css"] = 15,   // E5-24b: fuera .nav-link i y .dropdown-item i
         };
 
         /// <summary>Los puntos de corte de Bootstrap 4 que usa el sitio (sm, md y lg).</summary>

@@ -338,8 +338,8 @@ del celular, desplegable); nunca en títulos, etiquetas de campo, menú, pestañ
 de totales: los contadores van en las pestañas. Se conservan los colores suaves de estado y los montos en verde o rojo.
 - Desde: 2026-11-22. El usuario eligió "A y 1" entre tres direcciones (Expediente, Sobrio de sistema, Tablero operativo)
   y tres reglas de iconos, mostradas sobre la pantalla de Gestión de liquidaciones y la del conductor en el celular.
-- En el código: todavía no; lo aplican E5-12 (paleta y tipografía en `WebSGV/Content/sgv-base.css`) y E5-24 (iconos y
-  redacción, con `WebSGV.Tests/InterfazFormalTests.cs`) de `docs/HOJA_DE_RUTA_CALIDAD.md`.
+- En el código: paleta, tipografía y foco en `WebSGV/Content/sgv-base.css` (E5-12, commit 5589b6f); emojis y redacción (E5-24a, 221bcfb) e iconos solo en acciones de tabla, avisos de error/advertencia y funcionales (E5-24b), fijados por
+  `WebSGV.Tests/InterfazFormalTests.cs` (topes de iconos que solo bajan; las tarjetas KPI de E5-17/E5-18 en lista cerrada).
 - Estado: vigente.
 
 ## Reglas

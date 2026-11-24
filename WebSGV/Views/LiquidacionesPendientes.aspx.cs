@@ -417,7 +417,7 @@ namespace WebSGV.Views
             string texto = observacion == null || observacion == DBNull.Value ? "" : observacion.ToString().Trim();
             if (texto.Length == 0) return "";
             return "<span class=\"sgv-estado sgv-estado-alerta d-inline-block mt-1\" title=\"" + System.Web.HttpUtility.HtmlAttributeEncode(texto) +
-                   "\"><i class=\"fas fa-comment-dots mr-1\"></i>Observada por el conductor</span>";
+                   "\">Observada por el conductor</span>";
         }
 
         // Positivo en verde, negativo en rojo, cero sin color.

@@ -10,9 +10,9 @@
             </div>
             <div class="sgv-acciones sgv-encabezado-acciones">
                 <asp:LinkButton ID="btnExcel" runat="server" CssClass="btn btn-outline-success btn-sm" OnClick="btnExcel_Click" data-descarga="true">
-                    <i class="fas fa-file-excel mr-1"></i>Excel</asp:LinkButton>
+                    Excel</asp:LinkButton>
                 <asp:LinkButton ID="btnImagen" runat="server" CssClass="btn btn-outline-secondary btn-sm" OnClick="btnImagen_Click" data-descarga="true">
-                    <i class="fas fa-image mr-1"></i>Imagen</asp:LinkButton>
+                    Imagen</asp:LinkButton>
             </div>
         </div>
 
@@ -36,7 +36,7 @@
                 </div>
                 <div>
                     <asp:LinkButton ID="btnBuscar" runat="server" CssClass="btn btn-primary btn-sm" OnClick="btnBuscar_Click">
-                        <i class="fas fa-search mr-1"></i>Ver</asp:LinkButton>
+                        Ver</asp:LinkButton>
                 </div>
             </div>
         </div>
@@ -61,7 +61,7 @@
                             <span class='sgv-estado <%#: Eval("CssSentido") %>'><%#: Eval("TextoTotal") %></span>
                             <button type="button" class="btn btn-sm btn-outline-primary sc-btn-saldar" <%#: (bool)Eval("HayPendientes") ? "" : "disabled" %>
                                 data-conductor='<%#: Eval("IdConductor") %>' data-nombre='<%#: Eval("Conductor") %>'>
-                                <i class="fas fa-check-double mr-1"></i>Registrar pago o descuento
+                                Registrar pago o descuento
                             </button>
                         </div>
                     </div>

@@ -104,7 +104,7 @@
             <div class="sgv-panel-cab">
                 <h5>Liquidaciones pendientes</h5>
                 <button type="button" class="btn btn-sm btn-light border" data-accion="recargarPagina">
-                    <i class="fas fa-sync-alt mr-1"></i>Actualizar
+                    Actualizar
                 </button>
             </div>
             <div>
@@ -173,19 +173,19 @@
                                     <div class="sgv-acciones">
                                         <button type="button" class="sgv-btn-icono info"
                                             data-accion="verDetalleLiquidacion" data-id='<%#: Eval("IdOrdenViaje") %>'
-                                            title="Ver detalle">
+                                            title="Ver detalle" aria-label="Ver detalle">
                                             <i class="fas fa-eye"></i>
                                         </button>
 
                                         <button type="button" class="sgv-btn-icono ok"
                                             data-accion="abrirModalAprobar" data-id='<%#: Eval("IdOrdenViaje") %>'
-                                            title="Aprobar liquidación">
+                                            title="Aprobar liquidación" aria-label="Aprobar liquidación">
                                             <i class="fas fa-check"></i>
                                         </button>
 
                                         <button type="button" class="sgv-btn-icono peligro"
                                             data-accion="abrirModalRechazar" data-id='<%#: Eval("IdOrdenViaje") %>' data-numero='<%#: Eval("NumeroOrdenViaje") %>'
-                                            title="Rechazar liquidación">
+                                            title="Rechazar liquidación" aria-label="Rechazar liquidación">
                                             <i class="fas fa-times"></i>
                                         </button>
                                     </div>
@@ -210,7 +210,7 @@
                 <div class="sgv-panel-cab">
                     <h5>Esperando la conformidad del conductor <span class="sgv-panel-nota ml-2"><span id="lblResultadosPorConformar">0</span> resultados</span></h5>
                     <button type="button" class="btn btn-sm btn-light border" data-accion="cargarLiquidacionesPorConformar">
-                        <i class="fas fa-sync-alt mr-1"></i>Actualizar
+                        Actualizar
                     </button>
                 </div>
                 <div class="sgv-panel-cuerpo py-2">
@@ -293,7 +293,7 @@
                 <div class="sgv-panel-cab">
                     <h5>Liquidaciones aprobadas <span class="sgv-panel-nota ml-2"><span id="lblTotalAprobadas">0</span> resultados</span></h5>
                     <button type="button" class="btn btn-sm btn-light border" data-accion="cargarLiquidacionesAprobadas">
-                        <i class="fas fa-sync-alt mr-1"></i>Actualizar
+                        Actualizar
                     </button>
                 </div>
                 <div>
@@ -394,7 +394,7 @@
                                 <span class="vi-label">Hora de llegada</span>
                                 <span class="vi-value vi-value-periodo" id="detalleHoraLlegada"></span>
                                 <button type="button" id="btnConsultarHoraGps" class="btn btn-sm btn-outline-secondary ml-2" title="Consultar hora real de llegada por GPS (Onway)">
-                                    <i class="fas fa-satellite-dish"></i> Verificar GPS
+                                    Verificar GPS
                                 </button>
                             </div>
                         </div>
@@ -422,7 +422,7 @@
                                 </span>
                             </div>
                             <button type="button" class="btn-corregir-salida" data-accion="toggleCorregirSalida">
-                                <i class="fas fa-pen mr-1"></i>Corregir
+                                Corregir
                             </button>
                         </div>
                         <div id="panelCorregirSalida" class="salida-edit-panel" style="display:none;">
@@ -445,7 +445,7 @@
                             <div class="salida-edit-actions">
                                 <button type="button" class="btn btn-sm btn-light" data-accion="toggleCorregirSalida">Cancelar</button>
                                 <button type="button" class="btn btn-sm btn-primary" id="btnGuardarCorregirSalida" data-accion="corregirSalidaDesdeModal">
-                                    <i class="fas fa-save mr-1"></i>Guardar corrección
+                                    Guardar corrección
                                 </button>
                             </div>
                         </div>
@@ -606,7 +606,7 @@
                                 <small class="text-danger d-none" id="avisoMovimientos"></small>
                             </div>
                             <div class="mt-2 sgv-suave" style="font-size:0.8rem;">
-                                <a href='<%= ResolveUrl("~/Views/MovimientosViaje.aspx") %>' target="_blank" rel="noopener"><i class="fas fa-hand-holding-usd mr-1"></i>Registrar una entrega o un pago directo</a>
+                                <a href='<%= ResolveUrl("~/Views/MovimientosViaje.aspx") %>' target="_blank" rel="noopener">Registrar una entrega o un pago directo</a>
                             </div>
                         </div>
                         <div class="alert-warning-light mb-3" style="font-size:0.85rem;padding:0.75rem;border:1px solid #fde68a;border-radius:0.375rem;background:#fffbeb;">
@@ -702,11 +702,11 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cerrar</button>
                     <button type="button" class="btn btn-primary" data-accion="imprimirDetalle">
-                        <i class="fas fa-print mr-1"></i>Imprimir
+                        Imprimir
                     </button>
                     <button type="button" id="btnAprobarDesdeModal" class="btn btn-success"
                         data-accion="aprobarDesdeModal" style="display:none;">
-                        <i class="fas fa-paper-plane mr-1"></i>Aprobar y enviar al conductor
+                        Aprobar y enviar al conductor
                     </button>
                 </div>
             </div>
@@ -791,7 +791,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-danger" id="btnConfirmarReversion" data-accion="confirmarReversion">
-                        <i class="fas fa-undo mr-1"></i>Confirmar reversión
+                        Confirmar reversión
                     </button>
                 </div>
             </div>
@@ -827,7 +827,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-primary" id="btnConfirmarRetiro" data-accion="confirmarRetiroEnvio">
-                        <i class="fas fa-undo mr-1"></i>Retirar envío
+                        Retirar envío
                     </button>
                 </div>
             </div>

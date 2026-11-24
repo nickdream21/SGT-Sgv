@@ -49,9 +49,12 @@
         var box = document.getElementById('alertBox');
         box.className = 'fl-alert show ' + tipo;
         box.innerHTML = '';
-        var i = document.createElement('i');
-        i.className = 'fas fa-' + (tipo === 'error' ? 'exclamation-circle' : 'check-circle') + ' mr-1';
-        box.appendChild(i);
+        if (tipo === 'error') {   // DN-28: icono solo en los avisos de error
+            var i = document.createElement('i');
+            i.className = 'fas fa-exclamation-circle mr-1';
+            i.setAttribute('aria-hidden', 'true');
+            box.appendChild(i);
+        }
         box.appendChild(document.createTextNode(msg));
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -89,7 +92,7 @@
     // =================== Enviar firma ===================
     function restaurarBoton() {
         btnFirmar.classList.remove('loading');
-        btnFirmar.innerHTML = '<i class="fas fa-check-circle"></i>Firmar y enviar';
+        btnFirmar.innerHTML = 'Firmar y enviar';
         actualizarEstadoBotones();
     }
 

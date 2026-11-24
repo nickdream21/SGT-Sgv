@@ -107,7 +107,7 @@
                                             <div class="row align-items-center">
                                                 <div class="col-md-6">
                                                     <h5 class="section-title">
-                                                            <i class="fas fa-route mr-2"></i> Viajes en Progreso
+                                                            Viajes en Progreso
                                                             <asp:Label ID="lblContadorViajes" runat="server" CssClass="badge badge-pill bg-secondary text-white ml-2"></asp:Label>
                                                         </h5>
                                                 </div>
@@ -229,7 +229,7 @@
                                             <div class="row align-items-center">
                                                 <div class="col-md-6">
                                                     <h5 class="section-title">
-                                                            <i class="fas fa-layer-group mr-2"></i> Lotes de Despacho
+                                                            Lotes de Despacho
                                                             <asp:Label ID="lblContadorLotes" runat="server" CssClass="badge badge-pill bg-secondary text-white ml-2"></asp:Label>
                                                         </h5>
                                                 </div>
@@ -457,7 +457,7 @@
                                             <div class="row align-items-center">
                                                 <div class="col-md-8">
                                                     <h5 class="section-title">
-                                                        <i class="fas fa-clipboard-list"></i> Detalles del Viaje: 
+                                                        Detalles del Viaje:
                                                         <asp:Label ID="lblNumeroViajeDetalle" runat="server" CssClass="detail-identifier"></asp:Label>
                                                     </h5>
                                                     <div class="detail-info">
@@ -519,7 +519,7 @@
                                             <!-- Grid de Despachos del Viaje -->
                                             <div class="data-section">
                                                 <h6 class="data-section-title">
-                                                    <i class="fas fa-truck"></i> Despachos Asociados
+                                                    Despachos Asociados
                                                 </h6>
                                                 
                                                 <div class="data-grid-container">
@@ -577,7 +577,7 @@
                                             <div class="row align-items-center">
                                                 <div class="col-md-8">
                                                     <h5 class="section-title">
-                                                        <i class="fas fa-edit"></i> Editar Datos Base del Lote
+                                                        Editar Datos Base del Lote
                                                     </h5>
                                                     <div class="detail-info">
                                                         Lote: <asp:Label ID="lblIdentificadorLote" runat="server" CssClass="detail-value"></asp:Label> | 
@@ -795,7 +795,7 @@
                                                     <div class="col-12">
                                                         <div class="form-section">
                                                             <h6 class="form-section-title">
-                                                                <i class="fas fa-users"></i> Conductores por Despacho
+                                                                Conductores por Despacho
                                                             </h6>
                                                             <p class="form-text mb-2">Puede cambiar el conductor de cada despacho individualmente. los cambios se aplican al guardar.</p>
                                                             <div class="conductores-edit-container">
@@ -877,7 +877,7 @@
                                             <div class="row align-items-center">
                                                 <div class="col-md-8">
                                                     <h5 class="section-title">
-                                                        <i class="fas fa-eye"></i> Detalles del Lote
+                                                        Detalles del Lote
                                                     </h5>
                                                     <div class="detail-info">
                                                         Cliente: <asp:Label ID="lblClienteDetalleLote" runat="server" CssClass="detail-value"></asp:Label> | 
@@ -955,7 +955,7 @@
                                             <!-- Grid de Despachos del Lote -->
                                             <div class="data-section">
                                                 <h6 class="data-section-title">
-                                                    <i class="fas fa-truck"></i> Despachos del Lote
+                                                    Despachos del Lote
                                                 </h6>
                                                 
                                                 <div class="data-grid-container">
@@ -1013,7 +1013,7 @@
                                     <div class="section-card detalle-section ld-docs-page">
                                         <div class="ld-docs-top">
                                             <div>
-                                                <h5 class="section-title mb-1"><i class="fas fa-keyboard"></i> Registro manual de documentos</h5>
+                                                <h5 class="section-title mb-1">Registro manual de documentos</h5>
                                                 <div class="ld-docs-chips">
                                                     <span class="ld-chip"><i class="fas fa-building"></i> <asp:Label ID="lblClienteManifiestos" runat="server"></asp:Label></span>
                                                     <span class="ld-chip"><i class="fas fa-hashtag"></i> Pedido <asp:Label ID="lblPedidoManifiestos" runat="server"></asp:Label></span>
@@ -1092,7 +1092,6 @@
                                                     </asp:Panel>
                                                     <asp:Panel ID="pnlSubirPdfFactura" runat="server" CssClass="ld-doc-subir" Visible="false">
                                                         <label class="ld-doc-elegir">
-                                                            <i class="fas fa-cloud-upload-alt"></i>
                                                             <span class="ld-doc-elegir-texto">Elegir PDF o foto (máx. 10 MB)</span>
                                                             <asp:FileUpload ID="fuPdfFactura" runat="server" CssClass="ld-doc-input" accept=".pdf,.jpg,.jpeg,.png" data-max-mb="10" data-max-envio-mb="24" />
                                                         </label>
@@ -1133,7 +1132,6 @@
                                                     </asp:Panel>
                                                     <asp:Panel ID="pnlSubirPdfCpic" runat="server" CssClass="ld-doc-subir" Visible="false">
                                                         <label class="ld-doc-elegir">
-                                                            <i class="fas fa-cloud-upload-alt"></i>
                                                             <span class="ld-doc-elegir-texto">Elegir PDF o foto (máx. 10 MB)</span>
                                                             <asp:FileUpload ID="fuPdfCpic" runat="server" CssClass="ld-doc-input" accept=".pdf,.jpg,.jpeg,.png" data-max-mb="10" data-max-envio-mb="24" />
                                                         </label>
@@ -1155,12 +1153,12 @@
                                                     <%-- El panel plegable tiene id fijo (ClientIDMode Static) para el data-toggle de Bootstrap 4. --%>
                                                     <asp:HyperLink ID="lnkPlegarDocsPorDespacho" runat="server" NavigateUrl="#pnlCuerpoDocsPorDespacho"
                                                         data-toggle="collapse" aria-controls="pnlCuerpoDocsPorDespacho" role="button">
-                                                        <i class="fas fa-layer-group"></i> Esta carga lleva más de una factura
+                                                        Esta carga lleva más de una factura
                                                     </asp:HyperLink>
                                                 </asp:Panel>
                                                 <asp:Panel ID="pnlCuerpoDocsPorDespacho" runat="server" ClientIDMode="Static" CssClass="collapse">
                                                     <div class="ld-bloque-head">
-                                                        <h6><i class="fas fa-layer-group"></i> Factura y CPIC por despacho</h6>
+                                                        <h6>Factura y CPIC por despacho</h6>
                                                         <span class="ld-bloque-ayuda">Marque los despachos que van con otra factura o CPIC, escriba sus números y pulse
                                                             <strong>Asignar a los marcados</strong>. Los demás quedan como están.</span>
                                                     </div>
@@ -1258,11 +1256,10 @@
                                                                     </div>
                                                                     <div class="ld-docs-lista-acciones">
                                                                         <asp:PlaceHolder runat="server" Visible='<%# (bool)Eval("ConPdf") %>'>
-                                                                            <a href="<%#: Eval("UrlPdf") %>" target="_blank" rel="noopener" class="ld-doc-ver"><i class="fas fa-file-pdf"></i> Ver PDF<%#: Eval("AvisoPdf") %></a>
+                                                                            <a href="<%#: Eval("UrlPdf") %>" target="_blank" rel="noopener" class="ld-doc-ver">Ver PDF<%#: Eval("AvisoPdf") %></a>
                                                                         </asp:PlaceHolder>
                                                                         <asp:Panel runat="server" CssClass="ld-doc-subir" Visible='<%# (bool)Eval("PuedeSubir") %>'>
                                                                             <label class="ld-doc-elegir">
-                                                                                <i class="fas fa-cloud-upload-alt"></i>
                                                                                 <span class="ld-doc-elegir-texto">Elegir PDF o foto (máx. 10 MB)</span>
                                                                                 <asp:FileUpload ID="fuPdfDocumentoLote" runat="server" CssClass="ld-doc-input" accept=".pdf,.jpg,.jpeg,.png" data-max-mb="10" data-max-envio-mb="24" />
                                                                             </label>
@@ -1280,7 +1277,7 @@
                                             <%-- 2. Guías por despacho --%>
                                             <asp:Panel ID="pnlGuiasLote" runat="server" CssClass="ld-bloque">
                                                 <div class="ld-bloque-head">
-                                                    <h6><i class="fas fa-truck-loading"></i> Guías por despacho</h6>
+                                                    <h6>Guías por despacho</h6>
                                                     <span class="ld-bloque-ayuda">Escriba la guía de cada unidad y pulse <strong>Guardar guías</strong>.</span>
                                                 </div>
                                                 <div class="data-grid-container" data-enter="<%= btnGuardarGuias.ClientID %>">
@@ -1323,7 +1320,7 @@
 
                                             <asp:Panel ID="pnlSeccionManifiestoConductor" runat="server" CssClass="ld-bloque">
                                                 <div class="ld-bloque-head">
-                                                    <h6><i class="fas fa-passport"></i> Manifiestos por conductor</h6>
+                                                    <h6>Manifiestos por conductor</h6>
                                                     <span class="ld-bloque-ayuda">Adjunte o reemplace el manifiesto de cruce y de retorno a medida que avanza el viaje.</span>
                                                 </div>
                                                 <div class="data-grid-container">
@@ -1341,7 +1338,7 @@
                                                                 <ItemTemplate>
                                                                     <asp:LinkButton runat="server" CommandName="VerManifiesto" CommandArgument='<%# Eval("CruceIdDocumento") %>'
                                                                         Visible='<%# Eval("CruceIdDocumento") != null %>' CausesValidation="false" CssClass="ld-doc-ver">
-                                                                        <i class="fas fa-file-pdf"></i> <%#: Eval("CruceNombreOriginal") %>
+                                                                        <%#: Eval("CruceNombreOriginal") %>
                                                                     </asp:LinkButton>
                                                                     <span class="ld-sin-adjuntar" style='<%#: Eval("CruceIdDocumento") != null ? "display:none" : "" %>'><i class="fas fa-circle"></i> Sin adjuntar</span>
                                                                     <asp:FileUpload runat="server" ID="fileCruceFila" CssClass="form-control form-control-sm mt-1" accept=".pdf,.jpg,.jpeg,.png" ToolTip="PDF, JPG o PNG. Máx. 10 MB." data-max-mb="10" data-max-envio-mb="24" />
@@ -1352,7 +1349,7 @@
                                                                 <ItemTemplate>
                                                                     <asp:LinkButton runat="server" CommandName="VerManifiesto" CommandArgument='<%# Eval("RetornoIdDocumento") %>'
                                                                         Visible='<%# Eval("RetornoIdDocumento") != null %>' CausesValidation="false" CssClass="ld-doc-ver">
-                                                                        <i class="fas fa-file-pdf"></i> <%#: Eval("RetornoNombreOriginal") %>
+                                                                        <%#: Eval("RetornoNombreOriginal") %>
                                                                     </asp:LinkButton>
                                                                     <span class="ld-sin-adjuntar" style='<%#: Eval("RetornoIdDocumento") != null ? "display:none" : "" %>'><i class="fas fa-circle"></i> Sin adjuntar</span>
                                                                     <asp:FileUpload runat="server" ID="fileRetornoFila" CssClass="form-control form-control-sm mt-1" accept=".pdf,.jpg,.jpeg,.png" ToolTip="PDF, JPG o PNG. Máx. 10 MB." data-max-mb="10" data-max-envio-mb="24" />

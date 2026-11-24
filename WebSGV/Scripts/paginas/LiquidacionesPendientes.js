@@ -9,7 +9,7 @@ let _ingresosFijosSoles = 0, _ingresosFijosDolares = 0, _gastosSoles = 0, _gasto
 function verDetalleLiquidacion(idOrdenViaje) {
     console.log('Ver detalle:', idOrdenViaje);
 
-    $('#btnAprobarDesdeModal').hide().prop('disabled', false).html('<i class="fas fa-check mr-1"></i>Aprobar liquidación');
+    $('#btnAprobarDesdeModal').hide().prop('disabled', false).html('Aprobar liquidación');
     $('#detalleLoading').show();
     $('#detalleError').hide();
     $('#approvalBanner').hide();
@@ -85,7 +85,7 @@ function buildSubTableGenerica(items) {
 function makeRow(icon, iconClass, label, soles, dolares, desc, subTable) {
     var hasDetail = (desc && desc.trim()) || (subTable && subTable.trim());
     var expandBtn = hasDetail
-        ? ' <button type="button" class="btn btn-expand ml-1" data-accion="toggleDetail" title="Ver detalle">' +
+        ? ' <button type="button" class="btn btn-expand ml-1" data-accion="toggleDetail" title="Ver detalle" aria-label="Ver detalle">' +
           '<i class="fas fa-chevron-down"></i></button>'
         : '';
 
@@ -140,7 +140,7 @@ function consultarHoraLlegadaGps() {
         dataType: "json",
         success: function (response) {
             var result = response.d;
-            $btn.prop('disabled', false).html('<i class="fas fa-satellite-dish"></i> Verificar GPS');
+            $btn.prop('disabled', false).html('Verificar GPS');
             if (result.success) {
                 var textoActual = $('#detalleHoraLlegada').text();
                 $('#detalleHoraLlegada').text(textoActual + ' · ' + result.horaLlegadaGps + ' h (verificada por GPS)');
@@ -150,7 +150,7 @@ function consultarHoraLlegadaGps() {
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
-            $btn.prop('disabled', false).html('<i class="fas fa-satellite-dish"></i> Verificar GPS');
+            $btn.prop('disabled', false).html('Verificar GPS');
             SGV.avisar('Error al consultar el GPS. Por favor intente de nuevo.');
         }
     });
@@ -522,13 +522,13 @@ function enviarCorreccionSalida(fecha, hora, motivo) {
                 location.reload();
             } else {
                 SGV.avisar(result.message, { tipo: 'danger' });
-                $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar corrección');
+                $btn.prop('disabled', false).html('Guardar corrección');
             }
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
             SGV.avisar('Error al corregir la salida. Por favor intente de nuevo.');
-            $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar corrección');
+            $btn.prop('disabled', false).html('Guardar corrección');
         }
     });
 }
@@ -732,13 +732,13 @@ function enviarAprobacion(ajustes, nota, ingresos) {
                 location.reload();
             } else {
                 SGV.avisar(result.message, { tipo: 'danger' });
-                $btn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i>Aprobar y enviar al conductor');
+                $btn.prop('disabled', false).html('Aprobar y enviar al conductor');
             }
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
             SGV.avisar('Error al aprobar la liquidación. Por favor intente de nuevo.');
-            $btn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i>Aprobar y enviar al conductor');
+            $btn.prop('disabled', false).html('Aprobar y enviar al conductor');
         }
     });
 }
@@ -851,9 +851,9 @@ function cargarLiquidacionesPorConformar(soloContador) {
                 html += celdaMontos(parseFloat(item.ReintegroSoles || 0), parseFloat(item.ReintegroDolares || 0), 'sgv-positivo');
                 html += celdaMontos(parseFloat(item.SaldoSoles || 0), parseFloat(item.SaldoDolares || 0));
                 html += '<td class="text-right"><div class="sgv-acciones">';
-                html += '<button type="button" class="sgv-btn-icono info" data-accion="verDetalleLiquidacion" data-id="' + item.IdOrdenViaje + '" title="Ver detalle"><i class="fas fa-eye"></i></button>';
-                html += '<button type="button" class="sgv-btn-icono" data-accion="descargarPdfOrdenViaje" data-id="' + item.IdOrdenViaje + '" title="PDF de la liquidación enviada"><i class="fas fa-file-pdf"></i></button>';
-                html += '<button type="button" class="sgv-btn-icono alerta" data-accion="abrirModalRetirarEnvio" data-id="' + item.IdOrdenViaje + '" title="Retirar envío (para corregir antes de que firme)"><i class="fas fa-undo"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono info" data-accion="verDetalleLiquidacion" data-id="' + item.IdOrdenViaje + '" title="Ver detalle" aria-label="Ver detalle"><i class="fas fa-eye"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono" data-accion="descargarPdfOrdenViaje" data-id="' + item.IdOrdenViaje + '" title="PDF de la liquidación enviada" aria-label="PDF de la liquidación enviada"><i class="fas fa-file-pdf"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono alerta" data-accion="abrirModalRetirarEnvio" data-id="' + item.IdOrdenViaje + '" title="Retirar envío (para corregir antes de que firme)" aria-label="Retirar envío (para corregir antes de que firme)"><i class="fas fa-undo"></i></button>';
                 html += '</div></td></tr>';
             });
             $('#tbodyPorConformar').html(html);
@@ -896,7 +896,7 @@ function confirmarRetiroEnvio() {
         dataType: "json",
         success: function (response) {
             var r = response.d;
-            $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Retirar envío');
+            $btn.prop('disabled', false).html('Retirar envío');
             if (r.success) {
                 $('#modalRetirarEnvio').modal('hide');
                 SGV.avisar(r.message, { tipo: 'success', trasRecargar: true });
@@ -907,7 +907,7 @@ function confirmarRetiroEnvio() {
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
-            $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Retirar envío');
+            $btn.prop('disabled', false).html('Retirar envío');
             SGV.avisar('Error al retirar el envío.');
         }
     });
@@ -977,7 +977,7 @@ function cargarLiquidacionesAprobadas() {
                 // N° Orden
                 html += '<td><div class="orden-numero">' + SGV.escaparHtml(item.NumeroOrdenViaje) + '</div>';
                 html += '<div class="sgv-suave">' + SGV.escaparHtml(item.FechaSalida) + '</div>';
-                if (item.FechaConformidad) html += '<div class="sgv-suave" title="Conformidad firmada por el conductor"><i class="fas fa-signature mr-1"></i>' + SGV.escaparHtml(item.FechaConformidad) + '</div>';
+                if (item.FechaConformidad) html += '<div class="sgv-suave" title="Conformidad firmada por el conductor">Conformidad: ' + SGV.escaparHtml(item.FechaConformidad) + '</div>';
                 if (item.Pagada) html += '<span class="sgv-estado sgv-estado-ok" title="Su pago o descuento está registrado en Saldos de conductores">Pagada</span>';
                 html += '</td>';
 
@@ -995,14 +995,14 @@ function cargarLiquidacionesAprobadas() {
 
                 // Acciones
                 html += '<td class="text-right"><div class="sgv-acciones">';
-                html += '<button type="button" class="sgv-btn-icono info" data-accion="verDetalleLiquidacion" data-id="' + item.IdOrdenViaje + '" title="Ver detalle"><i class="fas fa-eye"></i></button>';
-                html += '<button type="button" class="sgv-btn-icono" data-accion="descargarPdfOrdenViaje" data-id="' + item.IdOrdenViaje + '" title="Descargar PDF SGV-CDF-F-05"><i class="fas fa-file-pdf"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono info" data-accion="verDetalleLiquidacion" data-id="' + item.IdOrdenViaje + '" title="Ver detalle" aria-label="Ver detalle"><i class="fas fa-eye"></i></button>';
+                html += '<button type="button" class="sgv-btn-icono" data-accion="descargarPdfOrdenViaje" data-id="' + item.IdOrdenViaje + '" title="Descargar PDF SGV-CDF-F-05" aria-label="Descargar PDF SGV-CDF-F-05"><i class="fas fa-file-pdf"></i></button>';
                 if (item.Pagada) {
                     // Un botón desactivado no muestra su title: el aviso va en el contenedor.
                     html += '<span class="lp-revertir-bloqueado" tabindex="0" title="Ya tiene su pago o descuento registrado: anúlelo primero en Saldos de conductores para poder revertir.">' +
                         '<button type="button" class="sgv-btn-icono peligro" disabled aria-label="Revertir aprobación (anule primero el pago en Saldos de conductores)"><i class="fas fa-undo"></i></button></span>';
                 } else {
-                    html += '<button type="button" class="sgv-btn-icono peligro" data-accion="abrirModalRevertir" data-id="' + item.IdOrdenViaje + '" title="Revertir aprobación"><i class="fas fa-undo"></i></button>';
+                    html += '<button type="button" class="sgv-btn-icono peligro" data-accion="abrirModalRevertir" data-id="' + item.IdOrdenViaje + '" title="Revertir aprobación" aria-label="Revertir aprobación"><i class="fas fa-undo"></i></button>';
                 }
                 html += '</div></td>';
 
@@ -1119,12 +1119,12 @@ function enviarReversion(idOrden, motivo) {
             } else {
                 SGV.avisar(result.message, { tipo: 'danger' });
             }
-            $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Confirmar reversi\u00f3n');
+            $btn.prop('disabled', false).html('Confirmar reversi\u00f3n');
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
             SGV.avisar('Error al revertir la aprobaci\u00f3n.');
-            $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Confirmar reversi\u00f3n');
+            $btn.prop('disabled', false).html('Confirmar reversi\u00f3n');
         }
     });
 }
