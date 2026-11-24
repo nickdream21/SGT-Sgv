@@ -551,6 +551,7 @@
     <Compile Include="Services\Despachos\FinalizarLoteService.cs" />
     <Compile Include="Services\Despachos\ListaDespachosService.cs" />
     <Compile Include="Services\Despachos\ListaDespachosReglas.cs" />
+    <Compile Include="Services\Despachos\RegistroDespachoReglas.cs" />
     <Compile Include="Services\Despachos\ManifiestoService.cs" />
     <Compile Include="Services\Despachos\GuiaDocumentoService.cs" />
     <Compile Include="Services\Despachos\ExpedienteDocumentosService.cs" />

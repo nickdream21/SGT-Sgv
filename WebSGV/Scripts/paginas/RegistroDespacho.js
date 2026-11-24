@@ -132,19 +132,23 @@ function actualizarGuardiaLote() {
     }
 }
 
-// Actualiza el indicador de progreso según el estado del lote
+// Pasos del lote a mano (ol.rd-pasos#rdStepper): "Configurar lote" activo hasta iniciar el lote; después, hecho y
+// "Agregar conductores" activo. Sin ese formulario abierto ni un lote en curso la tira no se muestra (d-none).
 function actualizarStepper() {
     var hf = document.getElementById(SGV.hfLoteActivo);
     var loteActivo = hf && hf.value === '1';
     var step1 = document.getElementById('rdStep1');
     var step2 = document.getElementById('rdStep2');
     if (!step1 || !step2) return;
-    // Los dos pasos son del lote a mano: sin ese formulario abierto ni un lote en curso no se muestran.
     var caja = document.getElementById('rdStepper');
     var manual = document.getElementById(SGV.hfManualAbierto);
-    if (caja) caja.style.display = (loteActivo || (manual && manual.value === '1')) ? '' : 'none';
-    step1.className = 'rd-stepper-item' + (loteActivo ? ' done' : ' active');
-    step2.className = 'rd-stepper-item' + (loteActivo ? ' active' : '');
+    if (caja) caja.classList.toggle('d-none', !(loteActivo || (manual && manual.value === '1')));
+    step1.className = loteActivo ? 'hecho' : 'activo';
+    step2.className = loteActivo ? 'activo' : '';
+    [step1, step2].forEach(function (li) {
+        if (li.classList.contains('activo')) li.setAttribute('aria-current', 'step');
+        else li.removeAttribute('aria-current');
+    });
 }
 
 // Validación en tiempo real del N° de Pedido (solo dígitos, máximo 10)
@@ -244,26 +248,28 @@ function validarFechaEmisionCliente(source, args) {
     });
 })();
 
-// Vista previa del Word: menos ruido.
-//  - "Word: ABC-123" sobre el tracto o la carreta solo se deja cuando difiere de la placa elegida en la lista.
-//  - La tabla de descargas y entregas se pliega cuando todas sus filas ya están registradas.
-function ordenarVistaPreviaWord() {
+// Vistas previas del Word, del ZIP y de la descarga: menos ruido (M-081).
+//  - La pista sobre el tracto o la carreta ("Word:", "Documento:", "Cargó:") se oculta cuando su placa (data-dato)
+//    es la elegida en la lista; sin data-dato (la última carreta usada, el destino) se deja siempre.
+//  - La tabla de descargas y entregas se pliega cuando todas sus filas ya están registradas (tr[data-registrada="1"]).
+function ordenarVistasPrevias() {
     document.querySelectorAll('td.rd-col-placa small.rd-doc-dato').forEach(function (s) {
         var lista = s.parentNode.querySelector('select');
         if (!lista || lista.selectedIndex < 0) return;
-        var delWord = s.textContent.replace(/^\s*Word:\s*/, '').trim().toUpperCase();
-        var elegido = lista.options[lista.selectedIndex].text.trim().toUpperCase();
-        s.style.display = delWord && delWord === elegido ? 'none' : '';
+        // Sin guiones ni espacios: la guía trae "TBM898" y la lista "TBM-898".
+        var dato = (s.getAttribute('data-dato') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        var elegido = lista.options[lista.selectedIndex].text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        s.classList.toggle('d-none', dato !== '' && dato === elegido);
     });
     document.querySelectorAll('details.rd-entregas-detalle').forEach(function (d) {
-        var chips = d.querySelectorAll('tbody .rd-chip');
-        var hechas = Array.prototype.filter.call(chips, function (c) { return /ya registrad/i.test(c.textContent); }).length;
+        var filas = d.querySelectorAll('tbody tr[data-registrada]');
+        var hechas = d.querySelectorAll('tbody tr[data-registrada="1"]').length;
         var cuenta = d.querySelector('.rd-entregas-cuenta');
-        if (cuenta) cuenta.textContent = chips.length ? '· ' + hechas + ' de ' + chips.length + ' ya registradas' : '';
-        if (chips.length && hechas === chips.length && !d.dataset.visto) d.open = false;
+        if (cuenta) cuenta.textContent = filas.length ? '· ' + hechas + ' de ' + filas.length + ' ya registradas' : '';
+        if (filas.length && hechas === filas.length && !d.dataset.visto) d.open = false;
         d.dataset.visto = '1';
     });
 }
-$(ordenarVistaPreviaWord);
-$(document).on('change', 'td.rd-col-placa select', ordenarVistaPreviaWord);
-if (window.Sys && Sys.WebForms) Sys.WebForms.PageRequestManager.getInstance().add_endRequest(ordenarVistaPreviaWord);
+$(ordenarVistasPrevias);
+$(document).on('change', 'td.rd-col-placa select', ordenarVistasPrevias);
+if (window.Sys && Sys.WebForms) Sys.WebForms.PageRequestManager.getInstance().add_endRequest(ordenarVistasPrevias);

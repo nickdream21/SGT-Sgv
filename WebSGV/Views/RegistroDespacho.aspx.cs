@@ -337,7 +337,7 @@ namespace WebSGV.Views
 
             // Actualizar estado en header
             lblEstadoLote.Visible = true;
-            lblEstadoLote.Text = $"LOTE ACTIVO - {LoteActual.CantidadConductores} conductores";
+            lblEstadoLote.Text = RegistroDespachoReglas.TextoEstadoLote(LoteActual.CantidadConductores);
 
             ActualizarUiEdicion();
         }
@@ -360,7 +360,7 @@ namespace WebSGV.Views
             pnlResumenDestino.Visible = !string.IsNullOrEmpty(lote.DestinoCarga);
             lblResumenDestino.Text = System.Web.HttpUtility.HtmlEncode((lote.DestinoCarga ?? string.Empty) + (lote.EsExportacion ? " (exportación)" : ""));
             lblResumenCantidad.Text = lote.CantidadConductores.ToString();
-            lblEstadoLote.Text = $"LOTE ACTIVO - {lote.CantidadConductores} conductores";
+            lblEstadoLote.Text = RegistroDespachoReglas.TextoEstadoLote(lote.CantidadConductores);
 
             // Actualizar grid de conductores
             ActualizarGridConductores();
@@ -1045,14 +1045,14 @@ namespace WebSGV.Views
         {
             bool editando = EstaEditando;
 
-            litTituloConductor.Text = editando ? "Editar Conductor del Lote" : "Agregar Conductores al Lote";
+            litTituloConductor.Text = editando ? "Editar conductor del lote" : "Agregar conductores al lote";
             btnAgregarConductor.Text = editando ? "Guardar cambios" : "Agregar conductor";
             btnCancelarEdicion.Visible = editando;
             btnLimpiarConductor.Visible = !editando;
             pnlModoEdicion.Visible = editando;
             pnlConductorCard.CssClass = editando
-                ? "card mb-4 rd-conductor-card rd-editando"
-                : "card mb-4 rd-conductor-card";
+                ? "sgv-panel sgv-panel-acento mb-4 rd-conductor-card rd-editando"
+                : "sgv-panel sgv-panel-acento mb-4 rd-conductor-card";
 
             if (editando && IndiceEnEdicion < LoteActual.Conductores.Count)
                 lblConductorEnEdicion.Text = HttpUtility.HtmlEncode(LoteActual.Conductores[IndiceEnEdicion].NombreConductor);
@@ -1414,7 +1414,7 @@ namespace WebSGV.Views
             if (prog == null)
             {
                 pnlProgramacionCarga.CssClass = "rd-notice mb-3";
-                litProgramacionCarga.Text = "<i class=\"fas fa-file-word mr-1\"></i>" + Html(
+                litProgramacionCarga.Text = Html(
                     "Sin la programación del día ni despachos programados: el chofer, el tracto y la carreta salen de las guías (la carreta, de la última con que salió el tracto). " +
                     "Si hubo ajustes de chofer, vuelva a leer los documentos junto con el Word de la programación.");
                 return;
@@ -1424,7 +1424,7 @@ namespace WebSGV.Views
             if (pendientes.Count == 0)
             {
                 pnlProgramacionCarga.CssClass = "rd-notice mb-3";
-                litProgramacionCarga.Text = "<i class=\"fas fa-file-word mr-1\"></i>" + Html(
+                litProgramacionCarga.Text = Html(
                     $"Programación · {prog.Titulo}: los {imp.Tractos.Count} tracto(s) de este pedido ya están registrados; no hay nada que tomar de ella.");
                 return;
             }
@@ -1435,13 +1435,11 @@ namespace WebSGV.Views
             var sb = new StringBuilder();
             if (prog.DesdeDespachos)
             {
-                sb.Append("<i class=\"fas fa-calendar-check mr-1\"></i>");
                 sb.Append(Html($"Despachos programados con el Word: {completan} de {pendientes.Count} guía(s) completan su despacho programado " +
                                "(no se crea otro). Chofer, tracto y carreta quedan los del despacho; la guía aporta pedido, factura y carga."));
             }
             else
             {
-                sb.Append("<i class=\"fas fa-file-word mr-1\"></i>");
                 sb.Append(Html($"Programación{(prog.Fecha.HasValue ? " del " + prog.Fecha.Value.ToString("dd/MM/yyyy") : "")} · {prog.Titulo}: " +
                                $"{prog.Encontrados} de {pendientes.Count} tracto(s) unidos con su guía. Chofer, tracto y carreta salen de la programación."));
                 if (completan > 0)
@@ -1457,33 +1455,6 @@ namespace WebSGV.Views
 
             pnlProgramacionCarga.CssClass = "rd-notice mb-3 " + (conAvisos > 0 || prog.AvisosGenerales.Count > 0 ? "rd-notice-warn" : "rd-notice-ok");
             litProgramacionCarga.Text = sb.ToString();
-        }
-
-        /// <summary>Fila extra bajo cada tracto importado: lo que dice la programación, el cambio y los avisos.</summary>
-        private static string ProgramacionCargaFilaHtml(PropuestaCarga p)
-        {
-            var sb = new StringBuilder();
-            sb.Append("<tr class=\"rd-fila-programacion\"><td></td><td colspan=\"5\">");
-            if (p.IdDespachoProgramado.HasValue)
-            {
-                sb.Append("<span class=\"rd-chip rd-chip-ok mr-1\"><i class=\"fas fa-calendar-check mr-1\"></i>Completa el despacho programado</span>");
-                sb.Append($"Salió <strong>{Html(p.ChoferProgramado ?? "—")}</strong> con el tracto <strong>{Html(p.TractoProgramado ?? "—")}</strong>" +
-                          $" y la carreta <strong>{Html(p.CarretaProgramada ?? "—")}</strong>");
-                if (!string.IsNullOrEmpty(p.Horario)) sb.Append(Html($" · {p.Horario}"));
-            }
-            else if (p.EnProgramacion)
-            {
-                sb.Append("<span class=\"rd-chip rd-chip-ok mr-1\"><i class=\"fas fa-file-word mr-1\"></i>Programación</span>");
-                sb.Append($"Sale <strong>{Html(p.ChoferProgramado ?? "—")}</strong> con el tracto <strong>{Html(p.TractoProgramado ?? "—")}</strong>" +
-                          $" y la carreta <strong>{Html(p.CarretaProgramada ?? "—")}</strong>");
-                if (!string.IsNullOrEmpty(p.Horario)) sb.Append(Html($" · {p.Horario}"));
-            }
-            if (p.Cambio != null)
-                sb.Append($"<div class=\"rd-notice py-1 px-2 mt-1\"><i class=\"fas fa-exchange-alt mr-1\"></i>{Html(p.Cambio)}</div>");
-            foreach (var aviso in p.Avisos)
-                sb.Append($"<div class=\"rd-notice rd-notice-warn py-1 px-2 mt-1\"><i class=\"fas fa-exclamation-triangle mr-1\"></i>{Html(aviso)}</div>");
-            sb.Append("</td></tr>");
-            return sb.ToString();
         }
 
         private DataTable _conductoresImp, _tractosImp, _carretasImp;
@@ -1585,8 +1556,8 @@ namespace WebSGV.Views
             chk.Enabled = !t.YaRegistrado;
             ddlConductor.Enabled = ddlTracto.Enabled = ddlCarreta.Enabled = !t.YaRegistrado;
 
-            ((Literal)e.Item.FindControl("litYaRegistrado")).Text = t.YaRegistrado
-                ? "<div><span class=\"rd-chip rd-chip-warn\">Ya registrado</span></div>" : string.Empty;
+            // Ya registrado, completa un programado o listo, con lo que dice la programación y sus avisos (M-081).
+            ((Literal)e.Item.FindControl("litEstadoImp")).Text = RegistroDespachoReglas.EstadoFilaImportacionHtml(t.Programacion, t.YaRegistrado);
 
             // "Registrar nuevo" es una opción válida (requiere aprobación); en rojo solo lo que hay que elegir a mano
             if (!t.IdConductor.HasValue) ddlConductor.CssClass += t.PuedeRegistrarChoferDeGuia ? " rd-select-nuevo" : " is-invalid";
@@ -1597,12 +1568,10 @@ namespace WebSGV.Views
             ((Literal)e.Item.FindControl("litCarretaHint")).Text = enProgramacion && t.IdCarreta.HasValue
                 ? "Programación: " + Html(t.Programacion.CarretaProgramada)
                 : t.CarretaSugerida
-                ? "<span title=\"Última carreta con la que salió este tracto. Confírmela o cámbiela.\"><i class=\"fas fa-history mr-1\"></i>Última usada con este tracto</span>"
+                ? "<span title=\"Última carreta con la que salió este tracto. Confírmela o cámbiela.\">Última usada con este tracto</span>"
                 : t.IdCarreta.HasValue ? "Documento: " + Html(t.PlacaCarreta) : "Elija la carreta";
 
             ((Literal)e.Item.FindControl("litCargaImp")).Text = DetalleCargaHtml(t.Lineas);
-            ((Literal)e.Item.FindControl("litProgramacionImp")).Text = t.YaRegistrado || t.Programacion == null
-                ? string.Empty : ProgramacionCargaFilaHtml(t.Programacion);
         }
 
         protected void rptConductoresNuevos_ItemDataBound(object sender, RepeaterItemEventArgs e)
@@ -2273,11 +2242,10 @@ namespace WebSGV.Views
 
             var sb = new StringBuilder();
             if (existe)
-                sb.Append("<div><span class=\"rd-chip rd-chip-warn\">Ya programado</span></div>" +
-                          $"<small class=\"text-muted\">El tracto o la carreta ya tiene despacho ese día (N° {f.IdDespachoExistente}).</small>");
-            foreach (var aviso in f.Avisos)
-                sb.Append($"<div class=\"rd-notice rd-notice-warn py-1 px-2 mt-1\"><i class=\"fas fa-exclamation-triangle mr-1\"></i>{Html(aviso)}</div>");
-            if (sb.Length == 0) sb.Append("<span class=\"rd-chip rd-chip-ok\">Listo</span>");
+                sb.Append(EstadoUiHelper.Sello("Ya programado", TonoEstado.Alerta) +
+                          $"<small class=\"sgv-suave d-block mt-1\">El tracto o la carreta ya tiene despacho ese día (N° {f.IdDespachoExistente}).</small>");
+            sb.Append(RegistroDespachoReglas.AvisosHtml(f.Avisos));
+            if (sb.Length == 0) sb.Append(EstadoUiHelper.Sello("Listo", TonoEstado.Ok));
             ((Literal)e.Item.FindControl("litEstadoProg")).Text = sb.ToString();
         }
 
@@ -2349,6 +2317,8 @@ namespace WebSGV.Views
                     MostrarMensajeImportacion("No se programó ningún despacho. " + string.Join(" ", r.Errores), "danger");
                     return;
                 }
+                // M-086: el paso siguiente del día es revisar lo que les falta a los lotes.
+                hlVerLotesPendientes.Visible = true;
 
                 ProgramacionNuevaActual = null;
                 pnlProgramacionNueva.Visible = false;
@@ -2393,7 +2363,8 @@ namespace WebSGV.Views
                 x.Carreta,
                 Estado = !x.IdSeguimiento.HasValue ? (x.EsRetorno ? "Sin viaje de ida" : "Sin viaje de carga") : x.YaRegistrada ? "Ya registrada"
                     : x.EsRetorno ? "Retorno con carga" : x.EsDescargaVitapro ? "Pedido y descarga" : x.Relevo ? "Lugar y relevo" : "Lugar de entrega",
-                ChipCss = !x.IdSeguimiento.HasValue ? "rd-chip-warn" : x.YaRegistrada ? "rd-chip-ok" : "rd-chip-wait",
+                Tono = !x.IdSeguimiento.HasValue ? TonoEstado.Alerta : x.YaRegistrada ? TonoEstado.Ok : TonoEstado.Info,
+                x.YaRegistrada,
                 Viaje = x.IdSeguimiento.HasValue ? x.Viaje
                     : x.EsRetorno ? "No hay un viaje de ida de Vitapro con esta carreta o tracto en los 10 días anteriores."
                     : x.EsDescargaVitapro ? $"No hay una carga de Vitapro con esta carreta hasta el día del Word (pendiente o con el pedido {x.Pedido}) en los 10 días anteriores."
@@ -2501,7 +2472,7 @@ namespace WebSGV.Views
             var sb = new System.Text.StringBuilder();
             sb.Append($"<strong>{lineas.Sum(l => l.Cantidad):N0} bolsas · {lineas.Sum(l => l.PesoBrutoKg ?? 0):N1} kg</strong>");
             foreach (var l in lineas)
-                sb.Append($"<small class=\"d-block text-muted\">{Html(l.Descripcion)} · lote {Html(l.Lote ?? "—")} · {l.Cantidad:N0}{(l.IdProducto.HasValue ? "" : " <span class=\"rd-chip rd-chip-warn\">nuevo</span>")}</small>");
+                sb.Append($"<small class=\"d-block text-muted\">{Html(l.Descripcion)} · lote {Html(l.Lote ?? "—")} · {l.Cantidad:N0}{(l.IdProducto.HasValue ? "" : " " + EstadoUiHelper.Sello("nuevo", TonoEstado.Alerta))}</small>");
             return sb.ToString();
         }
 
@@ -2559,6 +2530,9 @@ namespace WebSGV.Views
             get { return Session["DescargaConductores"] as List<ConductorLote>; }
             set { Session["DescargaConductores"] = value; }
         }
+
+        /// <summary>Ya se leyó la programación de la descarga: la tabla muestra la columna Estado (M-081).</summary>
+        protected bool HayProgramacionDescarga => PropuestasDescarga != null;
 
         /// <summary>Lo que propuso la programación en Word para cada carga (por IdDespacho de la carga).</summary>
         private Dictionary<int, PropuestaDescarga> PropuestasDescarga
@@ -2741,26 +2715,8 @@ namespace WebSGV.Views
                 litDestino.Text = Html("Sin destino en la lista del cliente");
 
             ((Literal)e.Item.FindControl("litCargaDesc")).Text = DetalleCargaHtml(c.Carga);
-            ((Literal)e.Item.FindControl("litProgramacionDesc")).Text = p == null ? "" : ProgramacionFilaHtml(p);
-        }
-
-        /// <summary>Fila extra bajo cada tracto: lo que dice la programación y sus avisos.</summary>
-        private static string ProgramacionFilaHtml(PropuestaDescarga p)
-        {
-            var sb = new StringBuilder();
-            sb.Append("<tr class=\"rd-fila-programacion\"><td></td><td colspan=\"5\">");
-            if (p.EnProgramacion)
-            {
-                sb.Append("<span class=\"rd-chip rd-chip-ok mr-1\"><i class=\"fas fa-file-word mr-1\"></i>Programación</span>");
-                sb.Append($"Descarga <strong>{Html(p.ChoferProgramado ?? "—")}</strong> con el tracto <strong>{Html(p.TractoProgramado ?? "—")}</strong>");
-                sb.Append(string.IsNullOrEmpty(p.Cambio)
-                    ? " · sin cambio de chofer"
-                    : $" · sale <strong>{Html(p.Cambio)}</strong>");
-            }
-            foreach (var aviso in p.Avisos)
-                sb.Append($"<div class=\"rd-notice rd-notice-warn py-1 px-2 mt-1\"><i class=\"fas fa-exclamation-triangle mr-1\"></i>{Html(aviso)}</div>");
-            sb.Append("</td></tr>");
-            return sb.ToString();
+            // Lo que dice la programación leída y sus avisos, en su columna (M-081; antes, una fila extra sin la celda de Carga).
+            ((Literal)e.Item.FindControl("litEstadoDesc")).Text = RegistroDespachoReglas.EstadoFilaDescargaHtml(p);
         }
 
         protected void btnLeerProgramacionDescarga_Click(object sender, EventArgs e)
@@ -2836,7 +2792,6 @@ namespace WebSGV.Views
                 int encontradas = propuestas.Values.Count(p => p.EnProgramacion);
                 int conAvisos = propuestas.Values.Count(p => p.Avisos.Count > 0);
                 var sb = new StringBuilder();
-                sb.Append("<i class=\"fas fa-file-word mr-1\"></i>");
                 sb.Append(Html($"Programación{(programacion.Fecha.HasValue ? " del " + programacion.Fecha.Value.ToString("dd/MM/yyyy") : "")}" +
                                $" · {seccion.Titulo ?? "sin título"}" +
                                (string.IsNullOrEmpty(seccion.NumeroPedido) ? " (sin N° de pedido: se reconoció por las carretas)" : $" · pedido {seccion.NumeroPedido}") +
@@ -3356,30 +3311,9 @@ namespace WebSGV.Views
             return HttpUtility.HtmlEncode(texto);
         }
 
-        protected string ChipManifiesto(object valor)
-        {
-            string estado = Convert.ToString(valor);
-            switch (estado)
-            {
-                case "Completo": return "<span class=\"rd-chip rd-chip-ok\">Completo</span>";
-                case "Parcial": return "<span class=\"rd-chip rd-chip-warn\">Parcial</span>";
-                case "Pendiente": return "<span class=\"rd-chip rd-chip-wait\">Pendiente</span>";
-                default: return "<span class=\"rd-sin-datos\">—</span>";
-            }
-        }
-
-        protected string ChipEstadoViaje(object valor)
-        {
-            string estado = Convert.ToString(valor);
-            if (string.IsNullOrWhiteSpace(estado))
-                return "<span class=\"rd-sin-datos\">—</span>";
-
-            string clase = estado.Equals("Por asignar", StringComparison.OrdinalIgnoreCase)
-                ? "rd-chip rd-chip-wait"
-                : "rd-chip rd-chip-ok";
-
-            return $"<span class=\"{clase}\">{HttpUtility.HtmlEncode(estado)}</span>";
-        }
+        /// <summary>Atributos del paso <paramref name="paso"/> de la tira del día (M-086): activo según la vista previa a la vista.</summary>
+        protected string AtributosPaso(int paso) => RegistroDespachoReglas.AtributosPaso(paso,
+            RegistroDespachoReglas.PasoActivo(pnlProgramacionNueva.Visible, pnlVistaPreviaImportacion.Visible));
 
         /// <summary>
         /// Éxito flotante (AvisoHelper.Avisar); errores y advertencias arriba de la página, sin ocultarse solos.
@@ -3445,7 +3379,7 @@ namespace WebSGV.Views
 
             // HTML controlado — los datos de usuario van codificados
             AvisoHelper.PintarHtml(lblMensaje,
-                $"<i class='fas fa-history mr-1'></i> <strong>Sesión recuperada.</strong> " +
+                $"<strong>Sesión recuperada.</strong> " +
                 $"Tiene un lote activo: <strong>{HttpUtility.HtmlEncode(lote.TipoOperacion)}</strong> " +
                 $"{HttpUtility.HtmlEncode(ambito)} · " +
                 $"Cliente: <strong>{HttpUtility.HtmlEncode(lote.NombreCliente)}</strong> · " +

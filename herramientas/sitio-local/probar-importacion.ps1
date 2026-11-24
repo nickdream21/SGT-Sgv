@@ -96,10 +96,12 @@ if ($html -match 'id="[^"]*pnlProgramacionNueva"') {
     }
 }
 
-foreach ($fila in [regex]::Matches($html, '<tr class="[^"]*">\s*<td>(?:<label[^>]*>)?(?:<span[^>]*>)?<input[^>]*chkIncluir.*?</tr>\s*(<tr class="rd-fila-programacion">.*?</tr>)?', 'Singleline')) {
+foreach ($fila in [regex]::Matches($html, '<tr class="[^"]*">\s*<td>(?:<label[^>]*>)?(?:<span[^>]*>)?<input[^>]*chkIncluir.*?</tr>', 'Singleline')) {
     $transporte = Texto ([regex]::Match($fila.Value, '<div class="rd-placa">([^<]*)</div>').Groups[1].Value)
     $elegido = [regex]::Matches($fila.Value, '<select[^>]*>.*?</select>', 'Singleline') | ForEach-Object {
         Texto ([regex]::Match($_.Value, '<option selected="selected"[^>]*>([^<]*)<').Groups[1].Value) }
     "--- $transporte | $($elegido -join ' | ')"
-    if ($fila.Groups[1].Success) { "    $(Texto $fila.Groups[1].Value)" }
+    # Columna Estado (M-081): el sello, lo que dice la programación y sus avisos.
+    $estado = [regex]::Match($fila.Value, '<td class="rd-col-estado">(.*?)</td>\s*</tr>', 'Singleline')
+    if ($estado.Success) { "    $(Texto $estado.Groups[1].Value)" }
 }

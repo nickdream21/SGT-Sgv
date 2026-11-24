@@ -71,8 +71,10 @@ namespace WebSGV.Tests
         private static readonly string[] HelpersQueCodifican =
         {
             "MostrarDato(",               // RegistroDespacho: HtmlEncode
-            "ChipManifiesto(",            // RegistroDespacho: solo textos fijos
-            "ChipEstadoViaje(",           // RegistroDespacho: HtmlEncode
+            // RegistroDespacho (E5-18b): los tres por EstadoUiHelper.Sello (HtmlEncode); nombres exactos, no prefijo
+            "RegistroDespachoReglas.SelloManifiesto(",
+            "RegistroDespachoReglas.SelloEstadoViaje(",
+            "RegistroDespachoReglas.SelloEntrega(",
             "CeldaCarga(",                // RegistroDespacho: HtmlEncode del resumen y del título (lotes)
             "EtiquetaObservada(",         // LiquidacionesPendientes: HtmlAttributeEncode
             "UltimaPosicion(",            // ReporteGps: HtmlEncode / HtmlAttributeEncode

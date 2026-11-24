@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using WebSGV.Helpers;
+using WebSGV.Models.Despachos;
 using WebSGV.Services.Despachos;
 using Xunit;
 using static WebSGV.Tests.AccesibilidadMarcadoTests;
@@ -13,20 +14,28 @@ namespace WebSGV.Tests
     /// <summary>
     /// Pantallas grandes con la plantilla común (E5-18, fase 4 de M-073): sgv-panel, sgv-tabs, sgv-resumen en vez de
     /// tarjetas, sgv-tabla con sgv-paginador y grillas sin ViewState, filtros en details.sgv-filtros y sellos
-    /// sgv-estado. La lista crece con cada parte de E5-18 (a: ListaDespachos). Leen las páginas como texto sin
-    /// comentarios, igual que <see cref="BuscarEditarPlantillaTests"/>. Las pruebas LD* fijan ListaDespachos (M-082:
-    /// las pestañas y el resumen solo en las dos listas).
+    /// sgv-estado. La lista crece con cada parte de E5-18 (a: ListaDespachos; b: RegistroDespacho). Leen las páginas
+    /// como texto sin comentarios, igual que <see cref="BuscarEditarPlantillaTests"/>. Las pruebas LD* fijan
+    /// ListaDespachos (M-082: las pestañas y el resumen solo en las dos listas) y las RD*, RegistroDespacho (M-081:
+    /// columna Estado en las vistas previas; M-086: tira de pasos del día).
     /// </summary>
     public class GrandesPlantillaTests
     {
-        public static readonly string[] Paginas = { "ListaDespachos" };
+        public static readonly string[] Paginas = { "ListaDespachos", "RegistroDespacho" };
 
-        /// <summary>Clases y nombres retirados en E5-18a: no vuelven en el marcado, el código, el script ni la hoja.</summary>
+        /// <summary>Páginas con filtros de búsqueda: llevan el details.sgv-filtros común (RegistroDespacho no filtra).</summary>
+        private static readonly string[] PaginasConFiltros = { "ListaDespachos" };
+
+        /// <summary>Clases y nombres retirados en E5-18a y E5-18b: no vuelven en el marcado, el código, el script ni la hoja.</summary>
         private static readonly string[] ClasesRetiradas =
         {
             "ld-stat", "ld-pager", "summary-card", "section-card", "section-header", "estado-abierto",
             "tipo-internacional", "tipo-nacional", "ld-chip", "ld-estado-", "active-nav", "btn-nav", "empty-data",
-            "doc-panel-header", "GetEstadoDespachoClass", "GetManifiestoBadgeClass", "fa-info-circle"
+            "doc-panel-header", "GetEstadoDespachoClass", "GetManifiestoBadgeClass", "fa-info-circle",
+            // E5-18b (RegistroDespacho)
+            "rd-chip", "rd-stepper", "rd-fila-programacion", "rd-casos", "rd-step-header", "rd-summary-header",
+            "rd-viaje-header", "rd-list-header", "rd-subtitle", "litProgramacionImp", "litProgramacionDesc",
+            "litYaRegistrado", "badge bg-", "ChipManifiesto", "ChipEstadoViaje"
         };
 
         public static IEnumerable<object[]> Casos() => Paginas.Select(p => new object[] { p });
@@ -122,7 +131,8 @@ namespace WebSGV.Tests
             int abren = Regex.Matches(aspx, @"<details\b", RegexOptions.IgnoreCase).Count;
             int cierran = Regex.Matches(aspx, @"</details\s*>", RegexOptions.IgnoreCase).Count;
             Assert.True(abren == cierran, $"{pagina}: {abren} <details> y {cierran} </details>");
-            Assert.Matches(@"<details class=""sgv-filtros"" open data-plegar-movil>", aspx);
+            if (PaginasConFiltros.Contains(pagina))
+                Assert.Matches(@"<details class=""sgv-filtros"" open data-plegar-movil>", aspx);
         }
 
         [Theory]
@@ -373,6 +383,183 @@ namespace WebSGV.Tests
             Assert.Contains("RegistroDespacho.aspx", acciones);
             Assert.DoesNotContain("ID=\"btnVolver\"", aspx);
             Assert.DoesNotContain("btnVolver_Click", Cs("ListaDespachos"));
+        }
+
+        // ── RD: RegistroDespacho ─────────────────────────────────────────────────────────────
+
+        /// <summary>Tabla del marcado que contiene el Repeater <paramref name="repeater"/> (desde su table hasta el /table).</summary>
+        private static string TablaDe(string aspx, string repeater)
+        {
+            int r = aspx.IndexOf("<asp:Repeater ID=\"" + repeater + "\"", StringComparison.Ordinal);
+            Assert.True(r > 0, "No se encontró el Repeater " + repeater);
+            int ini = aspx.LastIndexOf("<table", r, StringComparison.Ordinal);
+            int fin = aspx.IndexOf("</table>", r, StringComparison.Ordinal);
+            return aspx.Substring(ini, fin - ini);
+        }
+
+        [Theory]
+        [InlineData("rptTractosImportados", "litEstadoImp", 7)]
+        [InlineData("rptDescargas", "litEstadoDesc", 8)]
+        public void RD1_VistasPreviasConColumnaEstado(string repeater, string literal, int columnas)
+        {
+            string tabla = TablaDe(Aspx("RegistroDespacho"), repeater);
+            var th = Regex.Matches(tabla, @"<th\b[^>]*>(?<t>.*?)</th>", RegexOptions.Singleline).Cast<Match>().ToList();
+            Assert.Equal(columnas, th.Count);
+            Assert.Equal("Estado", th.Last().Groups["t"].Value.Trim());
+
+            string fila = Regex.Match(tabla, @"<ItemTemplate>(?<c>.*?)</ItemTemplate>", RegexOptions.Singleline).Groups["c"].Value;
+            // Una sola fila por tracto (sin la fila extra de antes) y tantas celdas como encabezados: la de la descarga
+            // tenía 7 columnas y su fila extra sumaba 6.
+            Assert.Equal(1, Regex.Matches(fila, @"<tr\b").Count);
+            Assert.Equal(columnas, Regex.Matches(fila, @"<td\b").Count);
+            Assert.Contains("ID=\"" + literal + "\"", fila);
+            Assert.Contains("FindControl(\"" + literal + "\")", Cs("RegistroDespacho"));
+        }
+
+        [Fact]
+        public void RD2_EstadoDeLaFilaDelZip()
+        {
+            var programado = new PropuestaCarga { IdDespachoProgramado = 5, ChoferProgramado = "A", TractoProgramado = "T1", CarretaProgramada = "C1" };
+            string html = RegistroDespachoReglas.EstadoFilaImportacionHtml(programado, false);
+            Assert.Contains("sgv-estado-info\">Completa el despacho programado<", html);
+            Assert.Contains("<strong>A</strong>", html);
+            Assert.Contains("<strong>C1</strong>", html);
+
+            var conAviso = new PropuestaCarga { EnProgramacion = true, ChoferProgramado = "A", TractoProgramado = "T1", Avisos = { "x<y" } };
+            html = RegistroDespachoReglas.EstadoFilaImportacionHtml(conAviso, false);
+            Assert.Contains("rd-notice-warn", html);
+            Assert.Contains("x&lt;y", html);
+            Assert.DoesNotContain(">Listo<", html);
+
+            var sinAvisos = new PropuestaCarga { EnProgramacion = true, ChoferProgramado = "<b>", TractoProgramado = "T1", Horario = "06:00" };
+            html = RegistroDespachoReglas.EstadoFilaImportacionHtml(sinAvisos, false);
+            Assert.Contains("sgv-estado-ok\">Listo<", html);
+            Assert.Contains("&lt;b&gt;", html);
+            Assert.Contains("06:00", html);
+
+            Assert.Contains("sgv-estado-alerta\">Ya registrado<", RegistroDespachoReglas.EstadoFilaImportacionHtml(programado, true));
+            Assert.Contains("sgv-estado-alerta\">Ya registrado<", RegistroDespachoReglas.EstadoFilaImportacionHtml(null, true));
+            Assert.Equal("<span class=\"rd-sin-datos\">—</span>", RegistroDespachoReglas.EstadoFilaImportacionHtml(null, false));
+            Assert.DoesNotContain("<tr", RegistroDespachoReglas.EstadoFilaImportacionHtml(programado, false));
+        }
+
+        [Fact]
+        public void RD2_EstadoDeLaFilaDeLaDescarga()
+        {
+            var p = new PropuestaDescarga { EnProgramacion = true, ChoferProgramado = "A", TractoProgramado = "T1" };
+            string html = RegistroDespachoReglas.EstadoFilaDescargaHtml(p);
+            Assert.Contains("sgv-estado-ok\">Listo<", html);
+            Assert.Contains("<strong>A</strong>", html);
+            Assert.Contains("sin cambio de chofer", html);
+
+            p.Cambio = "B&C";
+            p.Avisos.Add("x<y");
+            html = RegistroDespachoReglas.EstadoFilaDescargaHtml(p);
+            Assert.Contains("sale <strong>B&amp;C</strong>", html);
+            Assert.Contains("rd-notice-warn", html);
+            Assert.Contains("x&lt;y", html);
+            Assert.DoesNotContain(">Listo<", html);
+
+            Assert.Equal(EstadoUiHelper.Sello("No está en la programación", TonoEstado.Neutro), RegistroDespachoReglas.EstadoFilaDescargaHtml(new PropuestaDescarga()));
+            Assert.Equal("<span class=\"rd-sin-datos\">—</span>", RegistroDespachoReglas.EstadoFilaDescargaHtml(null));
+            Assert.DoesNotContain("<tr", html);
+        }
+
+        [Fact]
+        public void RD3_PistasDePlacaConDataDato()
+        {
+            string aspx = Aspx("RegistroDespacho");
+            var celdas = Regex.Matches(aspx, @"<td class=""rd-col-placa"">(?<c>.*?)</td>", RegexOptions.Singleline).Cast<Match>().ToList();
+            Assert.True(celdas.Count >= 7, "Se esperaban las celdas de placa del Word, del ZIP y de la descarga");
+            foreach (Match celda in celdas)
+                foreach (Match pista in Regex.Matches(celda.Groups["c"].Value, @"<small class=""rd-doc-dato""[^>]*>"))
+                    Assert.Contains("data-dato=", pista.Value);
+
+            string js = Js("RegistroDespacho");
+            Assert.Contains("getAttribute('data-dato')", js);
+            Assert.DoesNotContain(@"/^\s*Word:", js);
+            Assert.DoesNotContain(".style.", js);
+            // Entregas del Word: se cuentan las filas registradas por su atributo, no por el texto de un chip.
+            Assert.Contains("tr[data-registrada=\"1\"]", js);
+            Assert.Contains("data-registrada='<%#: (bool)Eval(\"YaRegistrada\") ? \"1\" : \"0\" %>'", aspx);
+
+            var t = new TractoImportado { IdCarreta = 3, PlacaCarreta = "ABC-123" };
+            Assert.Equal("ABC-123", RegistroDespachoReglas.DatoPistaCarreta(t));
+            t.CarretaSugerida = true;
+            Assert.Equal("", RegistroDespachoReglas.DatoPistaCarreta(t));
+            t.Programacion = new PropuestaCarga { EnProgramacion = true, CarretaProgramada = "XYZ-999" };
+            Assert.Equal("XYZ-999", RegistroDespachoReglas.DatoPistaCarreta(t));
+            Assert.Equal("", RegistroDespachoReglas.DatoPistaCarreta(new TractoImportado { PlacaCarreta = "ABC-123" }));
+        }
+
+        [Fact]
+        public void RD4_TiraDePasosYEnlaceALosPendientes()
+        {
+            string aspx = Aspx("RegistroDespacho"), cs = Cs("RegistroDespacho");
+            string tira = Regex.Match(aspx, @"<ol class=""rd-pasos""[^>]*>(?<c>.*?)</ol>", RegexOptions.Singleline).Groups["c"].Value;
+            Assert.Equal(3, Regex.Matches(tira, @"<li\b").Count);
+            Assert.Contains("href=\"ListaDespachos.aspx?documentos=pendientes\"", tira);
+            for (int n = 1; n <= 3; n++) Assert.Contains("<li<%= AtributosPaso(" + n + ") %>>", tira);
+            // La tira va dentro de UpdatePanelMain (se repinta con cada vista previa).
+            int panel = aspx.IndexOf("ID=\"UpdatePanelMain\"", StringComparison.Ordinal);
+            Assert.True(panel > 0 && aspx.IndexOf("<ol class=\"rd-pasos\"", StringComparison.Ordinal) > panel);
+
+            Assert.Equal(1, RegistroDespachoReglas.PasoActivo(true, false));
+            Assert.Equal(2, RegistroDespachoReglas.PasoActivo(false, true));
+            Assert.Equal(1, RegistroDespachoReglas.PasoActivo(false, false));
+            Assert.Equal(" class=\"activo\" aria-current=\"step\"", RegistroDespachoReglas.AtributosPaso(2, 2));
+            Assert.Equal("", RegistroDespachoReglas.AtributosPaso(1, 2));
+
+            Match enlace = Regex.Match(aspx, @"<asp:HyperLink ID=""hlVerLotesPendientes""[^>]*/>", RegexOptions.Singleline);
+            Assert.True(enlace.Success);
+            Assert.Contains("EnableViewState=\"false\"", enlace.Value);
+            Assert.Contains("Visible=\"false\"", enlace.Value);
+            Assert.Contains("NavigateUrl=\"~/Views/ListaDespachos.aspx?documentos=pendientes\"", enlace.Value);
+            // Solo si programar salió bien: después del return de "No se programó ningún despacho".
+            string programar = Metodo(cs, "btnProgramarDespachos_Click");
+            int sinCreados = programar.IndexOf("if (r.Creados.Count == 0)", StringComparison.Ordinal);
+            int visible = programar.IndexOf("hlVerLotesPendientes.Visible = true;", StringComparison.Ordinal);
+            Assert.True(sinCreados > 0 && visible > programar.IndexOf("return;", sinCreados, StringComparison.Ordinal));
+            Assert.Equal(1, Regex.Matches(cs, @"hlVerLotesPendientes\.Visible\s*=").Count);
+
+            // Los pasos del lote a mano: ocultos con d-none (sin style), y el script los muestra con classList.
+            Assert.Matches(@"<ol class=""rd-pasos rd-pasos-manual d-none"" id=""rdStepper""", aspx);
+            string js = Js("RegistroDespacho");
+            Assert.Contains("classList.toggle('d-none'", js);
+            Assert.DoesNotContain("style.display", js);
+        }
+
+        [Fact]
+        public void RD5_SelloDelLoteActivo()
+        {
+            Assert.Equal("Lote activo · 1 conductor", RegistroDespachoReglas.TextoEstadoLote(1));
+            Assert.Equal("Lote activo · 3 conductores", RegistroDespachoReglas.TextoEstadoLote(3));
+            Assert.Equal("Lote activo · 0 conductores", RegistroDespachoReglas.TextoEstadoLote(0));
+            Assert.Matches(@"<asp:Label ID=""lblEstadoLote"" runat=""server"" CssClass=""sgv-estado sgv-estado-ok""", Aspx("RegistroDespacho"));
+            Assert.Equal(2, Regex.Matches(Cs("RegistroDespacho"), @"lblEstadoLote\.Text = RegistroDespachoReglas\.TextoEstadoLote\(").Count);
+
+            // Los sellos de la tabla de conductores y de las entregas, con texto y tono (sin iconos).
+            Assert.Contains("sgv-estado-ok\">Completo<", RegistroDespachoReglas.SelloManifiesto("Completo"));
+            Assert.Contains("sgv-estado-alerta\">Parcial<", RegistroDespachoReglas.SelloManifiesto("Parcial"));
+            Assert.Contains("rd-sin-datos", RegistroDespachoReglas.SelloManifiesto("N/A"));
+            Assert.Equal("<span class=\"sgv-estado\">Por asignar</span>", RegistroDespachoReglas.SelloEstadoViaje("Por asignar"));
+            Assert.Contains("VP-1 &lt;x&gt;", RegistroDespachoReglas.SelloEstadoViaje("VP-1 <x>"));
+            Assert.Contains("sgv-estado-info\">Lugar de entrega<", RegistroDespachoReglas.SelloEntrega("Lugar de entrega", TonoEstado.Info));
+        }
+
+        [Fact]
+        public void RD6_ValidacionSinColoresEnLinea()
+        {
+            string js2 = SiHay("Scripts", "paginas", "RegistroDespacho-2.js");
+            Assert.NotEqual("", js2);
+            Assert.DoesNotContain("#dc3545", js2);
+            Assert.DoesNotContain("rgba(", js2);
+            Assert.DoesNotContain(".style.", js2);
+            Assert.Contains("classList.toggle('is-invalid'", js2);
+            // La hoja pinta el select2 inválido (M-143) y le da la altura de un botón en el celular (M-145).
+            string css = Css("RegistroDespacho");
+            Assert.Contains("select.is-invalid + .select2-container .select2-selection--single", css);
+            Assert.Matches(@"@media \(max-width: 767\.98px\) \{[^@]*select2-selection--single \{ height: 2\.75rem; \}", css);
         }
     }
 }

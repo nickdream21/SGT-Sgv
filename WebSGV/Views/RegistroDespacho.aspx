@@ -1,10 +1,11 @@
 ﻿<%@ Page Title="Registro de despachos" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" MaintainScrollPositionOnPostback="true" CodeBehind="RegistroDespacho.aspx.cs" Inherits="WebSGV.Views.RegistroDespacho" %>
+<%@ Import Namespace="WebSGV.Services.Despachos" %>
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
 <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/RegistroDespacho.css") %>" rel="stylesheet" />
 
-    <div class="container-fluid rd-pagina">
+    <div class="rd-pagina">
         <div class="sgv-encabezado">
             <div class="sgv-encabezado-titulo">
                 <h1 class="h2">Registro de despachos</h1>
@@ -15,15 +16,11 @@
                      sin él la etiqueta no se refrescaba en los postbacks asíncronos. --%>
                 <asp:UpdatePanel ID="UpdatePanelEstadoLote" runat="server" UpdateMode="Always" RenderMode="Inline">
                     <ContentTemplate>
-                        <asp:Label ID="lblEstadoLote" runat="server" CssClass="badge bg-success" style="font-size:.75rem;font-weight:600;" Visible="false"></asp:Label>
+                        <asp:Label ID="lblEstadoLote" runat="server" CssClass="sgv-estado sgv-estado-ok" Visible="false"></asp:Label>
                     </ContentTemplate>
                 </asp:UpdatePanel>
             </div>
         </div>
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-body">
                         <!-- Solo btnIniciarLote es PostBackTrigger (ver <Triggers> más abajo): ese paso incluye
                              los FileUpload de Factura/CPIC y UpdatePanel no soporta subida de archivos por AJAX
                              parcial. Agregar conductor sí es asíncrono — ya no hay FileUpload en ese paso. -->
@@ -35,26 +32,17 @@
                                 <!-- "1" con el formulario manual abierto: sobrevive a los postbacks parciales -->
                                 <asp:HiddenField ID="hfManualAbierto" runat="server" Value="0" />
 
-                                <!-- Indicador de progreso: solo para el lote a mano (lo muestra actualizarStepper) -->
-                                <div class="rd-stepper mb-4" id="rdStepper" style="display:none">
-                                    <div class="rd-stepper-inner">
-                                        <div id="rdStep1" class="rd-stepper-item">
-                                            <div class="rd-stepper-circle">1</div>
-                                            <div class="rd-stepper-label">Configurar lote</div>
-                                        </div>
-                                        <div class="rd-stepper-connector"></div>
-                                        <div id="rdStep2" class="rd-stepper-item">
-                                            <div class="rd-stepper-circle">2</div>
-                                            <div class="rd-stepper-label">Agregar conductores</div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <!-- Pasos del lote a mano: actualizarPasosManual les quita d-none con el formulario abierto o un lote en curso -->
+                                <ol class="rd-pasos rd-pasos-manual d-none" id="rdStepper" aria-label="Pasos del lote a mano">
+                                    <li id="rdStep1"><strong>Configurar lote</strong></li>
+                                    <li id="rdStep2"><strong>Agregar conductores</strong></li>
+                                </ol>
 
                                 <!-- Mensajes -->
                                 <asp:Panel ID="pnlMensajes" runat="server" Visible="false" EnableViewState="false" CssClass="mb-3">
                                     <div class="position-relative">
                                         <asp:Label ID="lblMensaje" runat="server" EnableViewState="false" CssClass="alert d-block mb-0 pr-5"></asp:Label>
-                                        <button type="button" class="close position-absolute" style="top:.65rem;right:.75rem;"
+                                        <button type="button" class="close sgv-cerrar-aviso"
                                             data-accion="cerrarBloqueMensaje" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                                     </div>
                                 </asp:Panel>
@@ -63,17 +51,20 @@
                                      Lee la factura, el packing list y las guías de remisión que el cliente
                                      envía por correo y rellena el lote. btnLeerDocumentos es PostBackTrigger:
                                      el FileUpload no viaja en un postback parcial. -->
-                                <asp:Panel ID="pnlImportarDocumentos" runat="server" CssClass="card mb-4 rd-import-card">
-                                    <div class="rd-step-header">
-                                        <h5>Programar o completar con los archivos del día</h5>
-                                        <div class="rd-subtitle">El chofer, el tracto y la carreta salen del Word de la programación; la carga, de los documentos del cliente. Usted revisa todo antes de guardar.</div>
-                                        <ul class="rd-casos">
-                                            <li><strong>Solo el Word</strong><span>Programa los despachos del día. El seguimiento GPS empieza ya, sin esperar el correo.</span></li>
-                                            <li><strong>Word + ZIP o PDF del correo</strong><span>Registra los despachos completos, con pedido, factura, guías y carga.</span></li>
-                                            <li><strong>Solo el ZIP o los PDF</strong><span>Completa los despachos ya programados: cada guía se une a su unidad.</span></li>
-                                        </ul>
+                                <asp:Panel ID="pnlImportarDocumentos" runat="server" CssClass="sgv-panel mb-4 rd-import-card">
+                                    <div class="sgv-panel-cab">
+                                        <div>
+                                            <h2 class="sgv-panel-titulo">Programar o completar con los archivos del día</h2>
+                                            <p class="sgv-panel-nota mb-0">El chofer, el tracto y la carreta salen del Word de la programación; la carga, de los documentos del cliente. Usted revisa todo antes de guardar.</p>
+                                        </div>
                                     </div>
-                                    <div class="card-body">
+                                    <div class="sgv-panel-cuerpo">
+                                        <%-- Tira de pasos del día (M-086): el activo, según la vista previa que está a la vista. --%>
+                                        <ol class="rd-pasos" aria-label="Pasos del día">
+                                            <li<%= AtributosPaso(1) %>><strong>Programar con el Word</strong><span>Solo el Word programa los despachos del día: el seguimiento GPS empieza ya, sin esperar el correo.</span></li>
+                                            <li<%= AtributosPaso(2) %>><strong>Completar con el ZIP del correo</strong><span>El ZIP o los PDF completan los despachos programados (cada guía se une a su unidad); junto con el Word, los registran completos.</span></li>
+                                            <li<%= AtributosPaso(3) %>><strong><a href="ListaDespachos.aspx?documentos=pendientes">Revisar los pendientes</a></strong><span>Los lotes a los que todavía les falta la factura, una guía o el CPIC.</span></li>
+                                        </ol>
                                         <asp:Panel ID="pnlSubirDocumentos" runat="server">
                                             <label class="rd-zona">
                                                 <span class="rd-zona-titulo">Arrastre aquí los archivos o haga clic para elegirlos</span>
@@ -96,6 +87,10 @@
                                         <asp:Panel ID="pnlMensajeImportacion" runat="server" Visible="false" EnableViewState="false" CssClass="mt-3">
                                             <asp:Label ID="lblMensajeImportacion" runat="server" EnableViewState="false" CssClass="alert d-block mb-0"></asp:Label>
                                         </asp:Panel>
+                                        <%-- Solo cuando programar sale bien (M-086): el paso siguiente es revisar lo que falta. --%>
+                                        <asp:HyperLink ID="hlVerLotesPendientes" runat="server" EnableViewState="false" Visible="false"
+                                            NavigateUrl="~/Views/ListaDespachos.aspx?documentos=pendientes" CssClass="btn btn-outline-primary btn-sm mt-2"
+                                            Text="Ver lotes pendientes" />
 
                                         <!-- Programar con el Word: despachos de carga sin documentos todavía -->
                                         <asp:Panel ID="pnlProgramacionNueva" runat="server" Visible="false" CssClass="mt-3">
@@ -110,7 +105,7 @@
                                             <asp:Panel ID="pnlEntregasTerceros" runat="server" CssClass="rd-entregas mb-3" Visible="false">
                                                 <%-- Plegado por el script cuando todas las filas ya están registradas (no hay nada que hacer). --%>
                                                 <details class="rd-entregas-detalle" open>
-                                                <summary class="rd-section-label"><i class="fas fa-flag-checkered mr-1"></i> Descargas, entregas y retornos con carga en este Word <span class="rd-entregas-cuenta"></span></summary>
+                                                <summary class="rd-section-label">Descargas, entregas y retornos con carga en este Word <span class="rd-entregas-cuenta"></span></summary>
                                                 <p class="small text-muted mb-2">
                                                     Cada fila completa el viaje del seguimiento de su carga (misma carreta): en GUAYAQUIL-VITAPRO, el pedido y el tracto y chofer de descarga (el GPS sigue a ese tracto desde la base, sin esperar el ZIP); en las de clientes terceros, el lugar de entrega y, si descarga otro tracto, el tracto y el chofer.
                                                     "IMPORTACION-TRUJILLO" son unidades que cargaron en Ecuador y descargan en Trujillo: se anotan como retorno con carga en su viaje de ida de Vitapro.
@@ -123,12 +118,12 @@
                                                         <tbody>
                                                             <asp:Repeater ID="rptEntregasTerceros" runat="server">
                                                                 <ItemTemplate>
-                                                                    <tr>
+                                                                    <tr data-registrada='<%#: (bool)Eval("YaRegistrada") ? "1" : "0" %>'>
                                                                         <td><%#: Eval("Seccion") %><small class="d-block text-muted"><%#: Eval("Horario") %></small></td>
                                                                         <td><%#: Eval("Chofer") %><small class="d-block text-muted"><%#: Eval("CambioTexto") %></small></td>
                                                                         <td class="text-monospace"><%#: Eval("Tracto") %></td>
                                                                         <td class="text-monospace"><%#: Eval("Carreta") %></td>
-                                                                        <td><span class='<%#: "rd-chip " + Eval("ChipCss") %>'><%#: Eval("Estado") %></span><small class="d-block text-muted"><%#: Eval("Viaje") %></small></td>
+                                                                        <td><%# RegistroDespachoReglas.SelloEntrega(Eval("Estado"), Eval("Tono")) %><small class="d-block text-muted"><%#: Eval("Viaje") %></small></td>
                                                                     </tr>
                                                                 </ItemTemplate>
                                                             </asp:Repeater>
@@ -152,7 +147,6 @@
                                             </div>
 
                                             <div class="rd-notice mb-3">
-                                                <i class="fas fa-calendar-check mr-1"></i>
                                                 Se registra un despacho de carga por unidad, sin pedido ni guías: el viaje del chofer y su seguimiento GPS empiezan ya.
                                                 Cuando llegue el correo, suba el ZIP en este mismo recuadro y cada guía completará su despacho (pedido, factura y carga).
                                             </div>
@@ -162,7 +156,7 @@
                                                 <asp:Literal ID="litAvisosProg" runat="server" />
                                             </asp:Panel>
 
-                                            <div class="rd-section-label"><i class="fas fa-clipboard-list mr-1"></i> Datos de la carga</div>
+                                            <div class="rd-section-label">Datos de la carga</div>
                                             <div class="row mb-2">
                                                 <div class="col-md-3 form-group mb-2">
                                                     <label for="<%= ddlClienteProg.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Cliente <span class="text-danger">*</span></label>
@@ -182,7 +176,7 @@
                                                 </div>
                                             </div>
 
-                                            <div class="rd-section-label"><i class="fas fa-truck mr-1"></i> Unidades de la programación</div>
+                                            <div class="rd-section-label">Unidades de la programación</div>
                                             <div class="table-responsive">
                                                 <table class="table table-sm rd-tabla-conductores rd-tabla-import align-middle mb-3">
                                                     <thead>
@@ -209,11 +203,11 @@
                                                                         <asp:DropDownList ID="ddlConductorProg" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Conductor (Word: " + Eval("Chofer") + ")" %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
-                                                                        <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Tracto")) %></small>
+                                                                        <small class="rd-doc-dato" data-dato='<%#: Eval("Tracto") %>'>Word: <%# HttpUtility.HtmlEncode(Eval("Tracto")) %></small>
                                                                         <asp:DropDownList ID="ddlTractoProg" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Tracto (Word: " + Eval("Tracto") + ")" %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
-                                                                        <small class="rd-doc-dato">Word: <%# HttpUtility.HtmlEncode(Eval("Carreta")) %></small>
+                                                                        <small class="rd-doc-dato" data-dato='<%#: Eval("Carreta") %>'>Word: <%# HttpUtility.HtmlEncode(Eval("Carreta")) %></small>
                                                                         <asp:DropDownList ID="ddlCarretaProg" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Carreta (Word: " + Eval("Carreta") + ")" %>' />
                                                                     </td>
                                                                     <td><asp:Literal ID="litEstadoProg" runat="server" /></td>
@@ -265,7 +259,7 @@
                                             </asp:Panel>
 
                                             <!-- Lo único del lote que no viene en los documentos (o que conviene confirmar) -->
-                                            <div class="rd-section-label"><i class="fas fa-clipboard-list mr-1"></i> Datos del lote</div>
+                                            <div class="rd-section-label">Datos del lote</div>
                                             <div class="row mb-2">
                                                 <div class="col-md-4 form-group mb-2">
                                                     <label for="<%= ddlClienteImp.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Cliente <span class="text-danger">*</span></label>
@@ -284,7 +278,7 @@
                                                 </div>
                                             </div>
 
-                                            <div class="rd-section-label"><i class="fas fa-truck mr-1"></i> Tractos del pedido</div>
+                                            <div class="rd-section-label">Tractos del pedido</div>
                                             <div class="table-responsive">
                                                 <table class="table table-sm rd-tabla-conductores rd-tabla-import align-middle mb-3">
                                                     <thead>
@@ -295,6 +289,7 @@
                                                             <th>Tracto</th>
                                                             <th>Carreta <span class="text-danger">*</span></th>
                                                             <th>Carga</th>
+                                                            <th>Estado</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -305,7 +300,6 @@
                                                                     <td>
                                                                         <div class="rd-placa"><%# HttpUtility.HtmlEncode(Eval("NumeroTransporte")) %></div>
                                                                         <small class="text-muted"><%# HttpUtility.HtmlEncode(Eval("NumeroGuia") ?? "sin guía") %></small>
-                                                                        <asp:Literal ID="litYaRegistrado" runat="server" />
                                                                         <asp:Panel ID="pnlProgramadoImp" runat="server" CssClass="mt-1 rd-programado-sel">
                                                                             <small class="rd-doc-dato">Completa el despacho</small>
                                                                             <asp:DropDownList ID="ddlProgramadoImp" runat="server" CssClass="custom-select custom-select-sm"
@@ -317,16 +311,16 @@
                                                                         <asp:DropDownList ID="ddlConductorImp" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Conductor del transporte " + Eval("NumeroTransporte") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
-                                                                        <small class="rd-doc-dato">Documento: <%# HttpUtility.HtmlEncode(Eval("Placa")) %></small>
+                                                                        <small class="rd-doc-dato" data-dato='<%#: Eval("Placa") %>'>Documento: <%# HttpUtility.HtmlEncode(Eval("Placa")) %></small>
                                                                         <asp:DropDownList ID="ddlTractoImp" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Tracto del transporte " + Eval("NumeroTransporte") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
-                                                                        <small class="rd-doc-dato"><asp:Literal ID="litCarretaHint" runat="server" /></small>
+                                                                        <small class="rd-doc-dato" data-dato='<%#: RegistroDespachoReglas.DatoPistaCarreta((WebSGV.Models.Despachos.TractoImportado)Container.DataItem) %>'><asp:Literal ID="litCarretaHint" runat="server" /></small>
                                                                         <asp:DropDownList ID="ddlCarretaImp" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Carreta del transporte " + Eval("NumeroTransporte") %>' />
                                                                     </td>
                                                                     <td class="rd-carga-celda"><asp:Literal ID="litCargaImp" runat="server" /></td>
+                                                                    <td class="rd-col-estado"><asp:Literal ID="litEstadoImp" runat="server" /></td>
                                                                 </tr>
-                                                                <asp:Literal ID="litProgramacionImp" runat="server" />
                                                             </ItemTemplate>
                                                         </asp:Repeater>
                                                     </tbody>
@@ -335,7 +329,7 @@
 
                                             <!-- Altas que requieren aprobación -->
                                             <asp:Panel ID="pnlAltasImportacion" runat="server" Visible="false" CssClass="rd-doc-box mb-3">
-                                                <div class="rd-doc-title"><i class="fas fa-user-check mr-1"></i> Registros nuevos que requieren su aprobación</div>
+                                                <div class="rd-doc-title">Registros nuevos que requieren su aprobación</div>
 
                                                 <asp:Panel ID="pnlProductosNuevos" runat="server" Visible="false" CssClass="mb-3">
                                                     <div class="small font-weight-bold mb-1">Productos que no están en el catálogo del cliente</div>
@@ -388,7 +382,7 @@
                                             </asp:Panel>
 
                                             <asp:Panel ID="pnlArchivosIgnorados" runat="server" Visible="false" CssClass="small text-muted mb-3">
-                                                <i class="fas fa-info-circle mr-1"></i> Archivos no usados: <asp:Literal ID="litArchivosIgnorados" runat="server" />
+                                                Archivos no usados: <asp:Literal ID="litArchivosIgnorados" runat="server" />
                                             </asp:Panel>
 
                                             <div class="d-flex justify-content-end rd-grupo">
@@ -414,7 +408,7 @@
                                         <!-- Importación ya aplicada: los conductores entran al iniciar el lote -->
                                         <asp:Panel ID="pnlImportacionAplicada" runat="server" Visible="false" CssClass="rd-notice rd-notice-ok mt-3">
                                             <div class="d-flex justify-content-between align-items-center flex-wrap rd-grupo">
-                                                <span><i class="fas fa-check-circle mr-1"></i> <asp:Literal ID="litImportacionAplicada" runat="server" /></span>
+                                                <span><asp:Literal ID="litImportacionAplicada" runat="server" /></span>
                                                 <asp:Button ID="btnQuitarImportacion" runat="server"
                                                     Text="Quitar importación"
                                                     CssClass="btn btn-outline-secondary btn-sm"
@@ -428,12 +422,14 @@
                                 <!-- ====== DESCARGA POR PEDIDO (opcional) ======
                                      Lista los tractos cargados de un pedido que aún no se descargaron y arma
                                      el lote de DESCARGA con su carga, proponiendo el mismo conductor/tracto. -->
-                                <asp:Panel ID="pnlDescargaPedido" runat="server" CssClass="card mb-4 rd-import-card">
-                                    <div class="rd-step-header">
-                                        <h5>Registrar la descarga de un pedido ya cargado</h5>
-                                        <div class="rd-subtitle">Elija el pedido: aparecen sus tractos cargados que faltan descargar, con su carga. Cambie solo los que hicieron relevo en la base.</div>
+                                <asp:Panel ID="pnlDescargaPedido" runat="server" CssClass="sgv-panel mb-4 rd-import-card">
+                                    <div class="sgv-panel-cab">
+                                        <div>
+                                            <h2 class="sgv-panel-titulo">Registrar la descarga de un pedido ya cargado</h2>
+                                            <p class="sgv-panel-nota mb-0">Elija el pedido: aparecen sus tractos cargados que faltan descargar, con su carga. Cambie solo los que hicieron relevo en la base.</p>
+                                        </div>
                                     </div>
-                                    <div class="card-body">
+                                    <div class="sgv-panel-cuerpo">
                                         <asp:Panel ID="pnlElegirPedidoDescarga" runat="server">
                                             <div class="row align-items-end">
                                                 <div class="col-md-8 mb-2 mb-md-0">
@@ -467,7 +463,7 @@
 
                                             <!-- Programación en Word: por la placa de la carreta completa el chofer y el tracto
                                                  que descargan. btnLeerProgramacionDescarga es PostBackTrigger (FileUpload). -->
-                                            <div class="rd-section-label"><i class="fas fa-file-word mr-1"></i> Programación del día <span class="rd-chip rd-chip-wait ml-1">Opcional</span></div>
+                                            <div class="rd-section-label">Programación del día <span class="sgv-suave font-weight-normal">(opcional)</span></div>
                                             <div class="row align-items-end mb-2">
                                                 <div class="col-md-8 mb-2 mb-md-0">
                                                     <asp:FileUpload ID="fileProgramacionDescarga" runat="server" CssClass="form-control" aria-label="Programación del día en Word" accept=".docx" data-max-mb="5" data-max-envio-mb="24" />
@@ -485,7 +481,7 @@
                                                 <asp:Literal ID="litProgramacionLeida" runat="server" />
                                             </asp:Panel>
 
-                                            <div class="rd-section-label"><i class="fas fa-clipboard-list mr-1"></i> Datos del lote de descarga</div>
+                                            <div class="rd-section-label">Datos del lote de descarga</div>
                                             <div class="row mb-2">
                                                 <div class="col-md-4 form-group mb-2">
                                                     <label for="<%= txtFechaDescarga.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Fecha de programación <span class="text-danger">*</span></label>
@@ -498,9 +494,10 @@
                                                 </div>
                                             </div>
 
-                                            <div class="rd-section-label"><i class="fas fa-truck mr-1"></i> Tractos que descargan</div>
+                                            <div class="rd-section-label">Tractos que descargan</div>
                                             <div class="table-responsive">
-                                                <table class="table table-sm rd-tabla-conductores rd-tabla-import align-middle mb-3">
+                                                <%-- Sin la programación leída la columna Estado no dice nada: se oculta (rd-sin-estado). --%>
+                                                <table class="table table-sm rd-tabla-conductores rd-tabla-import align-middle mb-3<%= HayProgramacionDescarga ? "" : " rd-sin-estado" %>">
                                                     <thead>
                                                         <tr>
                                                             <th>Incluir</th>
@@ -510,6 +507,7 @@
                                                             <th>Carreta</th>
                                                             <th>Planta de descarga</th>
                                                             <th>Carga</th>
+                                                            <th>Estado</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -527,20 +525,20 @@
                                                                         <asp:DropDownList ID="ddlConductorDesc" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Conductor que descarga el transporte " + (Eval("NumeroTransporte") ?? "") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
-                                                                        <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("PlacaTracto")) %></small>
+                                                                        <small class="rd-doc-dato" data-dato='<%#: Eval("PlacaTracto") %>'>Cargó: <%# HttpUtility.HtmlEncode(Eval("PlacaTracto")) %></small>
                                                                         <asp:DropDownList ID="ddlTractoDesc" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Tracto que descarga el transporte " + (Eval("NumeroTransporte") ?? "") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
-                                                                        <small class="rd-doc-dato">Cargó: <%# HttpUtility.HtmlEncode(Eval("PlacaCarreta")) %></small>
+                                                                        <small class="rd-doc-dato" data-dato='<%#: Eval("PlacaCarreta") %>'>Cargó: <%# HttpUtility.HtmlEncode(Eval("PlacaCarreta")) %></small>
                                                                         <asp:DropDownList ID="ddlCarretaDesc" runat="server" CssClass="custom-select custom-select-sm select2-searchable" aria-label='<%# "Carreta del transporte " + (Eval("NumeroTransporte") ?? "") %>' />
                                                                     </td>
                                                                     <td class="rd-col-placa">
-                                                                        <small class="rd-doc-dato"><asp:Literal ID="litDestinoDesc" runat="server" /></small>
+                                                                        <small class="rd-doc-dato" data-dato=""><asp:Literal ID="litDestinoDesc" runat="server" /></small>
                                                                         <asp:DropDownList ID="ddlPlantaDesc" runat="server" CssClass="custom-select custom-select-sm" aria-label='<%# "Planta de descarga del transporte " + (Eval("NumeroTransporte") ?? "") %>' />
                                                                     </td>
                                                                     <td class="rd-carga-celda"><asp:Literal ID="litCargaDesc" runat="server" /></td>
+                                                                    <td class="rd-col-estado"><asp:Literal ID="litEstadoDesc" runat="server" /></td>
                                                                 </tr>
-                                                                <asp:Literal ID="litProgramacionDesc" runat="server" />
                                                             </ItemTemplate>
                                                         </asp:Repeater>
                                                     </tbody>
@@ -563,7 +561,7 @@
 
                                         <asp:Panel ID="pnlDescargaAplicada" runat="server" Visible="false" CssClass="rd-notice rd-notice-ok mt-3">
                                             <div class="d-flex justify-content-between align-items-center flex-wrap rd-grupo">
-                                                <span><i class="fas fa-check-circle mr-1"></i> <asp:Literal ID="litDescargaAplicada" runat="server" /></span>
+                                                <span><asp:Literal ID="litDescargaAplicada" runat="server" /></span>
                                                 <asp:Button ID="btnQuitarDescarga" runat="server"
                                                     Text="Quitar"
                                                     CssClass="btn btn-outline-secondary btn-sm"
@@ -578,17 +576,17 @@
                                      Camino manual (despachos sin Word ni ZIP): cerrado por defecto, se abre con
                                      el encabezado o con "Corregir datos a mano". -->
                                 <asp:Panel ID="pnlConfiguracionBase" runat="server">
-                                    <div class="card mb-4" style="border-top: 3px solid #1e40af;">
-                                        <button type="button" class="rd-step-header rd-manual-toggle<%= ManualAbierto ? "" : " collapsed" %>"
+                                    <div class="sgv-panel sgv-panel-acento mb-4">
+                                        <button type="button" class="sgv-panel-cab rd-manual-toggle<%= ManualAbierto ? "" : " collapsed" %>"
                                             data-toggle="collapse" data-target="#rdManualCuerpo"
                                             aria-expanded="<%= ManualAbierto ? "true" : "false" %>" aria-controls="rdManualCuerpo">
-                                            <div class="d-flex align-items-center">
-                                                <h5 class="flex-grow-1"><span class="rd-step-num">1</span> Registrar un lote a mano</h5>
+                                            <span class="d-flex align-items-center">
+                                                <span class="sgv-panel-titulo flex-grow-1"><span class="rd-step-num">1</span> Registrar un lote a mano</span>
                                                 <i class="fas fa-chevron-down rd-manual-chevron ml-2" aria-hidden="true"></i>
-                                            </div>
-                                            <div class="rd-subtitle">Para despachos sin Word ni documentos del correo (nacionales u otros clientes). Los de exportación se registran arriba.</div>
+                                            </span>
+                                            <small class="sgv-panel-nota d-block rd-paso-nota">Para despachos sin Word ni documentos del correo (nacionales u otros clientes). Los de exportación se registran arriba.</small>
                                         </button>
-                                        <div id="rdManualCuerpo" class="card-body collapse<%= ManualAbierto ? " show" : "" %>">
+                                        <div id="rdManualCuerpo" class="sgv-panel-cuerpo collapse<%= ManualAbierto ? " show" : "" %>">
                                             <div class="row">
                                                 <!-- Columna Izquierda -->
                                                 <div class="col-md-6">
@@ -743,7 +741,7 @@
                                             <!-- DOCUMENTACIÓN BASE -->
                                             <div class="row mt-4">
                                                 <div class="col-12">
-                                                    <div class="rd-section-label"><i class="fas fa-file-alt mr-1"></i> Documentación base del lote</div>
+                                                    <div class="rd-section-label">Documentación base del lote</div>
                                                     
                                                     <!-- Panel de Ayuda de Documentos -->
                                                     <asp:Panel ID="pnlAyudaDocumentosBase" runat="server" CssClass="rd-notice mb-3">
@@ -754,7 +752,7 @@
                                                         <!-- FACTURA BASE -->
                                                         <div class="col-md-6">
                                                             <asp:Panel ID="pnlFacturaBase" runat="server" CssClass="rd-doc-box mb-3" Visible="false">
-                                                                <div class="rd-doc-title"><i class="fas fa-receipt mr-1"></i> Datos de factura</div>
+                                                                <div class="rd-doc-title">Datos de factura</div>
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="<%= txtNumeroFacturaBase.ClientID %>" class="sgv-etiqueta">
@@ -868,7 +866,7 @@
                                                         <!-- CPIC BASE -->
                                                         <div class="col-md-6">
                                                             <asp:Panel ID="pnlCPICBase" runat="server" CssClass="rd-doc-box mb-3" Visible="false">
-                                                                <div class="rd-doc-title"><i class="fas fa-shipping-fast mr-1"></i> Datos de CPIC</div>
+                                                                <div class="rd-doc-title">Datos de CPIC</div>
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="<%= txtNumeroCPICBase.ClientID %>" class="sgv-etiqueta">
@@ -994,11 +992,11 @@
 
                                 <!-- ====== RESUMEN DEL LOTE ACTIVO ====== -->
                                 <asp:Panel ID="pnlResumenLote" runat="server" Visible="false">
-                                    <div class="card mb-4" style="border-top: 3px solid #16a34a;">
-                                        <div class="rd-summary-header">
-                                            <h5>Lote activo</h5>
+                                    <div class="sgv-panel rd-panel-ok mb-4">
+                                        <div class="sgv-panel-cab">
+                                            <h2 class="sgv-panel-titulo">Lote activo</h2>
                                         </div>
-                                        <div class="card-body">
+                                        <div class="sgv-panel-cuerpo">
                                             <div class="row">
                                                 <div class="col-md-4">
                                                     <p class="mb-1"><strong>Fecha:</strong> <asp:Label ID="lblResumenFecha" runat="server"></asp:Label></p>
@@ -1014,7 +1012,7 @@
                                                     </asp:PlaceHolder>
                                                 </div>
                                                 <div class="col-md-4">
-                                                    <p class="mb-1"><strong>Conductores agregados:</strong> <asp:Label ID="lblResumenCantidad" runat="server" CssClass="badge bg-primary">0</asp:Label></p>
+                                                    <p class="mb-1"><strong>Conductores agregados:</strong> <asp:Label ID="lblResumenCantidad" runat="server">0</asp:Label></p>
                                                     <div class="mt-2">
                                                         <asp:Button ID="btnCancelarLote" runat="server" 
                                                             Text="Cancelar lote" 
@@ -1043,16 +1041,17 @@
 
                                 <!-- ====== FASE 2: ADICIÓN DE CONDUCTORES ====== -->
                                 <asp:Panel ID="pnlAdicionConductores" runat="server" Visible="false">
-                                    <asp:Panel ID="pnlConductorCard" runat="server" CssClass="card mb-4 rd-conductor-card" style="border-top: 3px solid #1e40af;">
-                                        <div class="rd-step-header">
-                                            <h5><span class="rd-step-num">2</span> <asp:Literal ID="litTituloConductor" runat="server" Text="Agregar conductores al lote"></asp:Literal></h5>
-                                            <div class="rd-subtitle">Complete los datos específicos para cada conductor</div>
+                                    <asp:Panel ID="pnlConductorCard" runat="server" CssClass="sgv-panel sgv-panel-acento mb-4 rd-conductor-card">
+                                        <div class="sgv-panel-cab">
+                                            <div>
+                                                <h2 class="sgv-panel-titulo"><span class="rd-step-num">2</span> <asp:Literal ID="litTituloConductor" runat="server" Text="Agregar conductores al lote"></asp:Literal></h2>
+                                                <p class="sgv-panel-nota mb-0 rd-paso-nota">Complete los datos específicos para cada conductor</p>
+                                            </div>
                                         </div>
-                                        <div class="card-body">
+                                        <div class="sgv-panel-cuerpo">
 
                                             <!-- Aviso de modo edición -->
                                             <asp:Panel ID="pnlModoEdicion" runat="server" Visible="false" CssClass="rd-edit-flag mb-3">
-                                                <i class="fas fa-pen mr-1"></i>
                                                 Editando a <asp:Label ID="lblConductorEnEdicion" runat="server"></asp:Label>.
                                                 Los cambios reemplazan los datos de esa fila.
                                             </asp:Panel>
@@ -1062,7 +1061,7 @@
                                             <asp:Panel ID="pnlMensajeConductor" runat="server" Visible="false" EnableViewState="false" CssClass="mb-3">
                                                 <div class="position-relative">
                                                     <asp:Label ID="lblMensajeConductor" runat="server" EnableViewState="false" CssClass="alert d-block mb-0 pr-5"></asp:Label>
-                                                    <button type="button" class="close position-absolute" style="top:.65rem;right:.75rem;"
+                                                    <button type="button" class="close sgv-cerrar-aviso"
                                                         data-accion="cerrarBloqueMensaje" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                                                 </div>
                                             </asp:Panel>
@@ -1075,16 +1074,15 @@
                                             <%-- Envío único de "Crear nuevo viaje" (E5-3): dentro de este panel (y fuera de
                                                  pnlViajesProgreso, que puede estar oculto) para que el token nuevo llegue al navegador --%>
                                             <asp:HiddenField ID="hfEnvioUnicoViaje" runat="server" />
-                                            <asp:Panel ID="pnlViajesProgreso" runat="server" CssClass="card mb-4" style="border-top: 2px solid #6d28d9;" Visible="false">
-                                                <div class="rd-viaje-header">
-                                                    <h6>Viajes en Progreso — <span id="spanNombreConductor" runat="server"></span></h6>
+                                            <asp:Panel ID="pnlViajesProgreso" runat="server" CssClass="sgv-panel rd-panel-viaje mb-4" Visible="false">
+                                                <div class="sgv-panel-cab">
+                                                    <h3 class="sgv-panel-titulo">Viajes en progreso de <span id="spanNombreConductor" runat="server"></span></h3>
                                                 </div>
-                                                <div class="card-body">
+                                                <div class="sgv-panel-cuerpo">
                                                     <div class="row">
                                                         <div class="col-md-8">
                                                             <asp:Panel ID="pnlSinViajes" runat="server" Visible="true">
                                                                 <div class="rd-notice mb-0">
-                                                                    <i class="fas fa-info-circle mr-1"></i>
                                                                     <strong>Sin viajes activos:</strong> Se creará automáticamente un nuevo viaje en progreso para este conductor.
                                                                 </div>
                                                             </asp:Panel>
@@ -1096,7 +1094,7 @@
                                                                  <div class="rd-notice rd-notice-ok">
                                                                     <div class="row align-items-center">
                                                                         <div class="col-md-12">
-                                                                            <strong><i class="fas fa-clipboard-list"></i> <asp:Label ID="lblNumeroViaje" runat="server"></asp:Label></strong><br>
+                                                                            <strong><asp:Label ID="lblNumeroViaje" runat="server"></asp:Label></strong><br>
                                                                             <small class="text-muted">
                                                                                 Iniciado: <asp:Label ID="lblFechaInicio" runat="server"></asp:Label> | 
                                                                                 Despachos: <asp:Label ID="lblCantidadDespachos" runat="server"></asp:Label> | 
@@ -1233,7 +1231,7 @@
 
                                                 <!-- Columna Derecha - Guías Específicas -->
                                                 <div class="col-md-6 rd-form-col">
-                                                    <div class="rd-section-label mt-3"><i class="fas fa-file-alt mr-1"></i> Documentos del conductor</div>
+                                                    <div class="rd-section-label mt-3">Documentos del conductor</div>
 
                                                     <!-- Guía Remitente -->
                                                     <asp:Panel ID="pnlGuiaRemitenteConductor" runat="server" Visible="false">
@@ -1311,7 +1309,7 @@
                                                          que se agregaba un conductor. -->
                                                     <asp:Panel ID="pnlManifiestoConductor" runat="server" Visible="false">
                                                         <div class="rd-notice rd-notice-warn mb-3">
-                                                            <div class="rd-doc-title" style="color:inherit;"><i class="fas fa-passport mr-1"></i> Manifiesto de aduana</div>
+                                                            <div class="rd-doc-title">Manifiesto de aduana</div>
                                                             <small>
                                                                 Cada conductor porta dos ejemplares: uno para cruzar la frontera y otro para el regreso.
                                                                 Se adjuntan desde <strong>Gestión de despachos</strong>, buscando el despacho una vez
@@ -1323,7 +1321,6 @@
                                                     <!-- Información de documentos que se reutilizan -->
                                                     <div class="rd-notice">
                                                         <small>
-                                                            <i class="fas fa-info-circle mr-1"></i>
                                                             <strong>Se reutilizan del lote:</strong><br>
                                                             <asp:Label ID="lblDocumentosReutilizados" runat="server"></asp:Label>
                                                         </small>
@@ -1362,15 +1359,15 @@
 
                                 <!-- ====== LISTA DE CONDUCTORES AGREGADOS AL LOTE ====== -->
                                 <asp:Panel ID="pnlListaConductores" runat="server" Visible="false">
-                                    <div class="card mb-4">
-                                        <div class="rd-list-header">
-                                            <h5>Conductores del lote</h5>
+                                    <div class="sgv-panel mb-4">
+                                        <div class="sgv-panel-cab">
+                                            <h2 class="sgv-panel-titulo">Conductores del lote</h2>
                                         </div>
-                                        <div class="card-body">
+                                        <div class="sgv-panel-cuerpo">
                                             <div class="table-responsive">
                                             <asp:GridView ID="gvConductoresLote" runat="server"
                                                 CssClass="table table-hover rd-tabla-conductores align-middle"
-                                                AutoGenerateColumns="false"
+                                                AutoGenerateColumns="false" CellSpacing="-1"
                                                 EmptyDataText="Todavía no hay conductores en este lote."
                                                 OnRowCommand="gvConductoresLote_RowCommand"
                                                 OnRowDataBound="gvConductoresLote_RowDataBound">
@@ -1395,10 +1392,10 @@
                                                         <ItemTemplate><%# MostrarDato(Eval("GuiaTransportista")) %></ItemTemplate>
                                                     </asp:TemplateField>
                                                     <asp:TemplateField HeaderText="Manifiesto">
-                                                        <ItemTemplate><%# ChipManifiesto(Eval("Manifiesto")) %></ItemTemplate>
+                                                        <ItemTemplate><%# RegistroDespachoReglas.SelloManifiesto(Eval("Manifiesto")) %></ItemTemplate>
                                                     </asp:TemplateField>
                                                     <asp:TemplateField HeaderText="Estado viaje">
-                                                        <ItemTemplate><%# ChipEstadoViaje(Eval("EstadoViaje")) %></ItemTemplate>
+                                                        <ItemTemplate><%# RegistroDespachoReglas.SelloEstadoViaje(Eval("EstadoViaje")) %></ItemTemplate>
                                                     </asp:TemplateField>
                                                     <asp:TemplateField HeaderText="Acciones" ItemStyle-CssClass="text-right" HeaderStyle-CssClass="text-right">
                                                         <ItemTemplate>
@@ -1454,10 +1451,6 @@
                                 <asp:AsyncPostBackTrigger ControlID="gvConductoresLote" EventName="RowCommand" />
                             </Triggers>
                         </asp:UpdatePanel>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Modal para Historial de Viajes -->
@@ -1476,7 +1469,7 @@
                             <div class="table-responsive">
                             <asp:GridView ID="gvHistorialViajes" runat="server" 
                                 CssClass="table table-striped table-hover"
-                                AutoGenerateColumns="false"
+                                AutoGenerateColumns="false" CellSpacing="-1"
                                 EmptyDataText="No se encontraron viajes para este conductor"
                                 OnRowCommand="gvHistorialViajes_RowCommand">
                                 <Columns>

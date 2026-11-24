@@ -1,4 +1,5 @@
-﻿// Hook: sincroniza la clase Bootstrap is-invalid con el resultado de cada validator de ASP.NET
+﻿// Hook: sincroniza la clase Bootstrap is-invalid con el resultado de cada validator de ASP.NET.
+// Select2 se pinta solo: RegistroDespacho.css tiene "select.is-invalid + .select2-container" (M-143: sin colores en línea).
 (function () {
     function hookValidatorDisplay() {
         if (typeof ValidatorUpdateDisplay === 'undefined') return;
@@ -7,22 +8,7 @@
             _orig(val);
             var ctrl = document.getElementById(val.controltovalidate);
             if (!ctrl) return;
-            if (!val.isvalid) {
-                ctrl.classList.add('is-invalid');
-            } else {
-                ctrl.classList.remove('is-invalid');
-            }
-            // Select2: propagar al contenedor visual
-            if (ctrl.classList.contains('select2-searchable') || ctrl.tagName === 'SELECT') {
-                var container = ctrl.nextElementSibling;
-                if (container && container.classList.contains('select2-container')) {
-                    var selection = container.querySelector('.select2-selection');
-                    if (selection) {
-                        selection.style.borderColor = val.isvalid ? '' : '#dc3545';
-                        selection.style.boxShadow = val.isvalid ? '' : '0 0 0 0.2rem rgba(220,53,69,.15)';
-                    }
-                }
-            }
+            ctrl.classList.toggle('is-invalid', !val.isvalid);
         };
     }
 
@@ -39,11 +25,5 @@
 $(document).on('input change', '.form-control.is-invalid, .custom-select.is-invalid', function () {
     if (this.value.trim() !== '') {
         this.classList.remove('is-invalid');
-        // Select2
-        var container = this.nextElementSibling;
-        if (container && container.classList.contains('select2-container')) {
-            var selection = container.querySelector('.select2-selection');
-            if (selection) { selection.style.borderColor = ''; selection.style.boxShadow = ''; }
-        }
     }
 });

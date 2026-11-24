@@ -1,44 +1,45 @@
-/* ---- Registro Despacho - Minimal Professional ---- */
-.rd-step-header { background: var(--sgv-fondo); border-bottom: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: .85rem 1.25rem; }
-.rd-step-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: var(--sgv-texto); display: flex; align-items: center; gap: .45rem; }
-.rd-step-header .rd-subtitle { font-size: .77rem; color: var(--sgv-texto-suave); margin-top: 3px; margin-left: 2rem; }
-/* Sin número delante del título (E5-24b): el subtítulo va alineado con el título. */
-.rd-import-card .rd-step-header .rd-subtitle { margin-left: 0; }
-.rd-manual-toggle { display: block; width: 100%; text-align: left; border: 0; cursor: pointer; }
+/* ---- Registro de despachos (E5-18b: paneles sgv-panel de sgv-base.css) ---- */
+/* La cabecera del lote a mano es el botón que pliega el formulario. */
+.rd-manual-toggle { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--sgv-borde); cursor: pointer; }
+.rd-manual-toggle .sgv-panel-titulo { display: flex; align-items: center; gap: .45rem; }
+.sgv-panel-cab .sgv-panel-titulo .rd-step-num { margin-right: .2rem; }
+/* La nota de los pasos 1 y 2 alineada con el título, después del número. */
+.rd-paso-nota { margin-top: .15rem; margin-left: 1.95rem; }
 .rd-manual-toggle.collapsed { border-bottom: 0; border-radius: var(--sgv-radio); }
 .rd-manual-toggle:hover { background: var(--sgv-fondo-pagina); }
 .rd-manual-chevron { font-size: .75rem; color: var(--sgv-texto-suave); transition: transform .2s; }
 .rd-manual-toggle:not(.collapsed) .rd-manual-chevron { transform: rotate(180deg); }
-.rd-step-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--sgv-primario-osc); color: var(--sgv-blanco); font-size: .72rem; font-weight: 700; flex-shrink: 0; }
-.rd-summary-header { background: var(--sgv-verde-50); border-bottom: 1px solid var(--sgv-verde-200); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: .85rem 1.25rem; }
-.rd-summary-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: var(--sgv-ok-texto); display: flex; align-items: center; gap: .45rem; }
+.rd-step-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--sgv-primario-osc); color: var(--sgv-blanco); font-size: .75rem; font-weight: 700; flex-shrink: 0; }
+/* Lote activo: línea verde arriba y cabecera verde suave; viajes del conductor: línea violeta. */
+.rd-panel-ok { border-top: 3px solid var(--sgv-ok); }
+.rd-panel-ok > .sgv-panel-cab { background: var(--sgv-verde-50); border-bottom-color: var(--sgv-verde-200); border-radius: 0; }
+.rd-panel-ok > .sgv-panel-cab .sgv-panel-titulo { color: var(--sgv-ok-texto); }
+.rd-panel-viaje { border-top: 2px solid var(--sgv-violeta-800); }
+.rd-panel-viaje > .sgv-panel-cab { background: var(--sgv-violeta-50); border-bottom-color: var(--sgv-violeta-200); border-radius: 0; }
+.rd-panel-viaje > .sgv-panel-cab .sgv-panel-titulo { font-size: .875rem; color: var(--sgv-violeta-900); }
 .rd-section-label { font-size: .77rem; font-weight: 700; color: var(--sgv-texto-suave); border-bottom: 1px solid var(--sgv-borde); padding-bottom: .4rem; margin-bottom: 1rem; }
 .rd-doc-box { background: var(--sgv-fondo); border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); padding: 1rem; }
 .rd-doc-box .rd-doc-title { font-size: .78rem; font-weight: 700; color: var(--sgv-texto-medio); margin-bottom: .75rem; }
+.rd-notice .rd-doc-title { font-size: .78rem; font-weight: 700; color: inherit; margin-bottom: .25rem; }
 .rd-notice { background: var(--sgv-fondo); border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); padding: .7rem 1rem; font-size: .84rem; color: var(--sgv-texto-medio); }
 .rd-notice-ok { background: var(--sgv-verde-50); border-color: var(--sgv-verde-200); color: var(--sgv-ok-texto); }
 .rd-notice-warn { background: var(--sgv-ambar-50); border-color: var(--sgv-ambar-200); color: var(--sgv-alerta-texto); }
-.rd-viaje-header { background: var(--sgv-violeta-50); border-bottom: 1px solid var(--sgv-violeta-200); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: .85rem 1.25rem; }
-.rd-viaje-header h6 { margin: 0; font-size: .88rem; font-weight: 600; color: var(--sgv-violeta-900); display: flex; align-items: center; gap: .45rem; }
-.rd-list-header { background: var(--sgv-fondo); border-bottom: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio) var(--sgv-radio) 0 0; padding: .85rem 1.25rem; }
-.rd-list-header h5 { margin: 0; font-size: .9rem; font-weight: 600; color: var(--sgv-texto); }
-/* ---- Stepper de progreso ---- */
-.rd-stepper { padding: .5rem 0 .25rem; }
-.rd-stepper-inner { display: flex; align-items: center; justify-content: center; gap: 0; }
-.rd-stepper-item { display: flex; flex-direction: column; align-items: center; gap: .3rem; min-width: 110px; }
-.rd-stepper-circle { width: 34px; height: 34px; border-radius: 50%; background: var(--sgv-borde); color: var(--sgv-texto-suave); font-size: .8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid var(--sgv-borde); transition: background .3s, color .3s, border-color .3s; }
-.rd-stepper-item.active .rd-stepper-circle { background: var(--sgv-primario-osc); color: var(--sgv-blanco); border-color: var(--sgv-primario-osc); }
-.rd-stepper-item.done .rd-stepper-circle { background: var(--sgv-verde-600); color: var(--sgv-blanco); border-color: var(--sgv-verde-600); }
-.rd-stepper-label { font-size: .72rem; font-weight: 600; color: var(--sgv-texto-suave); transition: color .3s; }
-.rd-stepper-item.active .rd-stepper-label { color: var(--sgv-info-texto); }
-.rd-stepper-item.done .rd-stepper-label { color: var(--sgv-verde-600); }
-.rd-stepper-connector { flex: 1; height: 2px; background: var(--sgv-borde); max-width: 120px; margin-bottom: 1.4rem; }
+/* ---- Tira de pasos (M-086): la del día (Word, ZIP, pendientes) y la del lote a mano ---- */
+.rd-pasos { list-style: none; counter-reset: rd-paso; display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; padding: 0; }
+.rd-pasos > li { counter-increment: rd-paso; flex: 1 1 15rem; display: flex; flex-direction: column; gap: .1rem; padding: .45rem .75rem; background: var(--sgv-superficie); border: 1px solid var(--sgv-borde); border-left: 3px solid var(--sgv-borde-fuerte); border-radius: var(--sgv-radio); font-size: .8125rem; color: var(--sgv-texto-suave); line-height: 1.35; }
+.rd-pasos > li::before { content: "Paso " counter(rd-paso); font-size: .75rem; font-weight: 600; color: var(--sgv-texto-suave); }
+.rd-pasos > li > strong { font-size: .875rem; color: var(--sgv-texto); }
+.rd-pasos > li.activo { border-color: var(--sgv-info-borde); border-left-color: var(--sgv-primario); background: var(--sgv-primario-claro); }
+.rd-pasos > li.activo::before { color: var(--sgv-info-texto); }
+.rd-pasos > li.hecho { border-left-color: var(--sgv-ok); }
+.rd-pasos > li.hecho::before { content: "Paso " counter(rd-paso) " · hecho"; color: var(--sgv-ok-texto); }
+.rd-pasos-manual > li { flex: 0 1 14rem; }
 
 /* ---- Barra compacta de resumen del lote (reemplaza la tarjeta grande) ---- */
 .rd-lote-bar { background: var(--sgv-verde-50); border: 1px solid var(--sgv-verde-200); border-radius: var(--sgv-radio); padding: .7rem 1rem; }
 .rd-lote-bar .rd-lote-grid { display: flex; flex-wrap: wrap; gap: .35rem 1.75rem; }
 .rd-lote-item { display: flex; flex-direction: column; line-height: 1.25; }
-.rd-lote-item .rd-lote-k { font-size: .66rem; font-weight: 700; color: var(--sgv-ok); }
+.rd-lote-item .rd-lote-k { font-size: .75rem; font-weight: 700; color: var(--sgv-ok); }
 .rd-lote-item .rd-lote-v { font-size: .84rem; font-weight: 600; color: var(--sgv-verde-900); }
 
 /* ---- Formulario de conductor: grilla estable ----
@@ -50,14 +51,10 @@
 
 /* ---- Tabla de conductores ---- */
 .rd-tabla-conductores { font-size: .86rem; }
-.rd-tabla-conductores thead th { background: var(--sgv-fondo); color: var(--sgv-texto-suave); font-size: .72rem; font-weight: 700; border-bottom: 2px solid var(--sgv-borde); white-space: nowrap; }
+.rd-tabla-conductores thead th { background: var(--sgv-fondo); color: var(--sgv-texto-suave); font-size: .75rem; font-weight: 700; border-bottom: 2px solid var(--sgv-borde); white-space: nowrap; }
 .rd-tabla-conductores td { vertical-align: middle; }
 .rd-tabla-conductores tr.rd-fila-editando > td { background: var(--sgv-ambar-50) !important; }
 .rd-placa { font-family: Consolas, "Courier New", monospace; font-weight: 700; }
-.rd-chip { display: inline-block; padding: .12rem .5rem; border-radius: var(--sgv-radio); font-size: .7rem; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
-.rd-chip-ok { background: var(--sgv-verde-50); border-color: var(--sgv-verde-200); color: var(--sgv-ok-texto); }
-.rd-chip-wait { background: var(--sgv-fondo); border-color: var(--sgv-borde); color: var(--sgv-texto-suave); }
-.rd-chip-warn { background: var(--sgv-ambar-50); border-color: var(--sgv-ambar-200); color: var(--sgv-alerta-texto); }
 .rd-sin-datos { color: var(--sgv-texto-suave); }
 
 /* Importación de documentos del pedido */
@@ -65,18 +62,23 @@
    se libera el ancho fijo del .container de Site.Master solo aquí. */
 .container:has(> .rd-pagina) { max-width: 1680px; }
 .rd-tabla-import { font-size: .84rem; }
+/* El select original de select2 (.select2-hidden-accessible, absolute) se escapaba del scroll de la tabla y ensanchaba la página a 390 px. */
+.table-responsive { position: relative; }
 .rd-tabla-import td { vertical-align: top; padding-top: .65rem; padding-bottom: .65rem; }
 .rd-tabla-import .rd-col-conductor { min-width: 300px; width: 30%; }
 .rd-tabla-import .rd-col-placa { min-width: 150px; width: 13%; }
 .rd-tabla-import .rd-col-hora { min-width: 7rem; }
 .rd-tabla-import .rd-programado-sel { min-width: 12rem; }
+/* Columna Estado de las vistas previas (M-081): el sello y, debajo, lo que dice la programación y sus avisos. */
+.rd-tabla-import .rd-col-estado { min-width: 14rem; }
+.rd-sin-estado > thead th:last-child, .rd-sin-estado td.rd-col-estado { display: none; }
 
 /* CPIC de la descarga: opcional (puede llegar después de la programación) */
 .rd-opcional { display: none; }
 .rd-cpic-opcional .rd-opcional { display: inline; }
 .rd-cpic-opcional .rd-req { display: none; }
 .rd-carga-celda { min-width: 260px; }
-.rd-doc-dato { display: block; font-size: .72rem; color: var(--sgv-texto-suave); min-height: 1.1rem; margin-bottom: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-doc-dato { display: block; font-size: .75rem; color: var(--sgv-texto-suave); min-height: 1.1rem; margin-bottom: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rd-fila-registrada > td { opacity: .55; }
 .rd-check-aprobar input { margin-right: .45rem; }
 /* Estados del desplegable: nuevo por aprobar (ámbar) y sugerido por el sistema (azul) */
@@ -93,21 +95,6 @@ select.rd-select-sugerido, select.rd-select-sugerido + .select2-container .selec
 .rd-tabla-import .select2-container.select2-container--default .select2-selection--single .select2-selection__arrow { height: calc(1.5em + .5rem); }
 
 /* ===== Antes RegistroDespacho-2.css (unida en E5-13: se cargaba después de esta hoja y de select2.min.css) ===== */
-
-/* Estilos mejorados para el sistema de lotes */
-.card {
-    box-shadow: none;
-    border: 1px solid var(--sgv-borde);
-    margin-bottom: 1rem;
-    transition: transform 0.2s ease-in-out;
-}
-
-.card:hover {
-}
-
-.card-header {
-    border-bottom: 2px solid rgba(var(--sgv-negro-rgb), 0.1);
-}
 
 /* Variante de la página: tamaño y color del texto que la rodea (la regla común de sgv-base es más chica). */
 .sgv-etiqueta {
@@ -148,22 +135,6 @@ select.rd-select-sugerido, select.rd-select-sugerido + .select2-container .selec
 /* File upload styling */
 .form-control[type="file"] {
     padding: 0.375rem 0.75rem;
-}
-
-/* Estilos específicos para el sistema de lotes */
-.card[style*="border-left: 4px solid #007bff"] {
-}
-
-.card[style*="border-left: 4px solid #28a745"] {
-}
-
-.card[style*="border-left: 4px solid #ffc107"] {
-}
-
-/* Estilo para el badge del estado del lote */
-.badge {
-    font-size: 0.75rem;
-    padding: 0.5rem 1rem;
 }
 
 /* Resumen del lote */
@@ -246,6 +217,14 @@ select.rd-select-sugerido, select.rd-select-sugerido + .select2-container .selec
     .col-md-6, .col-md-4 {
         margin-bottom: 1rem;
     }
+
+    /* Al tacto, los combos con buscador con la altura de un botón (M-145), también en las tablas de las vistas previas. */
+    .select2-container.select2-container--default .select2-selection--single,
+    .rd-tabla-import .select2-container.select2-container--default .select2-selection--single { height: 2.75rem; }
+    .select2-container.select2-container--default .select2-selection--single .select2-selection__rendered,
+    .rd-tabla-import .select2-container.select2-container--default .select2-selection--single .select2-selection__rendered { line-height: calc(2.75rem - 2px); }
+    .select2-container.select2-container--default .select2-selection--single .select2-selection__arrow,
+    .rd-tabla-import .select2-container.select2-container--default .select2-selection--single .select2-selection__arrow { height: calc(2.75rem - 2px); }
 }
 
 /* Estilo especial para panel bloqueado */
@@ -316,11 +295,7 @@ select.is-invalid + .select2-container .select2-selection--single {
     box-shadow: 0 0 0 0.2rem rgba(var(--sgv-peligro-rgb), 0.25);
 }
 
-/* ===== Importar: casos de uso y zona para soltar archivos (2026-11-12) ===== */
-.rd-casos { list-style: none; margin: .625rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .5rem; }
-.rd-casos li { background: var(--sgv-superficie); border: 1px solid var(--sgv-borde); border-left: 3px solid var(--sgv-primario-osc); border-radius: var(--sgv-radio); padding: .45rem .7rem; }
-.rd-casos strong { display: block; font-size: .8125rem; color: var(--sgv-texto); }
-.rd-casos span { font-size: .78rem; color: var(--sgv-texto-suave); line-height: 1.35; display: block; }
+/* ===== Importar: zona para soltar archivos (2026-11-12) ===== */
 .rd-zona {
     position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3rem;
     margin: 0; padding: 1.5rem 1rem; text-align: center; cursor: pointer;

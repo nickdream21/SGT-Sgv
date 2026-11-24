@@ -902,13 +902,17 @@ namespace WebSGV.Tests
         /// E5-17c: 77 a 76 (fuera la lupa decorativa de la búsqueda de FacturasFlete).
         /// E5-18a: 76 a 52 (ListaDespachos sin tarjetas, chips, títulos con icono ni fa-info-circle; quedan sus dos
         /// avisos de advertencia, el de Editar lote y el del lote que espera el correo).
+        /// E5-18b: 52 a 30 (RegistroDespacho sin iconos en títulos, rótulos, avisos informativos ni chips; quedan sus
+        /// tres avisos de advertencia y la flecha que pliega el lote a mano, que es funcional).
         /// Igualdad exacta: al quitar iconos, baje la cifra.</summary>
-        private const int TopeIconosMarcado = 52;
+        private const int TopeIconosMarcado = 30;
         /// <summary>Iconos armados en .cs/.js. E5-17c: 55 a 39 (fuera los 16 de BandejaDocumentos que eran estado o
         /// adorno, pasados a sellos sgv-estado con texto; quedan su aviso de observaciones y la flecha de plegar, que es
-        /// funcional). E5-18a: 39 a 38 (InsigniaDocumento de ListaDespachos es un sello con texto). Lo que queda es sobre
-        /// todo RegistroDespacho (E5-18) y botones compactos con aria-label.</summary>
-        private const int TopeIconosCodigo = 38;
+        /// funcional). E5-18a: 39 a 38 (InsigniaDocumento de ListaDespachos es un sello con texto). E5-18b: 38 a 25
+        /// (RegistroDespacho: fuera los iconos de los resúmenes de la programación, de la fila extra y de la sesión
+        /// recuperada; quedan el aviso de nombre truncado y RegistroDespachoReglas.AvisosHtml, el aviso ámbar común de
+        /// las tres vistas previas). Lo que queda son avisos y botones compactos con aria-label.</summary>
+        private const int TopeIconosCodigo = 25;
 
         private static readonly Regex IconoDinamico = new Regex(@"<i\s+class\s*=\s*[""']<%", RegexOptions.IgnoreCase);
         private static readonly Regex IconoEnCodigo = new Regex(@"<i class=[\\""']+fa[srlbd]? ");
