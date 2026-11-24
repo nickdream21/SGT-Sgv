@@ -86,7 +86,7 @@ namespace WebSGV.Views.Exportacion
             bool tercero = RutaTercero.Es(v.TipoRuta);
             Title = (tercero ? "Viaje " : "Pedido ") + v.Pedido;
             litTitulo.Text = (tercero ? "Viaje " : "Pedido ") + "<span class=\"sx-mono\">" + Html(v.Pedido ?? "sin número") + "</span>";
-            litFase.Text = $"<span class=\"sx-fase sx-fase-{v.Fase.Grupo}\" style=\"font-size:0.8125rem;vertical-align:middle;\">{Html(v.Fase.Nombre)}</span>";
+            litFase.Text = $"<span class=\"sx-fase sx-fase-titulo sx-fase-{v.Fase.Grupo}\">{Html(v.Fase.Nombre)}</span>";
             bool deDespacho = v.Origen == "DESPACHO";
             var partes = new List<string>
             {

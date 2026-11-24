@@ -34,7 +34,24 @@
 .sx-aviso-gps[hidden] { display: none; }
 
 /* Filtros del tablero */
-.sx-filtros { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin-bottom: 1rem; }
+/* details.sgv-filtros (sgv-base.css) con el cuerpo en fila; el "n de m viajes" del buscador va debajo. */
+.sx-filtros { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; }
+.sx-buscar { width: 16rem; max-width: 70vw; }
+.sx-campo.sx-campo-casilla { flex-direction: row; align-items: center; gap: 0.375rem; height: 2.25rem; font-size: 0.8125rem; }
+p.sx-filtro-cuenta { margin: -0.5rem 0 1rem; }
+p.sx-filtro-cuenta:empty { display: none; }
+
+/* Reportes del encabezado: plegables en el celular; en escritorio, sin caja y en fila como los demás botones
+   (el rótulo solo se oculta abierto, para que un details cerrado al cargar en el celular se pueda volver a abrir). */
+.sx-reportes > .sgv-plegable-cuerpo { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+@media (min-width: 768px) {
+    details.sgv-plegable.sx-reportes { margin: 0; border: 0; background: none; }
+    details.sgv-plegable.sx-reportes[open] > summary { display: none; }
+    .sx-reportes > .sgv-plegable-cuerpo { padding: 0; }
+}
+@media (max-width: 767.98px) {
+    details.sgv-plegable.sx-reportes { flex: 1 1 100%; margin: 0; }
+}
 .sx-campo { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.75rem; color: var(--sgv-gris-600); }
 .sx-campo input, .sx-campo select, .sx-campo textarea {
     height: 2.25rem; padding: 0 0.625rem; border: 1px solid var(--sgv-borde-fuerte);
@@ -59,10 +76,17 @@
 
 .sx-avance { display: flex; flex-direction: column; gap: 0.25rem; min-width: 9rem; font-size: 0.75rem; color: var(--sgv-gris-600); }
 .sx-avance-fila { display: flex; justify-content: space-between; }
-.sx-avance-barra { height: 4px; background: var(--sgv-gris-200); border-radius: 2px; overflow: hidden; }
-.sx-avance-barra > span { display: block; height: 100%; border-radius: 2px; }
-.sx-avance-carga > span { background: var(--sgv-primario); }
-.sx-avance-descarga > span { background: var(--sgv-turquesa-700); }
+/* Barra de avance: <progress> (el ancho sale de value/max, sin style en el marcado). */
+.sx-avance-barra {
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    width: 100%; height: 4px; border: 0; border-radius: 2px; overflow: hidden; background: var(--sgv-gris-200);
+}
+.sx-avance-barra::-webkit-progress-bar { background: var(--sgv-gris-200); border-radius: 2px; }
+.sx-avance-barra::-webkit-progress-value { border-radius: 2px; }
+.sx-avance-carga::-webkit-progress-value { background: var(--sgv-primario); }
+.sx-avance-descarga::-webkit-progress-value { background: var(--sgv-turquesa-700); }
+.sx-avance-carga::-moz-progress-bar { background: var(--sgv-primario); border-radius: 2px; }
+.sx-avance-descarga::-moz-progress-bar { background: var(--sgv-turquesa-700); border-radius: 2px; }
 
 .sx-avisos { display: flex; flex-direction: column; gap: 0.25rem; align-items: flex-start; max-width: 17rem; }
 .sx-aviso { display: inline-block; padding: 0.0625rem 0.5rem; border-radius: 4px; font-size: 0.8125rem; }
@@ -101,6 +125,13 @@
 .sx-manuales h3 { margin: 0; font-size: 0.8125rem; font-weight: 600; color: var(--sgv-gris-600); text-transform: uppercase; letter-spacing: 0.04em; }
 .sx-rejilla { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.625rem; }
 @media (max-width: 575.98px) { .sx-rejilla { grid-template-columns: minmax(0, 1fr); } }
+/* Rejillas que se acomodan solas (datos del viaje, cierre): después de la media de 575, así ganan también en el celular. */
+.sx-rejilla.sx-rejilla-12 { grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); }
+.sx-rejilla.sx-rejilla-13 { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+.sx-mt { margin-top: 0.75rem; }
+.sx-columna { display: flex; flex-direction: column; gap: 1rem; }
+.sx-pedido { font-weight: 600; }
+.sx-fase.sx-fase-titulo { font-size: 0.8125rem; vertical-align: middle; }
 
 .sx-evidencia { padding: 0.875rem 1rem; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem; }
 .sx-evidencia dl { margin: 0; display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 0.375rem 0.625rem; }
@@ -110,6 +141,7 @@
 
 .sx-cabecera-datos { display: none; padding: 1rem; border-top: 1px solid var(--sgv-borde); }
 .sx-cabecera-datos.sx-abierto { display: block; }
+.sx-cabecera-datos.sx-cabecera-datos-sin-borde { border-top: 0; }
 
 /* Importación */
 .sx-zona-archivo {
@@ -175,12 +207,12 @@
 .sx-camion-descarga { background: var(--sgv-mapa-descarga); }
 .sx-camion-placa {
     position: absolute; left: 50%; top: 36px; transform: translateX(-50%); white-space: nowrap;
-    background: var(--sgv-superficie); color: var(--sgv-gris-900); border-radius: 4px; padding: 0 0.3rem; font-size: 0.6875rem; font-weight: 600;
+    background: var(--sgv-superficie); color: var(--sgv-gris-900); border-radius: 4px; padding: 0 0.3rem; font-size: 0.75rem; font-weight: 600;
     box-shadow: 0 1px 3px rgba(var(--sgv-negro-rgb), 0.3);
 }
 .sx-mk {
-    display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%;
-    background: var(--sgv-superficie); font-size: 0.6875rem; font-weight: 700; border: 2px solid; box-shadow: 0 1px 3px rgba(var(--sgv-negro-rgb), 0.3);
+    display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--sgv-superficie); font-size: 0.75rem; font-weight: 700; border: 2px solid; box-shadow: 0 1px 3px rgba(var(--sgv-negro-rgb), 0.3);
 }
 .sx-mk-carga { color: var(--sgv-primario); border-color: var(--sgv-primario); }
 .sx-mk-descarga { color: var(--sgv-mapa-descarga); border-color: var(--sgv-mapa-descarga); }
@@ -219,14 +251,14 @@
 .sx-carril-barra { position: absolute; top: 9px; height: 8px; border-radius: 4px; background: currentColor; opacity: 0.35; }
 .sx-carril-parada { position: absolute; top: 7px; height: 12px; min-width: 3px; border-radius: 2px; background: var(--sgv-texto-suave); }
 .sx-carril-hito {
-    position: absolute; top: 3px; width: 20px; height: 20px; margin-left: -10px; padding: 0; border-radius: 50%;
-    background: var(--sgv-superficie); border: 2px solid currentColor; color: inherit; font-size: 0.625rem; font-weight: 700; line-height: 1; cursor: pointer; z-index: 2;
+    position: absolute; top: 2px; width: 22px; height: 22px; margin-left: -11px; padding: 0; border-radius: 50%;
+    background: var(--sgv-superficie); border: 2px solid currentColor; color: inherit; font-size: 0.75rem; font-weight: 700; line-height: 1; cursor: pointer; z-index: 2;
 }
 .sx-carril-hito:hover, .sx-carril-hito:focus { outline: none; box-shadow: 0 0 0 3px rgba(var(--sgv-primario-rgb), 0.3); z-index: 3; }
 .sx-carril-cursor { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--sgv-gris-900); z-index: 4; pointer-events: none; }
 .sx-carril-cursor::before { content: ""; position: absolute; left: -4px; top: -5px; border: 5px solid transparent; border-top-color: var(--sgv-gris-900); }
-.sx-ruta-linea-dias { position: relative; height: 1.125rem; margin: 2px 0 0 4.5rem; border-top: 1px solid var(--sgv-borde); }
-.sx-ruta-linea-dias span { position: absolute; top: 0; padding-left: 4px; border-left: 1px solid var(--sgv-gris-400); font-size: 0.6875rem; color: var(--sgv-texto-suave); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sx-ruta-linea-dias { position: relative; height: 1.25rem; margin: 2px 0 0 4.5rem; border-top: 1px solid var(--sgv-borde); }
+.sx-ruta-linea-dias span { position: absolute; top: 0; padding-left: 4px; border-left: 1px solid var(--sgv-gris-400); font-size: 0.75rem; color: var(--sgv-texto-suave); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .sx-ruta-linea-leyenda { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0.375rem 0 0 4.5rem; font-size: 0.75rem; color: var(--sgv-texto-suave); }
 .sx-ruta-linea-leyenda span { display: inline-flex; align-items: center; gap: 0.3rem; }
 .sx-ley { display: inline-block; }
@@ -235,8 +267,8 @@
 .sx-ley-cursor { width: 2px; height: 12px; background: var(--sgv-gris-900); }
 
 .sx-hito-num {
-    display: inline-flex; align-items: center; justify-content: center; min-width: 1.125rem; height: 1.125rem; margin-right: 0.375rem;
-    border-radius: 50%; border: 1.5px solid; font-size: 0.625rem; font-weight: 700; vertical-align: 1px;
+    display: inline-flex; align-items: center; justify-content: center; min-width: 1.25rem; height: 1.25rem; margin-right: 0.375rem;
+    border-radius: 50%; border: 1.5px solid; font-size: 0.75rem; font-weight: 700; vertical-align: 1px;
 }
 .sx-hito-num-carga { color: var(--sgv-primario); }
 .sx-hito-num-descarga { color: var(--sgv-mapa-descarga); }
@@ -281,7 +313,6 @@
 .sx-fila .sx-avance-barra { display: block; }
 .sx-fila .sx-ultimo { margin-top: 0.25rem; color: var(--sgv-gris-600); }
 .sx-fila .sx-avisos { flex-direction: row; flex-wrap: wrap; max-width: 24rem; }
-.sx-filtro-cuenta { align-self: center; }
 .table.sgv-tabla tbody tr.sx-fila td { vertical-align: top; }
 .sx-fila td:first-child { white-space: nowrap; }
 .sx-tabla-caja thead th:nth-child(1) { width: 10%; }

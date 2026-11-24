@@ -68,40 +68,6 @@
         return '<span class="de-delta ' + cls + '">' + flecha + ' ' + txt + '</span>';
     }
 
-    // Línea mínima (SVG) de una serie; los huecos (null) cortan la línea.
-    function sparkline(valores, color) {
-        var pts = valores.map(function (v, i) { return v == null ? null : { i: i, v: v }; }).filter(Boolean);
-        if (pts.length < 2) return '';
-        var w = 120, h = 30, max = Math.max.apply(null, pts.map(function (p) { return p.v; }));
-        var min = Math.min.apply(null, pts.map(function (p) { return p.v; }));
-        var rango = max - min || 1, n = Math.max(valores.length - 1, 1);
-        function x(i) { return (i / n * (w - 4) + 2).toFixed(1); }
-        function y(v) { return (h - 3 - (v - min) / rango * (h - 8)).toFixed(1); }
-        var linea = pts.map(function (p) { return x(p.i) + ',' + y(p.v); }).join(' ');
-        var area = x(pts[0].i) + ',' + h + ' ' + linea + ' ' + x(pts[pts.length - 1].i) + ',' + h;
-        var ult = pts[pts.length - 1];
-        return '<svg class="de-spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">' +
-            '<polygon points="' + area + '" fill="' + color + '" opacity=".12"/>' +
-            '<polyline points="' + linea + '" fill="none" stroke="' + color + '" stroke-width="1.6" vector-effect="non-scaling-stroke"/>' +
-            '<circle cx="' + x(ult.i) + '" cy="' + y(ult.v) + '" r="2.4" fill="' + color + '"/></svg>';
-    }
-
-    // Números que suben desde 0 al cargar (data-contar = valor, data-dec = decimales).
-    function animarNumeros(raiz) {
-        raiz.querySelectorAll('[data-contar]').forEach(function (el) {
-            var fin = parseFloat(el.getAttribute('data-contar')), dec = parseInt(el.getAttribute('data-dec') || '0', 10);
-            if (REDUCIR_MOVIMIENTO || !isFinite(fin)) { el.textContent = num(fin, dec); return; }
-            var t0 = null;
-            function paso(t) {
-                if (!t0) t0 = t;
-                var k = Math.min((t - t0) / 700, 1), e = 1 - Math.pow(1 - k, 3);
-                el.textContent = num(fin * e, dec);
-                if (k < 1) requestAnimationFrame(paso);
-            }
-            requestAnimationFrame(paso);
-        });
-    }
-
     function vacio(cont, cols, texto) {
         if (cols) cont.innerHTML = '<tr><td colspan="' + cols + '" class="de-empty">' + SGV.escaparHtml(texto) + '</td></tr>';
         else cont.innerHTML = '<div class="de-empty">' + SGV.escaparHtml(texto) + '</div>';
@@ -117,10 +83,10 @@
         if (op.ultimaConsultaGps) {
             var min = Math.round((new Date(op.ahora) - new Date(op.ultimaConsultaGps)) / 60000);
             var txt = min < 60 ? 'hace ' + Math.max(min, 0) + ' min' : 'el ' + fecha(op.ultimaConsultaGps, true);
-            partes.push('GPS consultado ' + txt + (min >= 30 ? ' <span class="de-pill de-pill-warn">desactualizado</span>' : ''));
+            partes.push('GPS consultado ' + txt + (min >= 30 ? ' <span class="sgv-estado sgv-estado-alerta">desactualizado</span>' : ''));
         }
         if (op.gpsSinReportar > 0)
-            partes.push('<span class="de-pill de-pill-warn">' + op.gpsSinReportar + ' sin señal del GPS</span>');
+            partes.push('<span class="sgv-estado sgv-estado-alerta">' + op.gpsSinReportar + ' sin señal del GPS</span>');
         meta.innerHTML = partes.join(' &middot; ');
 
         // Ruta: una estación por fase; el círculo crece con las unidades que hay en ella.
@@ -162,75 +128,46 @@
             : '';
     }
 
-    // ================= KPIs =================
-    function renderKpis(p) {
-        var k = p.kpi, serie = p.serie;
+    // ================= Resumen del período =================
+    // Una línea de texto (sgv-resumen, E5-18c) en vez de tarjetas: cada parte es un <span> con su cifra en
+    // <strong> y, si el período anterior tiene con qué comparar, la diferencia (de-delta). Lo que viene del
+    // servidor como texto pasa por SGV.escaparHtml; las cifras salen de num()/dur().
+    function renderResumen(p) {
+        var k = p.kpi;
         document.getElementById('periodoNota').innerHTML =
             'Per&iacute;odo: <b>' + SGV.escaparHtml(p.periodo) + '</b> &middot; comparado con ' + SGV.escaparHtml(p.periodoAnterior);
         document.getElementById('thAnterior').textContent = 'vs. ' + p.periodoAnterior;
 
-        function vsAnt(html) { return html + ' <span>vs. ' + SGV.escaparHtml(p.periodoAnterior) + '</span>'; }
-        function tile(o) {
-            return '<div class="de-kpi' + (o.clic ? ' clic' : '') + '"' + (o.clic ? ' data-tramo="' + o.clic + '" title="Ver su evolución"' : '') + '>' +
-                '<div class="l">' + o.label + '</div><div class="v">' + o.valor + '</div>' +
-                (o.delta ? '<div class="d">' + o.delta + '</div>' : '') +
-                (o.sub ? '<div class="s">' + o.sub + '</div>' : '') + (o.extra || '') + '</div>';
+        // En la línea solo va la diferencia cuando hay comparación (el "sin comparación" queda en la tabla), con el
+        // período con que se compara ("▼ 139 vs. octubre 2026").
+        var vs = ' <span class="de-vs">vs. ' + SGV.escaparHtml(p.periodoAnterior) + '</span>';
+        function dif(actual, anterior, opts) {
+            return actual == null || anterior == null ? '' : ' ' + delta(actual, anterior, opts) + vs;
         }
-
-        var pctDia = serie.map(function (s) { var c = s.aTiempo + s.tardios; return c ? 100 * s.aTiempo / c : null; });
-        var evaluados = k.aTiempo + k.tardios + k.sinLlegada || 1;
-        var meter = '<div class="de-meter" title="A tiempo / tarde / sin llegada">' +
-            '<span style="width:' + (100 * k.aTiempo / evaluados) + '%;background:' + ESTADO.ok + '"></span>' +
-            '<span style="width:' + (100 * k.tardios / evaluados) + '%;background:' + ESTADO.tarde + '"></span></div>';
         var pctGps = k.hitosRegistrados ? 100 * k.hitosGps / k.hitosRegistrados : null;
-        var pctDescargados = k.viajes ? 100 * k.descargados / k.viajes : 0;
         var sacos = k.sacosRobados + k.sacosRotos + k.sacosMojados;
 
-        var cont = document.getElementById('kpis');
-        cont.innerHTML = [
-            tile({
-                label: 'Viajes programados', valor: '<span data-contar="' + k.viajes + '">0</span>',
-                delta: k.viajesAnterior != null ? vsAnt(delta(k.viajes, k.viajesAnterior, { neutro: true, formato: function (d) { return num(d); } })) : '',
-                sub: num(k.pedidos) + ' pedido(s)',
-                extra: sparkline(serie.map(function (s) { return s.viajes; }), '#1d4ed8')
-            }),
-            tile({
-                label: 'Llegada a Trujillo a tiempo',
-                valor: k.cumplimiento == null ? '—' : '<span data-contar="' + k.cumplimiento + '" data-dec="1">0</span><small>%</small>',
-                delta: vsAnt(delta(k.cumplimiento, k.cumplimientoAnterior, { umbral: 1, formato: function (d) { return num(d, 1) + ' pts'; } })),
-                sub: k.aTiempo + ' a tiempo · ' + k.tardios + ' tarde' + (k.retrasoMediano != null ? ' (retraso típico ' + dur(k.retrasoMediano) + ')' : ''),
-                extra: meter + sparkline(pctDia, ESTADO.ok)
-            }),
-            tile({
-                label: 'Tránsito al cliente', valor: dur(k.transito.mediana), clic: 'transito',
-                delta: vsAnt(delta(k.transito.mediana, k.transitoAnterior, { menorEsMejor: true, formato: dur })),
-                sub: 'Trujillo → planta Ecuador · P90 ' + dur(k.transito.p90),
-                extra: sparkline(serie.map(function (s) { return s.tramos.transito; }), colorFase('ecuador'))
-            }),
-            tile({
-                label: 'Ciclo completo', valor: dur(k.ciclo.mediana), clic: 'ciclo',
-                delta: vsAnt(delta(k.ciclo.mediana, k.cicloAnterior, { menorEsMejor: true, formato: dur })),
-                sub: k.ciclo.n + ' viaje(s) cerrados · P90 ' + dur(k.ciclo.p90),
-                extra: sparkline(serie.map(function (s) { return s.tramos.ciclo; }), colorFase('retorno'))
-            }),
-            tile({
-                label: 'Avance de los viajes',
-                valor: '<span data-contar="' + k.descargados + '">0</span><small>/ ' + num(k.viajes) + '</small>',
-                sub: 'descargados en Ecuador · ' + num(k.cerrados) + ' de vuelta en base',
-                extra: '<div class="de-anillo" style="--pct:' + pctDescargados.toFixed(1) + '"><span>' + num(pctDescargados, 0) + '%</span></div>'
-            }),
-            tile({
-                label: 'Horas registradas por GPS',
-                valor: pctGps == null ? '—' : '<span data-contar="' + pctGps + '">0</span><small>%</small>',
-                sub: num(k.hitosGps) + ' de ' + num(k.hitosRegistrados) + ' hitos',
-                extra: sacos > 0 ? '<div class="s"><span class="de-pill de-pill-bad">' + sacos + ' sacos con incidencia</span></div>'
-                                 : '<div class="s"><span class="de-pill de-pill-ok">Sin sacos con incidencia</span></div>'
-            })
-        ].join('');
-        animarNumeros(cont);
-        cont.querySelectorAll('.de-kpi.clic').forEach(function (el) {
-            el.addEventListener('click', function () { seleccionarTramo(el.getAttribute('data-tramo'), true); });
-        });
+        var partes = [
+            '<strong>' + num(k.viajes) + '</strong> viajes programados (' + num(k.pedidos) + ' pedido' + (k.pedidos === 1 ? '' : 's') + ')' +
+                dif(k.viajes, k.viajesAnterior, { neutro: true, formato: function (d) { return num(d); } }),
+            k.cumplimiento == null
+                ? 'Sin llegadas a Trujillo registradas'
+                : '<strong>' + num(k.cumplimiento, 1) + '%</strong> a tiempo en Trujillo' +
+                  dif(k.cumplimiento, k.cumplimientoAnterior, { umbral: 1, formato: function (d) { return num(d, 1) + ' pts'; } }),
+            'Tr&aacute;nsito al cliente <strong>' + dur(k.transito.mediana) + '</strong>' +
+                dif(k.transito.mediana, k.transitoAnterior, { menorEsMejor: true, formato: dur }),
+            'Ciclo completo <strong>' + dur(k.ciclo.mediana) + '</strong>' +
+                dif(k.ciclo.mediana, k.cicloAnterior, { menorEsMejor: true, formato: dur }),
+            '<strong>' + num(k.descargados) + '/' + num(k.viajes) + '</strong> descargados en Ecuador, ' +
+                num(k.cerrados) + ' de vuelta en base',
+            pctGps == null
+                ? 'Sin horas registradas'
+                : '<strong>' + num(pctGps, 0) + '%</strong> de las horas por GPS (' + num(k.hitosGps) + ' de ' + num(k.hitosRegistrados) + ' hitos)',
+            sacos > 0
+                ? '<span class="sgv-estado sgv-estado-peligro">' + num(sacos) + ' sacos con incidencia</span>'
+                : '<span class="sgv-estado sgv-estado-ok">Sin sacos con incidencia</span>'
+        ];
+        document.getElementById('resumenPeriodo').innerHTML = partes.map(function (x) { return '<span>' + x + '</span>'; }).join('');
     }
 
     // ================= Gráficos =================
@@ -255,12 +192,12 @@
 
     function ejes(titulo, apilado, formatoY) {
         return {
-            x: { stacked: !!apilado, grid: { display: false }, ticks: { color: '#6b7280', font: { size: 11 }, autoSkip: true, maxRotation: 0 } },
+            x: { stacked: !!apilado, grid: { display: false }, ticks: { color: '#6b7280', font: { size: 12 }, autoSkip: true, maxRotation: 0 } },
             y: {
                 stacked: !!apilado, beginAtZero: true, border: { display: false },
                 grid: { color: '#eef1f5' },
-                ticks: { color: '#6b7280', font: { size: 11 }, maxTicksLimit: 6, callback: formatoY || undefined },
-                title: { display: !!titulo, text: titulo, color: '#6b7280', font: { size: 11 } }
+                ticks: { color: '#6b7280', font: { size: 12 }, maxTicksLimit: 6, callback: formatoY || undefined },
+                title: { display: !!titulo, text: titulo, color: '#6b7280', font: { size: 12 } }
             }
         };
     }
@@ -345,8 +282,8 @@
                 onHover: function (e, els) { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
                 scales: {
                     x: { beginAtZero: true, grid: { color: '#eef1f5' }, border: { display: false },
-                         ticks: { color: '#6b7280', font: { size: 11 }, callback: function (v) { return v + ' h'; } } },
-                    y: { grid: { display: false }, ticks: { color: '#374151', font: { size: 11.5 }, autoSkip: false } }
+                         ticks: { color: '#6b7280', font: { size: 12 }, callback: function (v) { return v + ' h'; } } },
+                    y: { grid: { display: false }, ticks: { color: '#374151', font: { size: 12 }, autoSkip: false } }
                 },
                 plugins: {
                     legend: { display: false },
@@ -407,7 +344,7 @@
         var chips = CHIPS.slice();
         if (!chips.some(function (c) { return c.id === tramoSel; })) chips.push({ id: tramoSel, nombre: nombreTramo(tramoSel) });
         document.getElementById('evolChips').innerHTML = chips.map(function (c) {
-            return '<button type="button" class="de-chip' + (c.id === tramoSel ? ' sel' : '') + '" data-tramo="' + c.id + '">' + SGV.escaparHtml(c.nombre) + '</button>';
+            return '<button type="button" class="de-chip' + (c.id === tramoSel ? ' sel' : '') + '" aria-pressed="' + (c.id === tramoSel) + '" data-tramo="' + SGV.escaparHtml(c.id) + '">' + SGV.escaparHtml(c.nombre) + '</button>';
         }).join('');
 
         crear('chartEvolucion', {
@@ -455,8 +392,11 @@
 
     function renderCumplimiento(p) {
         var k = p.kpi, serie = p.serie;
+        // Los conteos y el retraso típico estaban en la tarjeta de cumplimiento: ahora van aquí (E5-18c).
         document.getElementById('cumplMeta').innerHTML = k.conLlegada
-            ? '<b>' + num(k.cumplimiento, 1) + '%</b> a tiempo de ' + k.conLlegada + ' llegada(s)'
+            ? '<b>' + num(k.cumplimiento, 1) + '%</b> a tiempo de ' + k.conLlegada + ' llegada(s) &middot; ' +
+              k.aTiempo + ' a tiempo, ' + k.tardios + ' tarde' +
+              (k.retrasoMediano != null ? ' (retraso t&iacute;pico ' + dur(k.retrasoMediano) + ')' : '')
             : 'Sin llegadas registradas';
         function ds(label, campo, color) {
             return { label: label, data: serie.map(function (s) { return s[campo]; }), backgroundColor: color,
@@ -628,11 +568,6 @@
     function iniciar() {
         document.getElementById('btnMesAnterior').addEventListener('click', function () { moverMes(-1); });
         document.getElementById('btnMesSiguiente').addEventListener('click', function () { moverMes(1); });
-        document.getElementById('btnDetalle').addEventListener('click', function () {
-            var panel = document.getElementById('detalleTramos'), abierto = panel.hasAttribute('hidden');
-            if (abierto) panel.removeAttribute('hidden'); else panel.setAttribute('hidden', '');
-            this.setAttribute('aria-expanded', abierto ? 'true' : 'false');
-        });
 
         var hdn = document.getElementById(SGV.hdnDatos);
         if (!hdn || !hdn.value) return;
@@ -645,7 +580,7 @@
         renderOperacion(datos.operacion);
         var p = datos.periodo;
         if (!p) return;
-        renderKpis(p);
+        renderResumen(p);
         renderTabla(p);
         renderPedidos(p);
         renderLentos(p);

@@ -764,10 +764,10 @@ namespace WebSGV.Tests
         // ── Regla 9: tarjetas KPI solo en la lista cerrada (E5-17 ya rehízo las suyas; quedan las de E5-18) ────────
 
         /// <summary>Páginas que todavía tienen tarjetas KPI (con sus iconos), y la tarea que las rehace.
-        /// Lista cerrada: solo se achica (al rehacer una página, sáquela de aquí).</summary>
+        /// Lista cerrada: solo se achica (al rehacer una página, sáquela de aquí). E5-18c: vacía (DashboardExportacion
+        /// pasó a la línea sgv-resumen); queda para que la prueba siga fallando si vuelve una tarjeta.</summary>
         internal static readonly Dictionary<string, string> PaginasConTarjetasKpi = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Views/Exportacion/DashboardExportacion.aspx"] = "E5-18",
         };
 
         private static readonly Regex ClaseKpi = new Regex(
@@ -904,8 +904,10 @@ namespace WebSGV.Tests
         /// avisos de advertencia, el de Editar lote y el del lote que espera el correo).
         /// E5-18b: 52 a 30 (RegistroDespacho sin iconos en títulos, rótulos, avisos informativos ni chips; quedan sus
         /// tres avisos de advertencia y la flecha que pliega el lote a mano, que es funcional).
+        /// E5-18c: 30 a 29 (el detalle por tramo de DashboardExportacion es un details.sgv-plegable: fuera su chevron;
+        /// quedan las flechas de mes anterior y siguiente, botones compactos con aria-label).
         /// Igualdad exacta: al quitar iconos, baje la cifra.</summary>
-        private const int TopeIconosMarcado = 30;
+        private const int TopeIconosMarcado = 29;
         /// <summary>Iconos armados en .cs/.js. E5-17c: 55 a 39 (fuera los 16 de BandejaDocumentos que eran estado o
         /// adorno, pasados a sellos sgv-estado con texto; quedan su aviso de observaciones y la flecha de plegar, que es
         /// funcional). E5-18a: 39 a 38 (InsigniaDocumento de ListaDespachos es un sello con texto). E5-18b: 38 a 25

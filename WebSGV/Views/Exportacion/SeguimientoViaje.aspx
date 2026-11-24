@@ -24,9 +24,9 @@
         </asp:Panel>
 
         <%-- Datos de cabecera: abierto al crear un viaje, plegado al editar. --%>
-        <div class="sgv-panel" style="margin-bottom: 1rem;">
-            <div id="seccionDatos" data-enter="<%= btnGuardarDatos.ClientID %>" class='<%= ModoNuevo ? "sx-cabecera-datos sx-abierto" : "sx-cabecera-datos" %>' style="border-top: 0;">
-                <div class="sx-rejilla" style="grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));">
+        <div class="sgv-panel mb-3">
+            <div id="seccionDatos" data-enter="<%= btnGuardarDatos.ClientID %>" class='<%= ModoNuevo ? "sx-cabecera-datos sx-cabecera-datos-sin-borde sx-abierto" : "sx-cabecera-datos sx-cabecera-datos-sin-borde" %>'>
+                <div class="sx-rejilla sx-rejilla-12">
                     <label class="sx-campo">Pedido <asp:TextBox ID="txtPedido" runat="server" MaxLength="150" /></label>
                     <label class="sx-campo">Carreta <asp:TextBox ID="txtCarreta" runat="server" MaxLength="20" /></label>
                     <label class="sx-campo">F.H. Programación <asp:TextBox ID="txtProgramacion" runat="server" TextMode="DateTimeLocal" /></label>
@@ -42,7 +42,7 @@
                     <label class="sx-campo">Tracto de descarga <asp:TextBox ID="txtTracto2" runat="server" MaxLength="20" /></label>
                     <label class="sx-campo">Chofer de descarga <asp:TextBox ID="txtChofer2" runat="server" MaxLength="150" /></label>
                 </div>
-                <div class="sx-barra-acciones" style="margin-top: 0.75rem;">
+                <div class="sx-barra-acciones sx-mt">
                     <asp:Button ID="btnGuardarDatos" runat="server" CssClass="sx-btn sx-btn-primario" CausesValidation="false" OnClick="btnGuardarDatos_Click" />
                     <span class="sx-nota"><asp:Literal ID="litNotaDatos" runat="server" /></span>
                 </div>
@@ -131,8 +131,8 @@
                                                     <span><%#: Eval("Nombre") %></span>
                                                     <div class="sx-hito-linea2">
                                                         <span class='<%#: (bool)Eval("Vacio") ? "sx-mono sx-hito-vacio" : "sx-mono" %>'><%#: Eval("HoraMostrada") %></span>
-                                                        <span class='<%#: "sx-fuente sx-fuente-" + Eval("Css") %>' style='<%#: (bool)Eval("Vacio") ? "display:none" : "" %>'><%#: Eval("OrigenCorto") %></span>
-                                                        <span class="sx-nota" style='<%#: string.IsNullOrEmpty((string)Eval("AltTxt")) ? "display:none" : "" %>'>GPS: <span class="sx-mono"><%#: Eval("AltTxt") %></span></span>
+                                                        <span class='<%#: "sx-fuente sx-fuente-" + Eval("Css") + ((bool)Eval("Vacio") ? " d-none" : "") %>'><%#: Eval("OrigenCorto") %></span>
+                                                        <span class='<%#: string.IsNullOrEmpty((string)Eval("AltTxt")) ? "sx-nota d-none" : "sx-nota" %>'>GPS: <span class="sx-mono"><%#: Eval("AltTxt") %></span></span>
                                                     </div>
                                                 </div>
                                                 <div class="sx-hito-acciones">
@@ -166,7 +166,7 @@
                         <p class="sx-correccion-nota" id="evMotivo" hidden></p>
                     </div>
                     <div class="sx-evidencia" id="panelCorregir" hidden>
-                        <p class="sx-nota" style="margin: 0;">Hora actual: <span class="sx-mono" id="corHoraActual"></span></p>
+                        <p class="sx-nota m-0">Hora actual: <span class="sx-mono" id="corHoraActual"></span></p>
                         <label class="sx-campo">Nueva fecha y hora
                             <asp:TextBox ID="txtNuevaHora" runat="server" TextMode="DateTimeLocal" step="1" />
                         </label>
@@ -174,20 +174,20 @@
                             <asp:TextBox ID="txtMotivo" runat="server" TextMode="MultiLine" Rows="3" MaxLength="300" placeholder="Ej.: el chofer reportó la hora por WhatsApp" />
                         </label>
                         <asp:HiddenField ID="hdnColumna" runat="server" />
-                        <div class="sx-barra-acciones" style="justify-content: flex-end;">
+                        <div class="sx-barra-acciones justify-content-end">
                             <button type="button" class="sx-btn" id="btnCancelarCorreccion">Cancelar</button>
                             <asp:Button ID="btnGuardarCorreccion" runat="server" Text="Guardar corrección" CssClass="sx-btn sx-btn-alerta" CausesValidation="false" OnClick="btnGuardarCorreccion_Click" />
                         </div>
-                        <p class="sx-nota" style="margin: 0;">Una hora corregida a mano no la vuelve a cambiar el GPS. Para que el GPS la vuelva a llenar, deja la fecha vacía.</p>
+                        <p class="sx-nota m-0">Una hora corregida a mano no la vuelve a cambiar el GPS. Para que el GPS la vuelva a llenar, deja la fecha vacía.</p>
                     </div>
                 </aside>
             </div>
 
             <%-- Lo que el GPS no sabe: un solo formulario para los dos tramos. --%>
-            <div class="sgv-panel" style="margin-top: 1rem;">
+            <div class="sgv-panel mt-3">
                 <div class="sgv-panel-cab"><span class="sgv-panel-titulo">Lo que el GPS no sabe</span></div>
                 <div class="sgv-panel-cuerpo">
-                    <div class="sx-rejilla" style="grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));">
+                    <div class="sx-rejilla sx-rejilla-13">
                         <label class='<%= CampoCss(txtRegistro) %>'>F.H. Registro (lo da el chofer) <asp:TextBox ID="txtRegistro" runat="server" TextMode="DateTimeLocal" /></label>
                         <label class='<%= CampoCss(txtInicioCarga) %>'>Inicio de carga <asp:TextBox ID="txtInicioCarga" runat="server" TextMode="DateTimeLocal" /></label>
                         <label class='<%= CampoCss(txtTerminoCarga) %>'>Término de carga <asp:TextBox ID="txtTerminoCarga" runat="server" TextMode="DateTimeLocal" /></label>
@@ -205,10 +205,10 @@
                         <label class="sx-campo">Sacos rotos <asp:TextBox ID="txtSacosRotos" runat="server" TextMode="Number" min="0" step="1" inputmode="numeric" /></label>
                         <label class="sx-campo">Sacos mojados <asp:TextBox ID="txtSacosMojados" runat="server" TextMode="Number" min="0" step="1" inputmode="numeric" /></label>
                     </div>
-                    <label class="sx-campo" style="margin-top: 0.75rem;">Motivo de retraso o incidencias
+                    <label class="sx-campo sx-mt">Motivo de retraso o incidencias
                         <asp:TextBox ID="txtMotivoRetraso" runat="server" TextMode="MultiLine" Rows="2" MaxLength="1000" />
                     </label>
-                    <div class="sx-barra-acciones" style="margin-top: 0.75rem;">
+                    <div class="sx-barra-acciones sx-mt">
                         <asp:Button ID="btnGuardarManuales" runat="server" Text="Guardar" CssClass="sx-btn sx-btn-primario" CausesValidation="false" OnClick="btnGuardarManuales_Click" />
                     </div>
                 </div>

@@ -81,7 +81,7 @@
         return L.divIcon({
             className: 'sx-hito-icono',
             html: '<span class="sx-mk sx-mk-' + clave + '">' + n + '</span>',
-            iconSize: [22, 22], iconAnchor: [11, 11]
+            iconSize: [24, 24], iconAnchor: [12, 12]
         });
     }
 

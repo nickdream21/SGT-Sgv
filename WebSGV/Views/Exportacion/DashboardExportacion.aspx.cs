@@ -103,9 +103,9 @@ namespace WebSGV.Views.Exportacion
 
         private void MostrarError(string mensaje)
         {
-            pnlAlert.CssClass = "de-alert de-alert-danger";
-            litAlert.Text     = Server.HtmlEncode(mensaje);
-            pnlAlert.Visible  = true;
+            // Aviso común (alert alert-danger, role="alert", texto codificado): AvisoHelper.
+            AvisoHelper.Pintar(litAlert, mensaje, AvisoHelper.Peligro);
+            pnlAlert.Visible = true;
         }
     }
 }

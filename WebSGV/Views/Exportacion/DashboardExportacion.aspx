@@ -13,7 +13,7 @@
             </div>
         </div>
 
-        <asp:Panel ID="pnlAlert" runat="server" Visible="false" CssClass="de-alert de-alert-danger">
+        <asp:Panel ID="pnlAlert" runat="server" Visible="false">
             <asp:Literal ID="litAlert" runat="server"></asp:Literal>
         </asp:Panel>
 
@@ -59,8 +59,8 @@
             <div class="de-filters-note" id="periodoNota"></div>
         </div>
 
-        <!-- ===== Indicadores del período ===== -->
-        <div class="de-kpis" id="kpis"></div>
+        <!-- ===== Indicadores del período: una línea de texto (la arma DashboardExportacion.js) ===== -->
+        <p class="sgv-resumen" id="resumenPeriodo"></p>
 
         <!-- ===== Composición del ciclo y tiempo por tramo ===== -->
         <div class="de-row">
@@ -118,12 +118,9 @@
         </div>
 
         <!-- ===== Detalle por tramo (tabla) ===== -->
-        <section class="de-panel">
-            <button type="button" class="de-plegable" id="btnDetalle" aria-expanded="false" aria-controls="detalleTramos">
-                <span>Detalle por tramo <span class="de-panel-meta">mediana, rango t&iacute;pico, P90 y comparaci&oacute;n</span></span>
-                <i class="fas fa-chevron-down chev"></i>
-            </button>
-            <div id="detalleTramos" hidden>
+        <details class="sgv-plegable de-detalle">
+            <summary>Detalle por tramo <span class="de-panel-meta">mediana, rango t&iacute;pico, P90 y comparaci&oacute;n</span></summary>
+            <div class="sgv-plegable-cuerpo" id="detalleTramos">
                 <div class="de-table-wrap">
                     <table class="de-table de-tramos" id="tablaTramos">
                         <thead>
@@ -140,7 +137,7 @@
                     </table>
                 </div>
             </div>
-        </section>
+        </details>
 
         <section class="de-panel">
             <div class="de-panel-head">

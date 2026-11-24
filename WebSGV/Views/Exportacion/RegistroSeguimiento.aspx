@@ -12,33 +12,39 @@
             <div class="sx-barra-acciones sgv-encabezado-acciones">
                 <span class="sx-nota"><asp:Literal ID="litUltimaConsulta" runat="server" /></span>
                 <%-- A la vista, los reportes que se envían y Actualizar GPS; el resto queda en "Más". --%>
-                <%-- Cada reporte en Excel y, al lado, el mismo como imagen (para mandarlo por WhatsApp desde el celular). --%>
-                <span class="sx-par">
-                    <asp:Button ID="btnExportarStatus" runat="server" Text="Excel de STATUS" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatus_Click" data-descarga="true"
-                        ToolTip="Baja un Excel liviano con el STATUS de las unidades que muestra la tabla (con el pedido en Buscar, solo ese pedido)" />
-                    <asp:LinkButton ID="btnImagenStatus" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenStatus_Click" data-descarga="true"
-                        ToolTip="El STATUS como imagen, para mandarlo por WhatsApp"><span aria-hidden="true">Imagen</span><span class="sr-only">STATUS como imagen</span></asp:LinkButton>
-                </span>
-                <asp:Button ID="btnExportar" runat="server" Text="Exportar STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click" data-descarga="true"
-                    ToolTip="STATUS GENERAL de Vitapro con todas las horas (sin los clientes terceros)" />
-                <span class="sx-par">
-                    <asp:Button ID="btnExportarStatusExtra" runat="server" Text="Excel STATUS EXTRA" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatusExtra_Click" data-descarga="true"
-                        ToolTip="Cuadro de los clientes terceros (Crisar, Novopan, Polinplast) que muestra la tabla, con las columnas del STATUS EXTRA" />
-                    <asp:LinkButton ID="btnImagenStatusExtra" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenStatusExtra_Click" data-descarga="true"
-                        ToolTip="El STATUS EXTRA como imagen, para mandarlo por WhatsApp"><span aria-hidden="true">Imagen</span><span class="sr-only">STATUS EXTRA como imagen</span></asp:LinkButton>
-                </span>
-                <span class="sx-par">
-                    <asp:Button ID="btnExportarGrifo" runat="server" Text="Cuadro grifo Santa Rosa" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarGrifo_Click" data-descarga="true"
-                        ToolTip="Excel de los carros que bajan al grifo Santa Rosa a cargar combustible (Vitapro y Crisar de vuelta de Ecuador): en camino con su hora aproximada de llegada, en el grifo y descargando" />
-                    <asp:LinkButton ID="btnImagenGrifo" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenGrifo_Click" data-descarga="true"
-                        ToolTip="El cuadro del grifo Santa Rosa como imagen, para mandarlo por WhatsApp"><span aria-hidden="true">Imagen</span><span class="sr-only">Cuadro grifo como imagen</span></asp:LinkButton>
-                </span>
-                <span class="sx-par">
-                    <asp:Button ID="btnExportarLlegadas" runat="server" Text="Excel de llegadas" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarLlegadas_Click" data-descarga="true"
-                        ToolTip="Las unidades en camino a cargar a Trujillo o a descargar a Jave/Inbalnor, con ubicación, km restantes y llegada aproximada" />
-                    <asp:LinkButton ID="btnImagenLlegadas" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenLlegadas_Click" data-descarga="true"
-                        ToolTip="Las llegadas como imagen, para mandarlas por WhatsApp"><span aria-hidden="true">Imagen</span><span class="sr-only">Llegadas como imagen</span></asp:LinkButton>
-                </span>
+                <%-- Cada reporte en Excel y, al lado, el mismo como imagen (para mandarlo por WhatsApp desde el celular).
+                     En el celular los reportes se pliegan bajo "Reportes"; en escritorio se ven en fila como siempre. --%>
+                <details class="sgv-plegable sx-reportes" open data-plegar-movil>
+                    <summary>Reportes</summary>
+                    <div class="sgv-plegable-cuerpo">
+                        <span class="sx-par">
+                            <asp:Button ID="btnExportarStatus" runat="server" Text="Excel de STATUS" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatus_Click" data-descarga="true"
+                                ToolTip="Baja un Excel liviano con el STATUS de las unidades que muestra la tabla (con el pedido en Buscar, solo ese pedido)" />
+                            <asp:LinkButton ID="btnImagenStatus" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenStatus_Click" data-descarga="true"
+                                ToolTip="El STATUS como imagen, para mandarlo por WhatsApp"><span aria-hidden="true">Imagen</span><span class="sr-only">STATUS como imagen</span></asp:LinkButton>
+                        </span>
+                        <asp:Button ID="btnExportar" runat="server" Text="Exportar STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click" data-descarga="true"
+                            ToolTip="STATUS GENERAL de Vitapro con todas las horas (sin los clientes terceros)" />
+                        <span class="sx-par">
+                            <asp:Button ID="btnExportarStatusExtra" runat="server" Text="Excel STATUS EXTRA" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarStatusExtra_Click" data-descarga="true"
+                                ToolTip="Cuadro de los clientes terceros (Crisar, Novopan, Polinplast) que muestra la tabla, con las columnas del STATUS EXTRA" />
+                            <asp:LinkButton ID="btnImagenStatusExtra" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenStatusExtra_Click" data-descarga="true"
+                                ToolTip="El STATUS EXTRA como imagen, para mandarlo por WhatsApp"><span aria-hidden="true">Imagen</span><span class="sr-only">STATUS EXTRA como imagen</span></asp:LinkButton>
+                        </span>
+                        <span class="sx-par">
+                            <asp:Button ID="btnExportarGrifo" runat="server" Text="Cuadro grifo Santa Rosa" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarGrifo_Click" data-descarga="true"
+                                ToolTip="Excel de los carros que bajan al grifo Santa Rosa a cargar combustible (Vitapro y Crisar de vuelta de Ecuador): en camino con su hora aproximada de llegada, en el grifo y descargando" />
+                            <asp:LinkButton ID="btnImagenGrifo" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenGrifo_Click" data-descarga="true"
+                                ToolTip="El cuadro del grifo Santa Rosa como imagen, para mandarlo por WhatsApp"><span aria-hidden="true">Imagen</span><span class="sr-only">Cuadro grifo como imagen</span></asp:LinkButton>
+                        </span>
+                        <span class="sx-par">
+                            <asp:Button ID="btnExportarLlegadas" runat="server" Text="Excel de llegadas" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportarLlegadas_Click" data-descarga="true"
+                                ToolTip="Las unidades en camino a cargar a Trujillo o a descargar a Jave/Inbalnor, con ubicación, km restantes y llegada aproximada" />
+                            <asp:LinkButton ID="btnImagenLlegadas" runat="server" CssClass="sx-btn sx-btn-imagen" CausesValidation="false" OnClick="btnImagenLlegadas_Click" data-descarga="true"
+                                ToolTip="Las llegadas como imagen, para mandarlas por WhatsApp"><span aria-hidden="true">Imagen</span><span class="sr-only">Llegadas como imagen</span></asp:LinkButton>
+                        </span>
+                    </div>
+                </details>
                 <div class="dropdown sx-mas">
                     <button type="button" class="sx-btn dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Más</button>
                     <div class="dropdown-menu dropdown-menu-right">
@@ -69,41 +75,44 @@
 
         <asp:HiddenField ID="hdnFase" runat="server" Value="activos" />
 
-        <div class="sx-filtros" data-enter="<%= btnFiltrar.ClientID %>">
-            <label class="sx-campo">Buscar
-                <asp:TextBox ID="txtBuscar" runat="server" placeholder="Pedido, carreta, placa o chofer" style="width: 16rem; max-width: 70vw;" />
-            </label>
-            <label class="sx-campo">Programación desde
-                <asp:TextBox ID="txtDesde" runat="server" TextMode="Date" />
-            </label>
-            <label class="sx-campo">hasta
-                <asp:TextBox ID="txtHasta" runat="server" TextMode="Date" />
-            </label>
-            <label class="sx-campo">Cliente
-                <asp:DropDownList ID="ddlCliente" runat="server">
-                    <asp:ListItem Value="" Text="Todos" />
-                    <asp:ListItem Value="VITAPRO" Text="Vitapro" />
-                    <asp:ListItem Value="TERCEROS" Text="Terceros (todos)" />
-                    <asp:ListItem Value="CRISAR" Text="Crisar" />
-                    <asp:ListItem Value="NOVOPAN" Text="Novopan" />
-                    <asp:ListItem Value="POLINPLAST" Text="Polinplast" />
-                    <asp:ListItem Value="AFRECHO" Text="Afrecho (Paita)" />
-                </asp:DropDownList>
-            </label>
-            <label class="sx-campo">Planta de descarga
-                <asp:DropDownList ID="ddlPlanta" runat="server">
-                    <asp:ListItem Value="" Text="Todas" />
-                    <asp:ListItem Value="JAVE" Text="Jave" />
-                    <asp:ListItem Value="INBALNOR" Text="Inbalnor" />
-                </asp:DropDownList>
-            </label>
-            <label class="sx-campo" style="flex-direction: row; align-items: center; gap: 0.375rem; height: 2.25rem; font-size: 0.8125rem;">
-                <asp:CheckBox ID="chkHistorial" runat="server" />
-                Incluir los importados del Excel
-            </label>
-            <asp:Button ID="btnFiltrar" runat="server" Text="Buscar" CssClass="sx-btn" CausesValidation="false" OnClick="btnFiltrar_Click" />
-            <span class="sx-nota sx-filtro-cuenta" id="sxFiltroCuenta" role="status"></span>
-        </div>
+        <details class="sgv-filtros" open data-plegar-movil>
+            <summary>Filtros <span class="sgv-filtros-cuenta"></span></summary>
+            <div class="sgv-filtros-cuerpo sx-filtros" data-enter="<%= btnFiltrar.ClientID %>">
+                <label class="sx-campo">Buscar
+                    <asp:TextBox ID="txtBuscar" runat="server" placeholder="Pedido, carreta, placa o chofer" CssClass="sx-buscar" />
+                </label>
+                <label class="sx-campo">Programación desde
+                    <asp:TextBox ID="txtDesde" runat="server" TextMode="Date" />
+                </label>
+                <label class="sx-campo">hasta
+                    <asp:TextBox ID="txtHasta" runat="server" TextMode="Date" />
+                </label>
+                <label class="sx-campo">Cliente
+                    <asp:DropDownList ID="ddlCliente" runat="server">
+                        <asp:ListItem Value="" Text="Todos" />
+                        <asp:ListItem Value="VITAPRO" Text="Vitapro" />
+                        <asp:ListItem Value="TERCEROS" Text="Terceros (todos)" />
+                        <asp:ListItem Value="CRISAR" Text="Crisar" />
+                        <asp:ListItem Value="NOVOPAN" Text="Novopan" />
+                        <asp:ListItem Value="POLINPLAST" Text="Polinplast" />
+                        <asp:ListItem Value="AFRECHO" Text="Afrecho (Paita)" />
+                    </asp:DropDownList>
+                </label>
+                <label class="sx-campo">Planta de descarga
+                    <asp:DropDownList ID="ddlPlanta" runat="server">
+                        <asp:ListItem Value="" Text="Todas" />
+                        <asp:ListItem Value="JAVE" Text="Jave" />
+                        <asp:ListItem Value="INBALNOR" Text="Inbalnor" />
+                    </asp:DropDownList>
+                </label>
+                <label class="sx-campo sx-campo-casilla">
+                    <asp:CheckBox ID="chkHistorial" runat="server" />
+                    Incluir los importados del Excel
+                </label>
+                <asp:Button ID="btnFiltrar" runat="server" Text="Buscar" CssClass="sx-btn" CausesValidation="false" OnClick="btnFiltrar_Click" />
+            </div>
+        </details>
+        <p class="sx-nota sx-filtro-cuenta" id="sxFiltroCuenta" role="status"></p>
 
         <%-- Con más viajes que el tope de la tabla (p. ej. "Incluir los importados" y un año entero): avisa que no están todos. --%>
         <asp:Panel ID="pnlTope" runat="server" Visible="false" CssClass="sx-mensaje sx-mensaje-alerta" role="status">
@@ -131,7 +140,7 @@
                         <ItemTemplate>
                             <tr class="sx-fila" data-pedido='<%#: Eval("Pedido") %>' data-prog='<%#: Eval("Programacion") %>'>
                                 <td>
-                                    <a class="sx-mono" style="font-weight: 600;" href='SeguimientoViaje.aspx?id=<%#: Eval("Id") %>'><%#: Eval("Pedido") %></a>
+                                    <a class="sx-mono sx-pedido" href='SeguimientoViaje.aspx?id=<%#: Eval("Id") %>'><%#: Eval("Pedido") %></a>
                                     <span class="sx-sub">Carreta <span class="sx-mono"><%#: Eval("Carreta") %></span></span>
                                     <span class="sx-sub sx-prog">Prog. <%#: Eval("Programacion") %></span>
                                 </td>
@@ -140,8 +149,8 @@
                                 <td>
                                     <span class='<%#: "sx-fase sx-fase-" + Eval("Grupo") %>'><%#: Eval("Fase") %></span><span class="sx-sub"><%#: Eval("Planta") %></span>
                                     <div class="sx-avance">
-                                        <div class="sx-avance-fila"><span>Carga</span><span class="sx-avance-barra sx-avance-carga"><span style='<%#: "width:" + Eval("CargaPct") + "%" %>'></span></span><span class="sx-mono"><%#: Eval("CargaTxt") %></span></div>
-                                        <div class="sx-avance-fila"><span>Descarga</span><span class="sx-avance-barra sx-avance-descarga"><span style='<%#: "width:" + Eval("DescargaPct") + "%" %>'></span></span><span class="sx-mono"><%#: Eval("DescargaTxt") %></span></div>
+                                        <div class="sx-avance-fila"><span>Carga</span><progress class="sx-avance-barra sx-avance-carga" max="100" value='<%#: Eval("CargaPct") %>' aria-hidden="true"></progress><span class="sx-mono"><%#: Eval("CargaTxt") %></span></div>
+                                        <div class="sx-avance-fila"><span>Descarga</span><progress class="sx-avance-barra sx-avance-descarga" max="100" value='<%#: Eval("DescargaPct") %>' aria-hidden="true"></progress><span class="sx-mono"><%#: Eval("DescargaTxt") %></span></div>
                                     </div>
                                 </td>
                                 <td class="sx-status">
@@ -168,7 +177,7 @@
             </asp:Panel>
         </div>
 
-        <p class="sx-nota" style="margin-top: 0.75rem;"><asp:Literal ID="litResumen" runat="server" /></p>
+        <p class="sx-nota mt-3"><asp:Literal ID="litResumen" runat="server" /></p>
     </div>
     <script>var SGV = Object.assign(window.SGV || {}, { autoActualizarGps: <%= AutoActualizarGps ? "true" : "false" %>, btnActualizarGps: '<%= btnActualizarGps.ClientID %>',
         btnFiltrar: '<%= btnFiltrar.ClientID %>', txtBuscar: '<%= txtBuscar.ClientID %>', ultimaConsultaGps: '<%= HttpUtility.JavaScriptStringEncode(UltimaConsultaGps) %>', urlEstadoGps: '<%= ResolveUrl("~/Views/Exportacion/GpsAutomatico.ashx?estado=1") %>',
