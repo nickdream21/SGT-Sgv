@@ -589,7 +589,10 @@ namespace WebSGV.Tests
                         if (!conBlanco.Contains(bg.Groups[1].Value) && !Regex.IsMatch(m.Groups[1].Value, @"\btext-white\b"))
                             fallas.Add(Relativo(raiz, a) + ": " + m.Groups[1].Value);
                     }
-            Assert.True(usos >= 3, "El detector no encontró los badge bg-* conocidos (RegistroDespacho, ListaDespachos); encontró " + usos);
+            // El detector se prueba con una muestra fija: los badge bg-* reales se van con la plantilla de E5-18
+            // (ListaDespachos ya no tiene; quedan los de RegistroDespacho), así que no se exige un mínimo de usos.
+            Assert.Equal(2, clase.Matches("x = \"badge bg-info\"; y = '<span class=\"badge bg-dark text-white\">'").Cast<Match>()
+                .Sum(m => Regex.Matches(m.Groups[1].Value, @"\bbg-(primary|info|success|danger|secondary|dark)\b").Count));
             Assert.True(fallas.Count == 0, "badge con fondo oscuro sin texto blanco:\n" + Lista(fallas));
         }
 

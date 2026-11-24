@@ -16,9 +16,11 @@ function inicializarSelect2Conductores() {
     $('.conductor-select').each(function () { SGV.nombrarSelect2(this); });
 }
 
+// Las fechas Desde/Hasta las pone el servidor (ConfigurarFechasPorDefecto). No se rellenan aquí: "?documentos=pendientes"
+// y "Ver los lotes con pendientes" las dejan vacías a propósito (lotes de cualquier fecha) y rellenarlas mostraba un
+// rango que no se había aplicado.
 $(document).ready(function () {
     inicializarSelect2Conductores();
-    establecerFechasPorDefecto();
 });
 
 var prm = Sys.WebForms.PageRequestManager.getInstance();
@@ -26,33 +28,14 @@ prm.add_endRequest(function () {
     inicializarSelect2Conductores();
 });
 
-function establecerFechasPorDefecto() {
-    var hoy = new Date();
-    var primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-
-    var fechaDesde = document.getElementById(SGV.txtFechaDesde);
-    var fechaHasta = document.getElementById(SGV.txtFechaHasta);
-
-    if (fechaDesde && fechaDesde.value === '') {
-        fechaDesde.value = primerDiaMes.toISOString().substr(0, 10);
-    }
-
-    if (fechaHasta && fechaHasta.value === '') {
-        fechaHasta.value = hoy.toISOString().substr(0, 10);
-    }
-}
-
 function validarNumeroPedido(input) {
     var valor = input.value.replace(/[^0-9]/g, '');
     input.value = valor;
 
-    if (valor.length > 0 && valor.length !== 10) {
-        input.style.borderColor = '#dc3545';
-        return false;
-    } else {
-        input.style.borderColor = '#ced4da';
-        return true;
-    }
+    // Clase de Bootstrap en vez de colores fijos (M-143): respeta el tema y el foco.
+    var valido = valor.length === 0 || valor.length === 10;
+    input.classList.toggle('is-invalid', !valido);
+    return valido;
 }
 
 $(document).on('input', '#' + SGV.txtNumeroPedidoEdit, function () {
@@ -112,4 +95,21 @@ Sys.WebForms.PageRequestManager.getInstance().add_endRequest(function () {
     }
     ajustar();
     if (window.Sys && Sys.WebForms) Sys.WebForms.PageRequestManager.getInstance().add_endRequest(ajustar);
+})();
+
+// Pestañas y vistas por postback parcial (E5-18a): el UpdatePanel vuelve a dibujar los filtros abiertos. En el
+// celular se pliegan, salvo que el postback haya salido de los propios filtros (un combo que filtra o Buscar,
+// que ya pliega SiteMaster.js): así al cambiar de pestaña o volver de un lote se ve la lista sin desplazarse.
+(function () {
+    if (!(window.Sys && Sys.WebForms)) return;
+    var desdeFiltros = false;
+    var prm = Sys.WebForms.PageRequestManager.getInstance();
+    prm.add_beginRequest(function (s, a) {
+        var el = a.get_postBackElement();
+        desdeFiltros = !!(el && el.closest && el.closest('details.sgv-filtros'));
+    });
+    prm.add_endRequest(function () {
+        if (desdeFiltros || !(window.matchMedia && window.matchMedia('(max-width: 767.98px)').matches)) return;
+        document.querySelectorAll('.ld-pagina details.sgv-filtros[data-plegar-movil]').forEach(function (d) { d.open = false; });
+    });
 })();

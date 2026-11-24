@@ -24,8 +24,6 @@ namespace WebSGV.Tests
         /// </summary>
         private static readonly string[] EnvoltoriosConDesplazamiento =
         {
-            "data-grid-container",   // ListaDespachos.css
-            "tabla-scroll-wrapper",  // ListaDespachos.css (antes ListaDespachos-2.css)
             "de-table-wrap",         // Exportacion/DashboardExportacion.css
             "sx-tabla-caja",         // Exportacion/SeguimientoExportacion.css
         };

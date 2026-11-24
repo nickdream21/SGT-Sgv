@@ -32,90 +32,7 @@ namespace WebSGV.Views
         /// </remarks>
         protected global::System.Web.UI.WebControls.Panel pnlMensajes;
 
-        /// <summary>
-        /// Control lnkStatViajes.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton lnkStatViajes;
-
-        /// <summary>
-        /// Control lblStatViajesActivos.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblStatViajesActivos;
-
-        /// <summary>
-        /// Control lnkStatLotes.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton lnkStatLotes;
-
-        /// <summary>
-        /// Control lblStatLotesActivos.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblStatLotesActivos;
-
-        /// <summary>
-        /// Control lnkStatManifiestosPendientes.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.HtmlControls.HtmlGenericControl divStatManifiestos;
-
-        protected global::System.Web.UI.WebControls.LinkButton lnkStatManifiestosPendientes;
-
-        /// <summary>
-        /// Control lblStatManifiestosPendientes.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblStatManifiestosPendientes;
-
-        /// <summary>
-        /// Control lnkStatDocumentosPendientes.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.HtmlControls.HtmlGenericControl divStatDocumentos;
-
         protected global::System.Web.UI.WebControls.LinkButton lnkStatDocumentosPendientes;
-
-        /// <summary>
-        /// Control lblStatDocumentosPendientes.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblStatDocumentosPendientes;
-
-        /// <summary>
-        /// Control lblStatDocumentosAtrasados.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblStatDocumentosAtrasados;
 
         /// <summary>
         /// Control lblMensaje.
@@ -125,38 +42,6 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Label lblMensaje;
-
-        /// <summary>
-        /// Control btnMostrarViajes.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnMostrarViajes;
-
-        /// <summary>
-        /// Control btnMostrarLotes.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnMostrarLotes;
-
-        /// <summary>
-        /// Control btnVolver.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnVolver;
-
-        /// <summary>
-        /// Control hlVolverBandeja.
-        /// </summary>
-        protected global::System.Web.UI.WebControls.HyperLink hlVolverBandeja;
 
         /// <summary>
         /// Control hlVolverBandejaDocs.
@@ -171,15 +56,6 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Panel pnlListaViajes;
-
-        /// <summary>
-        /// Control lblContadorViajes.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblContadorViajes;
 
         /// <summary>
         /// Control btnRefrescarViajes.
@@ -245,15 +121,6 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Panel pnlListaLotes;
 
         /// <summary>
-        /// Control lblContadorLotes.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblContadorLotes;
-
-        /// <summary>
         /// Control btnRefrescarLotes.
         /// </summary>
         /// <remarks>
@@ -288,24 +155,6 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.DropDownList ddlFiltroPlantaLotes;
-
-        /// <summary>
-        /// Control pnlFiltrosViajes.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Panel pnlFiltrosViajes;
-
-        /// <summary>
-        /// Control pnlFiltrosLotes.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Panel pnlFiltrosLotes;
 
         /// <summary>
         /// Control txtBuscarLote.
@@ -362,15 +211,6 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtFechaHasta;
-
-        /// <summary>
-        /// Control btnFiltrarFecha.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnFiltrarFecha;
 
         /// <summary>
         /// Control btnLimpiarFiltros.
@@ -452,42 +292,6 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnVolverViajes;
-
-        /// <summary>
-        /// Control lblTotalDespachos.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblTotalDespachos;
-
-        /// <summary>
-        /// Control lblTipoViajeDetalle.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblTipoViajeDetalle;
-
-        /// <summary>
-        /// Control lblEstadoViajeDetalle.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblEstadoViajeDetalle;
-
-        /// <summary>
-        /// Control lblUltimaActividadDetalle.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblUltimaActividadDetalle;
 
         /// <summary>
         /// Control gvDespachosViaje.
@@ -778,13 +582,13 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Button btnEditarDesdeDetal;
 
         /// <summary>
-        /// Control btnGestionarManifiestos.
+        /// Control hlDocumentosLote.
         /// </summary>
         /// <remarks>
         /// Campo generado automáticamente.
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button btnGestionarManifiestos;
+        protected global::System.Web.UI.WebControls.HyperLink hlDocumentosLote;
 
         /// <summary>
         /// Control btnVolverLotesDetalle.
@@ -803,42 +607,6 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Panel pnlAvisoLoteAnulado;
-
-        /// <summary>
-        /// Control lblTotalDespachosLote.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblTotalDespachosLote;
-
-        /// <summary>
-        /// Control lblOperacionDetalleLote.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblOperacionDetalleLote;
-
-        /// <summary>
-        /// Control lblPlantaDetalleLote.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblPlantaDetalleLote;
-
-        /// <summary>
-        /// Control lblFechaCreacionDetalle.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label lblFechaCreacionDetalle;
 
         /// <summary>
         /// Control gvDespachosLote.
@@ -1253,5 +1021,122 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Repeater rptDocumentosLote;
+
+        /// <summary>
+        /// Control hlNuevoDespacho.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HyperLink hlNuevoDespacho;
+
+        /// <summary>
+        /// Control hfArgumentoFila.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.HiddenField hfArgumentoFila;
+
+        /// <summary>
+        /// Control btnAccionFila.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnAccionFila;
+
+        /// <summary>
+        /// Control pnlNavegacionListas.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Panel pnlNavegacionListas;
+
+        /// <summary>
+        /// Control btnMostrarViajes.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton btnMostrarViajes;
+
+        /// <summary>
+        /// Control btnMostrarLotes.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton btnMostrarLotes;
+
+        /// <summary>
+        /// Control litResumenListas.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litResumenListas;
+
+        /// <summary>
+        /// Control phVerPendientes.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.PlaceHolder phVerPendientes;
+
+        /// <summary>
+        /// Control litTotalViajes.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litTotalViajes;
+
+        /// <summary>
+        /// Control litTotalLotes.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litTotalLotes;
+
+        /// <summary>
+        /// Control btnBuscarLotes.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button btnBuscarLotes;
+
+        /// <summary>
+        /// Control litResumenViaje.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litResumenViaje;
+
+        /// <summary>
+        /// Control litResumenLote.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litResumenLote;
     }
 }

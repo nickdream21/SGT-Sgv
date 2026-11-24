@@ -115,10 +115,10 @@ namespace WebSGV.Views
             {
                 try
                 {
-                    CargarDatosIniciales();
-                    MostrarListaViajes();
-                    CargarViajesActivos();
                     ConfigurarFechasPorDefecto();
+                    // Sin viajes activos abre en los lotes registrados (E5-18a). La lista visible se enlaza en OnPreRender.
+                    int viajesActivos = CargarDatosIniciales();
+                    MostrarVista(ListaDespachosReglas.VistaInicial(viajesActivos));
 
                     // Enlace del aviso de Inicio: abre los lotes con documentos pendientes.
                     if (string.Equals(Request.QueryString["documentos"], "pendientes", StringComparison.OrdinalIgnoreCase))
@@ -141,23 +141,48 @@ namespace WebSGV.Views
             }
         }
 
+        // Las grillas de las listas y de los detalles no guardan ViewState (E5-18a): se enlazan en cada petición, en el
+        // manejador que cambia algo o, si ninguno lo hizo, en OnPreRender (la página vive en el ControlState del GridView).
+        private bool _viajesEnlazados;
+        private bool _lotesEnlazados;
+        private bool _detalleViajeEnlazado;
+        private bool _detalleLoteEnlazado;
+
+        protected override void OnPreRender(EventArgs e)
+        {
+            if (!Response.IsRequestBeingRedirected)
+            {
+                if (pnlListaViajes.Visible && !_viajesEnlazados) CargarViajesActivos();
+                if (pnlListaLotes.Visible && !_lotesEnlazados) CargarLotesRegistrados();
+                if (pnlDetallesViaje.Visible && !_detalleViajeEnlazado && ViajeSeleccionadoId.HasValue)
+                    CargarDespachosViaje(ViajeSeleccionadoId.Value);
+                if (pnlDetallesLote.Visible && !_detalleLoteEnlazado && !string.IsNullOrEmpty(LoteSeleccionadoId))
+                    CargarDespachosLote(LoteSeleccionadoId, LoteSeleccionadoAnulado);
+            }
+            base.OnPreRender(e);
+        }
+
         #endregion
 
         #region Métodos de Carga de Datos Iniciales
 
-        private void CargarDatosIniciales()
+        /// <summary>Combos de lotes y resumen de las listas; devuelve los viajes activos (decide la vista inicial).</summary>
+        private int CargarDatosIniciales()
         {
             try
             {
+                // ddlFiltroConductorViajes guarda su ViewState: sin él, un conductor elegido volvía a disparar
+                // SelectedIndexChanged en cada postback y el filtro se perdía al salir de la lista y volver.
                 CargarConductoresFiltro();
                 CargarClientesFiltro();
                 CargarPlantasFiltro();
-                EstablecerContadores();
+                return EstablecerContadores();
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al cargar datos iniciales en ListaDespachos");
                 MostrarMensaje("Error al cargar datos iniciales: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                return 0;
             }
         }
 
@@ -277,11 +302,14 @@ namespace WebSGV.Views
         {
             try
             {
+                _viajesEnlazados = true;
                 List<ViajeActivo> viajes = ObtenerViajesActivos();
+                gvViajesActivos.PageIndex = ListaCatalogo.IndiceValido(gvViajesActivos.PageIndex, viajes.Count);
                 gvViajesActivos.DataSource = viajes;
                 gvViajesActivos.DataBind();
 
-                lblContadorViajes.Text = $"{viajes.Count}";
+                litTotalViajes.Text = viajes.Count == 0 ? "Sin viajes activos"
+                    : ListaCatalogo.Resumen(gvViajesActivos.PageIndex, viajes.Count, viajes.Count, "");
             }
             catch (Exception ex)
             {
@@ -306,6 +334,7 @@ namespace WebSGV.Views
         {
             try
             {
+                _detalleViajeEnlazado = true;
                 List<DespachoViaje> despachos = ObtenerDespachosDelViaje(idViajeProgreso);
                 gvDespachosViaje.DataSource = despachos;
                 gvDespachosViaje.DataBind();
@@ -331,19 +360,17 @@ namespace WebSGV.Views
             lblNumeroViajeDetalle.Text = System.Web.HttpUtility.HtmlEncode(GetSafeValue<string>(fila, "numeroViajeProgreso"));
             lblConductorDetalle.Text = System.Web.HttpUtility.HtmlEncode(GetSafeValue<string>(fila, "NombreConductor"));
             lblFechaInicioDetalle.Text = GetSafeValue<DateTime>(fila, "fechaInicio").ToString("dd/MM/yyyy HH:mm");
-            lblTotalDespachos.Text = GetSafeValue<int>(fila, "cantidadDespachos").ToString();
-            lblEstadoViajeDetalle.Text = System.Web.HttpUtility.HtmlEncode(GetSafeValue<string>(fila, "estadoViaje"));
-            lblUltimaActividadDetalle.Text = GetSafeValue<DateTime>(fila, "fechaUltimaActividad").ToString("dd/MM/yyyy HH:mm");
 
             int internacionales = GetSafeValue<int>(fila, "DespachosInternacionales");
             int nacionales = GetSafeValue<int>(fila, "DespachosNacionales");
+            string ambito = internacionales > 0 && nacionales > 0 ? "Nacional e internacional"
+                : internacionales > 0 ? "Internacional" : "Nacional";
 
-            if (internacionales > 0 && nacionales > 0)
-                lblTipoViajeDetalle.Text = "Nacional e Internacional";
-            else if (internacionales > 0)
-                lblTipoViajeDetalle.Text = "Internacional";
-            else
-                lblTipoViajeDetalle.Text = "Nacional";
+            // Una línea sgv-resumen en vez de cuatro tarjetas (E5-18a).
+            DateTime? ultimaActividad = fila["fechaUltimaActividad"] == DBNull.Value
+                ? (DateTime?)null : GetSafeValue<DateTime>(fila, "fechaUltimaActividad");
+            litResumenViaje.Text = ListaDespachosReglas.HtmlResumenViaje(GetSafeValue<int>(fila, "cantidadDespachos"),
+                ambito, GetSafeValue<string>(fila, "estadoViaje"), ultimaActividad);
         }
 
         #endregion
@@ -363,10 +390,24 @@ namespace WebSGV.Views
             CargarLotesRegistrados();
         }
 
+        /// <summary>Cambió un filtro de viajes: se vuelve a la primera página de la lista.</summary>
+        private void CargarViajesDesdeInicio()
+        {
+            gvViajesActivos.PageIndex = 0;
+            CargarViajesActivos();
+        }
+
+        protected void gvViajesActivos_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            gvViajesActivos.PageIndex = e.NewPageIndex;
+            CargarViajesActivos();
+        }
+
         private void CargarLotesRegistrados()
         {
             try
             {
+                _lotesEnlazados = true;
                 // Lo que falta documentar va primero (el resto conserva el orden por fecha de la consulta).
                 List<LoteRegistrado> lotes = ObtenerLotesRegistrados()
                     .OrderBy(l => l.EstadoLote == "ANULADO" || EstadoDocumental.DeLote(l).Completo ? 1 : 0)
@@ -376,6 +417,8 @@ namespace WebSGV.Views
                 var filas = lotes.Select(l =>
                 {
                     var documentos = EstadoDocumental.DeLote(l);
+                    bool anulado = l.EstadoLote == "ANULADO";
+                    string manifiesto = ListaDespachosService.EstadoManifiesto(l);
                     return new
                 {
                     l.IdLoteVirtual,
@@ -394,19 +437,23 @@ namespace WebSGV.Views
                     CpicsTitulo = LoteRegistrado.ListaCompleta(l.Cpics),
                     l.FechaCreacion,
                     l.EstadoLote,
-                    ManifiestoEstado = ListaDespachosService.EstadoManifiesto(l),
-                    DocumentosResumen = l.EstadoLote == "ANULADO" ? "—" : documentos.Resumen,
-                    DocumentosClase = l.EstadoLote == "ANULADO" ? "ld-docs-badge"
-                        : documentos.Completo ? "ld-docs-badge ld-docs-completo" : "ld-docs-badge ld-docs-pendiente",
-                    DocumentosAntiguedad = l.EstadoLote == "ANULADO" ? "" : documentos.Antiguedad(l.FechaProgramacion, hoy),
+                    ManifiestoEstado = manifiesto,
+                    // El manifiesto de aduana solo aplica a un lote internacional.
+                    MostrarManifiesto = l.EsInternacional && manifiesto != "N/A",
+                    DocumentosResumen = anulado ? "—" : documentos.Resumen,
+                    DocumentosTono = anulado ? TonoEstado.Neutro : documentos.Completo ? TonoEstado.Ok : TonoEstado.Alerta,
+                    DocumentosPendientes = !anulado && !documentos.Completo,
+                    DocumentosAntiguedad = anulado ? "" : documentos.Antiguedad(l.FechaProgramacion, hoy),
                     DocumentosAtrasado = documentos.Atrasado(l.FechaProgramacion, hoy)
                 };
                 }).ToList();
 
+                gvLotesRegistrados.PageIndex = ListaCatalogo.IndiceValido(gvLotesRegistrados.PageIndex, filas.Count);
                 gvLotesRegistrados.DataSource = filas;
                 gvLotesRegistrados.DataBind();
 
-                lblContadorLotes.Text = $"{lotes.Count}";
+                litTotalLotes.Text = filas.Count == 0 ? "Sin lotes con los filtros elegidos"
+                    : ListaCatalogo.Resumen(gvLotesRegistrados.PageIndex, filas.Count, filas.Count, "") + " con los filtros elegidos";
             }
             catch (Exception ex)
             {
@@ -461,6 +508,7 @@ namespace WebSGV.Views
         {
             try
             {
+                _detalleLoteEnlazado = true;
                 List<DespachoViaje> despachos = ListaDespachosService.ObtenerDespachosDelLote(idLoteVirtual, anulado);
                 gvDespachosLote.DataSource = despachos;
                 gvDespachosLote.DataBind();
@@ -483,10 +531,9 @@ namespace WebSGV.Views
             {
                 lblClienteDetalleLote.Text = System.Web.HttpUtility.HtmlEncode(lote.NombreCliente);
                 lblPedidoDetalleLote.Text = string.IsNullOrEmpty(lote.NumeroPedido) ? "Sin especificar" : System.Web.HttpUtility.HtmlEncode(lote.NumeroPedido);
-                lblTotalDespachosLote.Text = lote.CantidadDespachos.ToString();
-                lblOperacionDetalleLote.Text = System.Web.HttpUtility.HtmlEncode(lote.TipoOperacion);
-                lblPlantaDetalleLote.Text = System.Web.HttpUtility.HtmlEncode(lote.PlantaOperacion);
-                lblFechaCreacionDetalle.Text = lote.FechaCreacion.ToString("dd/MM/yyyy");
+                // Una línea sgv-resumen en vez de cuatro tarjetas (E5-18a).
+                litResumenLote.Text = ListaDespachosReglas.HtmlResumenLote(lote.CantidadDespachos, lote.TipoOperacion,
+                    lote.PlantaOperacion, lote.FechaCreacion);
                 // "Documentos" siempre visible: Factura/CPIC aplican también a lotes nacionales.
                 // El Manifiesto (solo internacional) se oculta dentro de esa vista si no aplica.
             }
@@ -556,28 +603,23 @@ namespace WebSGV.Views
             }
         }
 
-        protected void btnVolver_Click(object sender, EventArgs e)
-        {
-            Response.Redirect("RegistroDespacho.aspx");
-        }
-
         #endregion
 
         #region Eventos de Filtros - Viajes
 
         protected void ddlFiltroConductorViajes_SelectedIndexChanged(object sender, EventArgs e)
         {
-            CargarViajesActivos();
+            CargarViajesDesdeInicio();
         }
 
         protected void ddlFiltroTipoViajes_SelectedIndexChanged(object sender, EventArgs e)
         {
-            CargarViajesActivos();
+            CargarViajesDesdeInicio();
         }
 
         protected void btnBuscarViaje_Click(object sender, EventArgs e)
         {
-            CargarViajesActivos();
+            CargarViajesDesdeInicio();
         }
 
         protected void btnRefrescarViajes_Click(object sender, EventArgs e)
@@ -586,7 +628,8 @@ namespace WebSGV.Views
             {
                 LimpiarFiltrosViajes();
                 CargarConductoresFiltro();
-                CargarViajesActivos();
+                CargarViajesDesdeInicio();
+                EstablecerContadores();
                 MostrarMensaje("Datos de viajes actualizados correctamente.", "success");
             }
             catch (Exception ex)
@@ -625,7 +668,7 @@ namespace WebSGV.Views
             CargarLotesDesdeInicio();
         }
 
-        protected void btnFiltrarFecha_Click(object sender, EventArgs e)
+        protected void btnBuscarLotes_Click(object sender, EventArgs e)
         {
             CargarLotesDesdeInicio();
         }
@@ -653,6 +696,7 @@ namespace WebSGV.Views
                 CargarClientesFiltro();
                 CargarPlantasFiltro();
                 CargarLotesDesdeInicio();
+                EstablecerContadores();
                 MostrarMensaje("Datos de lotes actualizados correctamente.", "success");
             }
             catch (Exception ex)
@@ -666,53 +710,56 @@ namespace WebSGV.Views
 
         #region Eventos de GridViews
 
-        protected void gvViajesActivos_RowCommand(object sender, GridViewCommandEventArgs e)
+        /// <summary>
+        /// Botón de una fila de las listas (E5-18a): las grillas no guardan ViewState, así que cada botón deja
+        /// "VER|lote", "EDITAR|lote", "VERANULADO|lote" o "VIAJE|id" en hfArgumentoFila y pulsa este botón oculto. El
+        /// campo lo puede cambiar el usuario: se lee con formato estricto y se vuelve a buscar el lote (activo o anulado,
+        /// según la acción) o el viaje antes de abrirlo. Leer el argumento no autoriza nada: las escrituras repiten sus
+        /// comprobaciones de siempre (RechazarSiLoteAnulado, ObtenerLotePorId).
+        /// </summary>
+        protected void btnAccionFila_Click(object sender, EventArgs e)
         {
+            string argumento = hfArgumentoFila.Value;
+            hfArgumentoFila.Value = "";
             try
             {
-                int idViajeProgreso = Convert.ToInt32(e.CommandArgument);
-
-                if (e.CommandName == "VerDespachos")
+                if (!ListaDespachosReglas.TryLeerAccionFila(argumento, out AccionFilaLista accion, out string idLoteVirtual, out int idViaje))
                 {
-                    MostrarDetallesViaje(idViajeProgreso);
+                    MostrarMensaje("No se pudo leer la fila; recargue la página.", "warning");
+                    return;
                 }
+
+                if (accion == AccionFilaLista.VerViaje)
+                {
+                    if (ListaDespachosService.ObtenerInfoViajeDetalle(idViaje).Rows.Count == 0)
+                    {
+                        MostrarMensaje("El viaje ya no existe; se actualizó la lista.", "warning");
+                        return;
+                    }
+                    MostrarDetallesViaje(idViaje);
+                    return;
+                }
+
+                bool anulado = accion == AccionFilaLista.VerLoteAnulado;
+                if (ListaDespachosService.ObtenerLotePorId(idLoteVirtual, anulado) == null)
+                {
+                    MostrarMensaje("El lote ya no existe o cambió; se actualizó la lista.", "warning");
+                    return;
+                }
+
+                if (accion == AccionFilaLista.EditarLote) MostrarEdicionLote(idLoteVirtual);
+                else MostrarDetallesLote(idLoteVirtual, anulado);
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al procesar acción en viaje en ListaDespachos");
-                MostrarMensaje("Error al procesar acción en viaje: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                LogSGV.Error(ex, "Error al procesar la acción de una fila en ListaDespachos");
+                MostrarMensaje("Error al procesar la acción: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
             }
         }
 
-        protected void gvLotesRegistrados_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            try
-            {
-                string idLoteVirtual = e.CommandArgument.ToString();
-
-                if (e.CommandName == "EditarLote")
-                {
-                    MostrarEdicionLote(idLoteVirtual);
-                }
-                else if (e.CommandName == "VerDetallesLote")
-                {
-                    MostrarDetallesLote(idLoteVirtual);
-                }
-                else if (e.CommandName == "VerDetallesLoteAnulado")
-                {
-                    MostrarDetallesLote(idLoteVirtual, anulado: true);
-                }
-                else if (e.CommandName == "VerManifiestosLote")
-                {
-                    IrAlExpediente(idLoteVirtual);
-                }
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Error al procesar acción en lote en ListaDespachos");
-                MostrarMensaje("Error al procesar acción en lote: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
-            }
-        }
+        /// <summary>Enlace "Documentos" de una fila: el expediente del pedido en la Bandeja (GET, sin postback).</summary>
+        protected string UrlExpediente(object idLoteVirtual) =>
+            ResolveUrl("~/Views/BandejaDocumentos.aspx") + "?lote=" + HttpUtility.UrlEncode(Convert.ToString(idLoteVirtual));
 
         protected void gvConductoresLote_RowDataBound(object sender, GridViewRowEventArgs e)
         {
@@ -797,23 +844,6 @@ namespace WebSGV.Views
             }
         }
 
-        protected void btnGestionarManifiestos_Click(object sender, EventArgs e)
-        {
-            if (RechazarSiLoteAnulado()) return;
-            if (!string.IsNullOrEmpty(LoteSeleccionadoId))
-                IrAlExpediente(LoteSeleccionadoId);
-        }
-
-        /// <summary>
-        /// Los documentos del pedido (factura, CPIC, guías con su PDF y los MCI de sus descargas) se ven
-        /// y se suben en un solo lugar: el expediente de la bandeja (2026-11-11).
-        /// </summary>
-        private void IrAlExpediente(string idLoteVirtual)
-        {
-            Response.Redirect(ResolveUrl("~/Views/BandejaDocumentos.aspx") + "?lote=" + HttpUtility.UrlEncode(idLoteVirtual), false);
-            Context.ApplicationInstance.CompleteRequest();
-        }
-
         protected void btnVolverManifiestos_Click(object sender, EventArgs e)
         {
             if (!string.IsNullOrEmpty(LoteSeleccionadoId))
@@ -846,6 +876,7 @@ namespace WebSGV.Views
                     bool huboCambios = GuardarCambiosLote();
                     MostrarListaLotes();
                     CargarLotesRegistrados();
+                    if (huboCambios) EstablecerContadores();
                     if (huboCambios)
                         MostrarMensaje("Cambios del lote guardados.", "success");
                     else
@@ -1070,6 +1101,7 @@ namespace WebSGV.Views
 
                 MostrarListaLotes();
                 CargarLotesRegistrados();
+                EstablecerContadores();
                 string msgViajes = viajesAnulados > 0 ? $" Se anularon {viajesAnulados} viaje(s) sin despachos." : "";
                 MostrarMensaje($"Lote anulado. {lote.IdsDespachos.Count} despacho(s) quedaron como ANULADO y salieron de la liquidación y del seguimiento.{msgViajes}", "success", enPagina: true);
             }
@@ -1088,21 +1120,33 @@ namespace WebSGV.Views
 
         #region Métodos de Vista
 
+        /// <summary>
+        /// Muestra una sola de las seis pantallas de la página. Las pestañas y el resumen van solo en las dos listas
+        /// (M-082: antes seguían arriba del detalle, la edición y el registro manual).
+        /// </summary>
+        private void MostrarVista(VistaListaDespachos vista)
+        {
+            pnlListaViajes.Visible = vista == VistaListaDespachos.Viajes;
+            pnlListaLotes.Visible = vista == VistaListaDespachos.Lotes;
+            pnlDetallesViaje.Visible = vista == VistaListaDespachos.DetalleViaje;
+            pnlEdicionLote.Visible = vista == VistaListaDespachos.EdicionLote;
+            pnlDetallesLote.Visible = vista == VistaListaDespachos.DetalleLote;
+            pnlManifiestosLote.Visible = vista == VistaListaDespachos.RegistroManual;
+
+            pnlNavegacionListas.Visible = ListaDespachosReglas.MuestraNavegacion(vista);
+            bool viajes = vista == VistaListaDespachos.Viajes;
+            btnMostrarViajes.CssClass = viajes ? "sgv-tab activo" : "sgv-tab";
+            btnMostrarLotes.CssClass = viajes ? "sgv-tab" : "sgv-tab activo";
+            btnMostrarViajes.Attributes["aria-selected"] = viajes ? "true" : "false";
+            btnMostrarLotes.Attributes["aria-selected"] = viajes ? "false" : "true";
+        }
+
         private void MostrarListaViajes()
         {
             LoteSeleccionadoAnulado = false;
             ViajeSeleccionadoId = null;
             LoteSeleccionadoId = null;
-
-            pnlListaViajes.Visible = true;
-            pnlListaLotes.Visible = false;
-            pnlDetallesViaje.Visible = false;
-            pnlEdicionLote.Visible = false;
-            pnlDetallesLote.Visible = false;
-            pnlManifiestosLote.Visible = false;
-
-            btnMostrarViajes.CssClass = "btn btn-secondary btn-nav active-nav";
-            btnMostrarLotes.CssClass = "btn btn-outline-secondary btn-nav";
+            MostrarVista(VistaListaDespachos.Viajes);
         }
 
         private void MostrarListaLotes()
@@ -1110,16 +1154,7 @@ namespace WebSGV.Views
             LoteSeleccionadoAnulado = false;
             ViajeSeleccionadoId = null;
             LoteSeleccionadoId = null;
-
-            pnlListaViajes.Visible = false;
-            pnlListaLotes.Visible = true;
-            pnlDetallesViaje.Visible = false;
-            pnlEdicionLote.Visible = false;
-            pnlDetallesLote.Visible = false;
-            pnlManifiestosLote.Visible = false;
-
-            btnMostrarViajes.CssClass = "btn btn-outline-secondary btn-nav";
-            btnMostrarLotes.CssClass = "btn btn-success btn-nav active-nav";
+            MostrarVista(VistaListaDespachos.Lotes);
         }
 
         private void MostrarDetallesViaje(int idViajeProgreso)
@@ -1127,13 +1162,7 @@ namespace WebSGV.Views
             LoteSeleccionadoAnulado = false;
             ViajeSeleccionadoId = idViajeProgreso;
             LoteSeleccionadoId = null;
-
-            pnlListaViajes.Visible = false;
-            pnlListaLotes.Visible = false;
-            pnlDetallesViaje.Visible = true;
-            pnlEdicionLote.Visible = false;
-            pnlDetallesLote.Visible = false;
-            pnlManifiestosLote.Visible = false;
+            MostrarVista(VistaListaDespachos.DetalleViaje);
 
             CargarDespachosViaje(idViajeProgreso);
         }
@@ -1143,13 +1172,7 @@ namespace WebSGV.Views
             LoteSeleccionadoAnulado = false;
             ViajeSeleccionadoId = null;
             LoteSeleccionadoId = idLoteVirtual;
-
-            pnlListaViajes.Visible = false;
-            pnlListaLotes.Visible = false;
-            pnlDetallesViaje.Visible = false;
-            pnlEdicionLote.Visible = true;
-            pnlDetallesLote.Visible = false;
-            pnlManifiestosLote.Visible = false;
+            MostrarVista(VistaListaDespachos.EdicionLote);
 
             CargarDatosEdicionLote(idLoteVirtual);
         }
@@ -1164,16 +1187,12 @@ namespace WebSGV.Views
             LoteSeleccionadoAnulado = anulado;
             ViajeSeleccionadoId = null;
             LoteSeleccionadoId = idLoteVirtual;
-
-            pnlListaViajes.Visible = false;
-            pnlListaLotes.Visible = false;
-            pnlDetallesViaje.Visible = false;
-            pnlEdicionLote.Visible = false;
-            pnlDetallesLote.Visible = true;
-            pnlManifiestosLote.Visible = false;
+            MostrarVista(VistaListaDespachos.DetalleLote);
 
             pnlAvisoLoteAnulado.Visible = anulado;
-            btnGestionarManifiestos.Visible = !anulado;
+            // Los documentos del pedido se ven y se suben en el expediente de la bandeja (enlace GET, sin postback).
+            hlDocumentosLote.Visible = !anulado;
+            hlDocumentosLote.NavigateUrl = UrlExpediente(idLoteVirtual);
             btnEditarDesdeDetal.Visible = !anulado;
 
             CargarDespachosLote(idLoteVirtual, anulado);
@@ -1185,13 +1204,7 @@ namespace WebSGV.Views
             LoteSeleccionadoAnulado = false;
             ViajeSeleccionadoId = null;
             LoteSeleccionadoId = idLoteVirtual;
-
-            pnlListaViajes.Visible = false;
-            pnlListaLotes.Visible = false;
-            pnlDetallesViaje.Visible = false;
-            pnlEdicionLote.Visible = false;
-            pnlDetallesLote.Visible = false;
-            pnlManifiestosLote.Visible = true;
+            MostrarVista(VistaListaDespachos.RegistroManual);
             pnlMensajeManifiesto.Visible = false;
 
             CargarManifiestosLote(idLoteVirtual);
@@ -1615,10 +1628,9 @@ namespace WebSGV.Views
             }
         }
 
-        /// <summary>Insignia verde/ámbar junto al número de un documento.</summary>
+        /// <summary>Sello verde (listo) o ámbar (falta) junto al número de un documento; el texto dice el estado, sin icono.</summary>
         protected static string InsigniaDocumento(bool listo, string texto) =>
-            "<span class=\"ld-estado " + (listo ? "ld-estado-ok" : "ld-estado-falta") + "\"><i class=\"fas "
-            + (listo ? "fa-check-circle" : "fa-clock") + "\"></i> " + HttpUtility.HtmlEncode(texto) + "</span>";
+            EstadoUiHelper.Sello(texto, listo ? TonoEstado.Ok : TonoEstado.Alerta);
 
         /// <summary>Guías de cada despacho del lote, editables ("N/A" del lector = vacío).</summary>
         private void CargarGuiasLote(List<DespachoViaje> despachos)
@@ -2051,65 +2063,41 @@ namespace WebSGV.Views
 
         #region Métodos de Utilidad
 
-        private void EstablecerContadores()
+        /// <summary>
+        /// Contadores de las pestañas y la línea de resumen de las listas (E5-18a, en vez de cuatro tarjetas): viajes
+        /// activos, lotes activos, lotes con documentos pendientes (y los que llevan más de 3 días así) y lotes con
+        /// manifiestos pendientes. Devuelve los viajes activos. Se calcula al abrir la página y tras cada escritura;
+        /// los controles guardan el texto en su ViewState para no repetir la consulta en cada postback.
+        /// </summary>
+        private int EstablecerContadores()
         {
             try
             {
                 int totalViajes = ListaDespachosService.ContarViajesActivos();
-                lblContadorViajes.Text = $"{totalViajes}";
-                lblStatViajesActivos.Text = totalViajes.ToString();
-
                 var lotesActivos = ListaDespachosService.ObtenerLotesRegistrados(null, null, null, null, null, null, "ACTIVO");
-                lblStatLotesActivos.Text = lotesActivos.Count.ToString();
 
-                int pendientes = lotesActivos.Select(ListaDespachosService.EstadoManifiesto)
+                int manifiestosPendientes = lotesActivos.Select(ListaDespachosService.EstadoManifiesto)
                     .Count(v => v == "Pendiente" || v.StartsWith("Parcial"));
-                lblStatManifiestosPendientes.Text = pendientes.ToString();
-                divStatManifiestos.Attributes["class"] = pendientes > 0 ? "ld-stat-wrap ld-stat-alerta" : "ld-stat-wrap";
 
-                ContarDocumentosPendientes(lotesActivos);
+                DateTime hoy = FechaHelper.Hoy();
+                var pendientes = lotesActivos
+                    .Select(l => new { Lote = l, Documentos = EstadoDocumental.DeLote(l) })
+                    .Where(x => !x.Documentos.Completo)
+                    .ToList();
+                int atrasados = pendientes.Count(x => x.Documentos.Atrasado(x.Lote.FechaProgramacion, hoy));
+
+                btnMostrarViajes.Text = ListaDespachosReglas.TextoPestana("Viajes activos", totalViajes);
+                btnMostrarLotes.Text = ListaDespachosReglas.TextoPestana("Lotes registrados", lotesActivos.Count);
+                litResumenListas.Text = ListaDespachosReglas.HtmlResumenListas(manifiestosPendientes, pendientes.Count, atrasados);
+                phVerPendientes.Visible = pendientes.Count > 0;
+                return totalViajes;
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al establecer contadores en ListaDespachos");
                 MostrarMensaje("Error al establecer contadores: " + MensajeErrorHelper.ParaUsuario(ex), "warning");
+                return 0;
             }
-        }
-
-        protected void lnkStatViajes_Click(object sender, EventArgs e)
-        {
-            MostrarListaViajes();
-            CargarViajesActivos();
-        }
-
-        protected void lnkStatLotes_Click(object sender, EventArgs e)
-        {
-            MostrarListaLotes();
-            CargarLotesDesdeInicio();
-        }
-
-        protected void lnkStatManifiestosPendientes_Click(object sender, EventArgs e)
-        {
-            MostrarListaLotes();
-            CargarLotesDesdeInicio();
-        }
-
-        /// <summary>
-        /// Lotes activos (sin filtro de fecha) a los que les falta algún documento, y cuántos
-        /// llevan más de 3 días así. Recibe la lista que ya trajo <c>EstablecerContadores</c>.
-        /// </summary>
-        private void ContarDocumentosPendientes(List<LoteRegistrado> lotesActivos)
-        {
-            DateTime hoy = FechaHelper.Hoy();
-            var pendientes = lotesActivos
-                .Select(l => new { Lote = l, Documentos = EstadoDocumental.DeLote(l) })
-                .Where(x => !x.Documentos.Completo)
-                .ToList();
-            int atrasados = pendientes.Count(x => x.Documentos.Atrasado(x.Lote.FechaProgramacion, hoy));
-
-            lblStatDocumentosPendientes.Text = pendientes.Count.ToString();
-            lblStatDocumentosAtrasados.Text = atrasados > 0 ? $"{atrasados} con más de 3 días" : "";
-            divStatDocumentos.Attributes["class"] = atrasados > 0 ? "ld-stat-wrap ld-stat-alerta" : "ld-stat-wrap";
         }
 
         /// <summary>Lista de lotes con documentos pendientes, de cualquier fecha, el más antiguo primero.</summary>
@@ -2174,38 +2162,6 @@ namespace WebSGV.Views
                 "setTimeout(function(){var m=document.getElementById('" + pnlMensajes.ClientID + "');" +
                 "if(m){var r=m.getBoundingClientRect();if(r.top<0||r.bottom>window.innerHeight)m.scrollIntoView({behavior:'auto',block:'start'});}},60);",
                 true);
-        }
-
-        #endregion
-
-        #region Métodos Públicos para el ASPX
-
-        public string GetEstadoDespachoClass(string estado)
-        {
-            switch (estado?.ToUpper())
-            {
-                case "PROGRAMADO":
-                    return "badge bg-info estado-programado";
-                case "EN_PROGRESO":
-                case "ENPROGRESO":
-                    return "badge bg-warning estado-enprogreso";
-                case "COMPLETADO":
-                case "FINALIZADO":
-                    return "badge bg-success estado-completado";
-                case "CANCELADO":
-                    return "badge bg-danger estado-cancelado";
-                default:
-                    return "badge bg-secondary";
-            }
-        }
-
-        /// <summary>Clase del badge de estado de manifiesto (ver ListaDespachosService.EstadoManifiesto).</summary>
-        public string GetManifiestoBadgeClass(string estado)
-        {
-            if (estado == "Completo") return "badge estado-completado";
-            if (estado == "Pendiente") return "badge estado-cancelado";
-            if (!string.IsNullOrEmpty(estado) && estado.StartsWith("Parcial")) return "badge estado-enprogreso";
-            return "badge bg-secondary";
         }
 
         #endregion

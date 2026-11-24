@@ -767,7 +767,6 @@ namespace WebSGV.Tests
         /// Lista cerrada: solo se achica (al rehacer una página, sáquela de aquí).</summary>
         internal static readonly Dictionary<string, string> PaginasConTarjetasKpi = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Views/ListaDespachos.aspx"] = "E5-18 (M-082)",
             ["Views/Exportacion/DashboardExportacion.aspx"] = "E5-18",
         };
 
@@ -901,12 +900,15 @@ namespace WebSGV.Tests
         /// E5-17b: 84 a 77 (fuera las cuatro tarjetas, el aviso y el fa-info-circle de ReportesOrdenesViaje y el
         /// giratorio fa-spinner de LiquidacionesAprobadasContabilidad; queda el ojo del detalle, botón compacto con aria-label).
         /// E5-17c: 77 a 76 (fuera la lupa decorativa de la búsqueda de FacturasFlete).
+        /// E5-18a: 76 a 52 (ListaDespachos sin tarjetas, chips, títulos con icono ni fa-info-circle; quedan sus dos
+        /// avisos de advertencia, el de Editar lote y el del lote que espera el correo).
         /// Igualdad exacta: al quitar iconos, baje la cifra.</summary>
-        private const int TopeIconosMarcado = 76;
+        private const int TopeIconosMarcado = 52;
         /// <summary>Iconos armados en .cs/.js. E5-17c: 55 a 39 (fuera los 16 de BandejaDocumentos que eran estado o
         /// adorno, pasados a sellos sgv-estado con texto; quedan su aviso de observaciones y la flecha de plegar, que es
-        /// funcional). Lo que queda es sobre todo RegistroDespacho (E5-18) y botones compactos con aria-label.</summary>
-        private const int TopeIconosCodigo = 39;
+        /// funcional). E5-18a: 39 a 38 (InsigniaDocumento de ListaDespachos es un sello con texto). Lo que queda es sobre
+        /// todo RegistroDespacho (E5-18) y botones compactos con aria-label.</summary>
+        private const int TopeIconosCodigo = 38;
 
         private static readonly Regex IconoDinamico = new Regex(@"<i\s+class\s*=\s*[""']<%", RegexOptions.IgnoreCase);
         private static readonly Regex IconoEnCodigo = new Regex(@"<i class=[\\""']+fa[srlbd]? ");

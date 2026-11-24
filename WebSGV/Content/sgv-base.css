@@ -205,6 +205,9 @@ summary:focus-visible,
    el contorno va hacia adentro para verse entero. */
 .modal-header .close:focus-visible, .close:focus-visible { outline-offset: -4px; }
 
+/* Botón × de un aviso en la página (<div class="position-relative"> con el aviso y el botón). */
+.sgv-cerrar-aviso { position: absolute; top: .65rem; right: .75rem; }
+
 /* === Encabezado de página === */
 .sgv-encabezado {
     display: flex;

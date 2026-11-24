@@ -82,7 +82,9 @@ namespace WebSGV.Tests
             "Server.HtmlEncode(",
             "CeldaDocumento(",            // ListaDespachos: HtmlEncode del número + insignia de textos fijos
             "CeldaGuiaMci(",              // ListaDespachos: HtmlEncode de la guía + insignia de textos fijos
-            "InsigniaDocumento(",         // ListaDespachos: HtmlEncode del texto
+            "InsigniaDocumento(",         // ListaDespachos: EstadoUiHelper.Sello, HtmlEncode del texto
+            "ListaDespachosReglas.Sello", // ListaDespachos (E5-18a): SelloEstadoViaje, SelloEstadoDespacho, SelloLoteAnulado,
+                                          // SellosDocumentos y SelloSinAdjuntar, todos por EstadoUiHelper.Sello (HtmlEncode)
             "UrlAdjunto(",             // MovimientosViaje: URL de DocumentoHelper (NavigateUrl la codifica el HyperLink)
             "ConfirmarCambioEstado(",     // GestionUsuarios: texto plano en data-confirmar (el Button codifica el atributo; SGV.confirmar lo pone con .text())
             "ConfirmarQuitarSegundoFactor(", // GestionUsuarios (E4-14): igual que ConfirmarCambioEstado
