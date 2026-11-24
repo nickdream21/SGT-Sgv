@@ -114,6 +114,15 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Label lblResumenTotalDolares;
 
         /// <summary>
+        /// Control lblResumenFactor.
+        /// </summary>
+        /// <remarks>
+        /// Campo generado automáticamente.
+        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblResumenFactor;
+
+        /// <summary>
         /// Control lblResumenConversion.
         /// </summary>
         /// <remarks>
@@ -157,15 +166,6 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtBuscarConductor;
-
-        /// <summary>
-        /// Control ddlEstadoViaje.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.DropDownList ddlEstadoViaje;
 
         /// <summary>
         /// Control btnBuscarViajesActivos.

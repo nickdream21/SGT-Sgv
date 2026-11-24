@@ -23,6 +23,12 @@ namespace WebSGV.Views
         private static readonly string[] EstadosViajePermitidos = { "ABIERTO" };
 
         /// <summary>
+        /// El estado que lista la pestaña "Viajes activos sin liquidar" (E5-17: la página lo muestra como texto fijo,
+        /// sin combo; la exportación GET recibe estadoViaje=ABIERTO de ReportesOrdenesViaje.js).
+        /// </summary>
+        private const string EstadoViajeAbierto = "ABIERTO";
+
+        /// <summary>
         /// "TODOS" (la opción quitada en M-077: un enlace de exportación guardado o una página abierta antes de
         /// publicar) se toma como "ABIERTO", que da el mismo resultado; lo demás va tal cual a la validación.
         /// </summary>
@@ -96,13 +102,28 @@ namespace WebSGV.Views
                 txtPersFechaDesde.Text = primerDia.ToString("yyyy-MM-dd");
                 txtPersFechaHasta.Text = hoy.ToString("yyyy-MM-dd");
                 txtPersFactor.Text = "3.75";
-                CargarEstadosPersonalizado();
-                CargarConductoresPersonalizado();
-                CargarClientesPersonalizado();
 
                 // Cargar datos iniciales
                 CargarLiquidaciones();
                 CargarViajesActivos();
+            }
+        }
+
+        /// <summary>
+        /// Los combos del reporte personalizado no guardan ViewState (M-136): se llenan en cada pedido, antes de que
+        /// ASP.NET lea el envío, así un Buscar de otra pestaña conserva lo elegido. El servidor no los lee en ningún
+        /// postback (los manda ReportesOrdenesViaje.js por GET ?action=reportePersonalizado). Se llenan solo con
+        /// sesión de administración o supervisión (Page_Load corta lo demás) y no en las exportaciones GET.
+        /// </summary>
+        protected override void OnInit(EventArgs e)
+        {
+            base.OnInit(e);
+            if (SecurityHelper.TieneSesionActiva() && SecurityHelper.EsAdminOSupervisor()
+                && string.IsNullOrEmpty(Request.QueryString["action"]))
+            {
+                CargarEstadosPersonalizado();
+                CargarConductoresPersonalizado();
+                CargarClientesPersonalizado();
             }
         }
 
@@ -250,6 +271,7 @@ namespace WebSGV.Views
             lblResumenTotalDolares.Text = textos.Dolares;
             lblResumenConversion.Text = textos.Conversion;
             lblResumenTotal.Text = textos.Total;
+            lblResumenFactor.Text = factorConversion > 0 ? " (factor " + factorConversion.ToString("0.00##", CultureInfo.CurrentCulture) + ")" : "";
         }
 
         protected void gvLiquidaciones_RowDataBound(object sender, GridViewRowEventArgs e)
@@ -352,7 +374,7 @@ namespace WebSGV.Views
             try
             {
                 string buscarConductor = txtBuscarConductor.Text.Trim();
-                string estadoViaje = NormalizarEstadoViaje(ddlEstadoViaje.SelectedValue);
+                string estadoViaje = EstadoViajeAbierto;
 
                 string mensajeValidacion;
                 if (!ValidarFiltrosViajesActivos(buscarConductor, estadoViaje, out mensajeValidacion))
@@ -395,21 +417,6 @@ namespace WebSGV.Views
         protected void gvViajesActivos_RowDataBound(object sender, GridViewRowEventArgs e)
         {
             // Lógica adicional si es necesaria
-        }
-
-        protected string ObtenerClaseEstado(object estado)
-        {
-            if (estado == null || estado == DBNull.Value)
-                return "badge-estado-activo";
-
-            string estadoStr = estado.ToString();
-
-            if (estadoStr == "ABIERTO")
-                return "badge-estado-activo";
-            else if (estadoStr == "CERRADO")
-                return "badge-estado-cerrado";
-            else
-                return "badge-estado-activo";
         }
 
         #endregion

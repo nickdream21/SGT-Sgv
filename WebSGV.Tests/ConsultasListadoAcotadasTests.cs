@@ -145,8 +145,8 @@ namespace WebSGV.Tests
             Assert.Contains("_ultimosFiltros = filtros;", js);
             string aspx = File.ReadAllText(Path.Combine(RaizWeb(), "Views", "LiquidacionesAprobadasContabilidad.aspx"));
             Assert.Contains("data-accion=\"verTodoHistorial\"", aspx);
-            Assert.Contains("<label for=\"txtFechaDesde\">", aspx);
-            Assert.Contains("<label for=\"txtFechaHasta\">", aspx);
+            Assert.Contains("<label for=\"txtFechaDesde\" class=\"sgv-etiqueta\">", aspx);
+            Assert.Contains("<label for=\"txtFechaHasta\" class=\"sgv-etiqueta\">", aspx);
         }
 
         [Theory]

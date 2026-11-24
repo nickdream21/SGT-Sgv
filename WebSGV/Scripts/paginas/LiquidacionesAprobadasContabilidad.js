@@ -180,15 +180,19 @@ function limpiarResultados(mensajeHtml) {
     $('#tbodyLiquidaciones').html(mensajeHtml);
 }
 
+// Paginador sgv-paginador (E5-17, M-153): la página actual es un <span>; las demás, botones que piden esa
+// página de la última búsqueda. "Anterior" y "Siguiente" solo aparecen cuando hay adónde ir.
 function itemPaginador(texto, pagina, opciones) {
     opciones = opciones || {};
-    var clases = 'page-item' + (opciones.activa ? ' active' : '') + (opciones.deshabilitada ? ' disabled' : '');
-    var atributos = opciones.activa ? ' aria-current="page"' : '';
     var etiqueta = opciones.etiqueta ? ' aria-label="' + SGV.escaparHtml(opciones.etiqueta) + '"' : '';
-    var deshabilitado = opciones.deshabilitada || opciones.activa ? ' disabled' : '';
-    return '<li class="' + clases + '"' + atributos + '>' +
-        '<button type="button" class="page-link" data-accion="irPagina" data-pagina="' + pagina + '"' + etiqueta + deshabilitado + '>' +
-        SGV.escaparHtml(texto) + '</button></li>';
+    if (opciones.activa) {
+        // aria-label no vale en un <span> sin rol: el texto largo va en sr-only.
+        var largo = opciones.etiqueta ? '<span class="sr-only">' + SGV.escaparHtml(opciones.etiqueta) + '</span>' : '';
+        return '<span aria-current="page"><span aria-hidden="' + (largo ? 'true' : 'false') + '">' +
+            SGV.escaparHtml(texto) + '</span>' + largo + '</span>';
+    }
+    return '<button type="button" data-accion="irPagina" data-pagina="' + pagina + '"' + etiqueta + '>' +
+        SGV.escaparHtml(texto) + '</button>';
 }
 
 function pintarPaginador(pagina, total, tamano) {
@@ -199,13 +203,13 @@ function pintarPaginador(pagina, total, tamano) {
         return;
     }
 
-    var html = itemPaginador('Anterior', pagina - 1, { deshabilitada: pagina <= 0, etiqueta: 'Página anterior' });
+    var html = pagina > 0 ? itemPaginador('Anterior', pagina - 1, { etiqueta: 'Página anterior' }) : '';
     var inicio = Math.max(0, Math.min(pagina - 2, paginas - 5));
     var fin = Math.min(paginas - 1, inicio + 4);
     for (var p = inicio; p <= fin; p++) {
         html += itemPaginador(String(p + 1), p, { activa: p === pagina, etiqueta: 'Página ' + (p + 1) + ' de ' + paginas });
     }
-    html += itemPaginador('Siguiente', pagina + 1, { deshabilitada: pagina >= paginas - 1, etiqueta: 'Página siguiente' });
+    if (pagina < paginas - 1) html += itemPaginador('Siguiente', pagina + 1, { etiqueta: 'Página siguiente' });
     $pag.html(html);
 }
 
@@ -263,6 +267,10 @@ function buscarLiquidaciones(forzarManual, pagina, filtrosGuardados) {
                 limpiarResultados('<tr><td colspan="6" class="text-center text-danger py-4">' + SGV.escaparHtml(r.Mensaje) + '</td></tr>');
                 return;
             }
+
+            // Búsqueda pedida con un botón (no la que corre mientras se escribe): en el celular se pliegan
+            // los filtros para dejar a la vista los resultados.
+            if (esManual) SGV.plegarFiltros(document.getElementById('btnBuscarLiquidaciones'));
 
             var data = r.Items || [];
             var total = r.Total || 0;

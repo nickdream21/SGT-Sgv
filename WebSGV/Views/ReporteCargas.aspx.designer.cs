@@ -27,7 +27,7 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Button btnPdf;
         protected global::System.Web.UI.WebControls.HiddenField hfPestana;
         protected global::System.Web.UI.WebControls.Panel pnlResultados;
-        protected global::System.Web.UI.WebControls.Literal litTarjetas;
+        protected global::System.Web.UI.WebControls.Literal litResumen;
         protected global::System.Web.UI.WebControls.Literal litComparacion;
         protected global::System.Web.UI.WebControls.Literal litTituloPeriodo;
         protected global::System.Web.UI.WebControls.Literal litDocumentacion;

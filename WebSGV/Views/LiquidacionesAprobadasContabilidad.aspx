@@ -3,82 +3,82 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <asp:Panel ID="pnlMensajes" runat="server" Visible="false" CssClass="mb-3">
         <asp:Label ID="lblMensaje" runat="server"></asp:Label>
-</asp:Panel>
+    </asp:Panel>
 
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/LiquidacionesAprobadasContabilidad.css") %>" rel="stylesheet" />
 
-    <div class="container-fluid px-4">
-        <div class="sgv-encabezado">
-            <div class="sgv-encabezado-titulo">
-                <h1 class="h2">Liquidaciones aprobadas</h1>
-                <p>Consulta de liquidaciones aprobadas (solo lectura)</p>
-            </div>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-header"><strong>Filtros de búsqueda</strong></div>
-            <div class="card-body" data-enter="btnBuscarLiquidaciones">
-                <div class="row">
-                    <div class="col-md-4 mb-2">
-                        <label for="txtConductor">Conductor</label>
-                        <input type="text" id="txtConductor" class="form-control" placeholder="Buscar conductor..." autocomplete="off" />
-                        <input type="hidden" id="hfConductorId" value="" />
-                        <div id="conductorSugg" class="conductor-autocomplete-dropdown"></div>
-                    </div>
-                    <div class="col-md-4 mb-2">
-                        <label for="txtNumeroLiquidacion">N° Liquidación</label>
-                        <input type="text" id="txtNumeroLiquidacion" class="form-control" placeholder="Ej. OV-000123" maxlength="30" />
-                    </div>
-                    <div class="col-12 col-sm-6 col-md-2 mb-2">
-                        <label for="txtFechaDesde">Salida desde</label>
-                        <input type="date" id="txtFechaDesde" class="form-control" min="2000-01-01" max="2100-12-31" />
-                    </div>
-                    <div class="col-12 col-sm-6 col-md-2 mb-2">
-                        <label for="txtFechaHasta">Salida hasta</label>
-                        <input type="date" id="txtFechaHasta" class="form-control" min="2000-01-01" max="2100-12-31" />
-                    </div>
-                </div>
-                <div class="d-flex flex-wrap align-items-center">
-                    <button type="button" id="btnBuscarLiquidaciones" class="btn btn-primary mr-2 mb-2" data-accion="buscarLiquidaciones">Buscar</button>
-                    <button type="button" class="btn btn-secondary mr-2 mb-2" data-accion="limpiarFiltros">Limpiar</button>
-                    <button type="button" id="btnTodoHistorial" class="btn btn-outline-secondary mb-2" data-accion="verTodoHistorial">Todo el historial</button>
-                </div>
-                <p class="small text-muted mb-0" id="lblRangoFechas" aria-live="polite"></p>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <strong>Resultados</strong>
-                <span class="badge badge-success" id="lblTotalResultados">0</span>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-striped mb-0">
-                        <thead>
-                            <tr>
-                                <th>N° Liquidación</th>
-                                <th>Conductor</th>
-                                <th>Periodo</th>
-                                <th class="text-right">Balance S/</th>
-                                <th class="text-right">Balance $</th>
-                                <th class="text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbodyLiquidaciones">
-                            <tr><td colspan="6" class="text-center text-muted py-4">Use los filtros y pulse buscar.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="card-footer d-flex flex-wrap justify-content-between align-items-center">
-                <span class="small text-muted mr-2 my-1" id="lblMostrando" aria-live="polite"></span>
-                <nav aria-label="Páginas de liquidaciones aprobadas" class="my-1">
-                    <ul class="pagination pagination-sm mb-0" id="paginadorLiquidaciones"></ul>
-                </nav>
-            </div>
+    <div class="sgv-encabezado">
+        <div class="sgv-encabezado-titulo">
+            <h1 class="h2">Liquidaciones aprobadas</h1>
+            <p>Consulta de liquidaciones aprobadas (solo lectura)</p>
         </div>
     </div>
+
+    <details class="sgv-filtros" open data-plegar-movil>
+        <summary>Filtros <span class="sgv-filtros-cuenta"></span></summary>
+        <div class="sgv-filtros-cuerpo" data-enter="btnBuscarLiquidaciones">
+            <div class="form-row">
+                <div class="col-12 col-md-4 form-group">
+                    <label for="txtConductor" class="sgv-etiqueta">Conductor</label>
+                    <input type="text" id="txtConductor" class="form-control" placeholder="Buscar conductor..." autocomplete="off" />
+                    <input type="hidden" id="hfConductorId" value="" />
+                    <div id="conductorSugg" class="conductor-autocomplete-dropdown"></div>
+                </div>
+                <div class="col-12 col-md-4 form-group">
+                    <label for="txtNumeroLiquidacion" class="sgv-etiqueta">N° de liquidación</label>
+                    <input type="text" id="txtNumeroLiquidacion" class="form-control" placeholder="Ej. OV-000123" maxlength="30" />
+                </div>
+                <div class="col-6 col-md-2 form-group">
+                    <label for="txtFechaDesde" class="sgv-etiqueta">Salida desde</label>
+                    <input type="date" id="txtFechaDesde" class="form-control" min="2000-01-01" max="2100-12-31" />
+                </div>
+                <div class="col-6 col-md-2 form-group">
+                    <label for="txtFechaHasta" class="sgv-etiqueta">Salida hasta</label>
+                    <input type="date" id="txtFechaHasta" class="form-control" min="2000-01-01" max="2100-12-31" />
+                </div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center lac-acciones">
+                <button type="button" id="btnBuscarLiquidaciones" class="btn btn-primary" data-accion="buscarLiquidaciones">Buscar</button>
+                <button type="button" class="btn btn-outline-secondary" data-accion="limpiarFiltros">Limpiar</button>
+                <button type="button" id="btnTodoHistorial" class="btn btn-outline-secondary" data-accion="verTodoHistorial">Todo el historial</button>
+            </div>
+        </div>
+    </details>
+
+    <section class="sgv-panel">
+        <div class="sgv-panel-cab">
+            <div>
+                <h2 class="sgv-panel-titulo">Resultados</h2>
+                <%-- Total y rango de la última búsqueda: los escribe LiquidacionesAprobadasContabilidad.js. --%>
+                <p class="sgv-panel-nota mb-0" aria-live="polite">
+                    Total: <strong id="lblTotalResultados">0</strong>. <span id="lblRangoFechas"></span>
+                </p>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table sgv-tabla mb-0">
+                <thead>
+                    <tr>
+                        <th>N° de liquidación</th>
+                        <th>Conductor</th>
+                        <th>Periodo</th>
+                        <th class="text-right">Balance S/</th>
+                        <th class="text-right">Balance $</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyLiquidaciones">
+                    <tr><td colspan="6"><div class="sgv-cargando" role="status">Cargando liquidaciones…</div></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="lac-pie">
+            <span class="sgv-panel-nota" id="lblMostrando" aria-live="polite"></span>
+            <nav aria-label="Páginas de liquidaciones aprobadas">
+                <div class="sgv-paginador" id="paginadorLiquidaciones"></div>
+            </nav>
+        </div>
+    </section>
 
     <div class="modal fade" id="modalDetalleLiquidacion" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modalDetalleLiquidacionTitulo" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
@@ -186,11 +186,8 @@
                 </div>
                 <div class="modal-body p-0">
                     <div id="pdfContenedor" class="pdf-liquidacion-contenedor">
-                        <div id="pdfCargando" class="pdf-liquidacion-loader" role="status" aria-live="polite">
-                            <div class="text-center">
-                                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
-                                <div>Cargando documento...</div>
-                            </div>
+                        <div id="pdfCargando" class="pdf-liquidacion-loader">
+                            <div class="sgv-cargando" role="status" aria-live="polite">Cargando el documento…</div>
                         </div>
                         <iframe id="iframePdfLiquidacion" class="pdf-liquidacion-iframe" title="Vista previa de PDF de liquidación"></iframe>
                     </div>

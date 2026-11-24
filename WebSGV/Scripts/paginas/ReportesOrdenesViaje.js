@@ -1,21 +1,19 @@
-﻿function cambiarTab(tab) {
-    $('#seccionLiquidaciones').hide();
-    $('#seccionViajesActivos').hide();
-    $('#seccionPersonalizado').hide();
-    $('#tabLiquidaciones, #tabViajesActivos, #tabPersonalizado').removeClass('tab-btn-active');
+﻿// Pestañas sgv-tabs (E5-17): la sección visible y la pestaña .activo; las otras con d-none.
+var PESTANAS = {
+    liquidaciones: { tab: '#tabLiquidaciones', seccion: '#seccionLiquidaciones' },
+    viajesActivos: { tab: '#tabViajesActivos', seccion: '#seccionViajesActivos' },
+    personalizado: { tab: '#tabPersonalizado', seccion: '#seccionPersonalizado' }
+};
+
+function cambiarTab(tab) {
+    if (!PESTANAS[tab]) return;
     // Recuerda la pestaña para volver a ella tras un Buscar (M-077).
     $('#' + SGV.hdnPestana).val(tab);
-
-    if (tab === 'liquidaciones') {
-        $('#seccionLiquidaciones').show();
-        $('#tabLiquidaciones').addClass('tab-btn-active');
-    } else if (tab === 'viajesActivos') {
-        $('#seccionViajesActivos').show();
-        $('#tabViajesActivos').addClass('tab-btn-active');
-    } else if (tab === 'personalizado') {
-        $('#seccionPersonalizado').show();
-        $('#tabPersonalizado').addClass('tab-btn-active');
-    }
+    $.each(PESTANAS, function (clave, p) {
+        var activa = clave === tab;
+        $(p.seccion).toggleClass('d-none', !activa);
+        $(p.tab).toggleClass('activo', activa).attr('aria-selected', activa ? 'true' : 'false');
+    });
 }
 
 $(document).ready(function () {
@@ -40,7 +38,7 @@ function establecerFechasPorDefecto() {
 
 function verDetalleOrden(idOrden) {
     $('#modalDetalleOrden').modal('show');
-    $('#detalleOrdenContent').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div><p class="mt-3 text-muted">Cargando información...</p></div>');
+    $('#detalleOrdenContent').html(SGV.htmlCargando('Cargando el detalle…'));
 
     $.ajax({
         url: 'ReportesOrdenesViaje.aspx/ObtenerDetalleOrden',
@@ -72,13 +70,12 @@ function exportarLiquidaciones() {
 function exportarViajesActivos(formato) {
     limpiarErroresValidacion();
     var buscarConductor = $('#' + SGV.txtBuscarConductor).val();
-    var estadoViaje = $('#' + SGV.ddlEstadoViaje).val();
-
-    if (!validarFiltroViajesActivos(buscarConductor, estadoViaje)) {
+    if (!validarFiltroViajesActivos(buscarConductor)) {
         return;
     }
 
-    window.location.href = 'ReportesOrdenesViaje.aspx?action=exportarViajesActivos&buscarConductor=' + encodeURIComponent(buscarConductor) + '&estadoViaje=' + estadoViaje + (formato === 'pdf' ? '&formato=pdf' : '');
+    // Solo viajes abiertos (texto fijo en la página; el servidor valida contra EstadosViajePermitidos).
+    window.location.href = 'ReportesOrdenesViaje.aspx?action=exportarViajesActivos&buscarConductor=' + encodeURIComponent(buscarConductor) + '&estadoViaje=ABIERTO' + (formato === 'pdf' ? '&formato=pdf' : '');
 }
 
 function generarPDFLiquidaciones() {
@@ -172,7 +169,7 @@ function validarFiltrosLiquidaciones(fechaDesde, fechaHasta, factor) {
     return ok;
 }
 
-function validarFiltroViajesActivos(buscarConductor, estadoViaje) {
+function validarFiltroViajesActivos(buscarConductor) {
     var ok = true;
     if (buscarConductor && buscarConductor.length > 100) {
         mostrarErrorCampo('errBuscarConductor', 'La búsqueda no debe superar 100 caracteres.');
@@ -180,10 +177,6 @@ function validarFiltroViajesActivos(buscarConductor, estadoViaje) {
     }
     if (buscarConductor && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\-\.]+$/.test(buscarConductor)) {
         mostrarErrorCampo('errBuscarConductor', 'Solo se permiten letras, números, espacios, punto y guion.');
-        ok = false;
-    }
-    if (estadoViaje !== 'ABIERTO') {
-        mostrarErrorCampo('errEstadoViaje', 'Seleccione un estado de viaje válido.');
         ok = false;
     }
     return ok;

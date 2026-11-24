@@ -269,8 +269,8 @@ namespace WebSGV.Tests
             Assert.Contains("lblCountViajesActivos.Text = \"0\";", via);
             Assert.Contains("lblCountViajesActivosTabla.Text = \"0 viajes\";", via);
 
-            // "TODOS" de un enlace o una página vieja se normaliza en los dos caminos (postback y exportación GET).
-            Assert.Contains("NormalizarEstadoViaje(ddlEstadoViaje.SelectedValue)", cs);
+            // El postback usa la constante (E5-17: sin combo) y "TODOS" de un enlace viejo se normaliza en la exportación GET.
+            Assert.Contains("string estadoViaje = EstadoViajeAbierto;", Cuerpo(cs, "private void CargarViajesActivos(bool mostrarAvisos = true)"));
             Assert.Contains("NormalizarEstadoViaje(Request.QueryString[\"estadoViaje\"])", cs);
             Assert.Contains("NormalizarEstadoViaje(estadoViaje)", Cuerpo(cs, "private bool ValidarFiltrosViajesActivos("));
         }
@@ -299,15 +299,16 @@ namespace WebSGV.Tests
         [Fact]
         public void Reportes_SinTodosLosEstados_QueDabaLoMismoQueAbierto()
         {
+            // E5-17: ni combo; el estado es un texto fijo y el script exporta siempre ABIERTO.
             string aspx = Leer(Reportes);
-            var ddl = Regex.Match(aspx, "<asp:DropDownList ID=\"ddlEstadoViaje\".*?</asp:DropDownList>", RegexOptions.Singleline);
-            Assert.True(ddl.Success);
-            var valores = Regex.Matches(ddl.Value, "<asp:ListItem Value=\"(\\w+)\"").Cast<Match>().Select(x => x.Groups[1].Value).ToArray();
-            Assert.Equal(new[] { "ABIERTO" }, valores);
+            Assert.DoesNotContain("ddlEstadoViaje", aspx);
+            Assert.Contains("Abiertos (sin liquidar)", aspx);
 
             string cs = SinComentarios(Leer(Reportes + ".cs"));
             Assert.Contains("EstadosViajePermitidos = { \"ABIERTO\" };", cs);
-            Assert.DoesNotContain("'TODOS'", Leer("Scripts/paginas/ReportesOrdenesViaje.js"));
+            string js = Leer("Scripts/paginas/ReportesOrdenesViaje.js");
+            Assert.DoesNotContain("'TODOS'", js);
+            Assert.Contains("&estadoViaje=ABIERTO", js);
 
             // La consulta ya filtra siempre los viajes ABIERTO: por eso "Todos" no sumaba nada.
             string servicio = Leer("Services/Reportes/ReportesOrdenesViajeService.cs");

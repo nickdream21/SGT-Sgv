@@ -32,3 +32,18 @@
 .pdf-liquidacion-contenedor.cargado .pdf-liquidacion-iframe {
     visibility: visible;
 }
+
+/* Botones de los filtros y pie de la tabla (cuántas se muestran y paginador sgv-paginador) */
+.lac-acciones { gap: 0.5rem; }
+
+.lac-pie {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-top: 1px solid var(--sgv-borde);
+}
+
+.lac-pie:has(#lblMostrando:empty):has(#paginadorLiquidaciones:empty) { display: none; }

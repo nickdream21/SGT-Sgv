@@ -125,7 +125,7 @@ namespace WebSGV.Views
                 var productos = ReporteCargasService.ResumenPorProducto(ReporteCargasService.LineasCarga(filtro));
 
                 bool comparar = ant.Despachos >= ReporteCargasService.MinViajesParaComparar;
-                litTarjetas.Text = HtmlTarjetas(tot, comparar ? ant : null, docs);
+                litResumen.Text = HtmlResumen(tot, comparar ? ant : null, docs);
                 string nombreAnterior = antDesde.Day == 1 && antHasta == antDesde.AddMonths(1).AddDays(-1)
                     ? antDesde.ToString("MMMM yyyy", CulturaPe).ToLower(CulturaPe)
                     : $"el {antDesde:dd/MM/yyyy} al {antHasta:dd/MM/yyyy}";
@@ -227,7 +227,7 @@ namespace WebSGV.Views
                     string viaje = h(ReporteCargasService.ViajeChofer(r));
                     if (r["ViajeChofer"] == DBNull.Value) viaje = $"<span class=\"rc-sin-viaje\">{viaje}</span>";
                     sb.Append("<tr>")
-                      .Append($"<td>{Convert.ToDateTime(r["Fecha"]):dd/MM/yyyy}{(ReporteCargasService.EsAnulado(r) ? " <span class=\"badge badge-secondary\">Anulado</span>" : "")}</td>")
+                      .Append($"<td>{Convert.ToDateTime(r["Fecha"]):dd/MM/yyyy}{(ReporteCargasService.EsAnulado(r) ? " " + EstadoUiHelper.Sello("Anulado", TonoEstado.Neutro) : "")}</td>")
                       .Append($"<td>{(r["Guia"] == DBNull.Value ? "<span class=\"text-muted\">sin guía</span>" : h(r["Guia"]))}</td>")
                       .Append($"<td>{h(r["Conductor"])}</td><td>{h(r["Tracto"])}</td><td>{h(r["Carreta"])}</td>")
                       .Append($"<td class=\"text-right\">{n0(r["Bolsas"])}</td>")
@@ -241,66 +241,74 @@ namespace WebSGV.Views
 
         // ================= Pestaña Resumen =================
 
-        private string HtmlTarjetas(ReporteCargasService.Totales tot, ReporteCargasService.Totales ant,
-                                    ReporteCargasService.ResumenDocumentos docs)
+        /// <summary>
+        /// Cifras del período en una línea (E5-17; antes, siete tarjetas): viajes, pedidos, clientes, bolsas, toneladas,
+        /// lo facturado y los documentos pendientes, con la variación frente al período anterior (▲ sube, ▼ baja) si se compara.
+        /// </summary>
+        internal static string HtmlResumen(ReporteCargasService.Totales tot, ReporteCargasService.Totales ant,
+                                           ReporteCargasService.ResumenDocumentos docs)
         {
-            var sb = new StringBuilder();
-            sb.Append(Tarjeta("Viajes cargados", tot.Despachos.ToString("N0", CulturaPe), Variacion(tot.Despachos, ant?.Despachos)));
-            sb.Append(Tarjeta("Pedidos", tot.Pedidos.ToString("N0", CulturaPe), Variacion(tot.Pedidos, ant?.Pedidos)));
-            sb.Append(Tarjeta("Clientes", tot.Clientes.ToString("N0", CulturaPe), ""));
-            sb.Append(Tarjeta("Bolsas", tot.Bolsas.ToString("N0", CulturaPe), Variacion(tot.Bolsas, ant?.Bolsas)));
-            sb.Append(Tarjeta("Toneladas", (tot.KgBruto / 1000m).ToString("N1", CulturaPe), Variacion(tot.KgBruto, ant?.KgBruto)));
+            var sb = new StringBuilder("<p class=\"sgv-resumen\">");
+            Action<string> parte = html => sb.Append("<span>").Append(html).Append("</span>");
+            Func<decimal, string> n0 = v => v.ToString("N0", CulturaPe);
+
+            parte(Cifra(n0(tot.Despachos), tot.Despachos == 1 ? "viaje" : "viajes") + Variacion(tot.Despachos, ant?.Despachos));
+            parte(Cifra(n0(tot.Pedidos), tot.Pedidos == 1 ? "pedido" : "pedidos") + Variacion(tot.Pedidos, ant?.Pedidos));
+            parte(Cifra(n0(tot.Clientes), tot.Clientes == 1 ? "cliente" : "clientes"));
+            parte(Cifra(n0(tot.Bolsas), "bolsas") + Variacion(tot.Bolsas, ant?.Bolsas));
+            parte(Cifra((tot.KgBruto / 1000m).ToString("N1", CulturaPe), "t") + Variacion(tot.KgBruto, ant?.KgBruto));
 
             var facturado = new List<string>();
-            if (tot.FacturadoUsd > 0) facturado.Add("US$ " + tot.FacturadoUsd.ToString("N2", CulturaPe));
-            if (tot.FacturadoPen > 0) facturado.Add("S/ " + tot.FacturadoPen.ToString("N2", CulturaPe));
-            sb.Append(Tarjeta("Facturado", facturado.Count == 0 ? "—" : string.Join("<br>", facturado.Select(s => HttpUtility.HtmlEncode(s))),
-                              "", "rc-tarjeta-destacada", esHtml: true));
+            if (tot.FacturadoUsd > 0) facturado.Add("<strong>" + HttpUtility.HtmlEncode("US$ " + tot.FacturadoUsd.ToString("N2", CulturaPe)) + "</strong>");
+            if (tot.FacturadoPen > 0) facturado.Add("<strong>" + HttpUtility.HtmlEncode("S/ " + tot.FacturadoPen.ToString("N2", CulturaPe)) + "</strong>");
+            parte(facturado.Count == 0 ? "Sin facturar" : "Facturado " + string.Join(" y ", facturado));
 
-            string detalleDocs = docs.Pendientes == 0
-                ? "<small class=\"rc-var\">Todo completo</small>"
-                : docs.Atrasados > 0
-                    ? $"<small class=\"rc-var rc-var-baja\">{docs.Atrasados} con m&#xE1;s de {ReporteCargasService.DiasToleranciaDocumentos} d&#xED;as</small>"
-                    : "<small class=\"rc-var\">Dentro del plazo</small>";
-            sb.Append(Tarjeta("Documentos pendientes", docs.Pendientes.ToString("N0", CulturaPe), detalleDocs,
-                              docs.Pendientes == 0 ? "rc-tarjeta-ok" : "rc-tarjeta-aviso"));
-            return sb.ToString();
+            if (docs.Pendientes == 0)
+                parte("Documentaci&#xF3;n completa");
+            else
+                parte(Cifra(n0(docs.Pendientes), "con documentos pendientes") +
+                      (docs.Atrasados > 0
+                          ? $" <span class=\"rc-var rc-var-baja\">({n0(docs.Atrasados)} con m&#xE1;s de {ReporteCargasService.DiasToleranciaDocumentos} d&#xED;as)</span>"
+                          : ""));
+            return sb.Append("</p>").ToString();
         }
 
-        private static string Tarjeta(string etiqueta, string valor, string pie, string clase = "", bool esHtml = false) =>
-            $"<div class=\"col-6 col-md-4 col-xl mb-3\"><div class=\"rc-tarjeta {clase}\"><span>{HttpUtility.HtmlEncode(etiqueta)}</span>" +
-            $"<strong>{(esHtml ? valor : HttpUtility.HtmlEncode(valor))}</strong>{pie}</div></div>";
+        private static string Cifra(string valor, string texto) =>
+            "<strong>" + HttpUtility.HtmlEncode(valor) + "</strong> " + HttpUtility.HtmlEncode(texto);
 
-        /// <summary>"▲ 12 %" / "▼ 5 %" frente al período anterior; nada si no se compara (ant null).</summary>
+        /// <summary>" ▲ 12 %" / " ▼ 5 %" frente al período anterior (el título dice con qué); nada si no se compara (ant null).</summary>
         private static string Variacion(decimal actual, decimal? anterior)
         {
             if (!anterior.HasValue) return "";
             decimal? v = ReporteCargasService.Variacion(actual, anterior.Value);
-            if (!v.HasValue) return "<small class=\"rc-var\">Sin carga en el per&#xED;odo anterior</small>";
-            if (v.Value == 0) return "<small class=\"rc-var\">Igual que el per&#xED;odo anterior</small>";
+            if (!v.HasValue) return " <span class=\"rc-var\" title=\"Sin carga en el per&#xED;odo anterior\">(nuevo)</span>";
+            if (v.Value == 0) return " <span class=\"rc-var\" title=\"Igual que el per&#xED;odo anterior\">(igual)</span>";
             string clase = v.Value > 0 ? "rc-var-sube" : "rc-var-baja";
             string flecha = v.Value > 0 ? "&#x25B2;" : "&#x25BC;";
-            return $"<small class=\"rc-var {clase}\">{flecha} {Math.Abs(v.Value).ToString("N0", CulturaPe)} % vs. anterior</small>";
+            string sentido = v.Value > 0 ? "m&#xE1;s" : "menos";
+            return $" <span class=\"rc-var {clase}\" title=\"{Math.Abs(v.Value).ToString("N0", CulturaPe)} % {sentido} que el per&#xED;odo anterior\">" +
+                   $"{flecha} {Math.Abs(v.Value).ToString("N0", CulturaPe)} %</span>";
         }
 
+        /// <summary>Estado de la documentación en sellos (E5-17; antes, tres cajas de color) y lo que falta.</summary>
         private string HtmlDocumentacion(ReporteCargasService.ResumenDocumentos docs)
         {
             if (docs.Estado.Despachos == 0)
                 return "<div class=\"text-muted\">No hay despachos vigentes en el per&#xED;odo.</div>";
 
             var sb = new StringBuilder("<div class=\"d-flex flex-wrap rc-docs\">");
-            sb.Append($"<div class=\"rc-doc rc-doc-ok\"><strong>{docs.Completos:N0}</strong><span>Completos</span></div>");
-            sb.Append($"<div class=\"rc-doc {(docs.Pendientes > 0 ? "rc-doc-aviso" : "")}\"><strong>{docs.Pendientes:N0}</strong><span>Con documentos pendientes</span></div>");
-            sb.Append($"<div class=\"rc-doc {(docs.Atrasados > 0 ? "rc-doc-mal" : "")}\"><strong>{docs.Atrasados:N0}</strong>" +
-                      $"<span>Pendientes hace m&#xE1;s de {ReporteCargasService.DiasToleranciaDocumentos} d&#xED;as</span></div>");
+            sb.Append(EstadoUiHelper.Sello($"{docs.Completos:N0} completos", TonoEstado.Ok));
+            sb.Append(EstadoUiHelper.Sello($"{docs.Pendientes:N0} con documentos pendientes", docs.Pendientes > 0 ? TonoEstado.Alerta : TonoEstado.Neutro));
+            sb.Append(EstadoUiHelper.Sello($"{docs.Atrasados:N0} pendientes hace más de {ReporteCargasService.DiasToleranciaDocumentos} días",
+                                           docs.Atrasados > 0 ? TonoEstado.Peligro : TonoEstado.Neutro));
             sb.Append("</div>");
 
             if (docs.Pendientes > 0)
             {
-                sb.Append("<div class=\"mt-3\"><span class=\"text-muted small d-block mb-1\">Lo que falta:</span>");
+                sb.Append("<div class=\"mt-3\"><span class=\"sgv-etiqueta d-block\">Lo que falta</span><div class=\"d-flex flex-wrap rc-docs\">");
                 foreach (string f in docs.Estado.Faltantes)
-                    sb.Append($"<span class=\"badge rc-faltante\">{HttpUtility.HtmlEncode(f)}</span> ");
-                sb.Append("</div>");
+                    sb.Append(EstadoUiHelper.Sello(f, TonoEstado.Alerta));
+                sb.Append("</div></div>");
                 sb.Append($"<a class=\"btn btn-outline-primary btn-sm mt-3\" href=\"{ResolveUrl("~/Views/ListaDespachos.aspx?documentos=pendientes")}\">" +
                           "Completar en la lista de despachos</a>");
             }
@@ -318,7 +326,7 @@ namespace WebSGV.Views
                 if (pen > 0) partes.Add("S/ " + pen.ToString("N2", CulturaPe));
                 return HttpUtility.HtmlEncode(string.Join(" · ", partes));
             };
-            var sb = new StringBuilder("<table class=\"table table-sm table-hover mb-0 rc-tabla\"><thead><tr>" +
+            var sb = new StringBuilder("<table class=\"table sgv-tabla mb-0 rc-tabla\"><thead><tr>" +
                 "<th>Cliente</th><th class=\"text-right\">Viajes</th><th class=\"text-right\">Pedidos</th><th class=\"text-right\">Bolsas</th>" +
                 "<th class=\"text-right\">Toneladas</th><th class=\"rc-col-barra\">% del peso</th><th class=\"text-right\">Facturado</th></tr></thead><tbody>");
             int sinDetalle = 0;
@@ -350,7 +358,7 @@ namespace WebSGV.Views
         {
             if (productos.Count == 0)
                 return "<div class=\"text-center text-muted p-4\">Sin detalle de productos (las cargas no tienen l&#xED;neas de producto).</div>";
-            var sb = new StringBuilder("<table class=\"table table-sm table-hover mb-0 rc-tabla\"><thead><tr>" +
+            var sb = new StringBuilder("<table class=\"table sgv-tabla mb-0 rc-tabla\"><thead><tr>" +
                 "<th>C&#xF3;digo</th><th>Producto</th><th class=\"text-right\">Viajes</th><th class=\"text-right\">Lotes</th>" +
                 "<th class=\"text-right\">Bolsas</th><th class=\"text-right\">Toneladas</th><th class=\"rc-col-barra\">% del peso</th></tr></thead><tbody>");
             foreach (var p in productos)
@@ -391,7 +399,7 @@ namespace WebSGV.Views
 
         private void MostrarMensaje(string mensaje)
         {
-            pnlResultados.Visible = pnlResultados.Visible && litTarjetas.Text != "";
+            pnlResultados.Visible = pnlResultados.Visible && litResumen.Text != "";
             AvisoHelper.Mostrar(Page, pnlMensaje, lblMensaje, mensaje, AvisoHelper.Peligro);
         }
     }

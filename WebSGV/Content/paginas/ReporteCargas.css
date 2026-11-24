@@ -2,23 +2,8 @@
 
 .rc-acciones { gap: .5rem; }
 
-.rc-tarjeta {
-    background: var(--sgv-superficie);
-    border: 1px solid var(--sgv-borde);
-    border-left: 4px solid var(--sgv-azul-600);
-    border-radius: var(--sgv-radio);
-    padding: .65rem .9rem;
-    height: 100%;
-}
-.rc-tarjeta span { display: block; font-size: .8rem; color: var(--sgv-texto-suave); }
-.rc-tarjeta strong { display: block; font-size: 1.35rem; color: var(--sgv-texto); font-weight: 600; }
-.rc-tarjeta-destacada { border-left-color: var(--sgv-verde-600); background: var(--sgv-verde-50); }
-.rc-tarjeta-destacada strong { font-size: 1.05rem; line-height: 1.35; }
-.rc-tarjeta-ok { border-left-color: var(--sgv-verde-600); }
-.rc-tarjeta-aviso { border-left-color: var(--sgv-ambar-600); background: var(--sgv-ambar-50); }
-
-/* Variación frente al período anterior */
-.rc-var { display: block; font-size: .75rem; color: var(--sgv-texto-suave); margin-top: .1rem; }
+/* Variación frente al período anterior, dentro de la línea de resumen (sgv-resumen) */
+.rc-var { font-size: .75rem; font-weight: 600; color: var(--sgv-texto-suave); }
 .rc-var-sube { color: var(--sgv-ok); }
 .rc-var-baja { color: var(--sgv-peligro); }
 
@@ -29,10 +14,8 @@
 
 /* Resumen: gráficos y tablas */
 .rc-canvas { position: relative; height: 300px; }
-.rc-tabla { font-size: .875rem; }
-.rc-tabla th { background: var(--sgv-fondo); color: var(--sgv-texto-suave); font-weight: 600; white-space: nowrap; border-top: 0; }
-.rc-tabla tfoot th { background: var(--sgv-fondo-pagina); color: var(--sgv-texto); }
-.rc-tabla td, .rc-tabla th { vertical-align: middle; padding-left: .9rem; padding-right: .9rem; }
+.rc-grafico-titulo { margin: 0 0 .5rem; font-size: .9375rem; font-weight: 600; color: var(--sgv-texto); }
+/* Por cliente y por producto: sgv-tabla (sgv-base.css). */
 .rc-tabla-alta { max-height: 460px; overflow-y: auto; }
 .rc-tabla-alta thead th { position: sticky; top: 0; z-index: 1; }
 .rc-col-barra { min-width: 150px; }
@@ -41,16 +24,8 @@
 .rc-barra-relleno { position: absolute; left: 0; top: 0; bottom: 0; background: var(--sgv-azul-200); border-radius: 3px; }
 .rc-barra span { position: relative; font-size: .75rem; color: var(--sgv-azul-900); padding-left: .4rem; line-height: 1.15rem; }
 
-/* Documentación */
-.rc-docs { gap: .75rem; }
-.rc-doc { border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); padding: .5rem .9rem; min-width: 10rem; background: var(--sgv-superficie); }
-.rc-doc strong { display: block; font-size: 1.25rem; color: var(--sgv-texto); }
-.rc-doc span { font-size: .8rem; color: var(--sgv-texto-suave); }
-.rc-doc-ok { background: var(--sgv-verde-50); border-color: var(--sgv-verde-200); }
-.rc-doc-aviso { background: var(--sgv-ambar-50); border-color: var(--sgv-ambar-200); }
-.rc-doc-mal { background: var(--sgv-rojo-50); border-color: var(--sgv-rojo-200); }
-.rc-doc-mal strong { color: var(--sgv-peligro); }
-.rc-faltante { background: var(--sgv-alerta-fondo); color: var(--sgv-alerta-texto); font-weight: 500; font-size: .8rem; padding: .35em .6em; margin-bottom: .25rem; }
+/* Documentación: sellos sgv-estado */
+.rc-docs { gap: .5rem; }
 
 /* Vista por pedido: una fila por pedido; al abrirla, sus unidades */
 .rc-cabecera, .rc-resumen {
@@ -87,6 +62,7 @@
 .rc-detalle th { background: var(--sgv-fondo); color: var(--sgv-texto-suave); font-weight: 600; border-top: 0; }
 .rc-detalle td, .rc-detalle th { white-space: nowrap; vertical-align: middle; padding-left: 1rem; }
 .rc-sin-viaje { color: var(--sgv-texto-suave); font-style: italic; }
+.rc-pie { padding: .625rem 1rem; border-top: 1px solid var(--sgv-borde); }
 
 /* Pantallas angostas: la fila del pedido pasa a dos líneas */
 @media (max-width: 991.98px) {

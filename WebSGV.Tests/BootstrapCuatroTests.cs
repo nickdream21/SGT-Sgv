@@ -58,7 +58,6 @@ namespace WebSGV.Tests
             ["Content/paginas/LiquidacionesPendientes.css"] = 10,
             ["Content/paginas/ListaDespachos.css"] = 114,
             ["Content/paginas/RegistroDespacho.css"] = 10,
-            ["Content/paginas/ReportesOrdenesViaje.css"] = 6,
             ["Content/paginas/SiteMaster.css"] = 15,   // E5-24b: fuera .nav-link i y .dropdown-item i
         };
 

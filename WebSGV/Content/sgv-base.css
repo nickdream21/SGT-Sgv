@@ -639,7 +639,18 @@ details.sgv-filtros[open] > summary { border-bottom: 1px solid var(--sgv-borde);
     border: none;
 }
 
+/* Paginador armado en JS (E5-17, LiquidacionesAprobadasContabilidad): <div class="sgv-paginador"> con un
+   <button> por página y la actual en <span aria-current="page">. */
+div.sgv-paginador {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+div.sgv-paginador:empty { display: none; }
+
 .sgv-paginador a,
+.sgv-paginador button,
 .sgv-paginador span {
     display: inline-flex;
     align-items: center;
@@ -661,10 +672,14 @@ details.sgv-filtros[open] > summary { border-bottom: 1px solid var(--sgv-borde);
     color: var(--sgv-blanco);
 }
 
-.sgv-paginador a:hover { background: var(--sgv-fondo-pagina); text-decoration: none; }
+.sgv-paginador button { font-family: inherit; line-height: 1; cursor: pointer; }
+
+.sgv-paginador a:hover,
+.sgv-paginador button:hover { background: var(--sgv-fondo-pagina); text-decoration: none; }
 
 @media (max-width: 767.98px) {
     .sgv-paginador a,
+    .sgv-paginador button,
     .sgv-paginador span { min-width: 2.5rem; height: 2.5rem; }
 }
 

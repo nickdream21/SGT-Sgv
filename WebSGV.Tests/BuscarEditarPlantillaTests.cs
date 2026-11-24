@@ -12,28 +12,46 @@ namespace WebSGV.Tests
     /// Pantallas de buscar y editar con la plantilla común (E5-17, fase 3 de M-073): sgv-panel, sgv-tabla,
     /// sgv-paginador, filtros en details.sgv-filtros, cifras en una línea (sgv-resumen) en vez de tarjetas, sellos
     /// sgv-estado y el giratorio sgv-cargando. La lista de páginas crece con cada parte de E5-17 (a: GestionUsuarios,
-    /// Auditoria y DashboardAdminSistema). Leen las páginas como texto sin comentarios, igual que
+    /// Auditoria y DashboardAdminSistema; b: ReporteCargas, ReportesOrdenesViaje, ReporteGps y
+    /// LiquidacionesAprobadasContabilidad). Leen las páginas como texto sin comentarios, igual que
     /// <see cref="CatalogosPlantillaTests"/>.
     /// </summary>
     public class BuscarEditarPlantillaTests
     {
-        /// <summary>Páginas con la plantilla (crece con E5-17b y E5-17c).</summary>
-        public static readonly string[] Paginas = { "GestionUsuarios", "Auditoria", "DashboardAdminSistema" };
+        /// <summary>Páginas con la plantilla (crece con E5-17c).</summary>
+        public static readonly string[] Paginas =
+        {
+            "GestionUsuarios", "Auditoria", "DashboardAdminSistema",
+            "ReporteCargas", "ReportesOrdenesViaje", "ReporteGps", "LiquidacionesAprobadasContabilidad"
+        };
 
-        /// <summary>Páginas con filtros (van en details.sgv-filtros).</summary>
-        public static readonly string[] PaginasConFiltros = { "GestionUsuarios", "Auditoria" };
+        /// <summary>
+        /// Páginas con filtros (van en details.sgv-filtros). ReporteGps no: sus botones "Traer tractos" y "Activas de
+        /// Vitapro" están entre los campos y hacen postback, así que plegarlo en el celular escondería su resultado.
+        /// </summary>
+        public static readonly string[] PaginasConFiltros =
+        {
+            "GestionUsuarios", "Auditoria", "ReporteCargas", "ReportesOrdenesViaje", "LiquidacionesAprobadasContabilidad"
+        };
 
         /// <summary>
         /// style= permitidos por archivo (.aspx y .aspx.cs), en igualdad exacta: el ancho de una barra de progreso
         /// es un dato y se queda (llegan con E5-17b/c). Las páginas que no están aquí van con 0.
         /// </summary>
-        public static readonly Dictionary<string, int> StylePermitidos = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        public static readonly Dictionary<string, int> StylePermitidos = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Views/ReporteCargas.aspx.cs"] = 1,   // Barra(): width:% del peso de cada cliente o producto
+        };
 
-        /// <summary>Clases retiradas en E5-17a: no vuelven en el marcado, el código, el script ni la hoja de la página.</summary>
+        /// <summary>Clases retiradas en E5-17a y E5-17b: no vuelven en el marcado, el código, el script ni la hoja de la página.</summary>
         private static readonly string[] ClasesRetiradas =
         {
             "aud-stat-", "aud-section-", "aud-badge-", "aud-pager", "aud-form-label", "aud-table",
-            "stat-card", "admin-kpi-", "quick-link", "fa-table", "fa-circle", "badge-info", "badge-danger"
+            "stat-card", "admin-kpi-", "quick-link", "fa-table", "fa-circle", "badge-info", "badge-danger",
+            // E5-17b
+            "rc-tarjeta", "rc-doc-", "rc-faltante", "badge-secondary", "summary-card", "summary-icon", "section-card",
+            "section-header", "tab-btn", "btn-export", "btn-info-action", "alert-info-light", "badge-count", "table-reportes",
+            "modal-header-info", "page-item", "page-link", "\"pagination", "fa-spinner", "fa-info-circle"
         };
 
         public static IEnumerable<object[]> Casos() => Paginas.Select(p => new object[] { p });
@@ -125,7 +143,8 @@ namespace WebSGV.Tests
             Assert.Contains(" open", d.Value);
             Assert.Contains("data-plegar-movil", d.Value);
             Assert.Contains("<span class=\"sgv-filtros-cuenta\"></span>", aspx);
-            Assert.Contains("ID=\"btnBuscar\"", aspx.Substring(d.Index));
+            // El botón de buscar va dentro (btnBuscar, o btnBuscarX en páginas con varias búsquedas).
+            Assert.Matches(@"\b(?:ID|id)=""btnBuscar\w*""", aspx.Substring(d.Index));
         }
 
         [Theory]
@@ -387,6 +406,208 @@ namespace WebSGV.Tests
             string sinAuditoria = WebSGV.Views.DashboardAdminSistema.HtmlResumen(1, 1, 0, null);
             Assert.Equal("<p class=\"sgv-resumen\"><span><strong>1</strong> usuario: <strong>1</strong> activo y " +
                          "<strong>0</strong> inactivos</span></p>", sinAuditoria);
+        }
+
+        // ── (g) ReporteCargas (E5-17b) ──────────────────────────────────────────────────────
+
+        /// <summary>El &lt;details&gt; abierto de clase <paramref name="clase"/> que contiene <paramref name="marca"/>.</summary>
+        private static Match Detalle(string aspx, string clase, string marca)
+        {
+            foreach (Match d in Regex.Matches(aspx, @"<details\b[^>]*\bclass=""" + clase + @"""[^>]*>.*?</details>", RegexOptions.Singleline))
+                if (d.Value.Contains(marca)) return d;
+            return Match.Empty;
+        }
+
+        [Fact]
+        public void G_ReporteCargas_descargasFueraDeLosFiltrosYGraficosPlegablesQueSeDibujanAlAbrir()
+        {
+            string aspx = Aspx("ReporteCargas");
+            Match filtros = Detalle(aspx, "sgv-filtros", "ID=\"btnBuscar\"");
+            Assert.True(filtros.Success);
+            // Excel y PDF en el encabezado: se ven con los filtros plegados y siguen pasando por LeerFiltros.
+            Assert.DoesNotContain("btnExcel", filtros.Value);
+            Assert.DoesNotContain("btnPdf", filtros.Value);
+            int acciones = aspx.IndexOf("sgv-encabezado-acciones", StringComparison.Ordinal);
+            Assert.True(acciones > 0 && aspx.IndexOf("ID=\"btnExcel\"", StringComparison.Ordinal) > acciones
+                        && aspx.IndexOf("ID=\"btnPdf\"", StringComparison.Ordinal) < filtros.Index);
+            string cs = Cs("ReporteCargas");
+            Assert.Matches(@"void Exportar\(bool pdf\)\s*\{\s*FiltroCargas filtro;\s*if \(!LeerFiltros\(out filtro\)\) return;", cs);
+            // La búsqueda automática al abrir sigue.
+            Assert.Matches(@"if \(!IsPostBack\)\s*\{\s*CargarClientes\(\);\s*PonerMes\(FechaHelper\.Hoy\(\)\);\s*Buscar\(\);", cs);
+
+            // Gráficos y documentación: plegables que arrancan cerrados en el celular.
+            Match graficos = Regex.Match(aspx, @"<details\b[^>]*\bid=""rcGraficos""[^>]*>");
+            Assert.True(graficos.Success);
+            foreach (string a in new[] { "class=\"sgv-plegable\"", " open", "data-plegar-movil" })
+                Assert.Contains(a, graficos.Value);
+            Assert.True(Detalle(aspx, "sgv-plegable", "litDocumentacion").Success);
+            Assert.Contains("data-plegar-movil", Detalle(aspx, "sgv-plegable", "litDocumentacion").Value);
+            Assert.Contains("rcChartPeriodo", Detalle(aspx, "sgv-plegable", "rcChartClientes").Value);
+            // Por cliente y Por producto quedan a la vista (sin plegar).
+            Assert.False(Detalle(aspx, "sgv-plegable", "litClientes").Success);
+            Assert.False(Detalle(aspx, "sgv-plegable", "litProductos").Success);
+
+            // Un canvas oculto mide 0: se dibuja al abrir el bloque y al mostrar la pestaña, si se ve.
+            string js = Js("ReporteCargas");
+            Assert.Contains("graficos.addEventListener('toggle'", js);
+            Assert.Contains("if (resumenVisible && (!graficos || graficos.open)) dibujar();", js);
+
+            Assert.Contains("EstadoUiHelper.Sello(\"Anulado\", TonoEstado.Neutro)", cs);
+            Assert.DoesNotContain("HtmlTarjetas", cs);
+        }
+
+        [Fact]
+        public void G2_ReporteCargas_cifrasEnUnaLineaConVariacion()
+        {
+            var tot = new WebSGV.Services.Reportes.ReporteCargasService.Totales
+            {
+                Despachos = 12, Pedidos = 1, Clientes = 2, Bolsas = 1500m, KgBruto = 30000m, FacturadoUsd = 1000m, FacturadoPen = 0m
+            };
+            var ant = new WebSGV.Services.Reportes.ReporteCargasService.Totales
+            {
+                Despachos = 10, Pedidos = 1, Clientes = 2, Bolsas = 2000m, KgBruto = 30000m
+            };
+            var docs = new WebSGV.Services.Reportes.ReporteCargasService.ResumenDocumentos
+            {
+                Estado = new WebSGV.Services.Despachos.EstadoDocumental { Despachos = 12 }, Pendientes = 2, Atrasados = 1
+            };
+            string html = WebSGV.Views.ReporteCargas.HtmlResumen(tot, ant, docs);
+            Assert.StartsWith("<p class=\"sgv-resumen\"><span><strong>12</strong> viajes <span class=\"rc-var rc-var-sube\"", html);
+            Assert.Contains("&#x25B2; 20 %</span></span>", html);                       // 12 frente a 10
+            Assert.Contains("<span><strong>1</strong> pedido <span class=\"rc-var\" title=\"Igual", html);
+            Assert.Contains("<span><strong>2</strong> clientes</span>", html);
+            Assert.Contains("bolsas <span class=\"rc-var rc-var-baja\"", html);         // 1 500 frente a 2 000
+            Assert.Contains("&#x25BC; 25 %</span>", html);
+            Assert.Contains("<span>Facturado <strong>US$ 1", html);
+            Assert.Contains("<strong>2</strong> con documentos pendientes <span class=\"rc-var rc-var-baja\">(1 con m&#xE1;s de 3 d&#xED;as)</span>", html);
+            Assert.EndsWith("</span></p>", html);
+            Assert.False(InterfazFormalTests.TieneTarjetasKpi(html));
+
+            // Sin comparación (período anterior chico): sin flechas; sin facturas ni pendientes, dicho en texto.
+            string sinComparar = WebSGV.Views.ReporteCargas.HtmlResumen(
+                new WebSGV.Services.Reportes.ReporteCargasService.Totales { Despachos = 1 }, null,
+                new WebSGV.Services.Reportes.ReporteCargasService.ResumenDocumentos { Estado = new WebSGV.Services.Despachos.EstadoDocumental { Despachos = 1 } });
+            Assert.DoesNotContain("rc-var", sinComparar);
+            Assert.Contains("<span><strong>1</strong> viaje</span>", sinComparar);
+            Assert.Contains("<span>Sin facturar</span>", sinComparar);
+            Assert.Contains("<span>Documentaci&#xF3;n completa</span>", sinComparar);
+        }
+
+        // ── (h) ReportesOrdenesViaje (E5-17b) ───────────────────────────────────────────────
+
+        [Fact]
+        public void H_ReportesOrdenesViaje_pestanasComunesConLosMismosIdsYSeccionesConDNone()
+        {
+            string aspx = Aspx("ReportesOrdenesViaje");
+            foreach (var (id, tab) in new[] { ("tabLiquidaciones", "liquidaciones"), ("tabViajesActivos", "viajesActivos"), ("tabPersonalizado", "personalizado") })
+            {
+                Match b = Regex.Match(aspx, @"<button\b[^>]*\bid=""" + id + @"""[^>]*>");
+                Assert.True(b.Success, "Falta la pestaña " + id);
+                Assert.Matches(@"class=""sgv-tab( activo)?""", b.Value);
+                Assert.Contains("data-tab=\"" + tab + "\"", b.Value);
+                Assert.Contains("data-accion=\"cambiarTab\"", b.Value);
+            }
+            Assert.Contains("<div class=\"sgv-tabs\" role=\"tablist\"", aspx);
+            Assert.Contains("<div id=\"seccionViajesActivos\" class=\"d-none\">", aspx);
+            Assert.Contains("<div id=\"seccionPersonalizado\" class=\"d-none\">", aspx);
+            Assert.Contains("<asp:HiddenField ID=\"hdnPestana\" runat=\"server\"", aspx);
+
+            string js = Js("ReportesOrdenesViaje");
+            Assert.Contains("$(p.seccion).toggleClass('d-none', !activa);", js);
+            Assert.Contains("$(p.tab).toggleClass('activo', activa)", js);
+            Assert.DoesNotContain(".show()", js);
+            Assert.DoesNotContain(".hide()", js);
+
+            // Totales en una línea y en estilo oración; sin el método de estado que nadie usaba.
+            Assert.Contains("<p class=\"sgv-resumen mb-1\">", aspx);
+            Assert.DoesNotContain("TOTAL", aspx);
+            Assert.DoesNotContain("ObtenerClaseEstado", Cs("ReportesOrdenesViaje"));
+            Assert.Contains("lblResumenFactor.Text = factorConversion > 0", Cs("ReportesOrdenesViaje"));
+        }
+
+        [Fact]
+        public void H2_ReportesOrdenesViaje_estadoDelViajeFijoYCombosPersonalizadosSinViewState()
+        {
+            string aspx = Aspx("ReportesOrdenesViaje");
+            string cs = Cs("ReportesOrdenesViaje");
+            string js = Js("ReportesOrdenesViaje");
+
+            // "Viajes activos": texto fijo; el servidor usa la constante y el script manda ABIERTO.
+            Assert.DoesNotContain("ddlEstadoViaje", aspx + cs + js);
+            Assert.Contains("Abiertos (sin liquidar)", aspx);
+            Assert.Contains("private const string EstadoViajeAbierto = \"ABIERTO\";", cs);
+            Assert.Contains("&estadoViaje=ABIERTO", js);
+
+            // Los cuatro combos Pers* sin ViewState: solo los lee el script (GET ?action=reportePersonalizado).
+            foreach (string id in new[] { "ddlPersEstado", "ddlPersConductor", "ddlPersCliente", "ddlPersOrden" })
+            {
+                Match ddl = Regex.Match(aspx, @"<asp:DropDownList\b[^>]*\bID=""" + id + @"""[^>]*>");
+                Assert.True(ddl.Success, "Falta " + id);
+                Assert.Contains("EnableViewState=\"false\"", ddl.Value);
+                Assert.Contains("SGV." + id + ")", js);
+            }
+            Assert.Empty(Regex.Matches(cs, @"\bddlPers\w+\.(?:SelectedValue|SelectedItem|SelectedIndex|Text)\b(?!\s*=[^=])")
+                .Cast<Match>().Select(m => m.Value));
+
+            // Se llenan en OnInit (antes de leer el envío) con sesión de admin o supervisor, y no en las exportaciones.
+            int init = cs.IndexOf("protected override void OnInit(", StringComparison.Ordinal);
+            Assert.True(init > 0);
+            string cuerpo = cs.Substring(init, cs.IndexOf("\n        }", init, StringComparison.Ordinal) - init);
+            Assert.Contains("SecurityHelper.TieneSesionActiva() && SecurityHelper.EsAdminOSupervisor()", cuerpo);
+            Assert.Contains("string.IsNullOrEmpty(Request.QueryString[\"action\"])", cuerpo);
+            foreach (string metodo in new[] { "CargarEstadosPersonalizado();", "CargarConductoresPersonalizado();", "CargarClientesPersonalizado();" })
+            {
+                Assert.Contains(metodo, cuerpo);
+                Assert.Single(Regex.Matches(cs, Regex.Escape(metodo)).Cast<Match>());
+            }
+        }
+
+        // ── (i) ReporteGps (E5-17b) ─────────────────────────────────────────────────────────
+
+        [Fact]
+        public void I_ReporteGps_panelesSinFiltrosPlegablesYAvisoConLaClaseComun()
+        {
+            string aspx = Aspx("ReporteGps");
+            Assert.DoesNotContain("sgv-filtros", aspx);   // sus postbacks están entre los campos
+            Assert.Equal(3, Regex.Matches(aspx, @"<section class=""sgv-panel mb-4"">").Count);
+            Assert.Contains("<div id=\"avisoGenerando\" class=\"sgv-cargando d-none\" role=\"status\">", aspx);
+            Assert.DoesNotContain("spinner-border", aspx);
+            Assert.DoesNotContain("thead-light", aspx);
+            Assert.DoesNotContain("font-weight-bold mb-0", aspx);
+            Assert.Contains("<label class=\"sgv-etiqueta mb-0\" for=\"<%= txtPlacas.ClientID %>\">", aspx);
+            // La descarga de cada fila sigue por el RowCommand (EnvioUnicoTests).
+            Match g = Grilla.Match(aspx);
+            Assert.Contains("OnRowCommand=\"gvResultados_RowCommand\"", g.Groups["a"].Value);
+            Assert.Contains("CommandName=\"Descargar\"", g.Groups["c"].Value);
+            Assert.Contains("$('#avisoGenerando').removeClass('d-none');", Js("ReporteGps"));
+        }
+
+        // ── (j) LiquidacionesAprobadasContabilidad (E5-17b) ─────────────────────────────────
+
+        [Fact]
+        public void J_Contabilidad_paginadorComunYFiltrosQueSePlieganTrasBuscarConUnBoton()
+        {
+            string aspx = Aspx("LiquidacionesAprobadasContabilidad");
+            string js = Js("LiquidacionesAprobadasContabilidad");
+            Assert.Contains("<div class=\"sgv-paginador\" id=\"paginadorLiquidaciones\"></div>", aspx);
+            Assert.DoesNotContain("pagination", aspx + js);
+            Assert.Contains("'<span aria-current=\"page\"><span aria-hidden=", js);
+            Assert.Contains("<span class=\"sr-only\">", js);
+            Assert.Contains("'<button type=\"button\" data-accion=\"irPagina\" data-pagina=\"' + pagina + '\"'", js);
+            Assert.Contains("div.sgv-paginador {", SiHay("Content", "sgv-base.css"));
+            Assert.Contains(".sgv-paginador button,", SiHay("Content", "sgv-base.css"));
+
+            // Solo la búsqueda de un botón pliega los filtros (no la que corre mientras se escribe).
+            Assert.Contains("if (esManual) SGV.plegarFiltros(document.getElementById('btnBuscarLiquidaciones'));", js);
+            Assert.Single(Regex.Matches(js, @"SGV\.plegarFiltros\(").Cast<Match>());
+            Assert.Contains("<div class=\"sgv-cargando\" role=\"status\" aria-live=\"polite\">Cargando el documento…</div>", aspx);
+
+            // Mismos WebMethods de siempre.
+            foreach (string metodo in new[] { "LiquidacionesAprobadasContabilidad.aspx/ObtenerLiquidacionesAprobadasContabilidad",
+                                              "LiquidacionesAprobadasContabilidad.aspx/BuscarConductores",
+                                              "LiquidacionesPendientes.aspx/ObtenerDetalleLiquidacion",
+                                              "LiquidacionesPendientes.aspx/ObtenerUrlPdfOrdenViaje" })
+                Assert.Contains("'" + metodo + "'", js);
         }
     }
 }

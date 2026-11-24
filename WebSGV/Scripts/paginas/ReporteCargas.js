@@ -97,6 +97,16 @@
         });
     }
 
+    // ---------- Cuándo dibujar ----------
+    // Un canvas oculto (pestaña sin mostrar o bloque "Gráficos" plegado, como arranca en el celular) mide 0:
+    // los gráficos se dibujan cuando la pestaña Resumen está a la vista y el bloque está abierto.
+    var graficos = document.getElementById('rcGraficos');
+    var resumenVisible = false;
+    function dibujarSiSeVen() {
+        if (resumenVisible && (!graficos || graficos.open)) dibujar();
+    }
+    if (graficos) graficos.addEventListener('toggle', function () { if (graficos.open) dibujarSiSeVen(); });
+
     // ---------- Pestañas: abrir la guardada y recordarla en el postback ----------
     var hf = document.getElementById(SGV.hfPestana);
     var pestana = (hf && hf.value) || 'resumen';
@@ -106,11 +116,12 @@
     if (window.jQuery && enlace) {
         jQuery('.rc-pestanas a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
             if (hf) hf.value = e.target.getAttribute('data-pestana');
-            // Un canvas dibujado en una pestaña oculta mide 0: se dibuja al mostrarse.
-            if (e.target.getAttribute('data-pestana') === 'resumen') dibujar();
+            resumenVisible = e.target.getAttribute('data-pestana') === 'resumen';
+            dibujarSiSeVen();
         });
         jQuery(enlace).tab('show');
     } else {
-        dibujar();
+        resumenVisible = true;
+        dibujarSiSeVen();
     }
 })();
