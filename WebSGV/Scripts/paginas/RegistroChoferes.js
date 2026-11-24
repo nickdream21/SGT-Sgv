@@ -61,7 +61,9 @@ function mostrarCampoDocumento() {
     const esDni = tipo === 'DNI', esCarnet = tipo === 'Carnet de Extranjería';
     document.getElementById('grupoDNI').classList.toggle('d-none', !esDni);
     document.getElementById('grupoCarnet').classList.toggle('d-none', !esCarnet);
+    activarValidador(SGV.rfvDni, esDni);
     activarValidador(SGV.revDni, esDni);
+    activarValidador(SGV.rfvCarnet, esCarnet);
     activarValidador(SGV.revCarnet, esCarnet);
 }
 

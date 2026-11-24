@@ -235,6 +235,13 @@ namespace WebSGV.Views
 
         protected void btnActualizar_Click(object sender, EventArgs e)
         {
+            // Validadores del modal (vgEditar*, E5-20a): el mensaje va junto a cada campo y el modal se reabre.
+            if (!Page.IsValid)
+            {
+                MostrarErrorModal("Corrija los campos marcados.");
+                return;
+            }
+
             if (!int.TryParse(hfIdItem.Value, out int idItem) || idItem <= 0)
             {
                 MostrarErrorModal("Elemento inválido.");

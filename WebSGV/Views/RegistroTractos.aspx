@@ -38,33 +38,32 @@
                     <h2 class="sgv-panel-titulo">Agregar tracto</h2>
                 </div>
                 <div class="sgv-panel-cuerpo">
-                    <asp:ValidationSummary ID="vsRegistroTracto" runat="server" ValidationGroup="vgRegistroTracto" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                     <div class="form-group">
-                        <label for="<%= txtPlaca.ClientID %>" class="sgv-etiqueta">N.&#xBA; de placa <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtPlaca" runat="server" CssClass="form-control"
+                        <label for="<%= txtPlaca.ClientID %>" class="sgv-etiqueta">N.&#xBA; de placa <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:TextBox ID="txtPlaca" runat="server" aria-required="true" CssClass="form-control"
                             placeholder="Ej: ABC-123" MaxLength="10"></asp:TextBox>
                         <asp:RequiredFieldValidator ID="rfvPlaca" runat="server" ControlToValidate="txtPlaca" ValidationGroup="vgRegistroTracto"
-                            ErrorMessage="Placa: este campo es obligatorio." CssClass="text-danger small" Display="Dynamic" />
+                            ErrorMessage="Placa: este campo es obligatorio." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         <asp:RegularExpressionValidator ID="revPlaca" runat="server" ControlToValidate="txtPlaca" ValidationGroup="vgRegistroTracto"
-                            ValidationExpression="^[A-Za-z0-9\-]{6,10}$" ErrorMessage="Placa: use 6 a 10 caracteres (letras, números o guion)." CssClass="text-danger small" Display="Dynamic" />
+                            ValidationExpression="^\s*(?:[A-Za-z0-9\-]\s*){6,10}$" ErrorMessage="Placa: use 6 a 10 caracteres (letras, números o guion)." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                     </div>
                     <div class="form-group">
-                        <label for="<%= txtMarca.ClientID %>" class="sgv-etiqueta">Marca <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtMarca" runat="server" CssClass="form-control"
+                        <label for="<%= txtMarca.ClientID %>" class="sgv-etiqueta">Marca <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:TextBox ID="txtMarca" runat="server" aria-required="true" CssClass="form-control"
                             placeholder="Ej: VOLVO" MaxLength="30"></asp:TextBox>
                         <asp:RequiredFieldValidator ID="rfvMarca" runat="server" ControlToValidate="txtMarca" ValidationGroup="vgRegistroTracto"
-                            ErrorMessage="Marca: este campo es obligatorio." CssClass="text-danger small" Display="Dynamic" />
+                            ErrorMessage="Marca: este campo es obligatorio." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         <asp:RegularExpressionValidator ID="revMarca" runat="server" ControlToValidate="txtMarca" ValidationGroup="vgRegistroTracto"
-                            ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,30}$" ErrorMessage="Marca: use entre 2 y 30 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
+                            ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,30}$" ErrorMessage="Marca: use entre 2 y 30 caracteres válidos." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                     </div>
                     <div class="form-group">
-                        <label for="<%= txtModelo.ClientID %>" class="sgv-etiqueta">Modelo <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtModelo" runat="server" CssClass="form-control"
+                        <label for="<%= txtModelo.ClientID %>" class="sgv-etiqueta">Modelo <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:TextBox ID="txtModelo" runat="server" aria-required="true" CssClass="form-control"
                             placeholder="Ej: FH 460" MaxLength="30"></asp:TextBox>
                         <asp:RequiredFieldValidator ID="rfvModelo" runat="server" ControlToValidate="txtModelo" ValidationGroup="vgRegistroTracto"
-                            ErrorMessage="Modelo: este campo es obligatorio." CssClass="text-danger small" Display="Dynamic" />
+                            ErrorMessage="Modelo: este campo es obligatorio." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         <asp:RegularExpressionValidator ID="revModelo" runat="server" ControlToValidate="txtModelo" ValidationGroup="vgRegistroTracto"
-                            ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,30}$" ErrorMessage="Modelo: use entre 2 y 30 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
+                            ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.]{2,30}$" ErrorMessage="Modelo: use entre 2 y 30 caracteres válidos." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                     </div>
                     <asp:Button ID="btnRegistrar" runat="server" Text="Registrar tracto" ValidationGroup="vgRegistroTracto"
                         CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" />
@@ -155,25 +154,26 @@
                         <asp:Label ID="lblErrorModal" runat="server" EnableViewState="false"></asp:Label>
                     </asp:Panel>
                     <div class="form-group">
-                        <label for="<%= txtEditarPlaca.ClientID %>" class="sgv-etiqueta">N.&#xBA; de placa <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtEditarPlaca" runat="server" CssClass="form-control text-uppercase" MaxLength="10"></asp:TextBox>
+                        <label for="<%= txtEditarPlaca.ClientID %>" class="sgv-etiqueta">N.&#xBA; de placa <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:TextBox ID="txtEditarPlaca" runat="server" aria-required="true" CssClass="form-control text-uppercase" MaxLength="10"></asp:TextBox>
+                        <asp:RequiredFieldValidator ID="rfvEditarPlaca" runat="server" ControlToValidate="txtEditarPlaca" ValidationGroup="vgEditarTracto" ErrorMessage="Placa: este campo es obligatorio." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         <small id="notaPlacaHistorial" class="form-text text-muted d-none">
                             Este tracto tiene despachos u otro historial: la placa no se puede cambiar.
                             Si la placa est&#xE1; mal, registre el tracto correcto y desactive este.
                         </small>
                     </div>
                     <div class="form-group">
-                        <label for="<%= txtEditarMarca.ClientID %>" class="sgv-etiqueta">Marca <span class="text-danger">*</span></label>
+                        <label for="<%= txtEditarMarca.ClientID %>" class="sgv-etiqueta">Marca</label>
                         <asp:TextBox ID="txtEditarMarca" runat="server" CssClass="form-control text-uppercase" MaxLength="30"></asp:TextBox>
                     </div>
                     <div class="form-group mb-0">
-                        <label for="<%= txtEditarModelo.ClientID %>" class="sgv-etiqueta">Modelo <span class="text-danger">*</span></label>
+                        <label for="<%= txtEditarModelo.ClientID %>" class="sgv-etiqueta">Modelo</label>
                         <asp:TextBox ID="txtEditarModelo" runat="server" CssClass="form-control text-uppercase" MaxLength="30"></asp:TextBox>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <asp:Button ID="btnActualizarTracto" runat="server" CssClass="btn btn-info"
+                    <asp:Button ID="btnActualizarTracto" runat="server" ValidationGroup="vgEditarTracto" CssClass="btn btn-info"
                         Text="Guardar cambios" OnClick="btnActualizarTracto_Click" />
                 </div>
             </div>

@@ -12,27 +12,25 @@
                 <asp:Panel ID="pnlFormulario" runat="server">
                     <!-- Cliente asociado -->
                     <div class="form-group">
-                        <label for="<%= ddlCliente.ClientID %>" class="sgv-etiqueta">Cliente: <span class="text-danger">*</span></label>
-                        <asp:DropDownList ID="ddlCliente" runat="server" CssClass="form-control" required="required"></asp:DropDownList>
-                        <asp:RequiredFieldValidator ID="rfvCliente" runat="server" 
+                        <label for="<%= ddlCliente.ClientID %>" class="sgv-etiqueta">Cliente: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:DropDownList ID="ddlCliente" runat="server" aria-required="true" CssClass="form-control"></asp:DropDownList>
+                        <asp:RequiredFieldValidator ID="rfvCliente" runat="server" ValidationGroup="vgRegistroProducto"
                             ControlToValidate="ddlCliente"
                             InitialValue="0"
                             ErrorMessage="Debe seleccionar un cliente."
-                            CssClass="text-danger" 
-                            Display="Dynamic">
-                        </asp:RequiredFieldValidator>
+                            CssClass="sgv-campo-error"
+                            Display="Dynamic" SetFocusOnError="true" />
                     </div>
 
                     <!-- Nombre del producto -->
                     <div class="form-group">
-                        <label for="<%= txtNombre.ClientID %>" class="sgv-etiqueta">Nombre del producto: <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control" required="required"></asp:TextBox>
-                        <asp:RequiredFieldValidator ID="rfvNombre" runat="server" 
-                            ControlToValidate="txtNombre" 
-                            ErrorMessage="El nombre del producto es obligatorio." 
-                            CssClass="text-danger" 
-                            Display="Dynamic">
-                        </asp:RequiredFieldValidator>
+                        <label for="<%= txtNombre.ClientID %>" class="sgv-etiqueta">Nombre del producto: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:TextBox ID="txtNombre" runat="server" aria-required="true" CssClass="form-control"></asp:TextBox>
+                        <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ValidationGroup="vgRegistroProducto"
+                            ControlToValidate="txtNombre"
+                            ErrorMessage="El nombre del producto es obligatorio."
+                            CssClass="sgv-campo-error"
+                            Display="Dynamic" SetFocusOnError="true" />
                     </div>
 
                     <!-- Descripción -->
@@ -43,7 +41,7 @@
 
                     <!-- Botón -->
                     <div class="text-center mt-4">
-                        <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-primary btn-lg" Text="Registrar producto" OnClick="btnRegistrar_Click" />
+                        <asp:Button ID="btnRegistrar" runat="server" ValidationGroup="vgRegistroProducto" CssClass="btn btn-primary btn-lg" Text="Registrar producto" OnClick="btnRegistrar_Click" />
                     </div>
                 </asp:Panel>
             </div>

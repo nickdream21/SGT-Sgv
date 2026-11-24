@@ -362,6 +362,24 @@ details.sgv-filtros[open] > summary { border-bottom: 1px solid var(--sgv-borde);
     margin-bottom: 0.25rem;
 }
 
+/* === Obligatorios y validación (E5-20): asterisco de campo obligatorio (aria-hidden; el control lleva
+   aria-required) y mensaje de un validador o de SGV.marcarError debajo del campo. Un validador
+   Display="Dynamic" se muestra con style display:inline: SiteMaster.js le quita ese inline para que
+   valga el display:block de esta regla. */
+.sgv-obligatorio { color: var(--sgv-peligro); }
+.sgv-campo-error {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.8125rem;
+    color: var(--sgv-peligro);
+}
+/* El select2 que tapa un select inválido (antes en RegistroDespacho.css, M-143). Sin important: gana
+   por especificidad a las reglas de select2 de las hojas (también a la de foco). */
+select.is-invalid + .select2-container.select2-container--default .select2-selection--single {
+    border-color: var(--sgv-peligro);
+    box-shadow: 0 0 0 0.2rem rgba(var(--sgv-peligro-rgb), 0.15);
+}
+
 /* === Paneles === */
 .sgv-panel {
     background: var(--sgv-superficie);

@@ -40,22 +40,21 @@
                     <h2 class="sgv-panel-titulo">Agregar planta</h2>
                 </div>
                 <div class="sgv-panel-cuerpo">
-                    <asp:ValidationSummary ID="vsRegistroPlanta" runat="server" ValidationGroup="vgRegistroPlanta" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                     <div class="form-group">
-                        <label for="<%= txtNombre.ClientID %>" class="sgv-etiqueta">Nombre de la planta <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"
+                        <label for="<%= txtNombre.ClientID %>" class="sgv-etiqueta">Nombre de la planta <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:TextBox ID="txtNombre" runat="server" aria-required="true" CssClass="form-control"
                             placeholder="Ej: PLANTA TRUJILLO" MaxLength="200"></asp:TextBox>
                         <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ValidationGroup="vgRegistroPlanta"
                             ControlToValidate="txtNombre"
                             ErrorMessage="El nombre de la planta es requerido."
-                            CssClass="text-danger small" Display="Dynamic" />
+                            CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         <asp:RegularExpressionValidator ID="revNombrePlanta" runat="server" ValidationGroup="vgRegistroPlanta"
-                            ControlToValidate="txtNombre" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.,]{3,200}$" ErrorMessage="Nombre de planta: use entre 3 y 200 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
+                            ControlToValidate="txtNombre" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.,]{3,200}$" ErrorMessage="Nombre de planta: use entre 3 y 200 caracteres válidos." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         <small class="form-text text-muted">El nombre se guardar&#xE1; en may&#xFA;sculas.</small>
                     </div>
                     <div class="form-group">
-                        <label for="<%= ddlAmbito.ClientID %>" class="sgv-etiqueta">&#xC1;mbito <span class="text-danger">*</span></label>
-                        <asp:DropDownList ID="ddlAmbito" runat="server" CssClass="form-control">
+                        <label for="<%= ddlAmbito.ClientID %>" class="sgv-etiqueta">&#xC1;mbito <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:DropDownList ID="ddlAmbito" runat="server" aria-required="true" CssClass="form-control">
                             <asp:ListItem Value="0" Text="Nacional (Per&#xFA;)"></asp:ListItem>
                             <asp:ListItem Value="1" Text="Internacional"></asp:ListItem>
                         </asp:DropDownList>
@@ -153,12 +152,13 @@
                         <asp:Label ID="lblErrorModal" runat="server" EnableViewState="false"></asp:Label>
                     </asp:Panel>
                     <div class="form-group">
-                        <label for="<%= txtEditarNombre.ClientID %>" class="sgv-etiqueta">Nombre de la planta <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control text-uppercase" MaxLength="200"></asp:TextBox>
+                        <label for="<%= txtEditarNombre.ClientID %>" class="sgv-etiqueta">Nombre de la planta <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:TextBox ID="txtEditarNombre" runat="server" aria-required="true" CssClass="form-control text-uppercase" MaxLength="200"></asp:TextBox>
+                        <asp:RequiredFieldValidator ID="rfvEditarNombre" runat="server" ControlToValidate="txtEditarNombre" ValidationGroup="vgEditarPlanta" ErrorMessage="El nombre de la planta es requerido." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                     </div>
                     <div class="form-group mb-0">
-                        <label for="<%= ddlEditarAmbito.ClientID %>" class="sgv-etiqueta">&#xC1;mbito <span class="text-danger">*</span></label>
-                        <asp:DropDownList ID="ddlEditarAmbito" runat="server" CssClass="form-control">
+                        <label for="<%= ddlEditarAmbito.ClientID %>" class="sgv-etiqueta">&#xC1;mbito <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:DropDownList ID="ddlEditarAmbito" runat="server" aria-required="true" CssClass="form-control">
                             <asp:ListItem Value="0" Text="Nacional (Per&#xFA;)"></asp:ListItem>
                             <asp:ListItem Value="1" Text="Internacional"></asp:ListItem>
                         </asp:DropDownList>
@@ -166,7 +166,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <asp:Button ID="btnActualizarPlanta" runat="server" CssClass="btn btn-info"
+                    <asp:Button ID="btnActualizarPlanta" runat="server" ValidationGroup="vgEditarPlanta" CssClass="btn btn-info"
                         Text="Guardar cambios" OnClick="btnActualizarPlanta_Click" />
                 </div>
             </div>

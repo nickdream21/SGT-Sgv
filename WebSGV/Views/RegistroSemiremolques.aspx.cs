@@ -149,6 +149,13 @@ namespace WebSGV.Views
 
         protected void btnActualizarSemiremolque_Click(object sender, EventArgs e)
         {
+            // Validadores del modal (vgEditar*, E5-20a): el mensaje va junto a cada campo y el modal se reabre.
+            if (!Page.IsValid)
+            {
+                MostrarErrorModal("Corrija los campos marcados.");
+                return;
+            }
+
             if (!int.TryParse(hfIdCarreta.Value, out int idCarreta) || idCarreta <= 0)
             {
                 MostrarErrorModal("ID de semirremolque inválido.");

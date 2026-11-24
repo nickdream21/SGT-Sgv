@@ -52,15 +52,15 @@
                         placeholder="1&#9;ALFREDO ... &#9;PERUANA&#9;B-00000000&#9;00000000"></asp:TextBox>
                 </div>
                 <div class="col-md-2 form-group">
-                    <asp:Button ID="btnCompararLista" runat="server" CssClass="btn btn-primary btn-block" Text="Comparar" OnClick="btnCompararLista_Click" />
+                    <asp:Button ID="btnCompararLista" runat="server" CausesValidation="false" CssClass="btn btn-primary btn-block" Text="Comparar" OnClick="btnCompararLista_Click" />
                 </div>
             </div>
 
             <asp:Panel ID="pnlComparacionLista" runat="server" Visible="false">
                 <asp:Literal ID="litComparacionLista" runat="server" />
                 <div class="d-flex justify-content-end mt-3">
-                    <asp:Button ID="btnCancelarLista" runat="server" CssClass="btn btn-secondary mr-2" Text="Cancelar" OnClick="btnCancelarLista_Click" />
-                    <asp:Button ID="btnAplicarLista" runat="server" CssClass="btn btn-success" Text="Aplicar los cambios marcados"
+                    <asp:Button ID="btnCancelarLista" runat="server" CausesValidation="false" CssClass="btn btn-secondary mr-2" Text="Cancelar" OnClick="btnCancelarLista_Click" />
+                    <asp:Button ID="btnAplicarLista" runat="server" CausesValidation="false" CssClass="btn btn-success" Text="Aplicar los cambios marcados"
                         OnClick="btnAplicarLista_Click" data-confirmar="¿Aplicar los cambios marcados a los conductores?" />
                 </div>
             </asp:Panel>
@@ -76,7 +76,6 @@
                 </div>
                 <div class="sgv-panel-cuerpo">
                     <asp:Panel ID="pnlFormulario" runat="server">
-                        <asp:ValidationSummary ID="vsRegistroConductor" runat="server" ValidationGroup="vgRegistroConductor" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
 
                         <%-- Fila 1: Tipo documento + campo de documento (en la misma posición). Cada mensaje va en la
                              columna de su campo; el validador del tipo oculto se apaga (mostrarCampoDocumento en el
@@ -90,41 +89,43 @@
                                 </asp:DropDownList>
                             </div>
                             <div class="col-12 col-xl-6 form-group" id="grupoDNI">
-                                <label for="<%= txtDNI.ClientID %>" class="sgv-etiqueta">DNI:</label>
+                                <label for="<%= txtDNI.ClientID %>" class="sgv-etiqueta">DNI: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
                                 <div class="input-group" data-enter="<%= btnBuscarDNI.ClientID %>">
-                                    <asp:TextBox ID="txtDNI" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="8" placeholder="8 dígitos"></asp:TextBox>
+                                    <asp:TextBox ID="txtDNI" runat="server" aria-required="true" CssClass="form-control" inputmode="numeric" MaxLength="8" placeholder="8 dígitos"></asp:TextBox>
                                     <div class="input-group-append">
-                                        <asp:Button ID="btnBuscarDNI" runat="server" CssClass="btn btn-secondary" Text="Buscar" data-accion="buscarPorDNI" />
+                                        <asp:Button ID="btnBuscarDNI" runat="server" CausesValidation="false" CssClass="btn btn-secondary" Text="Buscar" data-accion="buscarPorDNI" />
                                     </div>
                                 </div>
-                                <asp:RegularExpressionValidator ID="revDni" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtDNI" ValidationExpression="^$|^\d{8}$" ErrorMessage="DNI: debe tener exactamente 8 dígitos." CssClass="text-danger small" Display="Dynamic" />
+                                <asp:RequiredFieldValidator ID="rfvDni" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtDNI" ErrorMessage="DNI: este campo es obligatorio." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
+                                <asp:RegularExpressionValidator ID="revDni" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtDNI" ValidationExpression="^$|^\d{8}$" ErrorMessage="DNI: debe tener exactamente 8 dígitos." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                             </div>
                             <div class="col-12 col-xl-6 form-group d-none" id="grupoCarnet">
-                                <label for="<%= txtCarnetExtranjeria.ClientID %>" class="sgv-etiqueta">Carnet Extranjer&#xED;a:</label>
-                                <asp:TextBox ID="txtCarnetExtranjeria" runat="server" CssClass="form-control" MaxLength="11" placeholder="De 6 a 11 letras o dígitos"></asp:TextBox>
+                                <label for="<%= txtCarnetExtranjeria.ClientID %>" class="sgv-etiqueta">Carnet Extranjer&#xED;a: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <asp:TextBox ID="txtCarnetExtranjeria" runat="server" aria-required="true" CssClass="form-control" MaxLength="11" placeholder="De 6 a 11 letras o dígitos"></asp:TextBox>
                                 <%-- M-079: la misma regla que DocumentoConductor.EsCarnetValido (6 a 11 letras, dígitos o guion,
                                      con al menos un dígito; espacios a los lados permitidos, como los quita el servidor).
                                      WebUIValidation.js no recorta el valor: exige que la coincidencia sea el valor entero,
                                      por eso el \s* de los bordes. El campo vacío no lo evalúa. --%>
-                                <asp:RegularExpressionValidator ID="revCarnet" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtCarnetExtranjeria" ValidationExpression="^\s*(?=[A-Za-z\-]*\d)[A-Za-z0-9\-]{6,11}\s*$" ErrorMessage="Carnet de extranjería: use de 6 a 11 letras, dígitos o guion, con al menos un dígito." CssClass="text-danger small" Display="Dynamic" />
+                                <asp:RequiredFieldValidator ID="rfvCarnet" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtCarnetExtranjeria" ErrorMessage="Carnet de extranjería: este campo es obligatorio." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
+                                <asp:RegularExpressionValidator ID="revCarnet" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtCarnetExtranjeria" ValidationExpression="^\s*(?=[A-Za-z\-]*\d)[A-Za-z0-9\-]{6,11}\s*$" ErrorMessage="Carnet de extranjería: use de 6 a 11 letras, dígitos o guion, con al menos un dígito." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                             </div>
                         </div>
 
                         <%-- Fila 2: Nombres + Apellido Paterno --%>
                         <div class="row">
                             <div class="col-md-6 form-group">
-                                <label for="<%= txtNombres.ClientID %>" class="sgv-etiqueta">Nombres: <span class="text-danger">*</span></label>
-                                <asp:TextBox ID="txtNombres" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
+                                <label for="<%= txtNombres.ClientID %>" class="sgv-etiqueta">Nombres: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <asp:TextBox ID="txtNombres" runat="server" aria-required="true" CssClass="form-control" MaxLength="50"></asp:TextBox>
                                 <asp:RequiredFieldValidator ID="rfvNombres" runat="server" ControlToValidate="txtNombres" ValidationGroup="vgRegistroConductor"
-                                    ErrorMessage="El nombre es requerido" CssClass="text-danger small" Display="Dynamic"></asp:RequiredFieldValidator>
-                                <asp:RegularExpressionValidator ID="revNombres" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtNombres" ValidationExpression="^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s]{2,50}$" ErrorMessage="Nombres: solo letras y espacios (2 a 50 caracteres)." CssClass="text-danger small" Display="Dynamic" />
+                                    ErrorMessage="El nombre es requerido" CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
+                                <asp:RegularExpressionValidator ID="revNombres" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtNombres" ValidationExpression="^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s]{2,50}$" ErrorMessage="Nombres: solo letras y espacios (2 a 50 caracteres)." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                             </div>
                             <div class="col-md-6 form-group">
-                                <label for="<%= txtApellidoPaterno.ClientID %>" class="sgv-etiqueta">Apellido paterno: <span class="text-danger">*</span></label>
-                                <asp:TextBox ID="txtApellidoPaterno" runat="server" CssClass="form-control" MaxLength="20"></asp:TextBox>
+                                <label for="<%= txtApellidoPaterno.ClientID %>" class="sgv-etiqueta">Apellido paterno: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <asp:TextBox ID="txtApellidoPaterno" runat="server" aria-required="true" CssClass="form-control" MaxLength="20"></asp:TextBox>
                                 <asp:RequiredFieldValidator ID="rfvApellidoPaterno" runat="server" ControlToValidate="txtApellidoPaterno" ValidationGroup="vgRegistroConductor"
-                                    ErrorMessage="El apellido paterno es requerido" CssClass="text-danger small" Display="Dynamic"></asp:RequiredFieldValidator>
-                                <asp:RegularExpressionValidator ID="revApellidoPaterno" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtApellidoPaterno" ValidationExpression="^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s]{2,20}$" ErrorMessage="Apellido paterno: solo letras y espacios (2 a 20 caracteres)." CssClass="text-danger small" Display="Dynamic" />
+                                    ErrorMessage="El apellido paterno es requerido" CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
+                                <asp:RegularExpressionValidator ID="revApellidoPaterno" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtApellidoPaterno" ValidationExpression="^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s]{2,20}$" ErrorMessage="Apellido paterno: solo letras y espacios (2 a 20 caracteres)." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                             </div>
                         </div>
 
@@ -133,12 +134,12 @@
                             <div class="col-md-6 form-group">
                                 <label for="<%= txtApellidoMaterno.ClientID %>" class="sgv-etiqueta">Apellido materno:</label>
                                 <asp:TextBox ID="txtApellidoMaterno" runat="server" CssClass="form-control" MaxLength="20"></asp:TextBox>
-                                <asp:RegularExpressionValidator ID="revApellidoMaterno" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtApellidoMaterno" ValidationExpression="^$|^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s]{2,20}$" ErrorMessage="Apellido materno: solo letras y espacios (2 a 20 caracteres)." CssClass="text-danger small" Display="Dynamic" />
+                                <asp:RegularExpressionValidator ID="revApellidoMaterno" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtApellidoMaterno" ValidationExpression="^$|^[A-Za-zÁÉÍÓÚÑÜáéíóúñü\s]{2,20}$" ErrorMessage="Apellido materno: solo letras y espacios (2 a 20 caracteres)." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                             </div>
                             <div class="col-md-6 form-group">
                                 <label for="<%= txtTelefono.ClientID %>" class="sgv-etiqueta">Tel&#xE9;fono:</label>
                                 <asp:TextBox ID="txtTelefono" runat="server" CssClass="form-control" inputmode="tel" MaxLength="9"></asp:TextBox>
-                                <asp:RegularExpressionValidator ID="revTelefono" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtTelefono" ValidationExpression="^$|^\d{7,9}$" ErrorMessage="Teléfono: ingrese entre 7 y 9 dígitos numéricos." CssClass="text-danger small" Display="Dynamic" />
+                                <asp:RegularExpressionValidator ID="revTelefono" runat="server" ValidationGroup="vgRegistroConductor" ControlToValidate="txtTelefono" ValidationExpression="^$|^\d{7,9}$" ErrorMessage="Teléfono: ingrese entre 7 y 9 dígitos numéricos." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                             </div>
                         </div>
 
@@ -218,12 +219,14 @@
                     </asp:Panel>
                     <div class="row">
                         <div class="col-md-6 form-group">
-                            <label for="<%= txtEditarNombres.ClientID %>" class="sgv-etiqueta">Nombres <span class="text-danger">*</span></label>
-                            <asp:TextBox ID="txtEditarNombres" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
+                            <label for="<%= txtEditarNombres.ClientID %>" class="sgv-etiqueta">Nombres <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                            <asp:TextBox ID="txtEditarNombres" runat="server" aria-required="true" CssClass="form-control" MaxLength="50"></asp:TextBox>
+                            <asp:RequiredFieldValidator ID="rfvEditarNombres" runat="server" ControlToValidate="txtEditarNombres" ValidationGroup="vgEditarConductor" ErrorMessage="El nombre es requerido." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         </div>
                         <div class="col-md-6 form-group">
-                            <label for="<%= txtEditarApellidoPaterno.ClientID %>" class="sgv-etiqueta">Apellido paterno <span class="text-danger">*</span></label>
-                            <asp:TextBox ID="txtEditarApellidoPaterno" runat="server" CssClass="form-control" MaxLength="20"></asp:TextBox>
+                            <label for="<%= txtEditarApellidoPaterno.ClientID %>" class="sgv-etiqueta">Apellido paterno <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                            <asp:TextBox ID="txtEditarApellidoPaterno" runat="server" aria-required="true" CssClass="form-control" MaxLength="20"></asp:TextBox>
+                            <asp:RequiredFieldValidator ID="rfvEditarApellidoPaterno" runat="server" ControlToValidate="txtEditarApellidoPaterno" ValidationGroup="vgEditarConductor" ErrorMessage="El apellido paterno es requerido." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         </div>
                     </div>
                     <div class="row">
@@ -239,7 +242,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <asp:Button ID="btnActualizarConductor" runat="server" CssClass="btn btn-info"
+                    <asp:Button ID="btnActualizarConductor" runat="server" ValidationGroup="vgEditarConductor" CssClass="btn btn-info"
                         Text="Guardar cambios" OnClick="btnActualizarConductor_Click" />
                 </div>
             </div>
@@ -264,7 +267,9 @@
             txtApellidoPaterno: '<%= txtApellidoPaterno.ClientID %>',
             txtApellidoMaterno: '<%= txtApellidoMaterno.ClientID %>',
             ddlTipoDocumento: '<%= ddlTipoDocumento.ClientID %>',
+            rfvDni: '<%= rfvDni.ClientID %>',
             revDni: '<%= revDni.ClientID %>',
+            rfvCarnet: '<%= rfvCarnet.ClientID %>',
             revCarnet: '<%= revCarnet.ClientID %>'
         });
     </script>

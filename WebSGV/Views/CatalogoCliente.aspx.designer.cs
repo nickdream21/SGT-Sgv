@@ -87,11 +87,6 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Literal litEtiquetaAlta;
 
         /// <summary>
-        /// Control vsAlta.
-        /// </summary>
-        protected global::System.Web.UI.WebControls.ValidationSummary vsAlta;
-
-        /// <summary>
         /// Control txtNombre.
         /// </summary>
         protected global::System.Web.UI.WebControls.TextBox txtNombre;

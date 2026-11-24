@@ -202,6 +202,13 @@ namespace WebSGV.Views
 
         protected void btnActualizarPlanta_Click(object sender, EventArgs e)
         {
+            // Validadores del modal (vgEditar*, E5-20a): el mensaje va junto a cada campo y el modal se reabre.
+            if (!Page.IsValid)
+            {
+                MostrarErrorModal("Corrija los campos marcados.");
+                return;
+            }
+
             if (!int.TryParse(hfIdPlanta.Value, out int idPlanta) || idPlanta <= 0)
             {
                 MostrarErrorModal("ID de planta inválido.");

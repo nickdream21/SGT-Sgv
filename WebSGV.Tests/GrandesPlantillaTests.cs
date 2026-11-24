@@ -550,15 +550,21 @@ namespace WebSGV.Tests
         [Fact]
         public void RD6_ValidacionSinColoresEnLinea()
         {
-            string js2 = SiHay("Scripts", "paginas", "RegistroDespacho-2.js");
-            Assert.NotEqual("", js2);
-            Assert.DoesNotContain("#dc3545", js2);
-            Assert.DoesNotContain("rgba(", js2);
-            Assert.DoesNotContain(".style.", js2);
-            Assert.Contains("classList.toggle('is-invalid'", js2);
-            // La hoja pinta el select2 inválido (M-143) y le da la altura de un botón en el celular (M-145).
+            // E5-20a: el is-invalid de los validadores lo pone SiteMaster.js (un solo envoltorio de
+            // ValidatorUpdateDisplay); RegistroDespacho-2.js ya no existe ni se enlaza.
+            Assert.Equal("", SiHay("Scripts", "paginas", "RegistroDespacho-2.js"));
+            Assert.DoesNotContain("RegistroDespacho-2.js", Aspx("RegistroDespacho"));
+            // La limpieza que hacía RegistroDespacho-2.js (los combos que marca el servidor sin validador, p. ej.
+            // conductor y tracto al leer documentos, se desmarcan al elegir, también en el select2) vive en
+            // SiteMaster.js, por jQuery para recibir el .trigger('change') de select2.
+            string comun = SiHay("Scripts", "paginas", "SiteMaster.js");
+            Assert.Contains("window.jQuery(document).on('input change', alCorregir)", comun);
+            Assert.Matches(@"if \(String\(el\.value \|\| ''\)\.trim\(\) !== ''\) \{\s*el\.classList\.remove\('is-invalid'\);\s*el\.removeAttribute\('aria-invalid'\);", comun);
+            // El select2 inválido lo pinta sgv-base.css (M-143, sin !important); RegistroDespacho.css le da la
+            // altura de un botón en el celular (M-145).
             string css = Css("RegistroDespacho");
-            Assert.Contains("select.is-invalid + .select2-container .select2-selection--single", css);
+            Assert.DoesNotContain("select.is-invalid + .select2-container", css);
+            Assert.Contains("select.is-invalid + .select2-container.select2-container--default .select2-selection--single", SiHay("Content", "sgv-base.css"));
             Assert.Matches(@"@media \(max-width: 767\.98px\) \{[^@]*select2-selection--single \{ height: 2\.75rem; \}", css);
         }
     }

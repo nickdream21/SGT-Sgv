@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-24**, commit anterior `30f177a` — E5-18c-2 (cierra E5-18): `style=` del marcado 51 → 30 (solo los `display:none` que alterna el JS y los 3 de Error.aspx, lista cerrada por archivo en `EstilosTests`); pantallas de éxito de Firmar y Conformar, LiquidacionesPendientes, MovimientosViaje y el modal Cambiar contraseña sin `style=`; 0 reglas de letra < 12 px en las 28 hojas, con prueba sin excepciones; P-056 ampliado. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-24**, commit anterior `daa6df3` — E5-20a (obligatorios y validación, parte 1): forma común (asterisco `sgv-obligatorio` con `aria-required`; validadores con grupo, `sgv-campo-error` junto al campo, sin `Text` ni `ValidationSummary` ni `required` nativo) en Site.Master y 9 catálogos; `SiteMaster.js` con un solo envoltorio de `ValidatorUpdateDisplay` (`is-invalid`, `aria-invalid`, `aria-describedby`), foco al primer error, error que se va al corregir y `SGV.marcarError`; Cerrar sesión y Cambiar contraseña ya no los bloquean los validadores sin grupo de Productos y Rutas; modales de edición con RFV y `Page.IsValid`; DNI/carnet obligatorios según el tipo; placa del alta con espacios como el servicio; fuera `RegistroDespacho-2.js`; `ObligatoriosValidacionTests`; U-002 ampliado y nuevo P-090. No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-171 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

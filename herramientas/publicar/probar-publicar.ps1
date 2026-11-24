@@ -84,7 +84,8 @@ $cssRetirados = 'AgregarAbastecimiento', 'AgregarIndicadores', 'BuscarAbastecimi
     'RegistrarDespachoObra', 'RegistrarRetornoEcuador', 'ReporteAbastecimiento', 'AgregarCPIC', 'AgregarFactura', 'AgregarOrdenViaje', 'BuscarCPIC', 'BuscarFactura',
     'ListaDespachos-2', 'RegistroDespacho-2'   # E5-13: unidas a su hoja principal
 $jsRetirados = 'AgregarAbastecimiento', 'BuscarAbastecimiento', 'Dashboard', 'DashboardGrifo', 'DashboardOperador', 'EditarDespacho', 'RegistrarDespachoObra',
-    'RegistrarRetornoEcuador', 'AgregarCPIC', 'AgregarFactura', 'AgregarOrdenViaje', 'BuscarCPIC', 'BuscarFactura', 'BuscarOrdenViaje', 'ConsultaAuditoria'
+    'RegistrarRetornoEcuador', 'AgregarCPIC', 'AgregarFactura', 'AgregarOrdenViaje', 'BuscarCPIC', 'BuscarFactura', 'BuscarOrdenViaje', 'ConsultaAuditoria',
+    'RegistroDespacho-2'   # E5-20a: su is-invalid lo pone SiteMaster.js
 $sobrantesEsperados = @($paginasRetiradas | ForEach-Object { "Views/$_.aspx" }) +
                       @($cssRetirados | ForEach-Object { "Content/paginas/$_.css" }) +
                       @($jsRetirados | ForEach-Object { "Scripts/paginas/$_.js" }) +

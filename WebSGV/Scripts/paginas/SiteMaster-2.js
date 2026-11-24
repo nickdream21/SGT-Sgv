@@ -1,29 +1,35 @@
 ﻿// Los campos del modal se clonan desde <template id="tplCamposContrasena"> al abrirlo
 // (SiteMaster.js): pueden no estar en el DOM, así que se leen con tolerancia a null.
+// El error va debajo de su campo (SGV.marcarError, SiteMaster.js), no en un aviso: los campos viven en
+// <template id="tplCamposContrasena"> y se clonan al abrir el modal, por eso no llevan validadores de WebForms.
 function validarFormContrasena() {
+    var ids = [SGV.txtContrasenaActual, SGV.txtNuevaContrasena, SGV.txtConfirmarContrasena];
     function valor(id) {
         var el = id ? document.getElementById(id) : null;
         return el ? el.value : '';
     }
+    function error(id, mensaje) {
+        var el = id ? document.getElementById(id) : null;
+        if (el) {
+            SGV.marcarError(el, mensaje);
+            el.focus();
+        } else {
+            SGV.avisar(mensaje);
+        }
+        return false;
+    }
+    ids.forEach(function (id) { if (id && document.getElementById(id)) SGV.limpiarError(id); });
     var actual = valor(SGV.txtContrasenaActual);
     var nueva = valor(SGV.txtNuevaContrasena);
     var confirmar = valor(SGV.txtConfirmarContrasena);
 
-    if (!actual) {
-        SGV.avisar('Por favor ingresa tu contraseña actual.');
-        return false;
-    }
+    if (!actual) return error(SGV.txtContrasenaActual, 'Ingrese su contraseña actual.');
     // Mismo mínimo que el servidor (PasswordHelper.LargoMinimoNueva), que la guarda recortada.
     // Las demás reglas (nombre, DNI, secuencias...) las revisa el servidor (PoliticaContrasena).
     var minimo = SGV.largoMinimoContrasena || 10;
-    if (!nueva || nueva.trim().length < minimo) {
-        SGV.avisar('La nueva contraseña debe tener al menos ' + minimo + ' caracteres.');
-        return false;
-    }
-    if (nueva !== confirmar) {
-        SGV.avisar('Las contraseñas nuevas no coinciden.');
-        return false;
-    }
+    if (!nueva || nueva.trim().length < minimo)
+        return error(SGV.txtNuevaContrasena, 'La nueva contraseña debe tener al menos ' + minimo + ' caracteres.');
+    if (nueva !== confirmar) return error(SGV.txtConfirmarContrasena, 'Las contraseñas nuevas no coinciden.');
     return true;
 }
 

@@ -12,29 +12,27 @@
                 <asp:Panel ID="pnlFormulario" runat="server">
                     <!-- Nombre de la Ruta -->
                     <div class="form-group">
-                        <label for="<%= txtNombreRuta.ClientID %>" class="sgv-etiqueta">Nombre de la ruta: <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtNombreRuta" runat="server" CssClass="form-control" required="required"></asp:TextBox>
-                        <asp:RequiredFieldValidator ID="rfvNombreRuta" runat="server" 
-                            ControlToValidate="txtNombreRuta" 
-                            ErrorMessage="El nombre de la ruta es obligatorio." 
-                            CssClass="text-danger" 
-                            Display="Dynamic">
-                        </asp:RequiredFieldValidator>
+                        <label for="<%= txtNombreRuta.ClientID %>" class="sgv-etiqueta">Nombre de la ruta: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:TextBox ID="txtNombreRuta" runat="server" aria-required="true" CssClass="form-control"></asp:TextBox>
+                        <asp:RequiredFieldValidator ID="rfvNombreRuta" runat="server" ValidationGroup="vgRegistroRuta"
+                            ControlToValidate="txtNombreRuta"
+                            ErrorMessage="El nombre de la ruta es obligatorio."
+                            CssClass="sgv-campo-error"
+                            Display="Dynamic" SetFocusOnError="true" />
                     </div>
 
                     <!-- Cliente asociado -->
                     <div class="form-group">
-                        <label for="<%= ddlCliente.ClientID %>" class="sgv-etiqueta">Cliente: <span class="text-danger">*</span></label>
-                        <asp:DropDownList ID="ddlCliente" runat="server" CssClass="form-control" 
-                            DataTextField="nombre" DataValueField="idCliente" required="required">
+                        <label for="<%= ddlCliente.ClientID %>" class="sgv-etiqueta">Cliente: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:DropDownList ID="ddlCliente" runat="server" aria-required="true" CssClass="form-control" 
+                            DataTextField="nombre" DataValueField="idCliente">
                         </asp:DropDownList>
-                        <asp:RequiredFieldValidator ID="rfvCliente" runat="server" 
+                        <asp:RequiredFieldValidator ID="rfvCliente" runat="server" ValidationGroup="vgRegistroRuta"
                             ControlToValidate="ddlCliente"
                             InitialValue="0"
                             ErrorMessage="Debe seleccionar un cliente."
-                            CssClass="text-danger" 
-                            Display="Dynamic">
-                        </asp:RequiredFieldValidator>
+                            CssClass="sgv-campo-error"
+                            Display="Dynamic" SetFocusOnError="true" />
                         <small class="form-text text-muted">Esta ruta será asignada específicamente al cliente seleccionado.</small>
                     </div>
 
@@ -46,7 +44,7 @@
 
                     <!-- Botón -->
                     <div class="text-center mt-4">
-                        <asp:Button ID="btnRegistrar" runat="server" CssClass="btn btn-primary btn-lg" Text="Registrar ruta" OnClick="btnRegistrar_Click" />
+                        <asp:Button ID="btnRegistrar" runat="server" ValidationGroup="vgRegistroRuta" CssClass="btn btn-primary btn-lg" Text="Registrar ruta" OnClick="btnRegistrar_Click" />
                     </div>
                 </asp:Panel>
             </div>

@@ -42,8 +42,8 @@ namespace WebSGV.Views
         private void AjustarValidadoresDocumento()
         {
             bool esCarnet = ddlTipoDocumento.SelectedValue == RegistroConductorService.TipoCarnet;
-            revDni.Enabled = !esCarnet;
-            revCarnet.Enabled = esCarnet;
+            rfvDni.Enabled = revDni.Enabled = !esCarnet;
+            rfvCarnet.Enabled = revCarnet.Enabled = esCarnet;
         }
 
         /// <summary>true cuando CargarConductores ya enlazó la grilla en esta petición.</summary>
@@ -216,6 +216,13 @@ namespace WebSGV.Views
 
         protected void btnActualizarConductor_Click(object sender, EventArgs e)
         {
+            // Validadores del modal (vgEditar*, E5-20a): el mensaje va junto a cada campo y el modal se reabre.
+            if (!Page.IsValid)
+            {
+                MostrarErrorModal("Corrija los campos marcados.");
+                return;
+            }
+
             if (!int.TryParse(hfIdConductor.Value, out int idConductor) || idConductor <= 0)
             {
                 MostrarErrorModal("ID de conductor inválido.");

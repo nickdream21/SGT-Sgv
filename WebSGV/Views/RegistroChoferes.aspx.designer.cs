@@ -187,5 +187,7 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Button btnBuscar;
         protected global::System.Web.UI.WebControls.RegularExpressionValidator revDni;
         protected global::System.Web.UI.WebControls.RegularExpressionValidator revCarnet;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvDni;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvCarnet;
     }
 }

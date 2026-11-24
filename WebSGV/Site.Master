@@ -260,7 +260,7 @@
                         </span>
                     </li>
                     <li class="nav-item">
-                        <asp:LinkButton ID="btnCerrarSesion" runat="server"
+                        <asp:LinkButton ID="btnCerrarSesion" runat="server" CausesValidation="false"
                             CssClass="btn btn-outline-danger btn-sm"
                             data-cerrar-sesion="true"
                             data-espera="2"
@@ -313,26 +313,26 @@
                         <template id="tplCamposContrasena">
                             <input type="text" autocomplete="username" value="<%: UsuarioLogin %>" hidden readonly tabindex="-1" aria-hidden="true" />
                             <div class="form-group">
-                                <label for="<%= txtContrasenaActual.ClientID %>" class="sgv-etiqueta">Contraseña actual <span class="text-danger">*</span></label>
-                                <asp:TextBox ID="txtContrasenaActual" runat="server" CssClass="form-control"
+                                <label for="<%= txtContrasenaActual.ClientID %>" class="sgv-etiqueta">Contraseña actual <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <asp:TextBox ID="txtContrasenaActual" runat="server" aria-required="true" CssClass="form-control"
                                     TextMode="Password" placeholder="Ingresa tu contraseña actual" autocomplete="current-password"></asp:TextBox>
                             </div>
                             <div class="form-group">
-                                <label for="<%= txtNuevaContrasena.ClientID %>" class="sgv-etiqueta">Nueva contraseña <span class="text-danger">*</span></label>
-                                <asp:TextBox ID="txtNuevaContrasena" runat="server" CssClass="form-control"
+                                <label for="<%= txtNuevaContrasena.ClientID %>" class="sgv-etiqueta">Nueva contraseña <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <asp:TextBox ID="txtNuevaContrasena" runat="server" aria-required="true" CssClass="form-control"
                                     TextMode="Password" autocomplete="new-password"></asp:TextBox><%-- placeholder: Page_Load (PasswordHelper.TextoMinimoNueva) --%>
                                 <small class="form-text text-muted"><%: WebSGV.Helpers.PoliticaContrasena.TextoAyuda %></small>
                             </div>
                             <div class="form-group mb-0">
-                                <label for="<%= txtConfirmarContrasena.ClientID %>" class="sgv-etiqueta">Confirmar nueva contraseña <span class="text-danger">*</span></label>
-                                <asp:TextBox ID="txtConfirmarContrasena" runat="server" CssClass="form-control"
+                                <label for="<%= txtConfirmarContrasena.ClientID %>" class="sgv-etiqueta">Confirmar nueva contraseña <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <asp:TextBox ID="txtConfirmarContrasena" runat="server" aria-required="true" CssClass="form-control"
                                     TextMode="Password" placeholder="Repite la nueva contraseña" autocomplete="new-password"></asp:TextBox>
                             </div>
                         </template>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary js-cerrar-contrasena" data-dismiss="modal">Cancelar</button>
-                        <asp:Button ID="btnCambiarContrasena" runat="server"
+                        <asp:Button ID="btnCambiarContrasena" runat="server" CausesValidation="false"
                             Text="Cambiar contraseña"
                             CssClass="btn btn-primary"
                             OnClick="btnCambiarContrasena_Click"

@@ -671,57 +671,250 @@
     });
 })();
 
-// ── Validación de WebForms: llevar al error, no al principio de la página ──
-// ValidationSummaryOnSubmit (WebUIValidation.js) hace window.scrollTo(0, 0) al mostrar un ValidationSummary.
-// En el celular el formulario puede ir debajo de la lista (catálogos, E5-16) y el resumen quedaba fuera de la
-// vista, con el foco en body. Se envuelve: sin ese salto, se muestra el resumen (si no está ya a la vista) y se
-// enfoca el primer campo inválido del grupo. En escritorio, con el resumen visible, la vista no se mueve.
+// ── Validación: marca en el campo y foco al primer error (E5-20) ───────
+// Forma común de los formularios: el asterisco es <span class="sgv-obligatorio" aria-hidden="true">*</span> y el
+// control lleva aria-required; cada validador de WebForms lleva la frase completa en ErrorMessage (sin Text),
+// Display="Dynamic", CssClass="sgv-campo-error", SetFocusOnError y su ValidationGroup. No hay ValidationSummary:
+// el mensaje va una sola vez, debajo del campo.
+// Aquí hay UN envoltorio de ValidatorUpdateDisplay (WebUIValidation.js; ninguna página lo envuelve aparte):
+//   - pone is-invalid y aria-invalid en el control si ALGÚN validador activo suyo falla (no solo el último
+//     que se evaluó: un campo con obligatorio y formato no se "limpia" porque el segundo pase);
+//   - añade el id del mensaje a aria-describedby mientras falla y lo quita cuando pasa;
+//   - quita el display:inline que Display="Dynamic" pone al mostrar el mensaje (vale el display:block de
+//     .sgv-campo-error, sgv-base.css).
+// Page_ClientValidate se envuelve para llevar la vista y el foco al primer campo inválido del grupo, sin
+// subir la página (en el celular el formulario de un catálogo va debajo de la lista, E5-16a). Si la validación
+// cancela el envío, el submit queda cancelado (WebForm_OnSubmit devuelve false) y el bloqueo de doble envío
+// (E5-2) no se activa.
+// SGV.marcarError(campo, mensaje) / SGV.limpiarError(campo): el mismo aspecto para lo que valida un script
+// (un small.sgv-campo-error tras el campo o su .input-group). Al corregir un campo marcado, su marca se va (alCorregir).
+// Al cerrarse un modal, sus mensajes se borran (el próximo que se abra empieza limpio); si el servidor lo
+// reabre con errores (B5-7), sus validadores ya vienen marcados.
 (function () {
+    var SGV = window.SGV = window.SGV || {};
+    var contador = 0;
+
+    function porId(campo) { return typeof campo === 'string' ? document.getElementById(campo) : campo; }
+
+    function describir(el, id, incluir) {
+        var ids = (el.getAttribute('aria-describedby') || '').split(/\s+/).filter(function (x) { return x && x !== id; });
+        if (incluir) ids.push(id);
+        if (ids.length) el.setAttribute('aria-describedby', ids.join(' '));
+        else el.removeAttribute('aria-describedby');
+    }
+
+    function fallaAlgunValidador(el) {
+        var lista = window.Page_Validators || [];
+        for (var i = 0; i < lista.length; i++) {
+            var v = lista[i];
+            if (v && v.controltovalidate === el.id && v.enabled !== false && v.isvalid === false) return true;
+        }
+        return false;
+    }
+
+    // Un monto ilegible (data-monto-invalido, más abajo) o un error de script (data-sgv-error) también cuentan.
+    function pintar(el) {
+        var invalido = fallaAlgunValidador(el) || el.hasAttribute('data-sgv-error') || el.hasAttribute('data-monto-invalido');
+        el.classList.toggle('is-invalid', invalido);
+        if (invalido) el.setAttribute('aria-invalid', 'true');
+        else el.removeAttribute('aria-invalid');
+    }
+
+    function alActualizar(val) {
+        if (!val || !val.style) return;
+        var falla = val.isvalid === false && val.enabled !== false;
+        if (falla && val.style.display === 'inline' && val.classList && val.classList.contains('sgv-campo-error')) val.style.display = '';
+        var el = val.controltovalidate ? document.getElementById(val.controltovalidate) : null;
+        if (!el) return;
+        describir(el, val.id, falla);
+        // Ya marcado una vez: se sigue revalidando al escribir (alCorregir), también si se vuelve a vaciar.
+        if (falla) el.setAttribute('data-sgv-marcado', '');
+        pintar(el);
+    }
+
+    // Quita data-sgv-marcado de los campos de los validadores de un grupo (o de un contenedor).
+    function desmarcar(grupo, contenedor) {
+        var lista = window.Page_Validators || [];
+        for (var i = 0; i < lista.length; i++) {
+            var v = lista[i];
+            if (!v || !v.controltovalidate) continue;
+            if (contenedor ? !contenedor.contains(v) :
+                (typeof window.IsValidationGroupMatch === 'function' && !window.IsValidationGroupMatch(v, grupo))) continue;
+            var el = document.getElementById(v.controltovalidate);
+            if (el) el.removeAttribute('data-sgv-marcado');
+        }
+    }
+
+    // El foco al primer error solo al enviar (dentro de Page_ClientValidate). WebUIValidation.js también lo
+    // movía en la validación por change (SetFocusOnError): escribir mal la placa y pasar a Marca devolvía el
+    // foco a Placa y lo que se tecleaba caía ahí. El foco tras un postback con error lo pone el servidor
+    // (WebForm_AutoFocus), no ValidatorSetFocus.
+    var enviando = 0;
+
     function aLaVista(el) {
         var r = el.getBoundingClientRect();
         return r.top >= 0 && r.bottom <= (window.innerHeight || document.documentElement.clientHeight);
     }
 
     function llevarAlError(grupo) {
-        var validadores = window.Page_Validators || [];
+        var lista = window.Page_Validators || [];
         var campo = null;
-        for (var i = 0; i < validadores.length && !campo; i++) {
-            var v = validadores[i];
-            if (v.isvalid !== false) continue;
+        for (var i = 0; i < lista.length && !campo; i++) {
+            var v = lista[i];
+            if (!v || v.isvalid !== false || v.enabled === false) continue;
             if (typeof window.IsValidationGroupMatch === 'function' && !window.IsValidationGroupMatch(v, grupo)) continue;
             campo = v.controltovalidate ? document.getElementById(v.controltovalidate) : null;
         }
-        var resumen = null, resumenes = window.Page_ValidationSummaries || [];
-        for (var j = 0; j < resumenes.length && !resumen; j++) {
-            var s = resumenes[j];
-            if (s && s.style.display !== 'none' && s.offsetParent !== null) resumen = s;
-        }
-        var destino = resumen || campo;
-        if (destino && !aLaVista(destino)) destino.scrollIntoView({ block: 'start' });
-        if (campo && typeof campo.focus === 'function') {
-            try { campo.focus({ preventScroll: true }); } catch (e) { campo.focus(); }
+        if (!campo) return;
+        // Un select con select2 está oculto: la vista y el foco van a su caja.
+        var caja = campo.classList.contains('select2-hidden-accessible') && campo.nextElementSibling;
+        var destino = caja && caja.classList.contains('select2-container') ? caja : campo;
+        if (!aLaVista(destino)) destino.scrollIntoView({ block: 'center' });
+        var enfocable = destino === campo ? campo : (destino.querySelector('.select2-selection') || campo);
+        if (typeof enfocable.focus === 'function') {
+            try { enfocable.focus({ preventScroll: true }); } catch (e) { enfocable.focus(); }
         }
     }
 
     function envolver() {
-        var original = window.ValidationSummaryOnSubmit;
-        if (typeof original !== 'function' || original.sgvEnvuelto) return;
-        var envuelto = function (grupo) {
-            var desplazar = window.scrollTo, pidio = false;
-            window.scrollTo = function () { pidio = true; };
-            try { return original.apply(this, arguments); }
-            finally {
-                window.scrollTo = desplazar;
-                if (pidio) llevarAlError(grupo);
+        var mostrar = window.ValidatorUpdateDisplay;
+        if (typeof mostrar === 'function' && !mostrar.sgvEnvuelto) {
+            var mostrarEnvuelto = function (val) {
+                var r = mostrar.apply(this, arguments);
+                alActualizar(val);
+                return r;
+            };
+            mostrarEnvuelto.sgvEnvuelto = true;
+            window.ValidatorUpdateDisplay = mostrarEnvuelto;
+        }
+        var enfocar = window.ValidatorSetFocus;
+        if (typeof enfocar === 'function' && !enfocar.sgvEnvuelto) {
+            var enfocarEnvuelto = function () {
+                if (enviando > 0) return enfocar.apply(this, arguments);
+            };
+            enfocarEnvuelto.sgvEnvuelto = true;
+            window.ValidatorSetFocus = enfocarEnvuelto;
+        }
+        var validar = window.Page_ClientValidate;
+        if (typeof validar === 'function' && !validar.sgvEnvuelto) {
+            var validarEnvuelto = function (grupo) {
+                var valido;
+                enviando++;
+                try { valido = validar.apply(this, arguments); }
+                finally { enviando--; }
+                if (!valido) llevarAlError(grupo);
+                else desmarcar(grupo);
+                return valido;
+            };
+            validarEnvuelto.sgvEnvuelto = true;
+            window.Page_ClientValidate = validarEnvuelto;
+        }
+        // Validadores que el servidor devolvió en error (Page.IsValid falso): su campo también se marca.
+        var lista = window.Page_Validators || [];
+        for (var i = 0; i < lista.length; i++) if (lista[i] && lista[i].isvalid === false) alActualizar(lista[i]);
+        // Campos que el servidor marca is-invalid sin validador (RegistroDespacho): también aria-invalid.
+        var marcadosServidor = document.querySelectorAll('.is-invalid:not([aria-invalid])');
+        for (var j = 0; j < marcadosServidor.length; j++) marcadosServidor[j].setAttribute('aria-invalid', 'true');
+    }
+
+    SGV.marcarError = function (campo, mensaje) {
+        var el = porId(campo);
+        if (!el || !el.parentNode) return null;
+        var id = el.getAttribute('data-sgv-error');
+        var ayuda = id ? document.getElementById(id) : null;
+        if (!ayuda) {
+            var ancla = (el.closest && el.closest('.input-group')) || el;
+            ayuda = document.createElement('small');
+            ayuda.id = 'sgvCampoError' + (++contador);
+            ayuda.className = 'sgv-campo-error';
+            ancla.parentNode.insertBefore(ayuda, ancla.nextSibling);
+        }
+        ayuda.textContent = mensaje;
+        el.setAttribute('data-sgv-error', ayuda.id);
+        describir(el, ayuda.id, true);
+        pintar(el);
+        return ayuda;
+    };
+
+    SGV.limpiarError = function (campo) {
+        var el = porId(campo);
+        if (!el) return;
+        var id = el.getAttribute('data-sgv-error');
+        if (id) {
+            var ayuda = document.getElementById(id);
+            if (ayuda && ayuda.parentNode) ayuda.parentNode.removeChild(ayuda);
+            el.removeAttribute('data-sgv-error');
+            describir(el, id, false);
+        }
+        pintar(el);
+    };
+
+    function validadoresDe(el) {
+        var lista = window.Page_Validators || [], propios = [];
+        for (var i = 0; i < lista.length; i++) if (lista[i] && lista[i].controltovalidate === el.id) propios.push(lista[i]);
+        return propios;
+    }
+
+    // Al corregir un campo ya marcado:
+    //   - error de script (data-sgv-error): se va al escribir;
+    //   - marcado por sus validadores: al escribir se vuelven a evaluar, y el mensaje se va en cuanto el
+    //     valor es válido (sin esperar a salir del campo). Un campo aún sin marcar no se valida mientras se
+    //     escribe por primera vez (el error aparece al salir o al enviar, como en WebForms);
+    //   - marcado por el servidor sin validador (RegistroDespacho: conductor, tracto, planta... al leer
+    //     documentos; antes RegistroDespacho-2.js): se desmarca al tener valor, también al elegir en un select2.
+    // Va por jQuery: select2 avisa el cambio con .trigger('change'), que no llega a addEventListener.
+    function alCorregir(e) {
+        var el = e.target;
+        if (!el || !el.classList || !el.hasAttribute) return;
+        if (el.hasAttribute('data-sgv-error')) {
+            if (e.type === 'input') SGV.limpiarError(el);
+            return;
+        }
+        if (el.hasAttribute('data-monto-invalido')) return;
+        var propios = validadoresDe(el);
+        // Con validadores: se revalida mientras está marcado o ya lo estuvo (data-sgv-marcado).
+        if (!el.classList.contains('is-invalid') && !(propios.length && el.hasAttribute('data-sgv-marcado'))) return;
+        if (propios.length) {
+            // En change ya revalida WebUIValidation (ValidatorOnChange).
+            if (e.type !== 'input' || typeof window.ValidatorValidate !== 'function') return;
+            for (var i = 0; i < propios.length; i++) window.ValidatorValidate(propios[i]);
+            if (typeof window.ValidatorUpdateIsValid === 'function') window.ValidatorUpdateIsValid();
+            pintar(el);
+            return;
+        }
+        if (String(el.value || '').trim() !== '') {
+            el.classList.remove('is-invalid');
+            el.removeAttribute('aria-invalid');
+        }
+    }
+    if (window.jQuery) window.jQuery(document).on('input change', alCorregir);
+    else {
+        document.addEventListener('input', alCorregir);
+        document.addEventListener('change', alCorregir);
+    }
+
+    if (window.jQuery) {
+        window.jQuery(document).on('hidden.bs.modal', '.modal', function () {
+            var modal = this;
+            var lista = window.Page_Validators || [];
+            for (var i = 0; i < lista.length; i++) {
+                var v = lista[i];
+                if (!v || v.isvalid !== false || !modal.contains(v)) continue;
+                v.isvalid = true;
+                if (typeof window.ValidatorUpdateDisplay === 'function') window.ValidatorUpdateDisplay(v);
             }
-        };
-        envuelto.sgvEnvuelto = true;
-        window.ValidationSummaryOnSubmit = envuelto;
+            desmarcar(null, modal);
+            var marcados = modal.querySelectorAll('[data-sgv-error]');
+            for (var j = 0; j < marcados.length; j++) SGV.limpiarError(marcados[j]);
+        });
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', envolver);
     else envolver();
     window.addEventListener('load', envolver);
+    if (window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager) {
+        Sys.WebForms.PageRequestManager.getInstance().add_endRequest(envolver);
+    }
 })();
 
 // ── Cerrar sesión: borradores del navegador fuera ──────────────────

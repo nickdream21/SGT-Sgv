@@ -82,14 +82,12 @@
                             <h2 class="h6 font-weight-bold mb-3">
                                 Agregar <asp:Literal ID="litEtiquetaAlta" runat="server" Text="elemento" />
                             </h2>
-                            <asp:ValidationSummary ID="vsAlta" runat="server" ValidationGroup="vgAlta"
-                                CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                             <div class="form-group">
-                                <label for="<%= txtNombre.ClientID %>" class="sgv-etiqueta">Nombre <span class="text-danger">*</span></label>
-                                <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
+                                <label for="<%= txtNombre.ClientID %>" class="sgv-etiqueta">Nombre <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <asp:TextBox ID="txtNombre" runat="server" aria-required="true" CssClass="form-control" MaxLength="50"></asp:TextBox>
                                 <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ValidationGroup="vgAlta"
                                     ControlToValidate="txtNombre" ErrorMessage="El nombre es obligatorio."
-                                    CssClass="text-danger small" Display="Dynamic" />
+                                    CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                             </div>
                             <div class="form-group">
                                 <label for="<%= txtDetalle.ClientID %>" class="sgv-etiqueta"><asp:Literal ID="litEtiquetaDetalle" runat="server" Text="Descripción" />:</label>
@@ -174,8 +172,9 @@
                         <asp:Label ID="lblErrorModal" runat="server" EnableViewState="false"></asp:Label>
                     </asp:Panel>
                     <div class="form-group">
-                        <label for="<%= txtEditarNombre.ClientID %>" class="sgv-etiqueta">Nombre <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control" MaxLength="50"></asp:TextBox>
+                        <label for="<%= txtEditarNombre.ClientID %>" class="sgv-etiqueta">Nombre <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:TextBox ID="txtEditarNombre" runat="server" aria-required="true" CssClass="form-control" MaxLength="50"></asp:TextBox>
+                        <asp:RequiredFieldValidator ID="rfvEditarNombre" runat="server" ControlToValidate="txtEditarNombre" ValidationGroup="vgEditarCatalogo" ErrorMessage="El nombre es obligatorio." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                     </div>
                     <div class="form-group mb-0">
                         <label for="<%= txtEditarDetalle.ClientID %>" class="sgv-etiqueta"><asp:Literal ID="litEtiquetaDetalleEditar" runat="server" Text="Descripción" />:</label>
@@ -185,7 +184,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <asp:Button ID="btnActualizar" runat="server" CssClass="btn btn-info"
+                    <asp:Button ID="btnActualizar" runat="server" ValidationGroup="vgEditarCatalogo" CssClass="btn btn-info"
                         Text="Guardar cambios" OnClick="btnActualizar_Click" />
                 </div>
             </div>

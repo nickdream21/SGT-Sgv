@@ -57,7 +57,7 @@ namespace WebSGV.Tests
             ["Content/paginas/FacturasFlete.css"] = 1,
             ["Content/paginas/LiquidacionesPendientes.css"] = 10,
             ["Content/paginas/ListaDespachos.css"] = 2,     // E5-18a: plantilla común (114 a 2: el borde y el relleno de la tabla por despacho en el celular)
-            ["Content/paginas/RegistroDespacho.css"] = 10,
+            ["Content/paginas/RegistroDespacho.css"] = 8,    // E5-20a: el select2 inválido pasó a sgv-base.css sin !important
             ["Content/paginas/SiteMaster.css"] = 15,   // E5-24b: fuera .nav-link i y .dropdown-item i
         };
 

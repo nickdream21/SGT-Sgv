@@ -40,30 +40,28 @@
                 </div>
                 <div class="sgv-panel-cuerpo">
                     <asp:Panel ID="pnlFormulario" runat="server">
-                        <asp:ValidationSummary ID="vsRegistroCliente" runat="server" ValidationGroup="vgRegistroCliente" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                         <div class="form-group">
                             <label for="<%= txtRUC.ClientID %>" class="sgv-etiqueta">RUC (Opcional):</label>
                             <div class="input-group">
                                 <asp:TextBox ID="txtRUC" runat="server" CssClass="form-control" inputmode="numeric" MaxLength="11"></asp:TextBox>
                                 <div class="input-group-append">
-                                    <asp:Button ID="btnBuscarRUC" runat="server" CssClass="btn btn-secondary" Text="Verificar" data-accion="verificarRUC" />
+                                    <asp:Button ID="btnBuscarRUC" runat="server" CausesValidation="false" CssClass="btn btn-secondary" Text="Verificar" data-accion="verificarRUC" />
                                 </div>
                             </div>
                             <asp:RegularExpressionValidator ID="revRuc" runat="server" ControlToValidate="txtRUC" ValidationGroup="vgRegistroCliente"
-                                ValidationExpression="^$|^\d{11}$" ErrorMessage="RUC: ingrese exactamente 11 dígitos o deje el campo vacío." CssClass="text-danger small" Display="Dynamic" />
+                                ValidationExpression="^$|^\d{11}$" ErrorMessage="RUC: ingrese exactamente 11 dígitos o deje el campo vacío." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                             <small class="form-text text-muted">Ingrese el RUC si lo conoce, o deje en blanco.</small>
                         </div>
                         <div class="form-group">
-                            <label for="<%= txtNombre.ClientID %>" class="sgv-etiqueta">Nombre / Raz&#xF3;n Social: <span class="text-danger">*</span></label>
-                            <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control" MaxLength="100"></asp:TextBox>
+                            <label for="<%= txtNombre.ClientID %>" class="sgv-etiqueta">Nombre / Raz&#xF3;n Social: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                            <asp:TextBox ID="txtNombre" runat="server" aria-required="true" CssClass="form-control" MaxLength="100"></asp:TextBox>
                             <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ValidationGroup="vgRegistroCliente"
                                 ControlToValidate="txtNombre"
                                 ErrorMessage="El nombre del cliente es obligatorio."
-                                CssClass="text-danger small"
-                                Display="Dynamic">
-                            </asp:RequiredFieldValidator>
+                                CssClass="sgv-campo-error"
+                                Display="Dynamic" SetFocusOnError="true" />
                             <asp:RegularExpressionValidator ID="revNombre" runat="server" ControlToValidate="txtNombre" ValidationGroup="vgRegistroCliente"
-                                ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.&]{3,100}$" ErrorMessage="Nombre/Razón Social: use entre 3 y 100 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
+                                ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.&]{3,100}$" ErrorMessage="Nombre/Razón Social: use entre 3 y 100 caracteres válidos." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         </div>
 
                         <hr class="my-3" />
@@ -94,7 +92,7 @@
                             <label for="<%= txtCorreo.ClientID %>" class="sgv-etiqueta">Correo:</label>
                             <asp:TextBox ID="txtCorreo" runat="server" CssClass="form-control" MaxLength="150" TextMode="Email"></asp:TextBox>
                             <asp:RegularExpressionValidator ID="revCorreo" runat="server" ControlToValidate="txtCorreo" ValidationGroup="vgRegistroCliente"
-                                ValidationExpression="^$|^[^@\s]+@[^@\s]+\.[^@\s]+$" ErrorMessage="Correo: ingrese una direcci&#xF3;n v&#xE1;lida o deje el campo vac&#xED;o." CssClass="text-danger small" Display="Dynamic" />
+                                ValidationExpression="^$|^[^@\s]+@[^@\s]+\.[^@\s]+$" ErrorMessage="Correo: ingrese una direcci&#xF3;n v&#xE1;lida o deje el campo vac&#xED;o." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         </div>
                         <div class="form-group">
                             <div class="custom-control custom-checkbox">
@@ -222,8 +220,9 @@
                             <small class="form-text text-muted">11 d&#xED;gitos. Dejar en blanco si no aplica.</small>
                         </div>
                         <div class="form-group col-md-8">
-                            <label for="<%= txtEditarNombre.ClientID %>" class="sgv-etiqueta">Nombre / Raz&#xF3;n Social <span class="text-danger">*</span></label>
-                            <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control" MaxLength="100"></asp:TextBox>
+                            <label for="<%= txtEditarNombre.ClientID %>" class="sgv-etiqueta">Nombre / Raz&#xF3;n Social <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                            <asp:TextBox ID="txtEditarNombre" runat="server" aria-required="true" CssClass="form-control" MaxLength="100"></asp:TextBox>
+                            <asp:RequiredFieldValidator ID="rfvEditarNombre" runat="server" ControlToValidate="txtEditarNombre" ValidationGroup="vgEditarCliente" ErrorMessage="El nombre del cliente es obligatorio." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         </div>
                     </div>
                     <div class="form-group">
@@ -265,7 +264,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <asp:Button ID="btnActualizarCliente" runat="server" CssClass="btn btn-info"
+                    <asp:Button ID="btnActualizarCliente" runat="server" ValidationGroup="vgEditarCliente" CssClass="btn btn-info"
                         Text="Guardar cambios" OnClick="btnActualizarCliente_Click" />
                 </div>
             </div>

@@ -404,7 +404,6 @@
     <Content Include="Scripts\paginas\SegundoFactor.js" />
     <Content Include="Scripts\paginas\RegistroChoferes.js" />
     <Content Include="Scripts\paginas\RegistroClientes.js" />
-    <Content Include="Scripts\paginas\RegistroDespacho-2.js" />
     <Content Include="Scripts\paginas\RegistroDespacho.js" />
     <Content Include="Scripts\paginas\RegistroPeajes.js" />
     <Content Include="Scripts\paginas\RegistroPlantas.js" />

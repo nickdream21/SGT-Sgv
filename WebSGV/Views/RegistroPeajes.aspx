@@ -39,15 +39,14 @@
                     <h2 class="sgv-panel-titulo">Agregar estaci&#xF3;n</h2>
                 </div>
                 <div class="sgv-panel-cuerpo">
-                    <asp:ValidationSummary ID="vsRegistroPeaje" runat="server" ValidationGroup="vgRegistroPeaje" CssClass="text-danger small mb-3" DisplayMode="BulletList" />
                     <div class="form-group">
-                        <label for="<%= txtNombre.ClientID %>" class="sgv-etiqueta">Nombre de la estaci&#xF3;n <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"
+                        <label for="<%= txtNombre.ClientID %>" class="sgv-etiqueta">Nombre de la estaci&#xF3;n <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:TextBox ID="txtNombre" runat="server" aria-required="true" CssClass="form-control"
                             placeholder="Ej: ESTACION DE PEAJE CHICAMA" MaxLength="100"></asp:TextBox>
                         <asp:RequiredFieldValidator ID="rfvNombrePeaje" runat="server" ValidationGroup="vgRegistroPeaje"
-                            ControlToValidate="txtNombre" ErrorMessage="Nombre de estación: este campo es obligatorio." CssClass="text-danger small" Display="Dynamic" />
+                            ControlToValidate="txtNombre" ErrorMessage="Nombre de estación: este campo es obligatorio." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         <asp:RegularExpressionValidator ID="revNombrePeaje" runat="server" ValidationGroup="vgRegistroPeaje"
-                            ControlToValidate="txtNombre" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.,]{3,100}$" ErrorMessage="Nombre de estación: use entre 3 y 100 caracteres válidos." CssClass="text-danger small" Display="Dynamic" />
+                            ControlToValidate="txtNombre" ValidationExpression="^[A-Za-zÁÉÍÓÚÑáéíóú0-9\s\-\.,]{3,100}$" ErrorMessage="Nombre de estación: use entre 3 y 100 caracteres válidos." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                         <small class="form-text text-muted">El nombre se guardar&#xE1; en may&#xFA;sculas.</small>
                     </div>
                     <asp:Button ID="btnRegistrar" runat="server" Text="Registrar peaje" ValidationGroup="vgRegistroPeaje"
@@ -133,13 +132,14 @@
                         <asp:Label ID="lblErrorModal" runat="server" EnableViewState="false"></asp:Label>
                     </asp:Panel>
                     <div class="form-group mb-0">
-                        <label for="<%= txtEditarNombre.ClientID %>" class="sgv-etiqueta">Nombre de la estaci&#xF3;n <span class="text-danger">*</span></label>
-                        <asp:TextBox ID="txtEditarNombre" runat="server" CssClass="form-control text-uppercase" MaxLength="100"></asp:TextBox>
+                        <label for="<%= txtEditarNombre.ClientID %>" class="sgv-etiqueta">Nombre de la estaci&#xF3;n <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <asp:TextBox ID="txtEditarNombre" runat="server" aria-required="true" CssClass="form-control text-uppercase" MaxLength="100"></asp:TextBox>
+                        <asp:RequiredFieldValidator ID="rfvEditarNombre" runat="server" ControlToValidate="txtEditarNombre" ValidationGroup="vgEditarPeaje" ErrorMessage="Nombre de estación: este campo es obligatorio." CssClass="sgv-campo-error" Display="Dynamic" SetFocusOnError="true" />
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <asp:Button ID="btnActualizarPeaje" runat="server" CssClass="btn btn-info"
+                    <asp:Button ID="btnActualizarPeaje" runat="server" ValidationGroup="vgEditarPeaje" CssClass="btn btn-info"
                         Text="Guardar cambios" OnClick="btnActualizarPeaje_Click" />
                 </div>
             </div>

@@ -278,11 +278,6 @@ select.rd-select-sugerido, select.rd-select-sugerido + .select2-container .selec
     background-size: calc(.75em + .375rem) calc(.75em + .375rem);
     box-shadow: 0 0 0 0.2rem rgba(var(--sgv-peligro-rgb), 0.15);
 }
-/* Select2 + is-invalid */
-select.is-invalid + .select2-container .select2-selection--single {
-    border-color: var(--sgv-peligro) !important;
-    box-shadow: 0 0 0 0.2rem rgba(var(--sgv-peligro-rgb), 0.15) !important;
-}
 /* Mensajes de error */
 .text-danger.small {
     font-size: .8rem;
