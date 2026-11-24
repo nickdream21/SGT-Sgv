@@ -358,15 +358,13 @@
                                 <div class="row mb-3">
                                     <div class="col-md-3">
                                         <div class="form-group">
-                                            <label for="<%= txtFechaProgramacionEdit.ClientID %>" class="sgv-etiqueta required">Fecha de programación:</label>
-                                            <asp:TextBox ID="txtFechaProgramacionEdit" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
+                                            <label for="<%= txtFechaProgramacionEdit.ClientID %>" class="sgv-etiqueta">Fecha de programación: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                            <asp:TextBox ID="txtFechaProgramacionEdit" runat="server" CssClass="form-control" TextMode="Date" aria-required="true"></asp:TextBox>
                                             <asp:RequiredFieldValidator ID="rfvFechaProgramacionEdit" runat="server"
                                                 ControlToValidate="txtFechaProgramacionEdit"
-                                                ErrorMessage="Debe seleccionar una fecha de programación"
-                                                CssClass="field-error"
-                                                Display="Dynamic"
-                                                ValidationGroup="EdicionLote">
-                                            </asp:RequiredFieldValidator>
+                                                ErrorMessage="Seleccione la fecha de programación."
+                                                Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true"
+                                                ValidationGroup="EdicionLote" />
                                         </div>
                                     </div>
                                     <div class="col-md-3">
@@ -386,18 +384,16 @@
                                     </div>
                                     <div class="col-md-3">
                                         <div class="form-group">
-                                            <label for="<%= ddlPlantaEdit.ClientID %>" class="sgv-etiqueta required">Planta de operación:</label>
+                                            <label for="<%= ddlPlantaEdit.ClientID %>" class="sgv-etiqueta">Planta de operación: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
                                             <%-- Opciones cargadas desde el catálogo Planta en CargarPlantasFiltro(). --%>
-                                            <asp:DropDownList ID="ddlPlantaEdit" runat="server" CssClass="custom-select">
+                                            <asp:DropDownList ID="ddlPlantaEdit" runat="server" CssClass="custom-select" aria-required="true">
                                             </asp:DropDownList>
                                             <asp:RequiredFieldValidator ID="rfvPlantaEdit" runat="server"
                                                 ControlToValidate="ddlPlantaEdit"
                                                 InitialValue=""
-                                                ErrorMessage="Debe seleccionar una planta"
-                                                CssClass="field-error"
-                                                Display="Dynamic"
-                                                ValidationGroup="EdicionLote">
-                                            </asp:RequiredFieldValidator>
+                                                ErrorMessage="Seleccione la planta."
+                                                Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true"
+                                                ValidationGroup="EdicionLote" />
                                         </div>
                                     </div>
                                 </div>
@@ -406,17 +402,19 @@
                                 <div class="row mb-3">
                                     <div class="col-md-3">
                                         <div class="form-group">
-                                            <label for="<%= ddlTipoOperacionEdit.ClientID %>" class="sgv-etiqueta required">Tipo de operación:</label>
-                                            <asp:DropDownList ID="ddlTipoOperacionEdit" runat="server" CssClass="custom-select"
+                                            <label for="<%= ddlTipoOperacionEdit.ClientID %>" class="sgv-etiqueta">Tipo de operación: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                            <asp:DropDownList ID="ddlTipoOperacionEdit" runat="server" CssClass="custom-select" aria-required="true"
                                                 AutoPostBack="true" OnSelectedIndexChanged="ddlTipoOperacionEdit_SelectedIndexChanged">
                                                 <asp:ListItem Value="" Text="-- Seleccione --"></asp:ListItem>
                                                 <asp:ListItem Value="CARGA" Text="Carga"></asp:ListItem>
                                                 <asp:ListItem Value="DESCARGA" Text="Descarga"></asp:ListItem>
                                             </asp:DropDownList>
+                                            <asp:RequiredFieldValidator ID="rfvTipoOperacionEdit" runat="server" ControlToValidate="ddlTipoOperacionEdit" InitialValue=""
+                                                ErrorMessage="Seleccione el tipo de operación." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="EdicionLote" />
                                         </div>
                                         <div class="form-group mt-2">
-                                            <span class="sgv-etiqueta required" id="lblAmbitoEdit">Ámbito:</span>
-                                            <div role="radiogroup" aria-labelledby="lblAmbitoEdit">
+                                            <span class="sgv-etiqueta" id="lblAmbitoEdit">Ámbito: <span class="sgv-obligatorio" aria-hidden="true">*</span></span>
+                                            <div role="radiogroup" aria-labelledby="lblAmbitoEdit" aria-required="true">
                                                 <asp:RadioButtonList ID="rblAmbitoEdit" runat="server" CssClass="rbl-inline"
                                                     AutoPostBack="true" OnSelectedIndexChanged="rblAmbitoEdit_SelectedIndexChanged"
                                                     RepeatDirection="Horizontal" RepeatLayout="Flow">
@@ -424,6 +422,8 @@
                                                     <asp:ListItem Value="1" Text="Internacional"></asp:ListItem>
                                                 </asp:RadioButtonList>
                                             </div>
+                                            <asp:RequiredFieldValidator ID="rfvAmbitoEdit" runat="server" ControlToValidate="rblAmbitoEdit"
+                                                ErrorMessage="Seleccione el ámbito." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="EdicionLote" />
                                         </div>
                                         <small class="form-text ld-nota-alerta mt-1">Al cambiar estos valores los paneles de documentos se actualizan automáticamente.</small>
                                     </div>
@@ -552,6 +552,7 @@
                                         CssClass="btn btn-primary"
                                         OnClick="btnGuardarCambios_Click"
                                         ValidationGroup="EdicionLote"
+                                        data-validar-grupo="EdicionLote"
                                         data-confirmar="¿Está seguro de aplicar estos cambios a todo el lote?"
                                         data-confirmar-aceptar="Guardar cambios" />
                                 </div>
@@ -670,12 +671,16 @@
                                         <div class="ld-doc-registrar-titulo">Registrar factura</div>
                                         <div class="ld-doc-campos">
                                             <div class="ld-campo ld-campo-ancho">
-                                                <label for="<%= txtFacturaNueva.ClientID %>">N° de factura</label>
-                                                <asp:TextBox ID="txtFacturaNueva" runat="server" CssClass="form-control form-control-sm" MaxLength="30" placeholder="Ej: F222-00004267"></asp:TextBox>
+                                                <label for="<%= txtFacturaNueva.ClientID %>">N° de factura <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                                <asp:TextBox ID="txtFacturaNueva" runat="server" CssClass="form-control form-control-sm" MaxLength="30" placeholder="Ej: F222-00004267" aria-required="true"></asp:TextBox>
+                                                <asp:RequiredFieldValidator ID="rfvFacturaNueva" runat="server" ControlToValidate="txtFacturaNueva"
+                                                    ErrorMessage="Escriba el número de la factura." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgFacturaLote" />
                                             </div>
                                             <div class="ld-campo">
-                                                <label for="<%= txtFacturaFecha.ClientID %>">Fecha de emisión</label>
-                                                <asp:TextBox ID="txtFacturaFecha" runat="server" CssClass="form-control form-control-sm" TextMode="Date"></asp:TextBox>
+                                                <label for="<%= txtFacturaFecha.ClientID %>">Fecha de emisión <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                                <asp:TextBox ID="txtFacturaFecha" runat="server" CssClass="form-control form-control-sm" TextMode="Date" aria-required="true"></asp:TextBox>
+                                                <asp:RequiredFieldValidator ID="rfvFacturaFecha" runat="server" ControlToValidate="txtFacturaFecha"
+                                                    ErrorMessage="Indique la fecha de emisión de la factura." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgFacturaLote" />
                                             </div>
                                             <div class="ld-campo">
                                                 <label for="<%= txtFacturaValor.ClientID %>">Valor total</label>
@@ -690,7 +695,7 @@
                                             </div>
                                         </div>
                                         <asp:Button ID="btnRegistrarFactura" runat="server" Text="Registrar factura"
-                                            CssClass="btn btn-primary btn-sm" OnClick="btnRegistrarFactura_Click" CausesValidation="false" />
+                                            CssClass="btn btn-primary btn-sm" OnClick="btnRegistrarFactura_Click" ValidationGroup="vgFacturaLote" />
                                     </div>
                                     </asp:Panel>
                                     <asp:Panel ID="pnlSubirPdfFactura" runat="server" CssClass="ld-doc-subir" Visible="false">
@@ -715,12 +720,18 @@
                                         <div class="ld-doc-registrar-titulo">Registrar CPIC</div>
                                         <div class="ld-doc-campos">
                                             <div class="ld-campo ld-campo-ancho">
-                                                <label for="<%= txtCpicNuevo.ClientID %>">N° de CPIC (7 dígitos)</label>
-                                                <asp:TextBox ID="txtCpicNuevo" runat="server" CssClass="form-control form-control-sm" MaxLength="7" placeholder="Ej: 1234567"></asp:TextBox>
+                                                <label for="<%= txtCpicNuevo.ClientID %>">N° de CPIC (7 dígitos) <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                                <asp:TextBox ID="txtCpicNuevo" runat="server" CssClass="form-control form-control-sm" MaxLength="7" placeholder="Ej: 1234567" inputmode="numeric" aria-required="true"></asp:TextBox>
+                                                <asp:RequiredFieldValidator ID="rfvCpicNuevo" runat="server" ControlToValidate="txtCpicNuevo"
+                                                    ErrorMessage="Escriba el número de la CPIC." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgCpicLote" />
+                                                <asp:RegularExpressionValidator ID="revCpicNuevo" runat="server" ControlToValidate="txtCpicNuevo" ValidationExpression="^\s*\d{7}\s*$"
+                                                    ErrorMessage="El número de CPIC debe tener 7 dígitos." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgCpicLote" />
                                             </div>
                                             <div class="ld-campo">
-                                                <label for="<%= txtCpicFecha.ClientID %>">Fecha de emisión</label>
-                                                <asp:TextBox ID="txtCpicFecha" runat="server" CssClass="form-control form-control-sm" TextMode="Date"></asp:TextBox>
+                                                <label for="<%= txtCpicFecha.ClientID %>">Fecha de emisión <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                                <asp:TextBox ID="txtCpicFecha" runat="server" CssClass="form-control form-control-sm" TextMode="Date" aria-required="true"></asp:TextBox>
+                                                <asp:RequiredFieldValidator ID="rfvCpicFecha" runat="server" ControlToValidate="txtCpicFecha"
+                                                    ErrorMessage="Indique la fecha de emisión de la CPIC." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgCpicLote" />
                                             </div>
                                             <div class="ld-campo">
                                                 <label for="<%= txtCpicFlete.ClientID %>">Valor del flete</label>
@@ -728,7 +739,7 @@
                                             </div>
                                         </div>
                                         <asp:Button ID="btnRegistrarCpic" runat="server" Text="Registrar CPIC"
-                                            CssClass="btn btn-primary btn-sm" OnClick="btnRegistrarCpic_Click" CausesValidation="false" />
+                                            CssClass="btn btn-primary btn-sm" OnClick="btnRegistrarCpic_Click" ValidationGroup="vgCpicLote" />
                                     </asp:Panel>
                                     <asp:Panel ID="pnlSubirPdfCpic" runat="server" CssClass="ld-doc-subir" Visible="false">
                                         <label class="ld-doc-elegir">

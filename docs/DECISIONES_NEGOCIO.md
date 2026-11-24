@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-31 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-32 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -51,6 +51,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-29 | Contabilidad: liquidaciones aprobadas de los últimos 90 días al abrir, 50 por página (opción recomendada, a confirmar) |
 | DN-30 | Gráficos con su paleta propia de datos; tarjetas grandes de totales fuera (aspecto aprobado de E5-12) |
 | DN-31 | Pantallas de buscar y editar (E5-17): saldo por moneda, PDF firmado, filtros plegados en el celular (opción recomendada, a confirmar) |
+| DN-32 | Factura y CPIC registradas a mano: número y fecha obligatorios, valor opcional |
 
 ---
 
@@ -277,6 +278,16 @@ delegación del usuario (bloque 5, D2).
 - Desde: 2026-11-17, `c5c4d21` (y `b06752f` para placas únicas).
 - En el código: `WebSGV/Services/Vehiculos/VehiculoService.cs:21-26` y `:212` (cambiar solo el formato siempre se
   permite).
+- Estado: vigente.
+
+### DN-32 — Factura y CPIC registradas a mano: número y fecha obligatorios, valor opcional
+En "Documentos del lote" de ListaDespachos, al registrar una factura o una CPIC a mano se exigen el número y la fecha;
+el "Valor total" de la factura y el "Valor del flete" de la CPIC son opcionales (quedan en 0), porque el valor lo toma
+la Bandeja de documentos al leer el ZIP del pedido (factura y CPIC). En RegistroDespacho sigue exigiéndose un valor
+mayor que 0. Decisión del usuario (2026-11-24, E5-20).
+- Desde: 2026-11-24, E5-20b.
+- En el código: `WebSGV/Views/ListaDespachos.aspx` (grupos `vgFacturaLote` y `vgCpicLote`, sin validador en los valores);
+  `WebSGV/Services/Despachos/BandejaDocumentosService.cs:1141` y `:1367` (valor leído de los documentos).
 - Estado: vigente.
 
 ## 4. Seguimiento de exportación

@@ -76,7 +76,7 @@
 /* CPIC de la descarga: opcional (puede llegar después de la programación) */
 .rd-opcional { display: none; }
 .rd-cpic-opcional .rd-opcional { display: inline; }
-.rd-cpic-opcional .rd-req { display: none; }
+.rd-cpic-opcional .sgv-obligatorio { display: none; }
 .rd-carga-celda { min-width: 260px; }
 .rd-doc-dato { display: block; font-size: .75rem; color: var(--sgv-texto-suave); min-height: 1.1rem; margin-bottom: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rd-fila-registrada > td { opacity: .55; }

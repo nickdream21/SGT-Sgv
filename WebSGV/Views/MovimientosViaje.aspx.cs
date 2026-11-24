@@ -130,6 +130,8 @@ namespace WebSGV.Views
             // funciona); el recibido se consume justo antes de escribir.
             string token = hfEnvioUnico.Value;
             EnvioUnicoHelper.Emitir(ClaveEnvioUnico, hfEnvioUnico);
+            // Validadores del grupo vgMovimiento (sin JS llegan aquí): el token recibido queda sin consumir.
+            if (!Page.IsValid) return;
             try
             {
                 if (!DateTime.TryParseExact(txtFecha.Text, new[] { "yyyy-MM-ddTHH:mm", "yyyy-MM-ddTHH:mm:ss" },
@@ -201,8 +203,35 @@ namespace WebSGV.Views
             }
         }
 
+        // ---------- Validadores con condición (el cliente, en MovimientosViaje.js) ----------
+
+        private bool EsPagoDirecto => rblTipo.SelectedValue == MovimientosViajeService.PagoDirecto;
+
+        protected void cvProveedor_ServerValidate(object source, ServerValidateEventArgs args) =>
+            args.IsValid = !EsPagoDirecto || !string.IsNullOrWhiteSpace(args.Value);
+
+        protected void cvOperacion_ServerValidate(object source, ServerValidateEventArgs args) =>
+            args.IsValid = !(ddlMedio.SelectedValue == "YAPE" || ddlMedio.SelectedValue == "TRANSFERENCIA")
+                || !string.IsNullOrWhiteSpace(args.Value);
+
+        /// <summary>
+        /// Soles o dólares distinto de 0 (vacío = 0). Un monto ilegible pasa aquí: su formato lo rechaza
+        /// MontoHelper.LeerMonto con el nombre del campo.
+        /// </summary>
+        protected void cvMonto_ServerValidate(object source, ServerValidateEventArgs args) =>
+            args.IsValid = MontoNoCero(txtSoles.Text) != false || MontoNoCero(txtDolares.Text) != false;
+
+        /// <summary>true si el monto es distinto de 0, false si es 0 o está vacío, null si no se puede leer.</summary>
+        public static bool? MontoNoCero(string texto)
+        {
+            if (string.IsNullOrWhiteSpace(texto)) return false;
+            if (!MontoHelper.IntentarLeerMonto(texto, out decimal monto)) return null;
+            return monto != 0;
+        }
+
         protected void btnAnular_Click(object sender, EventArgs e)
         {
+            if (!Page.IsValid) return;
             try
             {
                 if (!int.TryParse(hfIdAnular.Value, out int id) || id <= 0) return;

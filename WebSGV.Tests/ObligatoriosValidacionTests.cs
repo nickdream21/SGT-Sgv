@@ -21,16 +21,6 @@ namespace WebSGV.Tests
     public class ObligatoriosValidacionTests
     {
         /// <summary>
-        /// Páginas que pasan a la forma común en E5-20b: quedan fuera de las reglas (a) a (e) hasta entonces.
-        /// Esta lista debe quedar vacía al cerrar E5-20b (y entonces se borra junto con su uso).
-        /// </summary>
-        public static readonly string[] PendientesE5_20b =
-        {
-            "Views/MovimientosViaje.aspx", "Views/GestionUsuarios.aspx", "Views/ListaDespachos.aspx",
-            "Views/RegistroDespacho.aspx", "Views/LiquidacionesPendientes.aspx"
-        };
-
-        /// <summary>
         /// Campos con asterisco sin RequiredFieldValidator (lista cerrada, con su motivo). Cada uno debe seguir
         /// existiendo en alguna página.
         /// </summary>
@@ -51,7 +41,21 @@ namespace WebSGV.Tests
             ["txtConfirmarContrasena"] = "validado por su JS (SiteMaster-2.js, campos en <template>)",
         };
 
-        /// <summary>Asteriscos que no van en una etiqueta (encabezado de columna de una tabla).</summary>
+        /// <summary>
+        /// Campos con asterisco cuyo aria-required lo pone el servidor en cada respuesta (no el marcado: un atributo
+        /// del marcado quitado en un postback vuelve en el siguiente). Lista cerrada, con su motivo.
+        /// </summary>
+        public static readonly Dictionary<string, string> AriaRequiredDesdeElServidor = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["txtNumeroCPICBase"] = "RegistroDespacho.AriaRequiredCpic: CPIC opcional en la descarga internacional",
+            ["txtFechaEmisionCPICBase"] = "RegistroDespacho.AriaRequiredCpic: CPIC opcional en la descarga internacional",
+            ["txtValorFleteBase"] = "RegistroDespacho.AriaRequiredCpic: CPIC opcional en la descarga internacional",
+        };
+
+        /// <summary>
+        /// Asteriscos que no van en una etiqueta (encabezado de columna de una tabla): en la vista previa del ZIP
+        /// la carreta se elige por fila y el servidor la exige (RegistroDespacho, PrepararImportacion).
+        /// </summary>
         private static readonly Regex EncabezadoConAsterisco = new Regex(@"<th\b[^>]*>\s*Carreta\s*$", RegexOptions.IgnoreCase);
 
         private static readonly Regex Asterisco = new Regex(@"<span\b(?<a>[^>]*)>\s*\*\s*</span>", RegexOptions.IgnoreCase);
@@ -60,6 +64,15 @@ namespace WebSGV.Tests
         private static readonly Regex ForDeEtiqueta = new Regex(@"\bfor\s*=\s*""(?:<%=\s*(?<id>\w+)\.ClientID\s*%>|(?<id>[\w-]+))""", RegexOptions.IgnoreCase);
         internal static readonly Regex Validador = new Regex(
             @"<asp:(?<tipo>RequiredField|RegularExpression|Custom|Compare|Range)Validator\b(?<a>[^>]*?)(?<fin>/>|>)",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        /// <summary>
+        /// Grupo de opciones (RadioButtonList) nombrado por un &lt;span id="x"&gt; seguido de
+        /// &lt;div role="radiogroup" aria-labelledby="x"&gt;: un &lt;label for&gt; no puede nombrar un grupo, así que el
+        /// asterisco va en ese span y aria-required en el div.
+        /// </summary>
+        private static readonly Regex GrupoDeOpciones = new Regex(
+            @"<span\b(?<a>[^>]*)>(?<c>(?:[^<]|<(?!/?span\b)[^>]*>|<span\b[^>]*>[^<]*</span>)*)</span>\s*" +
+            @"<div\b(?<d>[^>]*\brole=""radiogroup""[^>]*)>\s*<asp:RadioButtonList\b[^>]*?\bID=""(?<id>\w+)""",
             RegexOptions.IgnoreCase | RegexOptions.Singleline);
         private static readonly Regex Boton = new Regex(@"<asp:(?:Button|LinkButton|ImageButton)\b(?<a>[^>]*?)/?>",
             RegexOptions.IgnoreCase | RegexOptions.Singleline);
@@ -79,10 +92,26 @@ namespace WebSGV.Tests
             return m.Success ? m.Groups["v"].Value : null;
         }
 
-        private static bool EsPendiente(Pagina p) =>
-            PendientesE5_20b.Contains(p.Ruta, StringComparer.OrdinalIgnoreCase);
+        internal sealed class GrupoConAsterisco
+        {
+            public string Id { get; set; }       // ID de la RadioButtonList
+            public int Inicio { get; set; }      // tramo del span que la nombra
+            public int Fin { get; set; }
+            public string Div { get; set; }      // atributos del div role="radiogroup"
+        }
 
-        private static List<Pagina> Revisadas() => Paginas().Where(p => !EsPendiente(p)).ToList();
+        /// <summary>Grupos de opciones cuyo span de nombre lleva sgv-obligatorio (ver <see cref="GrupoDeOpciones"/>).</summary>
+        internal static List<GrupoConAsterisco> GruposConAsterisco(string texto) =>
+            GrupoDeOpciones.Matches(texto).Cast<Match>()
+                .Where(m => m.Groups["c"].Value.Contains("sgv-obligatorio")
+                         && Atributo(m.Groups["a"].Value, "id") != null
+                         && Atributo(m.Groups["d"].Value, "aria-labelledby") == Atributo(m.Groups["a"].Value, "id"))
+                .Select(m => new GrupoConAsterisco
+                {
+                    Id = m.Groups["id"].Value, Inicio = m.Index, Fin = m.Groups["c"].Index + m.Groups["c"].Length,
+                    Div = m.Groups["d"].Value
+                })
+                .ToList();
 
         /// <summary>Id del control al que apunta la etiqueta que encierra la posición, o null si no está en una.</summary>
         private static string IdDeEtiquetaQueEncierra(string texto, int indice, out bool enEtiqueta)
@@ -106,6 +135,10 @@ namespace WebSGV.Tests
                 .Where(f => f.Success)
                 .Select(f => f.Groups["id"].Value)
                 .ToList();
+
+        /// <summary>Lo de <see cref="CamposConAsterisco"/> más los grupos de opciones con asterisco.</summary>
+        internal static List<string> ObligatoriosMarcados(string texto) =>
+            CamposConAsterisco(texto).Concat(GruposConAsterisco(texto).Select(g => g.Id)).ToList();
 
         /// <summary>
         /// Atributo <c>required</c> nativo (no aria-required ni la palabra dentro de un valor, p. ej. una clase):
@@ -146,6 +179,13 @@ namespace WebSGV.Tests
             Assert.True(v.Success);
             Assert.Equal("*", Atributo(v.Groups["a"].Value, "Text"));
             Assert.Null(Atributo("ErrorMessage=\"Texto\"", "Text"));
+
+            var grupos = GruposConAsterisco(
+                "<span class=\"sgv-etiqueta\" id=\"lblA\">\n<strong>Ámbito:</strong>\n<span class=\"sgv-obligatorio\" aria-hidden=\"true\">*</span>\n</span>\n" +
+                "<div role=\"radiogroup\" aria-labelledby=\"lblA\" aria-required=\"true\">\n<asp:RadioButtonList ID=\"rblA\" runat=\"server\" />" +
+                "<span id=\"lblB\">Tipo</span><div role=\"radiogroup\" aria-labelledby=\"lblB\"><asp:RadioButtonList ID=\"rblB\" runat=\"server\" />");
+            Assert.Equal(new[] { "rblA" }, grupos.Select(g => g.Id));
+            Assert.Contains("aria-required=\"true\"", grupos[0].Div);
         }
 
         // ── (a) Asterisco con la forma común ─────────────────────────────────────────────
@@ -154,7 +194,7 @@ namespace WebSGV.Tests
         public void A_AsteriscosConLaFormaComun()
         {
             var fallas = new List<string>();
-            foreach (var p in Revisadas())
+            foreach (var p in Paginas())
             {
                 foreach (Match m in Regex.Matches(p.Texto, @"text-danger[^""]*"">\s*\*|sgv-etiqueta required|\brd-req\b"))
                     fallas.Add($"{p.Ruta}:{p.Linea(m.Index)} forma vieja: {m.Value}");
@@ -175,13 +215,20 @@ namespace WebSGV.Tests
         public void A_ControlConAsterisco_LlevaAriaRequired()
         {
             var fallas = new List<string>();
-            foreach (var p in Revisadas())
+            foreach (var p in Paginas())
                 foreach (string id in CamposConAsterisco(p.Texto))
                 {
                     var control = Regex.Match(p.Texto, @"<(?:asp:\w+|input|select|textarea)\b[^>]*\b(?:ID|id)=""" + Regex.Escape(id) + @"""[^>]*>");
                     if (!control.Success) fallas.Add($"{p.Ruta}: no se encontró el control {id}");
+                    else if (AriaRequiredDesdeElServidor.ContainsKey(id))
+                    {
+                        if (control.Value.Contains("aria-required")) fallas.Add($"{p.Ruta}:{p.Linea(control.Index)} {id}: su aria-required lo pone el servidor, no el marcado");
+                    }
                     else if (!control.Value.Contains("aria-required=\"true\"")) fallas.Add($"{p.Ruta}:{p.Linea(control.Index)} {id} sin aria-required=\"true\"");
                 }
+            foreach (var p in Paginas())
+                foreach (var g in GruposConAsterisco(p.Texto))
+                    if (!g.Div.Contains("aria-required=\"true\"")) fallas.Add($"{p.Ruta}:{p.Linea(g.Inicio)} grupo {g.Id}: su div role=\"radiogroup\" sin aria-required=\"true\"");
             Assert.True(fallas.Count == 0, "Campos con asterisco sin aria-required:\n" + string.Join("\n", fallas));
         }
 
@@ -191,7 +238,7 @@ namespace WebSGV.Tests
         public void B_TodoAsterisco_TieneValidadorDeObligatorio()
         {
             var fallas = new List<string>();
-            foreach (var p in Revisadas())
+            foreach (var p in Paginas())
             {
                 var obligatorios = new HashSet<string>(StringComparer.Ordinal);
                 foreach (Match v in Validador.Matches(p.Texto))
@@ -202,13 +249,16 @@ namespace WebSGV.Tests
                             && string.Equals(Atributo(a, "ValidateEmptyText"), "true", StringComparison.OrdinalIgnoreCase));
                     if (cuenta && control != null) obligatorios.Add(control);
                 }
+                var grupos = GruposConAsterisco(p.Texto);
                 foreach (Match m in Asterisco.Matches(p.Texto))
                 {
                     string id = IdDeEtiquetaQueEncierra(p.Texto, m.Index, out bool enEtiqueta);
+                    var grupo = grupos.FirstOrDefault(g => m.Index >= g.Inicio && m.Index < g.Fin);
+                    if (!enEtiqueta && grupo != null) { id = grupo.Id; enEtiqueta = true; }
                     if (!enEtiqueta)
                     {
                         if (!EncabezadoConAsterisco.IsMatch(p.Texto.Substring(0, m.Index)))
-                            fallas.Add($"{p.Ruta}:{p.Linea(m.Index)} asterisco fuera de una <label>");
+                            fallas.Add($"{p.Ruta}:{p.Linea(m.Index)} asterisco fuera de una <label> (o del nombre de un grupo de opciones)");
                         continue;
                     }
                     if (id == null) { fallas.Add($"{p.Ruta}:{p.Linea(m.Index)} etiqueta con asterisco sin for"); continue; }
@@ -235,9 +285,9 @@ namespace WebSGV.Tests
         public void C_TodoObligatorio_TieneAsteriscoEnSuCampo()
         {
             var fallas = new List<string>();
-            foreach (var p in Revisadas())
+            foreach (var p in Paginas())
             {
-                var conAsterisco = new HashSet<string>(CamposConAsterisco(p.Texto), StringComparer.Ordinal);
+                var conAsterisco = new HashSet<string>(ObligatoriosMarcados(p.Texto), StringComparer.Ordinal);
                 foreach (Match v in Validador.Matches(p.Texto))
                 {
                     if (!v.Groups["tipo"].Value.Equals("RequiredField", StringComparison.OrdinalIgnoreCase)) continue;
@@ -256,7 +306,7 @@ namespace WebSGV.Tests
         {
             var fallas = new List<string>();
             int revisados = 0;
-            foreach (var p in Revisadas())
+            foreach (var p in Paginas())
                 foreach (Match v in Validador.Matches(p.Texto))
                 {
                     revisados++;
@@ -281,7 +331,7 @@ namespace WebSGV.Tests
             foreach (var p in Paginas())
                 foreach (Match m in Regex.Matches(p.Texto, @"<asp:ValidationSummary\b", RegexOptions.IgnoreCase))
                     fallas.Add($"{p.Ruta}:{p.Linea(m.Index)} ValidationSummary (el mensaje va junto al campo)");
-            foreach (var p in Revisadas())
+            foreach (var p in Paginas())
                 foreach (int i in RequiredNativos(p.Texto))
                     fallas.Add($"{p.Ruta}:{p.Linea(i)} required nativo (use un RequiredFieldValidator con grupo)");
             Assert.True(fallas.Count == 0, string.Join("\n", fallas));
@@ -293,7 +343,7 @@ namespace WebSGV.Tests
         public void E_CadaGrupo_TieneBotonYValidadores()
         {
             var fallas = new List<string>();
-            foreach (var p in Revisadas())
+            foreach (var p in Paginas())
             {
                 var deValidadores = new HashSet<string>(Validador.Matches(p.Texto).Cast<Match>()
                     .Select(v => Atributo(v.Groups["a"].Value, "ValidationGroup")).Where(g => !string.IsNullOrEmpty(g)), StringComparer.Ordinal);
@@ -310,7 +360,7 @@ namespace WebSGV.Tests
         {
             var fallas = new List<string>();
             int revisados = 0;
-            foreach (var p in Revisadas().Where(x => x.Ruta.EndsWith(".aspx", StringComparison.OrdinalIgnoreCase)))
+            foreach (var p in Paginas().Where(x => x.Ruta.EndsWith(".aspx", StringComparison.OrdinalIgnoreCase)))
             {
                 string rutaCs = Path.Combine(RaizWeb(), p.Ruta.Replace('/', Path.DirectorySeparatorChar) + ".cs");
                 foreach (Match b in Boton.Matches(p.Texto))
@@ -424,12 +474,165 @@ namespace WebSGV.Tests
             Assert.Matches(@"\.sgv-campo-error\s*\{[^}]*display:\s*block;[^}]*color:\s*var\(--sgv-peligro\);", css);
         }
 
-        [Fact]
-        public void PendientesE5_20b_SonPaginasQueExisten()
+        // ── (h) E5-20b: botones que ganaron grupo y su revisión en el servidor ───────────
+
+        /// <summary>
+        /// Botones que validan un grupo (antes CausesValidation="false" o sin grupo) y si su manejador empieza con
+        /// if (!Page.IsValid). btnGuardarUsuario no: btnConfirmarReaut_Click lo llama tras la contraseña del
+        /// administrador, en un postback que valida otro grupo (vgReaut), y repite él mismo cada regla.
+        /// </summary>
+        [Theory]
+        [InlineData("Views/MovimientosViaje.aspx", "btnRegistrar", "vgMovimiento", true)]
+        [InlineData("Views/MovimientosViaje.aspx", "btnAnular", "vgAnular", true)]
+        [InlineData("Views/GestionUsuarios.aspx", "btnGuardarUsuario", "vgUsuario", false)]
+        [InlineData("Views/GestionUsuarios.aspx", "btnResetPass", "vgReset", true)]
+        [InlineData("Views/GestionUsuarios.aspx", "btnConfirmarReaut", "vgReaut", true)]
+        [InlineData("Views/ListaDespachos.aspx", "btnRegistrarFactura", "vgFacturaLote", true)]
+        [InlineData("Views/ListaDespachos.aspx", "btnRegistrarCpic", "vgCpicLote", true)]
+        [InlineData("Views/RegistroDespacho.aspx", "btnProgramarDespachos", "vgProgramar", true)]
+        [InlineData("Views/RegistroDespacho.aspx", "btnAplicarImportacion", "vgImportar", true)]
+        [InlineData("Views/RegistroDespacho.aspx", "btnAplicarDescarga", "vgDescarga", true)]
+        public void H_BotonesConSuGrupo_YPageIsValidEnElServidor(string ruta, string id, string grupo, bool revisaIsValid)
         {
-            var rutas = Paginas().Select(p => p.Ruta).ToList();
-            foreach (var r in PendientesE5_20b)
-                Assert.Contains(r, rutas, StringComparer.OrdinalIgnoreCase);
+            var b = Boton.Matches(PaginaDe(ruta).Texto).Cast<Match>().SingleOrDefault(m => Atributo(m.Groups["a"].Value, "ID") == id);
+            Assert.NotNull(b);
+            string a = b.Groups["a"].Value;
+            Assert.Equal(grupo, Atributo(a, "ValidationGroup"));
+            Assert.Null(Atributo(a, "CausesValidation"));
+
+            string cs = File.ReadAllText(Path.Combine(RaizWeb(), ruta.Replace('/', Path.DirectorySeparatorChar) + ".cs"));
+            string manejador = Atributo(a, "OnClick");
+            int inicio = cs.IndexOf("protected void " + manejador + "(object sender, EventArgs e)", StringComparison.Ordinal);
+            Assert.True(inicio >= 0, manejador);
+            int fin = cs.IndexOf("protected void ", inicio + 1, StringComparison.Ordinal);
+            string cuerpo = cs.Substring(inicio, (fin < 0 ? cs.Length : fin) - inicio);
+            Assert.Equal(revisaIsValid, cuerpo.Contains("if (!Page.IsValid)"));
+        }
+
+        /// <summary>
+        /// data-confirmar corre antes que la validación (SiteMaster.js): un botón con grupo y confirmación lleva
+        /// data-validar-grupo con su mismo grupo, para validar antes de preguntar.
+        /// </summary>
+        [Fact]
+        public void H_BotonConGrupoYConfirmacion_ValidaAntesDePreguntar()
+        {
+            var fallas = new List<string>();
+            int revisados = 0;
+            foreach (var p in Paginas())
+                foreach (Match b in Boton.Matches(p.Texto))
+                {
+                    string a = b.Groups["a"].Value, grupo = Atributo(a, "ValidationGroup");
+                    if (string.IsNullOrEmpty(grupo) || Atributo(a, "data-confirmar") == null) continue;
+                    revisados++;
+                    if (Atributo(a, "data-validar-grupo") != grupo)
+                        fallas.Add($"{p.Ruta}:{p.Linea(b.Index)} {Atributo(a, "ID")}: data-confirmar sin data-validar-grupo=\"{grupo}\"");
+                }
+            Assert.True(revisados > 0, "Se esperaba al menos btnGuardarCambios de ListaDespachos.");
+            Assert.True(fallas.Count == 0, string.Join("\n", fallas));
+
+            string js = File.ReadAllText(Path.Combine(RaizWeb(), "Scripts", "paginas", "SiteMaster.js"));
+            Assert.Contains("var grupoValidar = el.getAttribute('data-validar-grupo');", js);
+            // Sin submit que lo consuma, Page_BlockSubmit se repone (si no, el siguiente envío de la página se pierde).
+            Assert.Matches(@"!window\.Page_ClientValidate\(grupoValidar\)\) \{\s*window\.Page_BlockSubmit = false;\s*return;\s*\}", js);
+        }
+
+        [Fact]
+        public void H_MovimientosViaje_MotivoDeAnulacionComoElSp()
+        {
+            string texto = PaginaDe("Views/MovimientosViaje.aspx").Texto;
+            var rev = Validador.Matches(texto).Cast<Match>().Single(v => Atributo(v.Groups["a"].Value, "ID") == "revMotivoAnular");
+            var rx = new Regex(WebUtility.HtmlDecode(Atributo(rev.Groups["a"].Value, "ValidationExpression")));
+            bool Acepta(string v) { var m = rx.Match(v); return m.Success && m.Value == v; }
+            // sp_LD_AnularMovimientoViaje: LEN(LTRIM(RTRIM(@motivo))) >= 10.
+            foreach (var bueno in new[] { "Duplicado!", "  Se registró dos veces.  ", "Línea uno\nlínea dos" })
+                Assert.True(Acepta(bueno), "Debería aceptar «" + bueno + "»");
+            foreach (var malo in new[] { "corto", "abc       ", "     abc  d" })
+                Assert.False(Acepta(malo), "Debería rechazar «" + malo + "»");
+        }
+
+        [Theory]
+        [InlineData("", false)]
+        [InlineData("  ", false)]
+        [InlineData("0", false)]
+        [InlineData("0,00", false)]
+        [InlineData("12,5", true)]
+        [InlineData("1.250,00", null)]
+        public void H_MovimientosViaje_MontoNoCero(string texto, bool? esperado)
+        {
+            Assert.Equal(esperado, WebSGV.Views.MovimientosViaje.MontoNoCero(texto));
+        }
+
+        /// <summary>Los errores que valida el script de LiquidacionesPendientes se pintan con SGV.marcarError/limpiarError.</summary>
+        [Fact]
+        public void H_LiquidacionesPendientes_DelegaEnMarcarError()
+        {
+            string js = File.ReadAllText(Path.Combine(RaizWeb(), "Scripts", "paginas", "LiquidacionesPendientes.js"));
+            string Cuerpo(string firma)
+            {
+                int i = js.IndexOf(firma, StringComparison.Ordinal);
+                Assert.True(i >= 0, firma);
+                int f = js.IndexOf("\nfunction ", i + 1, StringComparison.Ordinal);
+                return js.Substring(i, (f < 0 ? js.Length : f) - i);
+            }
+            Assert.Contains("SGV.marcarError(", Cuerpo("function mostrarErrorCampo("));
+            Assert.DoesNotContain("addClass('is-invalid')", Cuerpo("function mostrarErrorCampo("));
+            Assert.Contains("SGV.limpiarError(", Cuerpo("function limpiarErroresFormulario("));
+            Assert.DoesNotContain("$('.is-invalid')", js);
+
+            string aspx = PaginaDe("Views/LiquidacionesPendientes.aspx").Texto;
+            Assert.DoesNotMatch(@"<small\b[^>]*\bid=""error\w+""[^>]*\btext-danger\b|<small\b[^>]*\btext-danger\b[^>]*\bid=""error\w+""", aspx);
+        }
+
+        /// <summary>
+        /// Campos obligatorios según otro dato: el asterisco existe en el marcado (con aria-required) y su script lo
+        /// muestra u oculta; el validador es un CustomValidator con ValidateEmptyText y función de cliente.
+        /// </summary>
+        [Theory]
+        [InlineData("Views/MovimientosViaje.aspx", "cvOperacion", "mvObligOperacion", "Scripts/paginas/MovimientosViaje.js")]
+        [InlineData("Views/GestionUsuarios.aspx", "cvConductor", "guObligConductor", "Scripts/paginas/GestionUsuarios.js")]
+        public void H_ObligatorioCondicional_AsteriscoQueMuestraSuScript(string ruta, string validador, string asterisco, string script)
+        {
+            string texto = PaginaDe(ruta).Texto;
+            var v = Validador.Matches(texto).Cast<Match>().Single(m => Atributo(m.Groups["a"].Value, "ID") == validador);
+            Assert.Equal("true", Atributo(v.Groups["a"].Value, "ValidateEmptyText"));
+            string funcion = Atributo(v.Groups["a"].Value, "ClientValidationFunction");
+            Assert.False(string.IsNullOrEmpty(funcion));
+            Assert.Contains("id=\"" + asterisco + "\" class=\"sgv-obligatorio\"", texto);
+
+            string js = File.ReadAllText(Path.Combine(RaizWeb(), script.Replace('/', Path.DirectorySeparatorChar)));
+            Assert.Contains("function " + funcion + "(val, args)", js);
+            Assert.Contains("getElementById('" + asterisco + "')", js);
+            Assert.Contains("removeAttribute('aria-required')", js);
+        }
+
+        [Fact]
+        public void A_AriaRequiredDesdeElServidor_LoPoneOnPreRender()
+        {
+            string cs = File.ReadAllText(Path.Combine(RaizWeb(), "Views", "RegistroDespacho.aspx.cs"));
+            int pre = cs.IndexOf("protected override void OnPreRender(EventArgs e)", StringComparison.Ordinal);
+            Assert.True(pre >= 0);
+            Assert.Contains("AriaRequiredCpic();", cs.Substring(pre, cs.IndexOf("\n        }", pre, StringComparison.Ordinal) - pre));
+            int metodo = cs.IndexOf("private void AriaRequiredCpic()", StringComparison.Ordinal);
+            Assert.True(metodo >= 0);
+            string cuerpo = cs.Substring(metodo, cs.IndexOf("\n        }", metodo, StringComparison.Ordinal) - metodo);
+            foreach (var id in AriaRequiredDesdeElServidor.Keys) Assert.Contains(id, cuerpo);
+            Assert.Contains("Attributes[\"aria-required\"] = exigida ? \"true\" : \"false\"", cuerpo);
+            Assert.DoesNotContain("Attributes.Remove(\"aria-required\")", cs);
+        }
+
+        [Fact]
+        public void H_RegistroDespacho_SinGuiaRemitenteObligatoriaNiPlantaPorDefecto()
+        {
+            string texto = PaginaDe("Views/RegistroDespacho.aspx").Texto;
+            Assert.DoesNotContain("rfvGuiaRemitente", texto);
+            Assert.DoesNotContain("rfvGuiaRemitente", File.ReadAllText(Path.Combine(RaizWeb(), "Views", "RegistroDespacho.aspx.cs")));
+            Assert.DoesNotContain("ddlPlantaDescarga", string.Join(" ", ObligatoriosMarcados(texto)));
+            string css = File.ReadAllText(Path.Combine(RaizWeb(), "Content", "paginas", "RegistroDespacho.css"));
+            Assert.Contains(".rd-cpic-opcional .sgv-obligatorio { display: none; }", css);
+            Assert.DoesNotContain("rd-req", css);
+            string ld = File.ReadAllText(Path.Combine(RaizWeb(), "Content", "paginas", "ListaDespachos.css"));
+            Assert.DoesNotContain(".required::after", ld);
+            Assert.DoesNotContain(".field-error", ld);
         }
     }
 }

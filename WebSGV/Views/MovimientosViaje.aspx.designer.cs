@@ -46,5 +46,12 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.HiddenField hfIdAnular;
         protected global::System.Web.UI.WebControls.TextBox txtMotivoAnular;
         protected global::System.Web.UI.WebControls.Button btnAnular;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvConductor;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvFecha;
+        protected global::System.Web.UI.WebControls.CustomValidator cvMonto;
+        protected global::System.Web.UI.WebControls.CustomValidator cvOperacion;
+        protected global::System.Web.UI.WebControls.CustomValidator cvProveedor;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvMotivoAnular;
+        protected global::System.Web.UI.WebControls.RegularExpressionValidator revMotivoAnular;
     }
 }

@@ -661,15 +661,6 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtGuiaRemitente;
 
         /// <summary>
-        /// Control rfvGuiaRemitente.
-        /// </summary>
-        /// <remarks>
-        /// Campo generado automáticamente.
-        /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvGuiaRemitente;
-
-        /// <summary>
         /// Control pnlGuiaTransportistaConductor.
         /// </summary>
         /// <remarks>
@@ -1544,5 +1535,12 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnQuitarDescarga;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvClienteProg;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvFechaProg;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvPlantaProg;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvClienteImp;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvFechaProgramacionImp;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvPlantaImp;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvFechaDescarga;
     }
 }

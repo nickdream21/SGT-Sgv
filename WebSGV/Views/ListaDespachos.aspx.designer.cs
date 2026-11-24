@@ -1138,5 +1138,12 @@ namespace WebSGV.Views
         /// Para modificarlo, mueva la declaración del campo del archivo del diseñador al archivo de código subyacente.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Literal litResumenLote;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvTipoOperacionEdit;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvAmbitoEdit;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvFacturaNueva;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvFacturaFecha;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvCpicNuevo;
+        protected global::System.Web.UI.WebControls.RegularExpressionValidator revCpicNuevo;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvCpicFecha;
     }
 }

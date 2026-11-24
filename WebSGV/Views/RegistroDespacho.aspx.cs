@@ -102,6 +102,19 @@ namespace WebSGV.Views
             // Importación o descarga preparadas esperan "Iniciar lote", que está en el formulario manual.
             if (pnlImportacionAplicada.Visible || pnlDescargaAplicada.Visible)
                 hfManualAbierto.Value = "1";
+            AriaRequiredCpic();
+        }
+
+        /// <summary>
+        /// aria-required de los tres campos de la CPIC, en cada respuesta y no en el marcado: un atributo del marcado
+        /// que se quita en un postback vuelve en el siguiente (no queda en el ViewState). Sigue a los RFV: la CPIC es
+        /// opcional cuando están apagados (descarga internacional, MostrarOcultarPanelesBase).
+        /// </summary>
+        private void AriaRequiredCpic()
+        {
+            bool exigida = rfvNumeroCPICBase.Enabled;
+            foreach (var campo in new System.Web.UI.WebControls.WebControl[] { txtNumeroCPICBase, txtFechaEmisionCPICBase, txtValorFleteBase })
+                campo.Attributes["aria-required"] = exigida ? "true" : "false";
         }
 
         /// <summary>El formulario manual (configuración base) se pinta abierto; si no, plegado.</summary>
@@ -424,8 +437,7 @@ namespace WebSGV.Views
             pnlGuiaTransportistaConductor.Visible = necesitaGuiaTransportista;
 
             // Guía Remitente es opcional: el panel se muestra como guía visual
-            // pero nunca bloquea el guardado.
-            rfvGuiaRemitente.Enabled = false;
+            // pero nunca bloquea el guardado (no tiene RequiredFieldValidator, solo el de formato).
             rfvGuiaTransportista.Enabled = necesitaGuiaTransportista;
 
             // Manifiesto: opcional aquí; lo habitual es adjuntarlo después desde ListaDespachos.aspx.
@@ -520,6 +532,7 @@ namespace WebSGV.Views
             bool cpicOpcional = esInternacional && tipoOperacion == "DESCARGA";
             rfvNumeroCPICBase.Enabled = rfvFechaEmisionCPICBase.Enabled = rfvValorFleteBase.Enabled = !cpicOpcional;
             pnlCPICBase.CssClass = "rd-doc-box mb-3" + (cpicOpcional ? " rd-cpic-opcional" : "");
+            // El asterisco se oculta por CSS (rd-cpic-opcional); aria-required lo pone OnPreRender (AriaRequiredCpic).
 
             lblAyudaDocumentosBase.Text = ayuda;
         }
@@ -1596,6 +1609,7 @@ namespace WebSGV.Views
         /// </summary>
         protected void btnAplicarImportacion_Click(object sender, EventArgs e)
         {
+            if (!Page.IsValid) return;
             try
             {
                 var imp = ImportacionActual;
@@ -2251,6 +2265,7 @@ namespace WebSGV.Views
 
         protected void btnProgramarDespachos_Click(object sender, EventArgs e)
         {
+            if (!Page.IsValid) return;
             try
             {
                 var p = ProgramacionNuevaActual;
@@ -2831,6 +2846,7 @@ namespace WebSGV.Views
 
         protected void btnAplicarDescarga_Click(object sender, EventArgs e)
         {
+            if (!Page.IsValid) return;
             try
             {
                 var cargas = CargasPendientesActuales;

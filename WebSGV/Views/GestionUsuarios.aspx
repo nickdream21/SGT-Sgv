@@ -134,41 +134,54 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="<%= txtNombreUsuario.ClientID %>">Nombre de usuario <span class="text-danger">*</span></label>
+                                <label for="<%= txtNombreUsuario.ClientID %>">Nombre de usuario <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
                                 <asp:TextBox ID="txtNombreUsuario" runat="server" CssClass="form-control"
-                                    placeholder="Sin espacios, ej: jperez" MaxLength="100" autocomplete="off" />
+                                    placeholder="Sin espacios, ej: jperez" MaxLength="100" autocomplete="off" aria-required="true" />
+                                <asp:RequiredFieldValidator ID="rfvNombreUsuario" runat="server" ControlToValidate="txtNombreUsuario"
+                                    ErrorMessage="Escriba el nombre de usuario." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgUsuario" />
                                 <small class="text-muted">3 a 50 caracteres: letras, números, punto y guion bajo.</small>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="<%= txtNombre.ClientID %>">Nombre completo <span class="text-danger">*</span></label>
+                                <label for="<%= txtNombre.ClientID %>">Nombre completo <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
                                 <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control"
-                                    placeholder="Ej: Juan Pérez García" MaxLength="200" />
+                                    placeholder="Ej: Juan Pérez García" MaxLength="200" aria-required="true" />
+                                <asp:RequiredFieldValidator ID="rfvNombre" runat="server" ControlToValidate="txtNombre"
+                                    ErrorMessage="Escriba el nombre completo." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgUsuario" />
                             </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="<%= ddlRol.ClientID %>">Rol <span class="text-danger">*</span></label>
-                                 <asp:DropDownList ID="ddlRol" runat="server" CssClass="form-control" />
+                                <label for="<%= ddlRol.ClientID %>">Rol <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                 <asp:DropDownList ID="ddlRol" runat="server" CssClass="form-control" aria-required="true" />
                              </div>
                          </div>
                         <asp:Panel ID="pnlContrasena" runat="server" CssClass="col-md-6">
                             <div class="form-group">
-                                <label for="<%= txtContrasena.ClientID %>">Contraseña <span class="text-danger">*</span></label>
+                                <label for="<%= txtContrasena.ClientID %>">Contraseña <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
                                 <asp:TextBox ID="txtContrasena" runat="server" CssClass="form-control"
-                                    TextMode="Password" autocomplete="new-password" /><%-- placeholder: Page_Load (PasswordHelper.TextoMinimoNueva) --%>
+                                    TextMode="Password" autocomplete="new-password" aria-required="true" /><%-- placeholder: Page_Load (PasswordHelper.TextoMinimoNueva) --%>
                                 <small class="form-text text-muted"><%: WebSGV.Helpers.PoliticaContrasena.TextoAyuda %></small>
+                                <%-- Dentro de pnlContrasena: solo en el alta (en la edición el panel no se pinta ni se valida). --%>
+                                <asp:RequiredFieldValidator ID="rfvContrasena" runat="server" ControlToValidate="txtContrasena"
+                                    ErrorMessage="Escriba la contraseña del nuevo usuario." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgUsuario" />
                             </div>
                         </asp:Panel>
                     </div>
                     <div class="row">
                         <div class="col-md-12">
                             <div class="form-group">
-                                <label for="<%= ddlConductor.ClientID %>">Conductor asociado</label>
-                                <asp:DropDownList ID="ddlConductor" runat="server" CssClass="form-control" EnableViewState="false" />
+                                <%-- Obligatorio solo con el rol Conductor: GestionUsuarios.js muestra u oculta el asterisco y aria-required. --%>
+                                <label for="<%= ddlConductor.ClientID %>">Conductor asociado <span id="guObligConductor" class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <asp:DropDownList ID="ddlConductor" runat="server" CssClass="form-control" EnableViewState="false" aria-required="true" />
+                                <%-- Sin OnServerValidate: btnGuardarUsuario_Click ya lo rechaza con su mensaje (y lo llama también
+                                     btnConfirmarReaut_Click, que valida otro grupo). --%>
+                                <asp:CustomValidator ID="cvConductor" runat="server" ControlToValidate="ddlConductor" ValidateEmptyText="true"
+                                    ClientValidationFunction="guValidarConductor"
+                                    ErrorMessage="Asocie un conductor al usuario con rol Conductor." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgUsuario" />
                                 <small class="text-muted">
                                     Es obligatorio cuando el rol es Conductor. Esta asociación determina qué viajes puede consultar y firmar el usuario.
                                 </small>
@@ -179,7 +192,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <asp:Button ID="btnGuardarUsuario" runat="server" Text="Guardar"
-                        CssClass="btn btn-primary" OnClick="btnGuardarUsuario_Click" />
+                        CssClass="btn btn-primary" OnClick="btnGuardarUsuario_Click" ValidationGroup="vgUsuario" />
                 </div>
             </div>
         </div>
@@ -211,21 +224,27 @@
                     </asp:Panel>
 
                     <div class="form-group">
-                        <label for="<%= txtNuevaPass.ClientID %>">Nueva contraseña <span class="text-danger">*</span></label>
+                        <label for="<%= txtNuevaPass.ClientID %>">Nueva contraseña <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
                         <asp:TextBox ID="txtNuevaPass" runat="server" CssClass="form-control"
-                            TextMode="Password" autocomplete="new-password" /><%-- placeholder: Page_Load (PasswordHelper.TextoMinimoNueva) --%>
+                            TextMode="Password" autocomplete="new-password" aria-required="true" /><%-- placeholder: Page_Load (PasswordHelper.TextoMinimoNueva) --%>
                         <small class="form-text text-muted"><%: WebSGV.Helpers.PoliticaContrasena.TextoAyuda %></small>
+                        <asp:RequiredFieldValidator ID="rfvNuevaPass" runat="server" ControlToValidate="txtNuevaPass"
+                            ErrorMessage="Escriba la nueva contraseña." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgReset" />
                     </div>
                     <div class="form-group mb-0">
-                        <label for="<%= txtConfirmarPass.ClientID %>">Confirmar contraseña <span class="text-danger">*</span></label>
+                        <label for="<%= txtConfirmarPass.ClientID %>">Confirmar contraseña <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
                         <asp:TextBox ID="txtConfirmarPass" runat="server" CssClass="form-control"
-                            TextMode="Password" placeholder="Repite la nueva contraseña" autocomplete="new-password" />
+                            TextMode="Password" placeholder="Repite la nueva contraseña" autocomplete="new-password" aria-required="true" />
+                        <asp:RequiredFieldValidator ID="rfvConfirmarPass" runat="server" ControlToValidate="txtConfirmarPass"
+                            ErrorMessage="Repita la nueva contraseña." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgReset" />
+                        <asp:CompareValidator ID="cmpConfirmarPass" runat="server" ControlToValidate="txtConfirmarPass" ControlToCompare="txtNuevaPass"
+                            ErrorMessage="Las contraseñas no coinciden." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgReset" />
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <asp:Button ID="btnResetPass" runat="server" Text="Restablecer"
-                        CssClass="btn btn-warning" OnClick="btnResetPass_Click" />
+                        CssClass="btn btn-warning" OnClick="btnResetPass_Click" ValidationGroup="vgReset" />
                 </div>
             </div>
         </div>
@@ -257,15 +276,17 @@
                     </asp:Panel>
 
                     <div class="form-group mb-0">
-                        <label for="<%= txtContrasenaAdmin.ClientID %>">Tu contraseña <span class="text-danger">*</span></label>
+                        <label for="<%= txtContrasenaAdmin.ClientID %>">Tu contraseña <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
                         <asp:TextBox ID="txtContrasenaAdmin" runat="server" CssClass="form-control"
-                            TextMode="Password" autocomplete="current-password" MaxLength="200" />
+                            TextMode="Password" autocomplete="current-password" MaxLength="200" aria-required="true" />
+                        <asp:RequiredFieldValidator ID="rfvContrasenaAdmin" runat="server" ControlToValidate="txtContrasenaAdmin"
+                            ErrorMessage="Escriba su contraseña." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgReaut" />
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                     <asp:Button ID="btnConfirmarReaut" runat="server" Text="Confirmar"
-                        CssClass="btn btn-primary" OnClick="btnConfirmarReaut_Click" />
+                        CssClass="btn btn-primary" OnClick="btnConfirmarReaut_Click" ValidationGroup="vgReaut" />
                 </div>
             </div>
         </div>
@@ -276,6 +297,9 @@
         // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
         var SGV = Object.assign(window.SGV || {}, {
             hfAccionReaut: '<%= hfAccionReaut.ClientID %>',
+            ddlRol: '<%= ddlRol.ClientID %>',
+            ddlConductorUsuario: '<%= ddlConductor.ClientID %>',
+            cvConductor: '<%= cvConductor.ClientID %>',
             hfArgumentoFila: '<%= hfArgumentoFila.ClientID %>',
             btnAccionFila: '<%= btnAccionFila.ClientID %>'
         });

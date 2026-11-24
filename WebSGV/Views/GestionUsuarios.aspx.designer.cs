@@ -42,5 +42,13 @@
         protected global::System.Web.UI.WebControls.Label lblMensajeReaut;
         protected global::System.Web.UI.WebControls.TextBox txtContrasenaAdmin;
         protected global::System.Web.UI.WebControls.Button btnConfirmarReaut;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvNombreUsuario;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvNombre;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvContrasena;
+        protected global::System.Web.UI.WebControls.CustomValidator cvConductor;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvNuevaPass;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvConfirmarPass;
+        protected global::System.Web.UI.WebControls.CompareValidator cmpConfirmarPass;
+        protected global::System.Web.UI.WebControls.RequiredFieldValidator rfvContrasenaAdmin;
     }
 }

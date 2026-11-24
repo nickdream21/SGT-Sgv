@@ -324,6 +324,8 @@ namespace WebSGV.Views
 
         protected void btnConfirmarReaut_Click(object sender, EventArgs e)
         {
+            // Solo el grupo vgReaut (la contraseña); el guardado que retoma no vuelve a mirar Page.IsValid.
+            if (!Page.IsValid) { AbrirModal("modalReautenticar"); return; }
             int? idActual = SesionHelper.IdUsuarioActual;
             string error = ReautenticacionHelper.Verificar(idActual ?? 0, txtContrasenaAdmin.Text,
                 PropositoReautenticacion.AdminUsuarios);
@@ -746,6 +748,7 @@ namespace WebSGV.Views
 
         protected void btnResetPass_Click(object sender, EventArgs e)
         {
+            if (!Page.IsValid) { AbrirModal("modalResetPass"); return; }
             int    idUsuario     = Convert.ToInt32(hfIdUsuarioReset.Value);
             // Recortadas las dos (se guarda recortada): una de solo espacios queda vacía y se rechaza.
             string nuevaPass     = (txtNuevaPass.Text ?? "").Trim();

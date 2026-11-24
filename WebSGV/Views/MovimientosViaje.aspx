@@ -21,9 +21,11 @@
                     <div class="sgv-panel-cab"><h5>Nuevo registro</h5></div>
                     <div class="sgv-panel-cuerpo">
                         <div class="form-group">
-                            <label class="sgv-etiqueta" for="<%= ddlConductor.ClientID %>">Conductor <span class="text-danger">*</span></label>
-                            <asp:DropDownList ID="ddlConductor" runat="server" CssClass="form-control" AutoPostBack="true"
+                            <label class="sgv-etiqueta" for="<%= ddlConductor.ClientID %>">Conductor <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                            <asp:DropDownList ID="ddlConductor" runat="server" CssClass="form-control" AutoPostBack="true" aria-required="true"
                                 OnSelectedIndexChanged="ddlConductor_SelectedIndexChanged" />
+                            <asp:RequiredFieldValidator ID="rfvConductor" runat="server" ControlToValidate="ddlConductor" InitialValue=""
+                                ErrorMessage="Seleccione el conductor." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgMovimiento" />
                             <small class="sgv-suave"><asp:Literal ID="litViajeEnCurso" runat="server" /></small>
                         </div>
 
@@ -41,13 +43,15 @@
 
                         <div class="form-row">
                             <div class="form-group col-12 col-sm-6">
-                                <label class="sgv-etiqueta" for="<%= txtFecha.ClientID %>">Fecha y hora <span class="text-danger">*</span></label>
-                                <asp:TextBox ID="txtFecha" runat="server" CssClass="form-control" TextMode="DateTimeLocal" />
+                                <label class="sgv-etiqueta" for="<%= txtFecha.ClientID %>">Fecha y hora <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <asp:TextBox ID="txtFecha" runat="server" CssClass="form-control" TextMode="DateTimeLocal" aria-required="true" />
+                                <asp:RequiredFieldValidator ID="rfvFecha" runat="server" ControlToValidate="txtFecha"
+                                    ErrorMessage="Indique la fecha y hora." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgMovimiento" />
                             </div>
                             <div class="form-group col-12 col-sm-6">
-                                <label for="<%= ddlConceptoEntrega.ClientID %>" class="sgv-etiqueta">Concepto <span class="text-danger">*</span></label>
-                                <asp:DropDownList ID="ddlConceptoEntrega" runat="server" CssClass="form-control mv-solo-entrega" />
-                                <asp:DropDownList ID="ddlConceptoPago" runat="server" CssClass="form-control mv-solo-pago" style="display:none;" aria-label="Concepto" />
+                                <label for="<%= ddlConceptoEntrega.ClientID %>" class="sgv-etiqueta">Concepto <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <asp:DropDownList ID="ddlConceptoEntrega" runat="server" CssClass="form-control mv-solo-entrega" aria-required="true" />
+                                <asp:DropDownList ID="ddlConceptoPago" runat="server" CssClass="form-control mv-solo-pago" style="display:none;" aria-label="Concepto" aria-required="true" />
                             </div>
                         </div>
 
@@ -55,6 +59,10 @@
                             <div class="form-group col-12 col-sm-6">
                                 <label class="sgv-etiqueta" for="<%= txtSoles.ClientID %>">Soles (S/)</label>
                                 <asp:TextBox ID="txtSoles" runat="server" CssClass="form-control" inputmode="decimal" autocomplete="off" data-monto="true" placeholder="0.00" />
+                                <%-- Soles o dólares distinto de 0 (MovimientosViajeService.Validar); un monto ilegible lo marca SiteMaster.js. --%>
+                                <asp:CustomValidator ID="cvMonto" runat="server" ControlToValidate="txtSoles" ValidateEmptyText="true"
+                                    ClientValidationFunction="mvValidarMonto" OnServerValidate="cvMonto_ServerValidate"
+                                    ErrorMessage="Indique el monto en soles o en dólares." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgMovimiento" />
                             </div>
                             <div class="form-group col-12 col-sm-6">
                                 <label class="sgv-etiqueta" for="<%= txtDolares.ClientID %>">Dólares (US$)</label>
@@ -64,20 +72,28 @@
 
                         <div class="form-row">
                             <div class="form-group col-12 col-sm-6">
-                                <label class="sgv-etiqueta" for="<%= ddlMedio.ClientID %>">Medio <span class="text-danger">*</span></label>
-                                <asp:DropDownList ID="ddlMedio" runat="server" CssClass="form-control" />
+                                <label class="sgv-etiqueta" for="<%= ddlMedio.ClientID %>">Medio <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <asp:DropDownList ID="ddlMedio" runat="server" CssClass="form-control" aria-required="true" />
                             </div>
                             <div class="form-group col-12 col-sm-6">
-                                <label class="sgv-etiqueta" for="<%= txtOperacion.ClientID %>">N.° de operación</label>
-                                <asp:TextBox ID="txtOperacion" runat="server" CssClass="form-control" MaxLength="50" placeholder="Yape / transferencia" />
+                                <%-- Obligatorio solo con Yape o transferencia: MovimientosViaje.js muestra u oculta el asterisco y aria-required. --%>
+                                <label class="sgv-etiqueta" for="<%= txtOperacion.ClientID %>">N.° de operación <span id="mvObligOperacion" class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <asp:TextBox ID="txtOperacion" runat="server" CssClass="form-control" MaxLength="50" placeholder="Yape / transferencia" aria-required="true" />
+                                <asp:CustomValidator ID="cvOperacion" runat="server" ControlToValidate="txtOperacion" ValidateEmptyText="true"
+                                    ClientValidationFunction="mvValidarOperacion" OnServerValidate="cvOperacion_ServerValidate"
+                                    ErrorMessage="Indique el número de operación del Yape o de la transferencia." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgMovimiento" />
                             </div>
                         </div>
 
                         <div class="mv-solo-pago" style="display:none;">
                             <div class="form-row">
                                 <div class="form-group col-12 col-sm-7">
-                                    <label class="sgv-etiqueta" for="<%= txtProveedor.ClientID %>">Proveedor <span class="text-danger">*</span></label>
-                                    <asp:TextBox ID="txtProveedor" runat="server" CssClass="form-control" MaxLength="150" placeholder="Ej.: Llantería El Rápido" />
+                                    <label class="sgv-etiqueta" for="<%= txtProveedor.ClientID %>">Proveedor <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                    <asp:TextBox ID="txtProveedor" runat="server" CssClass="form-control" MaxLength="150" placeholder="Ej.: Llantería El Rápido" aria-required="true" />
+                                    <%-- Solo en un pago directo (en una entrega el bloque está oculto). --%>
+                                    <asp:CustomValidator ID="cvProveedor" runat="server" ControlToValidate="txtProveedor" ValidateEmptyText="true"
+                                        ClientValidationFunction="mvValidarProveedor" OnServerValidate="cvProveedor_ServerValidate"
+                                        ErrorMessage="Indique a quién se le pagó (proveedor)." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgMovimiento" />
                                 </div>
                                 <div class="form-group col-12 col-sm-5">
                                     <label class="sgv-etiqueta" for="<%= txtRuc.ClientID %>">RUC</label>
@@ -102,7 +118,7 @@
 
                         <%-- Envío único (E5-3): token de un solo uso; un segundo POST del mismo formulario no registra otra vez --%>
                         <asp:HiddenField ID="hfEnvioUnico" runat="server" />
-                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar" CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" data-espera="120" />
+                        <asp:Button ID="btnRegistrar" runat="server" Text="Registrar" CssClass="btn btn-primary btn-block" OnClick="btnRegistrar_Click" ValidationGroup="vgMovimiento" data-espera="120" />
                     </div>
                 </div>
             </div>
@@ -158,14 +174,20 @@
                     <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button></div>
                 <div class="modal-body">
                     <asp:HiddenField ID="hfIdAnular" runat="server" ClientIDMode="Static" />
-                    <label class="sgv-etiqueta" for="<%= txtMotivoAnular.ClientID %>">Motivo <span class="text-danger">*</span></label>
+                    <label class="sgv-etiqueta" for="<%= txtMotivoAnular.ClientID %>">Motivo <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
                     <asp:TextBox ID="txtMotivoAnular" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="2" MaxLength="250"
-                        placeholder="Ej.: Se registró dos veces." />
+                        placeholder="Ej.: Se registró dos veces." aria-required="true" />
+                    <asp:RequiredFieldValidator ID="rfvMotivoAnular" runat="server" ControlToValidate="txtMotivoAnular"
+                        ErrorMessage="Escriba el motivo de la anulación." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgAnular" />
+                    <%-- Como sp_LD_AnularMovimientoViaje: al menos 10 caracteres sin contar los espacios de los extremos (el tope lo pone MaxLength). --%>
+                    <asp:RegularExpressionValidator ID="revMotivoAnular" runat="server" ControlToValidate="txtMotivoAnular"
+                        ValidationExpression="^\s*\S[\s\S]{8,}\S\s*$"
+                        ErrorMessage="El motivo debe tener al menos 10 caracteres." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgAnular" />
                     <small class="sgv-suave">Queda registrado; no se borra.</small>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>
-                    <asp:Button ID="btnAnular" runat="server" Text="Anular" CssClass="btn btn-danger" OnClick="btnAnular_Click" />
+                    <asp:Button ID="btnAnular" runat="server" Text="Anular" CssClass="btn btn-danger" OnClick="btnAnular_Click" ValidationGroup="vgAnular" />
                 </div>
             </div>
         </div>
@@ -174,7 +196,12 @@
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/MovimientosViaje.css") %>" rel="stylesheet" />
     <script>
         var SGV = Object.assign(window.SGV || {}, {
-            ddlMedio: '<%= ddlMedio.ClientID %>'
+            ddlMedio: '<%= ddlMedio.ClientID %>',
+            txtSoles: '<%= txtSoles.ClientID %>',
+            txtDolares: '<%= txtDolares.ClientID %>',
+            txtOperacion: '<%= txtOperacion.ClientID %>',
+            cvMonto: '<%= cvMonto.ClientID %>',
+            cvOperacion: '<%= cvOperacion.ClientID %>'
         });
     </script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/MovimientosViaje.js") %>"></script>

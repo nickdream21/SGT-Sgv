@@ -176,7 +176,7 @@ function mostrarDetalle(datos) {
     _idOrdenDetalleActual = datos.IdOrdenViaje;
     $('#panelCorregirSalida').hide();
     $('#corregirSalidaMotivo').val('');
-    $('#errorCorregirSalidaMotivo').hide();
+    SGV.limpiarError('corregirSalidaMotivo');
     // Se limpia siempre: si no, al abrir una orden aprobada quedaban la fecha y la hora de la anterior.
     $('#detalleSalidaValor').text('');
     $('#corregirSalidaFecha').val('');
@@ -473,7 +473,7 @@ function leerIngresosEntregados() {
 }
 
 function toggleCorregirSalida() {
-    $('#errorCorregirSalidaMotivo').hide();
+    SGV.limpiarError('corregirSalidaMotivo');
     $('#panelCorregirSalida').slideToggle(150);
 }
 
@@ -484,18 +484,21 @@ function corregirSalidaDesdeModal() {
     var hora = $('#corregirSalidaHora').val();
     var motivo = $('#corregirSalidaMotivo').val().trim();
 
-    $('#errorCorregirSalidaMotivo').hide();
+    SGV.limpiarError('corregirSalidaMotivo');
 
     if (!fecha || !hora) {
         mostrarErrorCampo('#corregirSalidaMotivo', '#errorCorregirSalidaMotivo', 'Debe indicar la fecha y la hora de salida.');
+        $(!fecha ? '#corregirSalidaFecha' : '#corregirSalidaHora').focus();
         return;
     }
     if (motivo.length < 10) {
         mostrarErrorCampo('#corregirSalidaMotivo', '#errorCorregirSalidaMotivo', 'El motivo debe tener al menos 10 caracteres.');
+        $('#corregirSalidaMotivo').focus();
         return;
     }
     if (motivo.length > 500) {
         mostrarErrorCampo('#corregirSalidaMotivo', '#errorCorregirSalidaMotivo', 'El motivo no puede superar 500 caracteres.');
+        $('#corregirSalidaMotivo').focus();
         return;
     }
 
@@ -1232,13 +1235,23 @@ $(document).ready(function () {
     });
 });
 
+// Error de un campo validado por script (E5-20b): lo pinta SGV.marcarError (is-invalid, aria-invalid,
+// aria-describedby y el mensaje en un small.sgv-campo-error), reusando el small de la página si sigue en ella.
+// Al escribir en el campo, SiteMaster.js lo limpia solo.
 function mostrarErrorCampo(selectorInput, selectorError, mensaje) {
-    $(selectorInput).addClass('is-invalid');
-    $(selectorError).text(mensaje).removeClass('d-none');
+    var campo = $(selectorInput)[0];
+    if (!campo) return;
+    var ayuda = $(selectorError)[0];
+    if (ayuda && ayuda.id && !campo.hasAttribute('data-sgv-error')) campo.setAttribute('data-sgv-error', ayuda.id);
+    var pintado = SGV.marcarError(campo, mensaje);
+    if (pintado) {
+        pintado.classList.remove('d-none');
+        pintado.style.display = '';
+    }
 }
 
 function limpiarErroresFormulario() {
-    $('.is-invalid').removeClass('is-invalid');
+    $('[data-sgv-error]').each(function () { SGV.limpiarError(this); });
     $('#errorConductorBuscar,#errorFechaDesde,#errorFechaHasta,#errorPrioridad,#errorRechazoObservaciones,#errorRevertirMotivo,#errorRetirarMotivo').addClass('d-none').text('');
 }
 

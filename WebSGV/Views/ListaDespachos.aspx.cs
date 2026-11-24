@@ -1707,6 +1707,7 @@ namespace WebSGV.Views
 
         protected void btnRegistrarFactura_Click(object sender, EventArgs e)
         {
+            if (!Page.IsValid) return;
             if (RechazarSiLoteAnulado()) return;
             if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
             try
@@ -1753,6 +1754,7 @@ namespace WebSGV.Views
 
         protected void btnRegistrarCpic_Click(object sender, EventArgs e)
         {
+            if (!Page.IsValid) return;
             if (RechazarSiLoteAnulado()) return;
             if (string.IsNullOrEmpty(LoteSeleccionadoId)) return;
             try

@@ -596,6 +596,15 @@
 
         e.preventDefault();
         e.stopImmediatePropagation();
+        // Botón con grupo de validación (data-validar-grupo="grupo", E5-20b): valida antes de preguntar; si
+        // falta un dato no se confirma algo que luego no se envía (los mensajes quedan junto a los campos).
+        // Page_ClientValidate deja Page_BlockSubmit = true para el submit que lo consume (WebForm_OnSubmit); aquí el
+        // clic se cancela y no hay submit, así que se repone: si no, el siguiente envío de la página se perdería.
+        var grupoValidar = el.getAttribute('data-validar-grupo');
+        if (grupoValidar !== null && typeof window.Page_ClientValidate === 'function' && !window.Page_ClientValidate(grupoValidar)) {
+            window.Page_BlockSubmit = false;
+            return;
+        }
         var esPeligro = (el.getAttribute('data-confirmar-peligro') || '').toLowerCase() === 'true';
         SGV.confirmar(el.getAttribute('data-confirmar').replace(/\\n/g, '\n'), function () {
             el.sgvConfirmado = true;

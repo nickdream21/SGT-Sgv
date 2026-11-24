@@ -52,7 +52,7 @@
                                  <input type="text" id="txtConductorBuscar" class="form-control" value="<%: NombreConductorFiltro %>"
                                      placeholder="Buscar conductor..." autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" name="filtro_conductor_pendiente" />
                                  <asp:HiddenField ID="hfConductorId" runat="server" ClientIDMode="Static" />
-                                 <small id="errorConductorBuscar" class="text-danger d-none"></small>
+                                 <small id="errorConductorBuscar" class="sgv-campo-error d-none"></small>
                                  <div id="conductorPendientesSugg" class="conductor-autocomplete-dropdown"></div>
                              </div>
                         </div>
@@ -61,14 +61,14 @@
                         <div class="form-group">
                             <label for="<%= txtFechaDesde.ClientID %>" class="sgv-etiqueta">Desde</label>
                              <asp:TextBox ID="txtFechaDesde" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
-                             <small id="errorFechaDesde" class="text-danger d-none"></small>
+                             <small id="errorFechaDesde" class="sgv-campo-error d-none"></small>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="form-group">
                             <label for="<%= txtFechaHasta.ClientID %>" class="sgv-etiqueta">Hasta</label>
                              <asp:TextBox ID="txtFechaHasta" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
-                             <small id="errorFechaHasta" class="text-danger d-none"></small>
+                             <small id="errorFechaHasta" class="sgv-campo-error d-none"></small>
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -80,7 +80,7 @@
                                 <asp:ListItem Value="ALTA">Alta (12-24h)</asp:ListItem>
                                 <asp:ListItem Value="NORMAL">Normal (<12h)</asp:ListItem>
                             </asp:DropDownList>
-                            <small id="errorPrioridad" class="text-danger d-none"></small>
+                            <small id="errorPrioridad" class="sgv-campo-error d-none"></small>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -437,10 +437,10 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="corregirSalidaMotivo" class="sgv-etiqueta">Motivo de la corrección <span class="text-danger">*</span></label>
-                                <textarea class="form-control" id="corregirSalidaMotivo" rows="2" maxlength="500"
+                                <label for="corregirSalidaMotivo" class="sgv-etiqueta">Motivo de la corrección <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                <textarea class="form-control" id="corregirSalidaMotivo" aria-required="true" rows="2" maxlength="500"
                                     placeholder="Explique por qué corrige la salida (mín. 10 caracteres)"></textarea>
-                                <small class="text-danger" id="errorCorregirSalidaMotivo" style="display:none;"></small>
+                                <small class="sgv-campo-error d-none" id="errorCorregirSalidaMotivo"></small>
                             </div>
                             <div class="salida-edit-actions">
                                 <button type="button" class="btn btn-sm btn-light" data-accion="toggleCorregirSalida">Cancelar</button>
@@ -638,7 +638,7 @@
                                         <label class="sgv-etiqueta" for="ajusteMotivoDescuento">Motivo del descuento</label>
                                         <textarea id="ajusteMotivoDescuento" class="form-control form-control-sm" rows="2" maxlength="500"
                                             placeholder="Ej.: Gasto de alimentación del 18/07 sin comprobante."></textarea>
-                                        <small class="text-danger d-none" id="errorMotivoDescuento"></small>
+                                        <small class="sgv-campo-error d-none" id="errorMotivoDescuento"></small>
                                     </div>
                                 </div>
                             </div>
@@ -665,7 +665,7 @@
                                         <label class="sgv-etiqueta" for="ajusteMotivoReintegro">Motivo del reintegro</label>
                                         <textarea id="ajusteMotivoReintegro" class="form-control form-control-sm" rows="2" maxlength="500"
                                             placeholder="Ej.: Peaje de Chullqui pagado y no declarado (ticket B002-2)."></textarea>
-                                        <small class="text-danger d-none" id="errorMotivoReintegro"></small>
+                                        <small class="sgv-campo-error d-none" id="errorMotivoReintegro"></small>
                                     </div>
                                 </div>
                             </div>
@@ -738,10 +738,10 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="rechazarObservaciones" class="sgv-etiqueta">Motivo del rechazo <span class="text-danger">*</span></label>
-                        <textarea id="rechazarObservaciones" name="observacionesRechazo" class="form-control" rows="4" 
+                        <label for="rechazarObservaciones" class="sgv-etiqueta">Motivo del rechazo <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <textarea id="rechazarObservaciones" aria-required="true" name="observacionesRechazo" class="form-control" rows="4" 
                             placeholder="Explique detalladamente qué debe corregir el conductor...&#13;&#10;Ejemplo: Los montos de peajes no coinciden con los comprobantes adjuntos. Por favor revisar."></textarea>
-                        <small id="errorRechazoObservaciones" class="text-danger d-none"></small>
+                        <small id="errorRechazoObservaciones" class="sgv-campo-error d-none"></small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -782,10 +782,10 @@
                         <input type="text" id="revertirConductor" class="form-control" readonly />
                     </div>
                     <div class="form-group">
-                        <label for="revertirMotivo" class="sgv-etiqueta">Motivo de la reversión <span class="text-danger">*</span></label>
-                        <textarea id="revertirMotivo" class="form-control" rows="4"
+                        <label for="revertirMotivo" class="sgv-etiqueta">Motivo de la reversión <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <textarea id="revertirMotivo" aria-required="true" class="form-control" rows="4"
                             placeholder="Explique por qué se revierte esta aprobación...&#13;&#10;Ej: Se detectó que el descuento aplicado es incorrecto y necesita re-evaluación."></textarea>
-                        <small id="errorRevertirMotivo" class="text-danger d-none"></small>
+                        <small id="errorRevertirMotivo" class="sgv-campo-error d-none"></small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -818,10 +818,10 @@
                         <input type="text" id="retirarNumeroOrden" class="form-control" readonly />
                     </div>
                     <div class="form-group">
-                        <label class="sgv-etiqueta" for="retirarMotivo">Motivo <span class="text-danger">*</span></label>
-                        <textarea id="retirarMotivo" class="form-control" rows="3" maxlength="500"
+                        <label class="sgv-etiqueta" for="retirarMotivo">Motivo <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                        <textarea id="retirarMotivo" aria-required="true" class="form-control" rows="3" maxlength="500"
                             placeholder="Ej.: El adelanto registrado era S/ 800 y no S/ 900."></textarea>
-                        <small id="errorRetirarMotivo" class="text-danger d-none"></small>
+                        <small id="errorRetirarMotivo" class="sgv-campo-error d-none"></small>
                     </div>
                 </div>
                 <div class="modal-footer">

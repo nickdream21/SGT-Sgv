@@ -640,7 +640,7 @@ namespace WebSGV.Tests
         /// </summary>
         private static readonly Dictionary<string, int> StyleEnMarcado = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Views/LiquidacionesPendientes.aspx"] = 16,   // .show()/.hide() de secciones, paneles y avisos
+            ["Views/LiquidacionesPendientes.aspx"] = 15,   // .show()/.hide() de secciones, paneles y avisos
             ["Views/ConformarLiquidacion.aspx"] = 6,       // ConformarLiquidacion.js: style.display
             ["Views/MovimientosViaje.aspx"] = 3,           // MovimientosViaje.js mostrar(): style.display
             ["Views/FirmarLiquidacion.aspx"] = 1,          // vGastosDolaresFila
@@ -648,7 +648,7 @@ namespace WebSGV.Tests
             ["Views/Error.aspx"] = 3,                      // debe verse aunque fallen los archivos estáticos
         };
 
-        private const int StyleEnMarcadoTotal = 30;
+        private const int StyleEnMarcadoTotal = 29;
 
         private static readonly Regex AtributoStyle = new Regex(@"\bstyle\s*=", RegexOptions.IgnoreCase);
         private static readonly Regex StyleOcultoFijo = new Regex(@"\bstyle\s*=\s*""display:none;?""", RegexOptions.IgnoreCase);

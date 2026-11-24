@@ -159,17 +159,23 @@
                                             <div class="rd-section-label">Datos de la carga</div>
                                             <div class="row mb-2">
                                                 <div class="col-md-3 form-group mb-2">
-                                                    <label for="<%= ddlClienteProg.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Cliente <span class="text-danger">*</span></label>
-                                                    <asp:DropDownList ID="ddlClienteProg" runat="server" CssClass="custom-select custom-select-sm" />
+                                                    <label for="<%= ddlClienteProg.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Cliente <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                                    <asp:DropDownList ID="ddlClienteProg" runat="server" aria-required="true" CssClass="custom-select custom-select-sm" />
+                                                    <asp:RequiredFieldValidator ID="rfvClienteProg" runat="server" ControlToValidate="ddlClienteProg" InitialValue="0"
+                                                        ErrorMessage="Elija el cliente." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgProgramar" />
                                                 </div>
                                                 <div class="col-md-3 form-group mb-2">
-                                                    <label for="<%= txtFechaProg.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Fecha de carga <span class="text-danger">*</span></label>
-                                                    <asp:TextBox ID="txtFechaProg" runat="server" CssClass="form-control form-control-sm" TextMode="Date" />
+                                                    <label for="<%= txtFechaProg.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Fecha de carga <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                                    <asp:TextBox ID="txtFechaProg" runat="server" aria-required="true" CssClass="form-control form-control-sm" TextMode="Date" />
+                                                    <asp:RequiredFieldValidator ID="rfvFechaProg" runat="server" ControlToValidate="txtFechaProg"
+                                                        ErrorMessage="Indique la fecha de carga." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgProgramar" />
                                                     <small class="form-text text-muted">El día del título ("CARGAN 21 DE OCTUBRE").</small>
                                                 </div>
                                                 <div class="col-md-3 form-group mb-2">
-                                                    <label for="<%= ddlPlantaProg.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Planta de carga <span class="text-danger">*</span></label>
-                                                    <asp:DropDownList ID="ddlPlantaProg" runat="server" CssClass="custom-select custom-select-sm" />
+                                                    <label for="<%= ddlPlantaProg.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Planta de carga <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                                    <asp:DropDownList ID="ddlPlantaProg" runat="server" aria-required="true" CssClass="custom-select custom-select-sm" />
+                                                    <asp:RequiredFieldValidator ID="rfvPlantaProg" runat="server" ControlToValidate="ddlPlantaProg" InitialValue="0"
+                                                        ErrorMessage="Elija la planta de carga." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgProgramar" />
                                                 </div>
                                                 <div class="col-md-3 form-group mb-2 d-flex align-items-end">
                                                     <asp:CheckBox ID="chkExportacionProg" runat="server" Text="Carga para exportación (seguimiento a Ecuador)" CssClass="small" />
@@ -228,7 +234,7 @@
                                                 <asp:Button ID="btnProgramarDespachos" runat="server"
                                                     Text="Programar despachos"
                                                     CssClass="btn btn-primary"
-                                                    CausesValidation="false"
+                                                    ValidationGroup="vgProgramar"
                                                     OnClick="btnProgramarDespachos_Click" />
                                             </div>
                                         </asp:Panel>
@@ -262,18 +268,24 @@
                                             <div class="rd-section-label">Datos del lote</div>
                                             <div class="row mb-2">
                                                 <div class="col-md-4 form-group mb-2">
-                                                    <label for="<%= ddlClienteImp.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Cliente <span class="text-danger">*</span></label>
-                                                    <asp:DropDownList ID="ddlClienteImp" runat="server" CssClass="custom-select custom-select-sm" />
+                                                    <label for="<%= ddlClienteImp.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Cliente <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                                    <asp:DropDownList ID="ddlClienteImp" runat="server" aria-required="true" CssClass="custom-select custom-select-sm" />
+                                                    <asp:RequiredFieldValidator ID="rfvClienteImp" runat="server" ControlToValidate="ddlClienteImp" InitialValue="0"
+                                                        ErrorMessage="Elija el cliente del pedido." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgImportar" />
                                                     <small class="form-text text-muted">Reconocido por el RUC del remitente.</small>
                                                 </div>
                                                 <div class="col-md-4 form-group mb-2">
-                                                    <label for="<%= txtFechaProgramacionImp.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Fecha de programación <span class="text-danger">*</span></label>
-                                                    <asp:TextBox ID="txtFechaProgramacionImp" runat="server" CssClass="form-control form-control-sm" TextMode="Date" />
+                                                    <label for="<%= txtFechaProgramacionImp.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Fecha de programación <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                                    <asp:TextBox ID="txtFechaProgramacionImp" runat="server" aria-required="true" CssClass="form-control form-control-sm" TextMode="Date" />
+                                                    <asp:RequiredFieldValidator ID="rfvFechaProgramacionImp" runat="server" ControlToValidate="txtFechaProgramacionImp"
+                                                        ErrorMessage="Indique la fecha de programación." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgImportar" />
                                                     <small class="form-text text-muted">Se propone el día de carga de la programación (o, sin ella, la fecha de traslado de las guías).</small>
                                                 </div>
                                                 <div class="col-md-4 form-group mb-2">
-                                                    <label for="<%= ddlPlantaImp.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Planta de carga <span class="text-danger">*</span></label>
-                                                    <asp:DropDownList ID="ddlPlantaImp" runat="server" CssClass="custom-select custom-select-sm" />
+                                                    <label for="<%= ddlPlantaImp.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Planta de carga <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                                    <asp:DropDownList ID="ddlPlantaImp" runat="server" aria-required="true" CssClass="custom-select custom-select-sm" />
+                                                    <asp:RequiredFieldValidator ID="rfvPlantaImp" runat="server" ControlToValidate="ddlPlantaImp" InitialValue="0"
+                                                        ErrorMessage="Elija la planta de carga." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgImportar" />
                                                     <small class="form-text text-muted">Carga nacional; el destino queda como dato de la carga.</small>
                                                 </div>
                                             </div>
@@ -287,7 +299,7 @@
                                                             <th>Transporte / Guía</th>
                                                             <th>Conductor</th>
                                                             <th>Tracto</th>
-                                                            <th>Carreta <span class="text-danger">*</span></th>
+                                                            <th>Carreta <span class="sgv-obligatorio" aria-hidden="true">*</span></th>
                                                             <th>Carga</th>
                                                             <th>Estado</th>
                                                         </tr>
@@ -400,7 +412,7 @@
                                                 <asp:Button ID="btnAplicarImportacion" runat="server"
                                                     Text="Crear lote con estos datos"
                                                     CssClass="btn btn-primary"
-                                                    CausesValidation="false"
+                                                    ValidationGroup="vgImportar"
                                                     OnClick="btnAplicarImportacion_Click" />
                                             </div>
                                         </asp:Panel>
@@ -484,11 +496,13 @@
                                             <div class="rd-section-label">Datos del lote de descarga</div>
                                             <div class="row mb-2">
                                                 <div class="col-md-4 form-group mb-2">
-                                                    <label for="<%= txtFechaDescarga.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Fecha de programación <span class="text-danger">*</span></label>
-                                                    <asp:TextBox ID="txtFechaDescarga" runat="server" CssClass="form-control form-control-sm" TextMode="Date" />
+                                                    <label for="<%= txtFechaDescarga.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Fecha de programación <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
+                                                    <asp:TextBox ID="txtFechaDescarga" runat="server" aria-required="true" CssClass="form-control form-control-sm" TextMode="Date" />
+                                                    <asp:RequiredFieldValidator ID="rfvFechaDescarga" runat="server" ControlToValidate="txtFechaDescarga"
+                                                        ErrorMessage="Indique la fecha de programación." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="vgDescarga" />
                                                 </div>
                                                 <div class="col-md-4 form-group mb-2">
-                                                    <label for="<%= ddlPlantaDescarga.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Planta de descarga por defecto <span class="text-danger">*</span></label>
+                                                    <label for="<%= ddlPlantaDescarga.ClientID %>" class="sgv-etiqueta small font-weight-bold mb-1">Planta de descarga por defecto</label>
                                                     <asp:DropDownList ID="ddlPlantaDescarga" runat="server" CssClass="custom-select custom-select-sm" />
                                                     <small class="form-text text-muted"><asp:Literal ID="litAmbitoDescarga" runat="server" /> Cada tracto usa la planta de la lista de destinos (Despacho &rsaquo; Destino de descarga) si la tiene; si no, esta.</small>
                                                 </div>
@@ -554,7 +568,7 @@
                                                 <asp:Button ID="btnAplicarDescarga" runat="server"
                                                     Text="Usar en el lote de descarga"
                                                     CssClass="btn btn-primary"
-                                                    CausesValidation="false"
+                                                    ValidationGroup="vgDescarga"
                                                     OnClick="btnAplicarDescarga_Click" />
                                             </div>
                                         </asp:Panel>
@@ -595,39 +609,37 @@
                                                     <div class="form-group mb-3">
                                                         <label for="<%= txtFechaDespachoBase.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Fecha de programación:</strong>
-                                                            <span class="text-danger">*</span>
+                                                            <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                         </label>
-                                                        <asp:TextBox ID="txtFechaDespachoBase" runat="server" 
+                                                        <asp:TextBox ID="txtFechaDespachoBase" runat="server" aria-required="true" 
                                                             CssClass="form-control" 
                                                             TextMode="Date">
                                                         </asp:TextBox>
                                                         <asp:RequiredFieldValidator ID="rfvFechaDespachoBase" runat="server"
                                                             ControlToValidate="txtFechaDespachoBase"
                                                             ErrorMessage="Debe seleccionar una fecha de programación"
-                                                            CssClass="text-danger small"
+                                                            CssClass="sgv-campo-error"
                                                             Display="Dynamic"
                                                             SetFocusOnError="true"
-                                                            ValidationGroup="ConfiguracionBase">
-                                                        </asp:RequiredFieldValidator>
+                                                            ValidationGroup="ConfiguracionBase" />
                                                         <asp:CustomValidator ID="cvFechaDespachoBase" runat="server"
                                                             ControlToValidate="txtFechaDespachoBase"
                                                             ErrorMessage="Ingrese una fecha de programación válida (año realista y rango permitido)"
-                                                            CssClass="text-danger small"
+                                                            CssClass="sgv-campo-error"
                                                             Display="Dynamic"
                                                             SetFocusOnError="true"
                                                             ClientValidationFunction="validarFechaProgramacionCliente"
                                                             OnServerValidate="cvFechaDespachoBase_ServerValidate"
-                                                            ValidationGroup="ConfiguracionBase">
-                                                        </asp:CustomValidator>
+                                                            ValidationGroup="ConfiguracionBase" />
                                                     </div>
 
                                                     <!-- Cliente -->
                                                     <div class="form-group mb-3">
                                                         <label for="<%= ddlClienteBase.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Cliente:</strong>
-                                                            <span class="text-danger">*</span>
+                                                            <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                         </label>
-                                                        <asp:DropDownList ID="ddlClienteBase" runat="server" 
+                                                        <asp:DropDownList ID="ddlClienteBase" runat="server" aria-required="true" 
                                                             CssClass="custom-select"
                                                             DataTextField="nombre"
                                                             DataValueField="idCliente"
@@ -638,11 +650,10 @@
                                                             ControlToValidate="ddlClienteBase"
                                                             InitialValue="0"
                                                             ErrorMessage="Debe seleccionar un cliente"
-                                                            CssClass="text-danger small"
+                                                            CssClass="sgv-campo-error"
                                                             Display="Dynamic"
                                                             SetFocusOnError="true"
-                                                            ValidationGroup="ConfiguracionBase">
-                                                        </asp:RequiredFieldValidator>
+                                                            ValidationGroup="ConfiguracionBase" />
                                                     </div>
 
                                                     <!-- Número de Pedido - Solo para Carga Nacional -->
@@ -661,11 +672,10 @@
                                                                 ControlToValidate="txtNumeroPedidoBase"
                                                                 ValidationExpression="^\d{10}$"
                                                                 ErrorMessage="Debe tener exactamente 10 dígitos numéricos"
-                                                                CssClass="text-danger small"
+                                                                CssClass="sgv-campo-error"
                                                                 Display="Dynamic"
                                                                 SetFocusOnError="true"
-                                                                ValidationGroup="ConfiguracionBase">
-                                                            </asp:RegularExpressionValidator>
+                                                                ValidationGroup="ConfiguracionBase" />
                                                             <small class="form-text text-muted">Opcional. Si se ingresa, debe tener exactamente 10 dígitos.</small>
                                                         </div>
                                                     </asp:Panel>
@@ -678,9 +688,9 @@
                                                     <div class="form-group mb-3">
                                                         <label for="<%= ddlTipoOperacionBase.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Tipo de operación:</strong>
-                                                            <span class="text-danger">*</span>
+                                                            <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                         </label>
-                                                        <asp:DropDownList ID="ddlTipoOperacionBase" runat="server" 
+                                                        <asp:DropDownList ID="ddlTipoOperacionBase" runat="server" aria-required="true" 
                                                             CssClass="custom-select"
                                                             AutoPostBack="true"
                                                             OnSelectedIndexChanged="ddlTipoOperacionBase_SelectedIndexChanged">
@@ -692,20 +702,19 @@
                                                             ControlToValidate="ddlTipoOperacionBase"
                                                             InitialValue=""
                                                             ErrorMessage="Debe seleccionar un tipo de operación"
-                                                            CssClass="text-danger small"
+                                                            CssClass="sgv-campo-error"
                                                             Display="Dynamic"
                                                             SetFocusOnError="true"
-                                                            ValidationGroup="ConfiguracionBase">
-                                                        </asp:RequiredFieldValidator>
+                                                            ValidationGroup="ConfiguracionBase" />
                                                     </div>
 
                                                     <!-- Es Internacional -->
                                                     <div class="form-group mb-3">
                                                         <span class="sgv-etiqueta d-inline-block mb-2" id="lblAmbitoOperacionBase">
                                                             <strong>Ámbito:</strong>
-                                                            <span class="text-danger">*</span>
+                                                            <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                         </span>
-                                                        <div role="radiogroup" aria-labelledby="lblAmbitoOperacionBase">
+                                                        <div role="radiogroup" aria-labelledby="lblAmbitoOperacionBase" aria-required="true">
                                                             <asp:RadioButtonList ID="rblAmbitoOperacionBase" runat="server" 
                                                                 CssClass="form-check" 
                                                                 RepeatDirection="Horizontal"
@@ -721,19 +730,18 @@
                                                     <div class="form-group mb-3">
                                                         <label for="<%= ddlLugarOperacionBase.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Planta de operación:</strong>
-                                                            <span class="text-danger">*</span>
+                                                            <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                         </label>
-                                                        <asp:DropDownList ID="ddlLugarOperacionBase" runat="server" CssClass="custom-select">
+                                                        <asp:DropDownList ID="ddlLugarOperacionBase" runat="server" aria-required="true" CssClass="custom-select">
                                                         </asp:DropDownList>
                                                         <asp:RequiredFieldValidator ID="rfvLugarOperacionBase" runat="server"
                                                             ControlToValidate="ddlLugarOperacionBase"
                                                             InitialValue=""
                                                             ErrorMessage="Debe seleccionar una planta"
-                                                            CssClass="text-danger small"
+                                                            CssClass="sgv-campo-error"
                                                             Display="Dynamic"
                                                             SetFocusOnError="true"
-                                                            ValidationGroup="ConfiguracionBase">
-                                                        </asp:RequiredFieldValidator>
+                                                            ValidationGroup="ConfiguracionBase" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -757,9 +765,9 @@
                                                                 <div class="form-group mb-2">
                                                                     <label for="<%= txtNumeroFacturaBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>N° Factura:</strong>
-                                                                        <span class="text-danger">*</span>
+                                                                        <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                                     </label>
-                                                                    <asp:TextBox ID="txtNumeroFacturaBase" runat="server"
+                                                                    <asp:TextBox ID="txtNumeroFacturaBase" runat="server" aria-required="true"
                                                                         CssClass="form-control"
                                                                         AutoCompleteType="Disabled" autocomplete="off"
                                                                         placeholder="Ej: F222-00004267"
@@ -768,55 +776,51 @@
                                                                     <asp:RequiredFieldValidator ID="rfvNumeroFacturaBase" runat="server"
                                                                         ControlToValidate="txtNumeroFacturaBase"
                                                                         ErrorMessage="El número de factura es obligatorio"
-                                                                        CssClass="text-danger small"
+                                                                        CssClass="sgv-campo-error"
                                                                         Display="Dynamic"
                                                                         SetFocusOnError="true"
-                                                                        ValidationGroup="ConfiguracionBase">
-                                                                    </asp:RequiredFieldValidator>
+                                                                        ValidationGroup="ConfiguracionBase" />
                                                                     <asp:RegularExpressionValidator ID="revNumeroFacturaBase" runat="server"
                                                                         ControlToValidate="txtNumeroFacturaBase"
                                                                         ValidationExpression="^[A-Za-z0-9\-/]{3,30}$"
                                                                         ErrorMessage="El N° de factura solo permite letras, números, guion o slash (3-30 caracteres)"
-                                                                        CssClass="text-danger small"
+                                                                        CssClass="sgv-campo-error"
                                                                         Display="Dynamic"
                                                                         SetFocusOnError="true"
-                                                                        ValidationGroup="ConfiguracionBase">
-                                                                    </asp:RegularExpressionValidator>
+                                                                        ValidationGroup="ConfiguracionBase" />
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="<%= txtFechaEmisionFacturaBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>Fecha emisión:</strong>
-                                                                        <span class="text-danger">*</span>
+                                                                        <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                                     </label>
-                                                                    <asp:TextBox ID="txtFechaEmisionFacturaBase" runat="server"
+                                                                    <asp:TextBox ID="txtFechaEmisionFacturaBase" runat="server" aria-required="true"
                                                                         CssClass="form-control"
                                                                         TextMode="Date">
                                                                     </asp:TextBox>
                                                                     <asp:RequiredFieldValidator ID="rfvFechaEmisionFacturaBase" runat="server"
                                                                         ControlToValidate="txtFechaEmisionFacturaBase"
                                                                         ErrorMessage="La fecha de emisión de la factura es obligatoria"
-                                                                        CssClass="text-danger small"
+                                                                        CssClass="sgv-campo-error"
                                                                         Display="Dynamic"
                                                                         SetFocusOnError="true"
-                                                                        ValidationGroup="ConfiguracionBase">
-                                                                    </asp:RequiredFieldValidator>
+                                                                        ValidationGroup="ConfiguracionBase" />
                                                                     <asp:CustomValidator ID="cvFechaEmisionFacturaBase" runat="server"
                                                                         ControlToValidate="txtFechaEmisionFacturaBase"
                                                                         ErrorMessage="La fecha de emisión de factura no es válida"
-                                                                        CssClass="text-danger small"
+                                                                        CssClass="sgv-campo-error"
                                                                         Display="Dynamic"
                                                                         SetFocusOnError="true"
                                                                         ClientValidationFunction="validarFechaEmisionCliente"
                                                                         OnServerValidate="cvFechaEmisionFacturaBase_ServerValidate"
-                                                                        ValidationGroup="ConfiguracionBase">
-                                                                    </asp:CustomValidator>
+                                                                        ValidationGroup="ConfiguracionBase" />
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="<%= txtValorTotalFacturaBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>Valor total:</strong>
-                                                                        <span class="text-danger">*</span>
+                                                                        <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                                     </label>
                                                                     <div class="input-group">
                                                                         <div class="input-group-prepend">
@@ -825,7 +829,7 @@
                                                                                 <asp:ListItem Value="USD" Text="US$"></asp:ListItem>
                                                                             </asp:DropDownList>
                                                                         </div>
-                                                                        <asp:TextBox ID="txtValorTotalFacturaBase" runat="server"
+                                                                        <asp:TextBox ID="txtValorTotalFacturaBase" runat="server" aria-required="true"
                                                                             CssClass="form-control"
                                                                             placeholder="0.00"
                                                                             inputmode="decimal" autocomplete="off" data-monto="true">
@@ -834,11 +838,10 @@
                                                                     <asp:RequiredFieldValidator ID="rfvValorTotalFacturaBase" runat="server"
                                                                         ControlToValidate="txtValorTotalFacturaBase"
                                                                         ErrorMessage="El valor total de la factura es obligatorio"
-                                                                        CssClass="text-danger small"
+                                                                        CssClass="sgv-campo-error"
                                                                         Display="Dynamic"
                                                                         SetFocusOnError="true"
-                                                                        ValidationGroup="ConfiguracionBase">
-                                                                    </asp:RequiredFieldValidator>
+                                                                        ValidationGroup="ConfiguracionBase" />
                                                                     <asp:RangeValidator ID="rvValorTotalFacturaBase" runat="server"
                                                                         ControlToValidate="txtValorTotalFacturaBase"
                                                                         MinimumValue="0.01"
@@ -846,10 +849,9 @@
                                                                         Type="Double"
                                                                         CultureInvariantValues="true"
                                                                         ErrorMessage="Ingrese un monto mayor a 0 y menor a 10 millones."
-                                                                        CssClass="text-danger small"
-                                                                        Display="Dynamic"
-                                                                        ValidationGroup="ConfiguracionBase">
-                                                                    </asp:RangeValidator>
+                                                                        CssClass="sgv-campo-error"
+                                                                        Display="Dynamic" SetFocusOnError="true"
+                                                                        ValidationGroup="ConfiguracionBase" />
                                                                 </div>
 
                                                                 <div class="form-group mb-0">
@@ -871,9 +873,10 @@
                                                                 <div class="form-group mb-2">
                                                                     <label for="<%= txtNumeroCPICBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>N° CPIC:</strong>
-                                                                        <span class="text-danger rd-req">*</span>
+                                                                        <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                                         <span class="text-muted small rd-opcional">(Opcional: si llega después, agréguelo en Lista de despachos)</span>
                                                                     </label>
+                                                                    <%-- aria-required de los tres campos de la CPIC: lo pone OnPreRender (opcional en la descarga internacional). --%>
                                                                     <asp:TextBox ID="txtNumeroCPICBase" runat="server"
                                                                         CssClass="form-control"
                                                                         AutoCompleteType="Disabled" autocomplete="off"
@@ -883,26 +886,24 @@
                                                                     <asp:RequiredFieldValidator ID="rfvNumeroCPICBase" runat="server"
                                                                         ControlToValidate="txtNumeroCPICBase"
                                                                         ErrorMessage="El número de CPIC es obligatorio"
-                                                                        CssClass="text-danger small"
+                                                                        CssClass="sgv-campo-error"
                                                                         Display="Dynamic"
                                                                         SetFocusOnError="true"
-                                                                        ValidationGroup="ConfiguracionBase">
-                                                                    </asp:RequiredFieldValidator>
+                                                                        ValidationGroup="ConfiguracionBase" />
                                                                     <asp:RegularExpressionValidator ID="revNumeroCPICBase" runat="server"
                                                                         ControlToValidate="txtNumeroCPICBase"
                                                                         ValidationExpression="^[A-Za-z0-9\-/]{3,20}$"
                                                                         ErrorMessage="El N° de CPIC solo permite letras, números, guion o slash (3-20 caracteres)"
-                                                                        CssClass="text-danger small"
+                                                                        CssClass="sgv-campo-error"
                                                                         Display="Dynamic"
                                                                         SetFocusOnError="true"
-                                                                        ValidationGroup="ConfiguracionBase">
-                                                                    </asp:RegularExpressionValidator>
+                                                                        ValidationGroup="ConfiguracionBase" />
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="<%= txtFechaEmisionCPICBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>Fecha emisión CPIC:</strong>
-                                                                        <span class="text-danger rd-req">*</span>
+                                                                        <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                                     </label>
                                                                     <asp:TextBox ID="txtFechaEmisionCPICBase" runat="server"
                                                                         CssClass="form-control"
@@ -911,27 +912,25 @@
                                                                     <asp:RequiredFieldValidator ID="rfvFechaEmisionCPICBase" runat="server"
                                                                         ControlToValidate="txtFechaEmisionCPICBase"
                                                                         ErrorMessage="La fecha de emisión del CPIC es obligatoria"
-                                                                        CssClass="text-danger small"
+                                                                        CssClass="sgv-campo-error"
                                                                         Display="Dynamic"
                                                                         SetFocusOnError="true"
-                                                                        ValidationGroup="ConfiguracionBase">
-                                                                    </asp:RequiredFieldValidator>
+                                                                        ValidationGroup="ConfiguracionBase" />
                                                                     <asp:CustomValidator ID="cvFechaEmisionCPICBase" runat="server"
                                                                         ControlToValidate="txtFechaEmisionCPICBase"
                                                                         ErrorMessage="La fecha de emisión de CPIC no es válida"
-                                                                        CssClass="text-danger small"
+                                                                        CssClass="sgv-campo-error"
                                                                         Display="Dynamic"
                                                                         SetFocusOnError="true"
                                                                         ClientValidationFunction="validarFechaEmisionCliente"
                                                                         OnServerValidate="cvFechaEmisionCPICBase_ServerValidate"
-                                                                        ValidationGroup="ConfiguracionBase">
-                                                                    </asp:CustomValidator>
+                                                                        ValidationGroup="ConfiguracionBase" />
                                                                 </div>
 
                                                                 <div class="form-group mb-2">
                                                                     <label for="<%= txtValorFleteBase.ClientID %>" class="sgv-etiqueta">
                                                                         <strong>Valor flete (S/):</strong>
-                                                                        <span class="text-danger rd-req">*</span>
+                                                                        <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                                     </label>
                                                                     <asp:TextBox ID="txtValorFleteBase" runat="server"
                                                                         CssClass="form-control"
@@ -941,11 +940,10 @@
                                                                     <asp:RequiredFieldValidator ID="rfvValorFleteBase" runat="server"
                                                                         ControlToValidate="txtValorFleteBase"
                                                                         ErrorMessage="El valor del flete es obligatorio"
-                                                                        CssClass="text-danger small"
+                                                                        CssClass="sgv-campo-error"
                                                                         Display="Dynamic"
                                                                         SetFocusOnError="true"
-                                                                        ValidationGroup="ConfiguracionBase">
-                                                                    </asp:RequiredFieldValidator>
+                                                                        ValidationGroup="ConfiguracionBase" />
                                                                     <asp:RangeValidator ID="rvValorFleteBase" runat="server"
                                                                         ControlToValidate="txtValorFleteBase"
                                                                         MinimumValue="0.01"
@@ -953,10 +951,9 @@
                                                                         Type="Double"
                                                                         CultureInvariantValues="true"
                                                                         ErrorMessage="Ingrese un monto mayor a 0 y menor a 10 millones."
-                                                                        CssClass="text-danger small"
-                                                                        Display="Dynamic"
-                                                                        ValidationGroup="ConfiguracionBase">
-                                                                    </asp:RangeValidator>
+                                                                        CssClass="sgv-campo-error"
+                                                                        Display="Dynamic" SetFocusOnError="true"
+                                                                        ValidationGroup="ConfiguracionBase" />
                                                                 </div>
 
                                                                 <div class="form-group mb-0">
@@ -1158,9 +1155,9 @@
                                                     <div class="form-group mb-3">
                                                         <label for="<%= ddlConductor.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Conductor:</strong>
-                                                            <span class="text-danger">*</span>
+                                                            <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                         </label>
-                                                        <asp:DropDownList ID="ddlConductor" runat="server" 
+                                                        <asp:DropDownList ID="ddlConductor" runat="server" aria-required="true" 
                                                             CssClass="custom-select select2-searchable"
                                                             DataTextField="NombreCompleto"
                                                             DataValueField="idConductor"
@@ -1173,20 +1170,19 @@
                                                             ControlToValidate="ddlConductor"
                                                             InitialValue="0"
                                                             ErrorMessage="Debe seleccionar un conductor"
-                                                            CssClass="text-danger small"
+                                                            CssClass="sgv-campo-error"
                                                             Display="Dynamic"
                                                             SetFocusOnError="true"
-                                                            ValidationGroup="AgregarConductor">
-                                                        </asp:RequiredFieldValidator>
+                                                            ValidationGroup="AgregarConductor" />
                                                     </div>
 
                                                     <!-- Placa Tracto -->
                                                     <div class="form-group mb-3">
                                                         <label for="<%= ddlPlacaTracto.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Placa tracto:</strong>
-                                                            <span class="text-danger">*</span>
+                                                            <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                         </label>
-                                                        <asp:DropDownList ID="ddlPlacaTracto" runat="server" 
+                                                        <asp:DropDownList ID="ddlPlacaTracto" runat="server" aria-required="true" 
                                                             CssClass="custom-select select2-searchable"
                                                             DataTextField="placaTracto"
                                                             DataValueField="idTracto"
@@ -1197,20 +1193,19 @@
                                                             ControlToValidate="ddlPlacaTracto"
                                                             InitialValue="0"
                                                             ErrorMessage="Debe seleccionar una placa de tracto"
-                                                            CssClass="text-danger small"
+                                                            CssClass="sgv-campo-error"
                                                             Display="Dynamic"
                                                             SetFocusOnError="true"
-                                                            ValidationGroup="AgregarConductor">
-                                                        </asp:RequiredFieldValidator>
+                                                            ValidationGroup="AgregarConductor" />
                                                     </div>
 
                                                     <!-- Placa Carreta -->
                                                     <div class="form-group mb-3">
                                                         <label for="<%= ddlPlacaCarreta.ClientID %>" class="sgv-etiqueta">
                                                             <strong>Placa carreta:</strong>
-                                                            <span class="text-danger">*</span>
+                                                            <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                         </label>
-                                                        <asp:DropDownList ID="ddlPlacaCarreta" runat="server" 
+                                                        <asp:DropDownList ID="ddlPlacaCarreta" runat="server" aria-required="true" 
                                                             CssClass="custom-select select2-searchable"
                                                             DataTextField="placaCarreta"
                                                             DataValueField="idCarreta"
@@ -1221,11 +1216,10 @@
                                                             ControlToValidate="ddlPlacaCarreta"
                                                             InitialValue="0"
                                                             ErrorMessage="Debe seleccionar una placa de carreta"
-                                                            CssClass="text-danger small"
+                                                            CssClass="sgv-campo-error"
                                                             Display="Dynamic"
                                                             SetFocusOnError="true"
-                                                            ValidationGroup="AgregarConductor">
-                                                        </asp:RequiredFieldValidator>
+                                                            ValidationGroup="AgregarConductor" />
                                                     </div>
                                                 </div>
 
@@ -1246,25 +1240,15 @@
                                                                 MaxLength="30"
                                                                 placeholder="Número de guía remitente (puede completarse después)">
                                                             </asp:TextBox>
-                                                            <asp:RequiredFieldValidator ID="rfvGuiaRemitente" runat="server"
-                                                                ControlToValidate="txtGuiaRemitente"
-                                                                ErrorMessage="Guía remitente requerida"
-                                                                CssClass="text-danger small"
-                                                                Display="Dynamic"
-                                                                SetFocusOnError="true"
-                                                                Enabled="false"
-                                                                ValidationGroup="AgregarConductor">
-                                                            </asp:RequiredFieldValidator>
                                                             <small class="form-text text-muted">Si no dispone del número ahora, puede dejarlo en blanco.</small>
                                                             <asp:RegularExpressionValidator ID="revGuiaRemitente" runat="server"
                                                                 ControlToValidate="txtGuiaRemitente"
                                                                 ValidationExpression="^$|^[A-Za-z0-9\-/]{4,30}$"
                                                                 ErrorMessage="La guía remitente debe tener entre 4 y 30 caracteres (letras, números, guion o slash)"
-                                                                CssClass="text-danger small"
+                                                                CssClass="sgv-campo-error"
                                                                 Display="Dynamic"
                                                                 SetFocusOnError="true"
-                                                                ValidationGroup="AgregarConductor">
-                                                            </asp:RegularExpressionValidator>
+                                                                ValidationGroup="AgregarConductor" />
                                                         </div>
                                                     </asp:Panel>
 
@@ -1273,9 +1257,9 @@
                                                         <div class="form-group mb-3">
                                                             <label for="<%= txtGuiaTransportista.ClientID %>" class="sgv-etiqueta">
                                                                 <strong>Guía transportista:</strong>
-                                                                <span class="text-danger">*</span>
+                                                                <span class="sgv-obligatorio" aria-hidden="true">*</span>
                                                             </label>
-                                                            <asp:TextBox ID="txtGuiaTransportista" runat="server" 
+                                                            <asp:TextBox ID="txtGuiaTransportista" runat="server" aria-required="true" 
                                                                 CssClass="form-control" 
                                                                 AutoCompleteType="Disabled" autocomplete="off"
                                                                 MaxLength="30"
@@ -1284,20 +1268,18 @@
                                                             <asp:RequiredFieldValidator ID="rfvGuiaTransportista" runat="server"
                                                                 ControlToValidate="txtGuiaTransportista"
                                                                 ErrorMessage="Guía transportista requerida"
-                                                                CssClass="text-danger small"
+                                                                CssClass="sgv-campo-error"
                                                                 Display="Dynamic"
                                                                 SetFocusOnError="true"
-                                                                ValidationGroup="AgregarConductor">
-                                                            </asp:RequiredFieldValidator>
+                                                                ValidationGroup="AgregarConductor" />
                                                             <asp:RegularExpressionValidator ID="revGuiaTransportista" runat="server"
                                                                 ControlToValidate="txtGuiaTransportista"
                                                                 ValidationExpression="^[A-Za-z0-9\-/]{4,30}$"
                                                                 ErrorMessage="La guía transportista debe tener entre 4 y 30 caracteres (letras, números, guion o slash)"
-                                                                CssClass="text-danger small"
+                                                                CssClass="sgv-campo-error"
                                                                 Display="Dynamic"
                                                                 SetFocusOnError="true"
-                                                                ValidationGroup="AgregarConductor">
-                                                            </asp:RegularExpressionValidator>
+                                                                ValidationGroup="AgregarConductor" />
                                                         </div>
                                                     </asp:Panel>
 

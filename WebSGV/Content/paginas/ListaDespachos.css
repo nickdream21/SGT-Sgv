@@ -96,10 +96,11 @@
 .ld-quitar-doc { display: inline-flex; align-items: center; }
 .ld-quitar-doc input[type=checkbox] { margin: 0 .45rem 0 0; }
 .ld-quitar-doc label { margin-bottom: 0; cursor: pointer; }
-.required::after { content: " *"; color: var(--sgv-peligro); }
+/* El select original de select2 (.select2-hidden-accessible) y los span.sr-only de las filas van en absolute: sin un
+   contenedor posicionado se escapaban del scroll de la tabla y ensanchaban "Editar lote" a 390 px (M-168, como RegistroDespacho.css). */
+.table-responsive { position: relative; }
 .readonly-field { background-color: var(--sgv-fondo-pagina); cursor: not-allowed; }
 .form-text { font-size: .8125rem; color: var(--sgv-texto-suave); margin-top: .25rem; }
-.field-error { color: var(--sgv-peligro); font-size: .8125rem; margin-top: .25rem; display: block; }
 
 /* ---- Registro manual de documentos ---- */
 .ld-aviso { display: flex; gap: .75rem; align-items: flex-start; padding: .8rem 1rem; border-radius: var(--sgv-radio); margin-bottom: 1.25rem; font-size: .875rem; line-height: 1.45; }
