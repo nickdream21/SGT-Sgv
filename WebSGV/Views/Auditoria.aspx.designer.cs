@@ -8,10 +8,6 @@ namespace WebSGV.Views
 {
     public partial class Auditoria
     {
-        protected global::System.Web.UI.WebControls.Label lblTotalRegistros;
-        protected global::System.Web.UI.WebControls.Label lblRegistrosHoy;
-        protected global::System.Web.UI.WebControls.Label lblUsuariosActivos;
-        protected global::System.Web.UI.WebControls.Label lblTablasAfectadas;
         protected global::System.Web.UI.WebControls.TextBox txtFechaDesde;
         protected global::System.Web.UI.WebControls.TextBox txtFechaHasta;
         protected global::System.Web.UI.WebControls.DropDownList ddlAccion;
@@ -19,7 +15,8 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtUsuario;
         protected global::System.Web.UI.WebControls.Button btnBuscar;
         protected global::System.Web.UI.WebControls.Button btnExportarExcel;
-        protected global::System.Web.UI.WebControls.Label lblCantidadResultados;
+        protected global::System.Web.UI.WebControls.Literal litResumen;
+        protected global::System.Web.UI.WebControls.Literal litCifras;
         protected global::System.Web.UI.WebControls.GridView gvAuditoria;
     }
 }

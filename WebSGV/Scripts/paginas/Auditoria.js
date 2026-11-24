@@ -6,14 +6,10 @@ function formatearJson(texto) {
     try { return JSON.stringify(JSON.parse(texto), null, 2); } catch (e) { return texto; }
 }
 
+// La sección va con d-none en el marcado (sin style=, E5-17): se muestra u oculta con la clase.
 function pintarValores(seccion, pre, texto) {
-    if (texto) {
-        $(pre).text(formatearJson(texto));
-        $(seccion).show();
-    } else {
-        $(pre).text('');
-        $(seccion).hide();
-    }
+    $(pre).text(texto ? formatearJson(texto) : '');
+    $(seccion).toggleClass('d-none', !texto);
 }
 
 function mostrarCargandoDetalle(cargando) {

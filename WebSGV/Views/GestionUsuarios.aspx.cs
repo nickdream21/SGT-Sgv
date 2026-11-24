@@ -21,12 +21,35 @@ namespace WebSGV.Views
             txtContrasena.Attributes["placeholder"] = PasswordHelper.TextoMinimoNueva;
             txtNuevaPass.Attributes["placeholder"] = PasswordHelper.TextoMinimoNueva;
 
+            // La grilla no guarda ViewState (E5-17): se enlaza en cada petición, en el manejador que cambia algo o,
+            // si ninguno lo hizo, en OnPreRender. Los filtros aplicados viven en hfFiltroTexto/Rol/Estado (solo los
+            // escriben Buscar y Limpiar) y la página en el ControlState del GridView: se conservan tras editar,
+            // activar, restablecer o quitar el segundo factor, también en la página 2 o con un filtro.
             if (!IsPostBack)
-            {
                 CargarRoles();
+        }
+
+        /// <summary>
+        /// ddlConductor va sin ViewState (E5-17: los conductores activos con su documento pesaban casi todo el
+        /// ViewState de la página). Se llena en cada petición antes de leer lo enviado, así el conductor elegido se
+        /// recupera en el postback del alta o la edición. Solo con la sesión del rol de la página: a los demás
+        /// Page_Load los saca sin consultar nada.
+        /// </summary>
+        protected override void OnInit(EventArgs e)
+        {
+            base.OnInit(e);
+            if (SecurityHelper.TieneSesionActiva() && SecurityHelper.EsAdminSistema())
                 CargarConductores();
+        }
+
+        /// <summary>true cuando CargarUsuarios ya enlazó la grilla en esta petición.</summary>
+        private bool _grillaEnlazada;
+
+        protected override void OnPreRender(EventArgs e)
+        {
+            if (!_grillaEnlazada && !Response.IsRequestBeingRedirected)
                 CargarUsuarios();
-            }
+            base.OnPreRender(e);
         }
 
         private void CargarRoles()
@@ -83,9 +106,31 @@ namespace WebSGV.Views
 
         private void CargarUsuarios()
         {
-            string buscar = txtBuscar.Text.Trim();
-            string rol    = ddlFiltroRol.SelectedValue;
-            string estado = ddlFiltroEstado.SelectedValue;
+            _grillaEnlazada = true;
+            try
+            {
+                EnlazarUsuarios();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("No se pudo cargar la lista de usuarios: " + MensajeErrorHelper.ParaUsuario(ex), "warning");
+                gvUsuarios.DataSource = null;
+                gvUsuarios.DataBind();
+            }
+        }
+
+        private void EnlazarUsuarios()
+        {
+            // Los filtros son los que se aplicaron con Buscar (campos ocultos), no lo que haya en los controles:
+            // paginar o usar una fila no filtra con algo elegido sin pulsar Buscar. Los campos ocultos los puede
+            // cambiar el usuario: texto recortado, rol de la lista y estado "", "0" o "1".
+            string buscar = ListaCatalogo.RecortarBusqueda(hfFiltroTexto.Value);
+            string rol    = ddlFiltroRol.Items.FindByValue(hfFiltroRol.Value ?? "") != null ? hfFiltroRol.Value ?? "" : "";
+            string estado = AdminUsuariosReglas.FiltroEstadoValido(hfFiltroEstado.Value);
+            if (txtBuscar.Text != buscar) txtBuscar.Text = buscar;
+            ddlFiltroRol.SelectedValue = rol;
+            ddlFiltroEstado.SelectedValue = estado;
+            bool conFiltro = buscar.Length > 0 || rol.Length > 0 || estado.Length > 0;
 
             var parametros = new List<SqlParameter>();
             string query = " FROM Usuarios WHERE 1=1";
@@ -117,8 +162,28 @@ namespace WebSGV.Views
                         : "CAST(NULL AS INT)")
                     + " AS segundoFactor" + query,
                 parametros.Select(p => DbHelper.Param(p.ParameterName, p.Value)).ToArray()));
+
+            gvUsuarios.PageIndex = ListaCatalogo.IndiceValido(gvUsuarios.PageIndex, dt.Rows.Count);
+            gvUsuarios.EmptyDataText = conFiltro
+                ? "No se encontraron usuarios con los filtros seleccionados."
+                : "No hay usuarios registrados.";
             gvUsuarios.DataSource = dt;
             gvUsuarios.DataBind();
+
+            string resumen = ListaCatalogo.Resumen(gvUsuarios.PageIndex, dt.Rows.Count, dt.Rows.Count, "");
+            litResumen.Text = conFiltro && resumen.Length > 0 ? resumen + " con los filtros aplicados" : resumen;
+
+            DataTable totales = DbHelper.ConsultarTabla(
+                "SELECT COUNT(*) AS total, ISNULL(SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END), 0) AS activos FROM Usuarios");
+            if (totales.Rows.Count > 0)
+                lblContador.Text = AdminUsuariosReglas.TextoContador(Convert.ToInt32(totales.Rows[0]["total"]),
+                    Convert.ToInt32(totales.Rows[0]["activos"]));
+        }
+
+        protected void gvUsuarios_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            gvUsuarios.PageIndex = e.NewPageIndex;
+            CargarUsuarios();
         }
 
         protected void btnNuevoUsuario_Click(object sender, EventArgs e)
@@ -152,41 +217,65 @@ namespace WebSGV.Views
             AbrirModal("modalUsuario");
         }
 
-        protected void gvUsuarios_RowCommand(object sender, GridViewCommandEventArgs e)
+        /// <summary>
+        /// Botón de una fila (E5-17): deja "ACCION|id[|estado]" en hfArgumentoFila y pulsa este botón oculto. El
+        /// campo lo puede cambiar el usuario: se lee con formato estricto (AdminUsuariosReglas.TryLeerAccionFila), se
+        /// exige que el usuario exista y cada acción repite sus comprobaciones de siempre (fila propia, contraseña del
+        /// administrador, último administrador de sistema en UsuarioEstadoService). Leer el argumento no autoriza nada.
+        /// </summary>
+        protected void btnAccionFila_Click(object sender, EventArgs e)
         {
-            if (e.CommandName == "ToggleActivo")
+            string argumento = hfArgumentoFila.Value;
+            hfArgumentoFila.Value = "";
+            if (!AdminUsuariosReglas.TryLeerAccionFila(argumento, out AccionFilaUsuarioTipo accion, out int idUsuario, out bool nuevoActivo))
             {
-                CambiarEstadoUsuario(e.CommandArgument);
+                MostrarMensaje("No se pudo leer la fila; recargue la página.", "warning");
+                CargarUsuarios();
                 return;
             }
 
-            if (!int.TryParse(Convert.ToString(e.CommandArgument), out int idUsuario) || idUsuario <= 0)
-                return;
-
-            switch (e.CommandName)
+            object existe = DbHelper.EjecutarEscalar("SELECT 1 FROM Usuarios WHERE idUsuario = @id", DbHelper.Param("@id", idUsuario));
+            if (existe == null || existe == DBNull.Value)
             {
-                case "EditarUsuario":
+                MostrarMensaje("El usuario ya no existe; se actualizó la lista.", "warning");
+                CargarUsuarios();
+                return;
+            }
+
+            switch (accion)
+            {
+                case AccionFilaUsuarioTipo.Editar:
                     CargarUsuarioEnModal(idUsuario);
                     break;
-                case "QuitarSegundoFactor":
+                case AccionFilaUsuarioTipo.Estado:
+                    // Mismo "id|estadoDestino" de B5-8 que leía el antiguo CommandArgument.
+                    CambiarEstadoUsuario(idUsuario.ToString(System.Globalization.CultureInfo.InvariantCulture) + (nuevoActivo ? "|1" : "|0"));
+                    break;
+                case AccionFilaUsuarioTipo.QuitarSegundoFactor:
                     QuitarSegundoFactor(idUsuario);
                     break;
-                case "ResetPassword":
-                    if (AdminUsuariosReglas.EsFilaPropia(idUsuario, SesionHelper.IdUsuarioActual))
-                    {
-                        MostrarMensaje(AdminUsuariosReglas.MensajeRestablecerPropia, "warning");
-                        CargarUsuarios();
-                        break;
-                    }
-                    if (!ReautenticacionVigente())
-                    {
-                        PedirReautenticacion(AccionReautReset + idUsuario.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                            "restablecer la contraseña de otro usuario");
-                        break;
-                    }
-                    PrepararResetPassword(idUsuario);
+                case AccionFilaUsuarioTipo.Contrasena:
+                    RestablecerContrasenaDeFila(idUsuario);
                     break;
             }
+        }
+
+        /// <summary>Botón Contraseña de una fila: no la propia y con la contraseña del administrador (E4-12).</summary>
+        private void RestablecerContrasenaDeFila(int idUsuario)
+        {
+            if (AdminUsuariosReglas.EsFilaPropia(idUsuario, SesionHelper.IdUsuarioActual))
+            {
+                MostrarMensaje(AdminUsuariosReglas.MensajeRestablecerPropia, "warning");
+                CargarUsuarios();
+                return;
+            }
+            if (!ReautenticacionVigente())
+            {
+                PedirReautenticacion(AccionReautReset + idUsuario.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    "restablecer la contraseña de otro usuario");
+                return;
+            }
+            PrepararResetPassword(idUsuario);
         }
 
         // ── Reautenticación del administrador (E4-12) ─────────────────────
@@ -422,8 +511,19 @@ namespace WebSGV.Views
             $"¿Quitar el segundo factor de {Convert.ToString(nombreUsuario)}?\\n\\nHágalo solo si perdió el celular y sus códigos de recuperación. " +
             "Sus sesiones abiertas se cerrarán.";
 
-        /// <summary>CommandArgument del botón Activar/Desactivar: "id|estadoDestino" (B5-8).</summary>
-        protected string ArgumentoEstado(object id, object activo) => EstadoActivoService.ArgumentoComando(id, activo);
+        /// <summary>data-argumento de un botón de la fila (E5-17): "EDITAR|id", "ESTADO|id|estadoDestino" (B5-8), ...</summary>
+        protected static string ArgumentoFila(AccionFilaUsuarioTipo accion, object idUsuario, object activo = null) =>
+            AdminUsuariosReglas.ArgumentoFila(accion, idUsuario, activo);
+
+        /// <summary>Sello del rol y, si tiene la verificación en dos pasos activa, el sello "2 pasos" (E4-14).</summary>
+        protected static string SelloRol(object rol, object segundoFactor) =>
+            EstadoUiHelper.Sello(Convert.ToString(rol), TonoEstado.Neutro) +
+            (SegundoFactorActivo(segundoFactor) ? " " + EstadoUiHelper.Sello("2 pasos", TonoEstado.Info) : "");
+
+        /// <summary>Sello Activo (verde) o Inactivo (gris).</summary>
+        protected static string SelloEstado(object activo) =>
+            EstadoUiHelper.Sello(EstadoUiHelper.ObtenerTextoEstado(activo),
+                EstadoUiHelper.ObtenerTextoEstado(activo) == "Activo" ? TonoEstado.Ok : TonoEstado.Neutro);
 
         /// <summary>
         /// Valores nuevos que se auditan al crear un usuario. Nunca incluye la contraseña ni su hash.
@@ -446,6 +546,12 @@ namespace WebSGV.Views
             object result = DbHelper.EjecutarEscalar(
                 "SELECT nombreUsuario FROM Usuarios WHERE idUsuario = @id",
                 DbHelper.Param("@id", idUsuario));
+            if (result == null || result == DBNull.Value)
+            {
+                MostrarMensaje("El usuario ya no existe; se actualizó la lista.", "warning");
+                CargarUsuarios();
+                return;
+            }
             lblUsuarioReset.Text = System.Web.HttpUtility.HtmlEncode(result?.ToString() ?? "");
 
             hfIdUsuarioReset.Value   = idUsuario.ToString();
@@ -696,14 +802,22 @@ namespace WebSGV.Views
             }
         }
 
-        protected void btnBuscar_Click(object sender, EventArgs e) => CargarUsuarios();
+        protected void btnBuscar_Click(object sender, EventArgs e)
+        {
+            hfFiltroTexto.Value  = ListaCatalogo.RecortarBusqueda(txtBuscar.Text);
+            hfFiltroRol.Value    = ddlFiltroRol.SelectedValue ?? "";
+            hfFiltroEstado.Value = ddlFiltroEstado.SelectedValue ?? "";
+            gvUsuarios.PageIndex = 0;
+            CargarUsuarios();
+        }
 
         protected void btnLimpiar_Click(object sender, EventArgs e)
         {
-            txtBuscar.Text                = "";
-            ddlFiltroRol.SelectedIndex    = 0;
-            ddlFiltroEstado.SelectedIndex = 0;
-            pnlMensaje.Visible            = false;
+            hfFiltroTexto.Value  = "";
+            hfFiltroRol.Value    = "";
+            hfFiltroEstado.Value = "";
+            gvUsuarios.PageIndex = 0;
+            pnlMensaje.Visible   = false;
             CargarUsuarios();
         }
 

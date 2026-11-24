@@ -85,7 +85,10 @@ namespace WebSGV.Tests
             "InsigniaDocumento(",         // ListaDespachos: HtmlEncode del texto
             "UrlAdjunto(",             // MovimientosViaje: URL de DocumentoHelper (NavigateUrl la codifica el HyperLink)
             "ConfirmarCambioEstado(",     // GestionUsuarios: texto plano en data-confirmar (el Button codifica el atributo; SGV.confirmar lo pone con .text())
-            "ConfirmarQuitarSegundoFactor(" // GestionUsuarios (E4-14): igual que ConfirmarCambioEstado
+            "ConfirmarQuitarSegundoFactor(", // GestionUsuarios (E4-14): igual que ConfirmarCambioEstado
+            "SelloRol(",                  // GestionUsuarios (E5-17): EstadoUiHelper.Sello, HtmlEncode del rol
+            "SelloEstado(",               // GestionUsuarios (E5-17): EstadoUiHelper.Sello de textos fijos
+            "SelloAccion("                // Auditoria y DashboardAdminSistema (E5-17): EstadoUiHelper.Sello, HtmlEncode de la acción
         };
 
         private static readonly Regex ExpresionSinCodificar = new Regex(@"<%#(?![:$])(.*?)%>", RegexOptions.Singleline | RegexOptions.Compiled);

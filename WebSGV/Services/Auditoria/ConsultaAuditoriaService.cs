@@ -150,6 +150,44 @@ namespace WebSGV.Services.Auditoria
             return DbHelper.ConsultarTabla(sql, parametros.ToArray());
         }
 
+        /// <summary>
+        /// Códigos de acción distintos que hay en AuditoriaLog, en orden alfabético, para el filtro Acción (M-135:
+        /// el filtro fijo de 11 opciones no dejaba buscar las otras, p. ej. FIRMAR o SEGUNDO_FACTOR_QUITADO).
+        /// </summary>
+        public static List<string> ObtenerAcciones()
+        {
+            DataTable dt = DbHelper.ConsultarTabla(
+                "SELECT DISTINCT Accion FROM AuditoriaLog WHERE Accion IS NOT NULL AND Accion <> '' ORDER BY Accion");
+            var acciones = new List<string>(dt.Rows.Count);
+            foreach (DataRow fila in dt.Rows)
+                acciones.Add(Convert.ToString(fila["Accion"]).Trim());
+            return acciones;
+        }
+
+        /// <summary>
+        /// Nombre en español de un código de acción para el filtro y la grilla. Las acciones genéricas (las del filtro
+        /// antiguo) tienen nombre; las demás ya se leen por su código (FIRMAR, DESCARGAR_PDF) y salen tal cual.
+        /// </summary>
+        public static string NombreAccion(object codigo)
+        {
+            string c = codigo == null || codigo == DBNull.Value ? string.Empty : codigo.ToString().Trim();
+            switch (c.ToUpperInvariant())
+            {
+                case "INSERT": return "Inserción";
+                case "UPDATE": return "Actualización";
+                case "DELETE": return "Eliminación";
+                case "LOGIN": return "Inicio de sesión";
+                case "LOGIN_FALLIDO": return "Inicio de sesión fallido";
+                case "LOGIN_BLOQUEADO": return "Acceso bloqueado";
+                case "LOGOUT": return "Cierre de sesión";
+                case "APROBAR": return "Aprobación";
+                case "RECHAZAR": return "Rechazo";
+                case "LIQUIDAR": return "Liquidación";
+                case "RETIRAR": return "Retiro";
+                default: return c;
+            }
+        }
+
         /// <summary>Registros para el Excel (la consulta de siempre, con su tope).</summary>
         public static DataTable ObtenerParaExportar(FiltroAuditoria filtro, int maximo)
         {

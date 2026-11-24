@@ -2,6 +2,13 @@
 {
     public partial class GestionUsuarios
     {
+        protected global::System.Web.UI.WebControls.HiddenField hfArgumentoFila;
+        protected global::System.Web.UI.WebControls.HiddenField hfFiltroTexto;
+        protected global::System.Web.UI.WebControls.HiddenField hfFiltroRol;
+        protected global::System.Web.UI.WebControls.HiddenField hfFiltroEstado;
+        protected global::System.Web.UI.WebControls.Button btnAccionFila;
+        protected global::System.Web.UI.WebControls.Label lblContador;
+        protected global::System.Web.UI.WebControls.Literal litResumen;
         protected global::System.Web.UI.WebControls.Button btnNuevoUsuario;
         protected global::System.Web.UI.WebControls.TextBox txtBuscar;
         protected global::System.Web.UI.WebControls.DropDownList ddlFiltroRol;

@@ -767,8 +767,6 @@ namespace WebSGV.Tests
         /// Lista cerrada: solo se achica (al rehacer una página, sáquela de aquí).</summary>
         internal static readonly Dictionary<string, string> PaginasConTarjetasKpi = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Views/Auditoria.aspx"] = "E5-17",
-            ["Views/DashboardAdminSistema.aspx"] = "E5-17",
             ["Views/FacturasFlete.aspx"] = "E5-17",
             ["Views/ReporteCargas.aspx"] = "E5-17",
             ["Views/ReportesOrdenesViaje.aspx"] = "E5-17",
@@ -901,9 +899,10 @@ namespace WebSGV.Tests
 
         /// <summary>Iconos del marcado al cerrar E5-24b: avisos, giratorios, funcionales, botones compactos
         /// de las tablas y lo que queda para E5-17/E5-18 (tarjetas KPI y sueltos de ListaDespachos,
-        /// RegistroDespacho, Auditoria, ReportesOrdenesViaje, FacturasFlete y DashboardAdminSistema).
+        /// RegistroDespacho, ReportesOrdenesViaje y FacturasFlete). E5-17a: 93 a 84 (fuera las tarjetas y los iconos de
+        /// Auditoria y el de DashboardAdminSistema; queda la lupa del detalle de Auditoria, botón compacto con aria-label).
         /// Igualdad exacta: al quitar iconos, baje la cifra.</summary>
-        private const int TopeIconosMarcado = 93;
+        private const int TopeIconosMarcado = 84;
         /// <summary>Iconos armados en .cs/.js (sobre todo BandejaDocumentos y RegistroDespacho, de E5-17/E5-18).</summary>
         private const int TopeIconosCodigo = 55;
 

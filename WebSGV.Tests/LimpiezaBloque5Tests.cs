@@ -65,8 +65,9 @@ namespace WebSGV.Tests
         [Fact]
         public void Auditoria_filtro_Actualizacion_con_tilde_y_mismo_valor()
         {
-            string marcado = Fuente("WebSGV", "Views", "Auditoria.aspx");
-            Assert.Contains("<asp:ListItem Value=\"UPDATE\">Actualización</asp:ListItem>", marcado);
+            // E5-17 (M-135): el filtro sale de la BD; el nombre en español lo pone NombreAccion.
+            Assert.Equal("Actualización", WebSGV.Services.Auditoria.ConsultaAuditoriaService.NombreAccion("UPDATE"));
+            Assert.Contains("ConsultaAuditoriaService.NombreAccion(accion), accion", Fuente("WebSGV", "Views", "Auditoria.aspx.cs"));
         }
     }
 }

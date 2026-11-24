@@ -141,5 +141,100 @@ namespace WebSGV.Tests
             Assert.Contains("autocomplete=\"current-password\"", aspx);
             Assert.Contains("data-enter=\"<%= btnConfirmarReaut.ClientID %>\"", aspx);
         }
+
+        // ── E5-17: botones de la fila por un campo oculto (grilla sin ViewState) ──────────────
+
+        [Fact]
+        public void ArgumentoFila_FormatoDeCadaAccion()
+        {
+            Assert.Equal("EDITAR|12", AdminUsuariosReglas.ArgumentoFila(AccionFilaUsuarioTipo.Editar, 12));
+            Assert.Equal("CONTRASENA|12", AdminUsuariosReglas.ArgumentoFila(AccionFilaUsuarioTipo.Contrasena, 12));
+            Assert.Equal("QUITAR2F|12", AdminUsuariosReglas.ArgumentoFila(AccionFilaUsuarioTipo.QuitarSegundoFactor, 12));
+            // Estado destino explícito (B5-8): activo -> 0 (desactivar), inactivo -> 1 (activar).
+            Assert.Equal("ESTADO|12|0", AdminUsuariosReglas.ArgumentoFila(AccionFilaUsuarioTipo.Estado, 12, true));
+            Assert.Equal("ESTADO|12|1", AdminUsuariosReglas.ArgumentoFila(AccionFilaUsuarioTipo.Estado, 12, false));
+            Assert.Equal("ESTADO|12|1", AdminUsuariosReglas.ArgumentoFila(AccionFilaUsuarioTipo.Estado, 12, DBNull.Value));
+        }
+
+        [Theory]
+        [InlineData(AccionFilaUsuarioTipo.Editar)]
+        [InlineData(AccionFilaUsuarioTipo.Contrasena)]
+        [InlineData(AccionFilaUsuarioTipo.QuitarSegundoFactor)]
+        [InlineData(AccionFilaUsuarioTipo.Estado)]
+        public void TryLeerAccionFila_LeeLoQueArmaArgumentoFila(AccionFilaUsuarioTipo tipo)
+        {
+            foreach (bool activo in new[] { true, false })
+            {
+                string arg = AdminUsuariosReglas.ArgumentoFila(tipo, 95, activo);
+                Assert.True(AdminUsuariosReglas.TryLeerAccionFila(arg, out var leido, out int id, out bool nuevoActivo));
+                Assert.Equal(tipo, leido);
+                Assert.Equal(95, id);
+                Assert.Equal(tipo == AccionFilaUsuarioTipo.Estado && !activo, nuevoActivo);
+            }
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("EDITAR")]
+        [InlineData("EDITAR|")]
+        [InlineData("EDITAR|0")]
+        [InlineData("EDITAR|-3")]
+        [InlineData("EDITAR|+3")]
+        [InlineData("EDITAR| 3")]
+        [InlineData("EDITAR|3 ")]
+        [InlineData("EDITAR|3.0")]
+        [InlineData("EDITAR|0x1F")]
+        [InlineData("EDITAR|99999999999")]
+        [InlineData("EDITAR|3|1")]
+        [InlineData("editar|3")]
+        [InlineData(" EDITAR|3")]
+        [InlineData("BORRAR|3")]
+        [InlineData("ACTIVAR|3")]
+        [InlineData("RESET|3")]
+        [InlineData("GUARDAR|3")]
+        [InlineData("CONTRASENA|3|0")]
+        [InlineData("QUITAR2F|3|1")]
+        [InlineData("ESTADO|3")]
+        [InlineData("ESTADO|3|2")]
+        [InlineData("ESTADO|3|")]
+        [InlineData("ESTADO|3|true")]
+        [InlineData("ESTADO|3|1|1")]
+        [InlineData("ESTADO|abc|1")]
+        [InlineData("ESTADO||1")]
+        [InlineData("3|1")]
+        [InlineData("EDITAR|3'; DROP TABLE Usuarios--")]
+        [InlineData("EDITAR|١٢")]
+        public void TryLeerAccionFila_RechazaArgumentosManipulados(string argumento)
+        {
+            Assert.False(AdminUsuariosReglas.TryLeerAccionFila(argumento, out _, out int id, out bool nuevoActivo));
+            Assert.Equal(0, id);
+            Assert.False(nuevoActivo);
+        }
+
+        [Fact]
+        public void TryLeerAccionFila_RechazaUnArgumentoDemasiadoLargo()
+        {
+            Assert.False(AdminUsuariosReglas.TryLeerAccionFila("EDITAR|" + new string('1', 40), out _, out _, out _));
+        }
+
+        [Theory]
+        [InlineData("", "")]
+        [InlineData(null, "")]
+        [InlineData("0", "0")]
+        [InlineData("1", "1")]
+        [InlineData("2", "")]
+        [InlineData(" 1", "")]
+        [InlineData("1; DROP", "")]
+        public void FiltroEstadoValido_SoloVacioCeroOUno(string valor, string esperado) =>
+            Assert.Equal(esperado, AdminUsuariosReglas.FiltroEstadoValido(valor));
+
+        [Fact]
+        public void TextoContador_SingularYPlural()
+        {
+            Assert.Equal("95 usuarios · 89 activos", AdminUsuariosReglas.TextoContador(95, 89));
+            Assert.Equal("1 usuario · 1 activo", AdminUsuariosReglas.TextoContador(1, 1));
+            Assert.Equal("0 usuarios · 0 activos", AdminUsuariosReglas.TextoContador(-2, 5));
+        }
     }
 }

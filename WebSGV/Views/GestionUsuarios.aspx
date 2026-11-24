@@ -2,11 +2,24 @@
     AutoEventWireup="true" CodeBehind="GestionUsuarios.aspx.cs"
     Inherits="WebSGV.Views.GestionUsuarios" %>
 
+<%@ Import Namespace="WebSGV.Services.Usuarios" %>
+
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
+
+    <%-- Botones de la fila (E5-17): la grilla no guarda ViewState; cada botón copia su data-argumento
+         ("EDITAR|id", "ESTADO|id|0/1", "CONTRASENA|id", "QUITAR2F|id") aquí y pulsa btnAccionFila
+         (SGV.acciones.enviarFila). El servidor lo revalida (formato, usuario, fila propia y contraseña). --%>
+    <asp:HiddenField ID="hfArgumentoFila" runat="server" />
+    <%-- Filtros de la última búsqueda (solo los escriben Buscar y Limpiar): con ellos se lista en todo postback. --%>
+    <asp:HiddenField ID="hfFiltroTexto" runat="server" />
+    <asp:HiddenField ID="hfFiltroRol" runat="server" />
+    <asp:HiddenField ID="hfFiltroEstado" runat="server" />
+    <asp:Button ID="btnAccionFila" runat="server" Text="Acción de la fila" CssClass="d-none" CausesValidation="false"
+        OnClick="btnAccionFila_Click" tabindex="-1" aria-hidden="true" />
 
     <div class="sgv-encabezado">
         <div class="sgv-encabezado-titulo">
-            <h1 class="h2">Gestión de usuarios</h1>
+            <h1 class="h2">Gestión de usuarios <asp:Label ID="lblContador" runat="server" CssClass="sgv-encabezado-contador" EnableViewState="false" /></h1>
             <p>Administrar cuentas, roles y accesos al sistema</p>
         </div>
         <div class="sgv-encabezado-acciones">
@@ -15,100 +28,87 @@
         </div>
     </div>
 
-    <!-- Filtros -->
-    <div class="card shadow-sm mb-3">
-        <div class="card-body py-2">
-            <div class="row align-items-end" data-enter="<%= btnBuscar.ClientID %>">
+    <details class="sgv-filtros" open data-plegar-movil>
+        <summary>Filtros <span class="sgv-filtros-cuenta"></span></summary>
+        <div class="sgv-filtros-cuerpo">
+            <div class="form-row align-items-end" data-enter="<%= btnBuscar.ClientID %>">
                 <div class="col-md-4 mb-2 mb-md-0">
-                    <asp:TextBox ID="txtBuscar" runat="server" CssClass="form-control form-control-sm"
-                        placeholder="Buscar por usuario o nombre..." aria-label="Buscar por usuario o nombre" />
+                    <label for="<%= txtBuscar.ClientID %>" class="sgv-etiqueta">Usuario o nombre</label>
+                    <asp:TextBox ID="txtBuscar" runat="server" CssClass="form-control form-control-sm" MaxLength="50"
+                        placeholder="Buscar por usuario o nombre" autocomplete="off" spellcheck="false" />
                 </div>
-                 <div class="col-md-3 mb-2 mb-md-0">
-                      <asp:DropDownList ID="ddlFiltroRol" runat="server" CssClass="form-control form-control-sm" aria-label="Filtrar por rol" />
-                 </div>
+                <div class="col-md-3 mb-2 mb-md-0">
+                    <label for="<%= ddlFiltroRol.ClientID %>" class="sgv-etiqueta">Rol</label>
+                    <asp:DropDownList ID="ddlFiltroRol" runat="server" CssClass="form-control form-control-sm" />
+                </div>
                 <div class="col-md-2 mb-2 mb-md-0">
-                    <asp:DropDownList ID="ddlFiltroEstado" runat="server" CssClass="form-control form-control-sm" aria-label="Filtrar por estado">
-                        <asp:ListItem Value="">-- Estado --</asp:ListItem>
+                    <label for="<%= ddlFiltroEstado.ClientID %>" class="sgv-etiqueta">Estado</label>
+                    <asp:DropDownList ID="ddlFiltroEstado" runat="server" CssClass="form-control form-control-sm">
+                        <asp:ListItem Value="">Todos</asp:ListItem>
                         <asp:ListItem Value="1">Activos</asp:ListItem>
                         <asp:ListItem Value="0">Inactivos</asp:ListItem>
                     </asp:DropDownList>
                 </div>
                 <div class="col-md-3">
                     <asp:Button ID="btnBuscar" runat="server" Text="Buscar"
-                        CssClass="btn btn-secondary btn-sm mr-1" OnClick="btnBuscar_Click" />
+                        CssClass="btn btn-secondary btn-sm mr-1" CausesValidation="false" OnClick="btnBuscar_Click" />
                     <asp:Button ID="btnLimpiar" runat="server" Text="Limpiar"
-                        CssClass="btn btn-outline-secondary btn-sm" OnClick="btnLimpiar_Click" />
+                        CssClass="btn btn-outline-secondary btn-sm" CausesValidation="false" OnClick="btnLimpiar_Click" />
                 </div>
             </div>
         </div>
-    </div>
+    </details>
 
     <!-- Mensaje de feedback -->
     <asp:Panel ID="pnlMensaje" runat="server" Visible="false" CssClass="mb-3">
         <asp:Label ID="lblMensaje" runat="server" />
     </asp:Panel>
 
-    <!-- Tabla de usuarios -->
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-            <asp:GridView ID="gvUsuarios" runat="server"
-                AutoGenerateColumns="false"
-                CssClass="table table-hover mb-0"
-                GridLines="None"
-                OnRowCommand="gvUsuarios_RowCommand">
-                <Columns>
-                    <asp:BoundField DataField="idUsuario" HeaderText="#" ItemStyle-Width="50px" />
-                    <asp:BoundField DataField="nombreUsuario" HeaderText="Usuario" />
-                    <asp:BoundField DataField="nombre" HeaderText="Nombre completo" />
-                    <asp:TemplateField HeaderText="Rol">
-                        <ItemTemplate>
-                            <span class="badge badge-info sgv-sello"><%#: Eval("rol") %></span>
-                            <%-- E4-14: verificación en dos pasos activa. --%>
-                            <asp:PlaceHolder runat="server" Visible='<%# SegundoFactorActivo(Eval("segundoFactor")) %>'>
-                                <span class="badge badge-success" title="Verificación en dos pasos activa">2 pasos</span>
-                            </asp:PlaceHolder>
-                        </ItemTemplate>
-                    </asp:TemplateField>
-                    <asp:TemplateField HeaderText="Estado" ItemStyle-Width="90px">
-                        <ItemTemplate>
-                            <span class='badge <%#: (bool)Eval("activo") ? "badge-success" : "badge-danger" %>'>
-                                <%#: (bool)Eval("activo") ? "Activo" : "Inactivo" %>
-                            </span>
-                        </ItemTemplate>
-                    </asp:TemplateField>
-                    <asp:TemplateField HeaderText="Acciones" ItemStyle-Width="270px" ItemStyle-Wrap="false">
-                        <ItemTemplate>
-                            <asp:Button runat="server" Text="Editar" CssClass="btn btn-sm btn-info mr-1"
-                                CommandName="EditarUsuario" CommandArgument='<%# Eval("idUsuario") %>' />
-                            <%-- Fila propia (E4-12): sin Desactivar ni Contraseña; el servidor también lo rechaza. --%>
-                            <asp:Button runat="server" Visible='<%# AccionesFila(Eval("idUsuario")).PuedeDesactivar %>'
-                                Text='<%# (bool)Eval("activo") ? "Desactivar" : "Activar" %>'
-                                CssClass='<%# (bool)Eval("activo") ? "btn btn-sm btn-warning mr-1" : "btn btn-sm btn-success mr-1" %>'
-                                CommandName="ToggleActivo" CommandArgument='<%# ArgumentoEstado(Eval("idUsuario"), Eval("activo")) %>'
-                                data-confirmar='<%# ConfirmarCambioEstado(Eval("activo"), Eval("nombreUsuario")) %>'
-                                data-confirmar-peligro='<%# (bool)Eval("activo") ? "true" : "false" %>' />
-                            <asp:Button runat="server" Text="Contraseña" CssClass="btn btn-sm btn-secondary"
-                                Visible='<%# AccionesFila(Eval("idUsuario")).PuedeRestablecerContrasena %>'
-                                CommandName="ResetPassword" CommandArgument='<%# Eval("idUsuario") %>' />
-                            <%-- E4-14: celular y códigos perdidos; no en la fila propia. Pide la contraseña del administrador. --%>
-                            <asp:Button runat="server" Text="Quitar 2.º factor" CssClass="btn btn-sm btn-outline-danger ml-1"
-                                Visible='<%# PuedeQuitarSegundoFactor(Eval("idUsuario"), Eval("segundoFactor")) %>'
-                                CommandName="QuitarSegundoFactor" CommandArgument='<%# Eval("idUsuario") %>'
-                                data-confirmar='<%# ConfirmarQuitarSegundoFactor(Eval("nombreUsuario")) %>'
-                                data-confirmar-titulo="Quitar segundo factor" data-confirmar-peligro="true" />
-                        </ItemTemplate>
-                    </asp:TemplateField>
-                </Columns>
-                <EmptyDataTemplate>
-                    <div class="text-center py-4 text-muted">
-                        No se encontraron usuarios con los filtros seleccionados.
-                    </div>
-                </EmptyDataTemplate>
-            </asp:GridView>
+    <section class="sgv-panel">
+        <div class="sgv-panel-cab">
+            <div>
+                <h2 class="sgv-panel-titulo">Usuarios</h2>
+                <p class="sgv-panel-nota mb-0" aria-live="polite"><asp:Literal ID="litResumen" runat="server" Mode="Encode" EnableViewState="false" /></p>
             </div>
         </div>
-    </div>
+        <div class="table-responsive">
+            <asp:GridView ID="gvUsuarios" runat="server"
+                CssClass="table sgv-tabla mb-0"
+                AutoGenerateColumns="false"
+                EnableViewState="false"
+                AllowPaging="true" PageSize="25"
+                OnPageIndexChanging="gvUsuarios_PageIndexChanging"
+                GridLines="None" CellSpacing="-1"
+                EmptyDataText="No hay usuarios registrados.">
+                <PagerSettings Mode="NumericFirstLast" PageButtonCount="5" FirstPageText="Primera" LastPageText="Última" />
+                <PagerStyle CssClass="sgv-paginador" />
+                <EmptyDataRowStyle CssClass="sgv-vacio" />
+                <%-- Plantillas en una línea: 25 filas con su sangría pesaban unos 23 KB de espacios. --%>
+                <Columns>
+                    <asp:BoundField DataField="idUsuario" HeaderText="ID"
+                        HeaderStyle-CssClass="sgv-col-id d-none d-md-table-cell" ItemStyle-CssClass="sgv-col-id d-none d-md-table-cell sgv-suave" />
+                    <asp:TemplateField HeaderText="Usuario">
+                        <%-- En el celular el nombre, el rol y el estado van bajo el usuario (sus columnas se ocultan). --%>
+                        <ItemTemplate><span class="font-weight-bold text-nowrap"><%#: Eval("nombreUsuario") %></span><div class="small text-muted d-md-none"><%#: Eval("nombre") %></div><div class="d-sm-none mt-1"><%# SelloRol(Eval("rol"), Eval("segundoFactor")) %> <%# SelloEstado(Eval("activo")) %></div></ItemTemplate>
+                    </asp:TemplateField>
+                    <asp:BoundField DataField="nombre" HeaderText="Nombre completo"
+                        HeaderStyle-CssClass="d-none d-md-table-cell" ItemStyle-CssClass="d-none d-md-table-cell" />
+                    <asp:TemplateField HeaderText="Rol" HeaderStyle-CssClass="d-none d-sm-table-cell" ItemStyle-CssClass="d-none d-sm-table-cell">
+                        <%-- E4-14: "2 pasos" si tiene la verificación en dos pasos activa. --%>
+                        <ItemTemplate><%# SelloRol(Eval("rol"), Eval("segundoFactor")) %></ItemTemplate>
+                    </asp:TemplateField>
+                    <asp:TemplateField HeaderText="Estado" HeaderStyle-CssClass="sgv-col-estado d-none d-sm-table-cell" ItemStyle-CssClass="sgv-col-estado d-none d-sm-table-cell">
+                        <ItemTemplate><%# SelloEstado(Eval("activo")) %></ItemTemplate>
+                    </asp:TemplateField>
+                    <asp:TemplateField HeaderText="Acciones" HeaderStyle-CssClass="sgv-col-acciones" ItemStyle-CssClass="sgv-col-acciones">
+                        <%-- Fila propia (E4-12): sin Desactivar ni Contraseña; el servidor también lo rechaza. "Quitar 2.º factor"
+                             (E4-14): celular y códigos perdidos, no en la fila propia; pide la contraseña del administrador. --%>
+                        <ItemTemplate><div class="sgv-acciones flex-wrap flex-md-nowrap"><button type="button" class="btn btn-sm btn-outline-secondary" data-accion="enviarFila" data-argumento='<%#: ArgumentoFila(AccionFilaUsuarioTipo.Editar, Eval("idUsuario")) %>' aria-label='<%#: "Editar al usuario " + Eval("nombreUsuario") %>'>Editar</button><asp:PlaceHolder runat="server" Visible='<%# AccionesFila(Eval("idUsuario")).PuedeDesactivar %>'><button type="button" class='<%#: (bool)Eval("activo") ? "btn btn-sm btn-warning" : "btn btn-sm btn-success" %>' data-accion="enviarFila" data-argumento='<%#: ArgumentoFila(AccionFilaUsuarioTipo.Estado, Eval("idUsuario"), Eval("activo")) %>' data-confirmar='<%#: ConfirmarCambioEstado(Eval("activo"), Eval("nombreUsuario")) %>' data-confirmar-peligro='<%#: (bool)Eval("activo") ? "true" : "false" %>'><%#: (bool)Eval("activo") ? "Desactivar" : "Activar" %></button></asp:PlaceHolder><asp:PlaceHolder runat="server" Visible='<%# AccionesFila(Eval("idUsuario")).PuedeRestablecerContrasena %>'><button type="button" class="btn btn-sm btn-secondary" data-accion="enviarFila" data-argumento='<%#: ArgumentoFila(AccionFilaUsuarioTipo.Contrasena, Eval("idUsuario")) %>' aria-label='<%#: "Restablecer la contraseña de " + Eval("nombreUsuario") %>'>Contraseña</button></asp:PlaceHolder><asp:PlaceHolder runat="server" Visible='<%# PuedeQuitarSegundoFactor(Eval("idUsuario"), Eval("segundoFactor")) %>'><button type="button" class="btn btn-sm btn-outline-danger" data-accion="enviarFila" data-argumento='<%#: ArgumentoFila(AccionFilaUsuarioTipo.QuitarSegundoFactor, Eval("idUsuario")) %>' data-confirmar='<%#: ConfirmarQuitarSegundoFactor(Eval("nombreUsuario")) %>' data-confirmar-titulo="Quitar segundo factor" data-confirmar-peligro="true">Quitar 2.º factor</button></asp:PlaceHolder></div></ItemTemplate>
+                    </asp:TemplateField>
+                </Columns>
+            </asp:GridView>
+        </div>
+    </section>
 
     <!-- ======================================================
          MODAL: Crear / Editar Usuario
@@ -168,7 +168,7 @@
                         <div class="col-md-12">
                             <div class="form-group">
                                 <label for="<%= ddlConductor.ClientID %>">Conductor asociado</label>
-                                <asp:DropDownList ID="ddlConductor" runat="server" CssClass="form-control" />
+                                <asp:DropDownList ID="ddlConductor" runat="server" CssClass="form-control" EnableViewState="false" />
                                 <small class="text-muted">
                                     Es obligatorio cuando el rol es Conductor. Esta asociación determina qué viajes puede consultar y firmar el usuario.
                                 </small>
@@ -275,7 +275,9 @@
     <script>
         // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
         var SGV = Object.assign(window.SGV || {}, {
-            hfAccionReaut: '<%= hfAccionReaut.ClientID %>'
+            hfAccionReaut: '<%= hfAccionReaut.ClientID %>',
+            hfArgumentoFila: '<%= hfArgumentoFila.ClientID %>',
+            btnAccionFila: '<%= btnAccionFila.ClientID %>'
         });
     </script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/GestionUsuarios.js") %>"></script>

@@ -4,6 +4,16 @@ using WebSGV.Services.Liquidaciones;
 
 namespace WebSGV.Helpers
 {
+    /// <summary>Tono de un sello <c>sgv-estado</c> (E5-17): gris, verde, ámbar, rojo o azul.</summary>
+    public enum TonoEstado
+    {
+        Neutro,
+        Ok,
+        Alerta,
+        Peligro,
+        Info
+    }
+
     /// <summary>
     /// Utilidades de presentación para el estado <c>activo</c> (booleano) de los
     /// catálogos de registro (clientes, choferes, plantas, peajes, tractos,
@@ -112,6 +122,87 @@ namespace WebSGV.Helpers
                     return ClasePeligro;
                 default:
                     return string.Empty;
+            }
+        }
+
+        // ── Sello con tono (E5-17) ────────────────────────────────────────────────────────────
+
+        /// <summary>Clase <c>sgv-estado-*</c> del tono ("" para <see cref="TonoEstado.Neutro"/>: sello gris).</summary>
+        public static string ClaseTono(TonoEstado tono)
+        {
+            switch (tono)
+            {
+                case TonoEstado.Ok: return ClaseOk;
+                case TonoEstado.Alerta: return ClaseAlerta;
+                case TonoEstado.Peligro: return ClasePeligro;
+                case TonoEstado.Info: return ClaseInfo;
+                default: return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Sello de estado ya armado: <c>&lt;span class="sgv-estado sgv-estado-ok"&gt;Texto&lt;/span&gt;</c>. El texto
+        /// sale codificado (puede venir de la BD), así que el resultado se pinta tal cual (<c>&lt;%#</c> o un Literal).
+        /// </summary>
+        public static string Sello(string texto, TonoEstado tono)
+        {
+            string clase = ClaseTono(tono);
+            return "<span class=\"sgv-estado" + (clase.Length > 0 ? " " + clase : "") + "\">" +
+                   System.Web.HttpUtility.HtmlEncode((texto ?? "").Trim()) + "</span>";
+        }
+
+        /// <summary>
+        /// Tono de una acción de AuditoriaLog.Accion: peligro para borrados, rechazos e intentos fallidos o bloqueados;
+        /// alerta para retiros, reversiones y cambios delicados de la cuenta; ok para altas, firmas y aprobaciones; info
+        /// para cambios e inicios de sesión; gris para consultas y lo desconocido.
+        /// </summary>
+        public static TonoEstado TonoAccionAuditoria(object accion)
+        {
+            string a = Normalizar(accion);
+            if (a.Length == 0) return TonoEstado.Neutro;
+
+            if (a == "DELETE" || a == "RECHAZAR" || a == "INTEGRIDAD_PDF"
+                || a.EndsWith("_INCORRECTA", StringComparison.Ordinal)
+                || a.EndsWith("_FALLIDO", StringComparison.Ordinal)
+                || a.EndsWith("_BLOQUEADO", StringComparison.Ordinal))
+                return TonoEstado.Peligro;
+
+            if (a.StartsWith("RETIRAR", StringComparison.Ordinal))
+                return TonoEstado.Alerta;
+
+            switch (a)
+            {
+                case "REVERTIR":
+                case "OBSERVAR_LIQUIDACION":
+                case "DESACTIVAR":
+                case "CORREGIR_DATOS":
+                case "RECUPERAR_CONTRASENA":
+                case "SEGUNDO_FACTOR_QUITADO":
+                case "SEGUNDO_FACTOR_CODIGO_RECUPERACION":
+                    return TonoEstado.Alerta;
+
+                case "INSERT":
+                case "APROBAR":
+                case "LIQUIDAR":
+                case "FIRMAR":
+                case "CONFORMIDAD":
+                case "FINALIZAR":
+                case "SEGUNDO_FACTOR_ACTIVADO":
+                    return TonoEstado.Ok;
+
+                case "UPDATE":
+                case "LOGIN":
+                case "IMPORT":
+                case "GUARDAR_LIQUIDACION":
+                case "ENVIAR_CONFORMIDAD":
+                case "REGISTRAR_MOVIMIENTO_VIAJE":
+                case "SEGUNDO_FACTOR_OK":
+                case "SEGUNDO_FACTOR_ALTA_INICIADA":
+                case "SEGUNDO_FACTOR_CODIGOS_REGENERADOS":
+                    return TonoEstado.Info;
+
+                default:
+                    return TonoEstado.Neutro;
             }
         }
 

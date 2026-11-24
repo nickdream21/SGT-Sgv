@@ -202,5 +202,39 @@ namespace WebSGV.Tests
             Assert.Equal("sin acceso", d.Mensaje);
             Assert.Null(d.ValoresAnteriores);
         }
+
+        // ── E5-17 (M-135): filtro de acciones con su nombre ─────────────────────────
+
+        [Theory]
+        [InlineData("INSERT", "Inserción")]
+        [InlineData("UPDATE", "Actualización")]
+        [InlineData("DELETE", "Eliminación")]
+        [InlineData("LOGIN", "Inicio de sesión")]
+        [InlineData("LOGIN_FALLIDO", "Inicio de sesión fallido")]
+        [InlineData("LOGIN_BLOQUEADO", "Acceso bloqueado")]
+        [InlineData("LOGOUT", "Cierre de sesión")]
+        [InlineData("APROBAR", "Aprobación")]
+        [InlineData("RECHAZAR", "Rechazo")]
+        [InlineData("LIQUIDAR", "Liquidación")]
+        [InlineData("RETIRAR", "Retiro")]
+        [InlineData("login", "Inicio de sesión")]
+        [InlineData("FIRMAR", "FIRMAR")]
+        [InlineData(" SEGUNDO_FACTOR_QUITADO ", "SEGUNDO_FACTOR_QUITADO")]
+        [InlineData("", "")]
+        [InlineData(null, "")]
+        public void NombreAccion_EnEspanolLasConocidasYElCodigoLasDemas(string codigo, string esperado) =>
+            Assert.Equal(esperado, ConsultaAuditoriaService.NombreAccion(codigo));
+
+        [Fact]
+        public void ObtenerAcciones_EsUnSelectDistinctDeSoloLectura()
+        {
+            string cs = Leer("Services", "Auditoria", "ConsultaAuditoriaService.cs");
+            int i = cs.IndexOf("public static List<string> ObtenerAcciones()", StringComparison.Ordinal);
+            Assert.True(i > 0);
+            string cuerpo = cs.Substring(i, cs.IndexOf("\n        }", i, StringComparison.Ordinal) - i);
+            Assert.Contains("SELECT DISTINCT Accion FROM AuditoriaLog", cuerpo);
+            Assert.Contains("ORDER BY Accion", cuerpo);
+            Assert.DoesNotMatch(@"\b(INSERT|UPDATE|DELETE|EXEC)\b", cuerpo);
+        }
     }
 }

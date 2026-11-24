@@ -184,7 +184,8 @@ namespace WebSGV.Tests
             Assert.DoesNotContain("THEN 0 ELSE 1 END", cs);
             Assert.Contains("EstadoActivoService.TryLeerArgumento(", cs);
             Assert.Contains("UsuarioEstadoService.CambiarEstado(", cs);
-            Assert.Contains("CommandName=\"ToggleActivo\" CommandArgument='<%# ArgumentoEstado(", aspx);
+            // E5-17: el botón de la fila lleva "ESTADO|id|estadoDestino" (AdminUsuariosReglas.ArgumentoFila).
+            Assert.Contains("data-argumento='<%#: ArgumentoFila(AccionFilaUsuarioTipo.Estado, Eval(\"idUsuario\"), Eval(\"activo\"))", aspx);
         }
     }
 }

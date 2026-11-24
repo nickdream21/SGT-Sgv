@@ -22,6 +22,7 @@ namespace WebSGV.Views
                 txtFechaDesde.Text = FechaHelper.Ahora().AddDays(-30).ToString("yyyy-MM-dd");
                 txtFechaHasta.Text = FechaHelper.Ahora().ToString("yyyy-MM-dd");
 
+                CargarFiltroAcciones();
                 CargarFiltroTablas();
                 CargarEstadisticas();
                 CargarDatos(0);
@@ -29,6 +30,25 @@ namespace WebSGV.Views
         }
 
         #region Carga de Datos
+
+        /// <summary>
+        /// Filtro Acción con las acciones que hay en la auditoría (M-135: antes 11 fijas de más de 40). El valor es
+        /// el código; el texto, su nombre en español si lo tiene (<see cref="ConsultaAuditoriaService.NombreAccion"/>).
+        /// </summary>
+        private void CargarFiltroAcciones()
+        {
+            ddlAccion.Items.Clear();
+            ddlAccion.Items.Add(new ListItem("Todas", ""));
+            try
+            {
+                foreach (string accion in ConsultaAuditoriaService.ObtenerAcciones())
+                    ddlAccion.Items.Add(new ListItem(ConsultaAuditoriaService.NombreAccion(accion), accion));
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Auditoria: error cargando el filtro de acciones");
+            }
+        }
 
         private void CargarFiltroTablas()
         {
@@ -38,7 +58,7 @@ namespace WebSGV.Views
                     "SELECT DISTINCT TablaAfectada FROM AuditoriaLog ORDER BY TablaAfectada");
 
                 ddlTabla.Items.Clear();
-                ddlTabla.Items.Add(new ListItem("-- Todas --", ""));
+                ddlTabla.Items.Add(new ListItem("Todas", ""));
 
                 foreach (DataRow row in dt.Rows)
                     ddlTabla.Items.Add(new ListItem(row["TablaAfectada"].ToString()));
@@ -62,16 +82,33 @@ namespace WebSGV.Views
 
                 if (dt.Rows.Count > 0)
                 {
-                    lblTotalRegistros.Text    = dt.Rows[0]["TotalRegistros"].ToString();
-                    lblRegistrosHoy.Text      = dt.Rows[0]["RegistrosHoy"].ToString();
-                    lblUsuariosActivos.Text   = dt.Rows[0]["UsuariosActivos"].ToString();
-                    lblTablasAfectadas.Text   = dt.Rows[0]["TablasAfectadas"].ToString();
+                    DataRow r = dt.Rows[0];
+                    litCifras.Text = HtmlCifras(Convert.ToInt32(r["TotalRegistros"]), Convert.ToInt32(r["RegistrosHoy"]),
+                        Convert.ToInt32(r["UsuariosActivos"]), Convert.ToInt32(r["TablasAfectadas"]));
                 }
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Auditoria: error cargando estadísticas");
+                litCifras.Text = "";
             }
+        }
+
+        /// <summary>
+        /// Las cifras de la auditoría en una línea (sgv-resumen, E5-17; antes cuatro tarjetas): "6.523 registros ·
+        /// 45 hoy · 8 usuarios en los últimos 7 días · 21 tablas". Solo números y textos fijos.
+        /// </summary>
+        internal static string HtmlCifras(int total, int hoy, int usuarios7Dias, int tablas)
+        {
+            var es = System.Globalization.CultureInfo.GetCultureInfo("es-PE");
+            string Parte(int n, string uno, string varios) =>
+                "<span><strong>" + n.ToString("N0", es) + "</strong> " + (n == 1 ? uno : varios) + "</span>";
+            return "<p class=\"sgv-resumen\">" +
+                   Parte(total, "registro", "registros") +
+                   Parte(hoy, "hoy", "hoy") +
+                   Parte(usuarios7Dias, "usuario en los últimos 7 días", "usuarios en los últimos 7 días") +
+                   Parte(tablas, "tabla", "tablas") +
+                   "</p>";
         }
 
         /// <summary>Máximo de registros que se exportan a Excel.</summary>
@@ -107,12 +144,13 @@ namespace WebSGV.Views
                 gvAuditoria.PageIndex = pagina.IndicePagina;
                 gvAuditoria.DataSource = pagina.Filas;
                 gvAuditoria.DataBind();
-                lblCantidadResultados.Text = pagina.Total.ToString("N0") + (pagina.Total == 1 ? " registro" : " registros");
+                // "Mostrando 26–50 de 1.985" con los filtros aplicados (vacío sin filas: la grilla dice que no hay).
+                litResumen.Text = ListaCatalogo.Resumen(pagina.IndicePagina, pagina.Total, pagina.Total, "");
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Auditoria: error cargando datos de auditoría");
-                lblCantidadResultados.Text = "Error al cargar datos";
+                litResumen.Text = "No se pudieron cargar los registros.";
                 gvAuditoria.VirtualItemCount = 0;
                 gvAuditoria.PageIndex = 0;
                 gvAuditoria.DataSource = null;
@@ -167,7 +205,7 @@ namespace WebSGV.Views
             {
                 LogSGV.Error(ex, "Auditoria: error exportando a Excel");
                 CargarDatos(gvAuditoria.PageIndex);
-                lblCantidadResultados.Text = "No se pudo exportar a Excel";
+                litResumen.Text = "No se pudo exportar a Excel.";
                 return;
             }
 
@@ -271,45 +309,9 @@ namespace WebSGV.Views
 
         #region Helpers
 
-        protected string ObtenerClaseAccion(object accion)
-        {
-            if (accion == null) return "default";
-            switch (accion.ToString().ToUpper())
-            {
-                case "INSERT": return "insert";
-                case "UPDATE": return "update";
-                case "DELETE": return "delete";
-                case "LOGIN": return "login";
-                case "LOGIN_FALLIDO": return "login_fallido";
-                case "LOGIN_BLOQUEADO": return "login_bloqueado";
-                case "LOGOUT": return "logout";
-                case "APROBAR": return "aprobar";
-                case "RECHAZAR": return "rechazar";
-                case "LIQUIDAR": return "liquidar";
-                case "RETIRAR": return "retirar";
-                default: return "default";
-            }
-        }
-
-        protected string ObtenerIconoAccion(object accion)
-        {
-            if (accion == null) return "fas fa-circle";
-            switch (accion.ToString().ToUpper())
-            {
-                case "INSERT": return "fas fa-plus";
-                case "UPDATE": return "fas fa-edit";
-                case "DELETE": return "fas fa-trash";
-                case "LOGIN": return "fas fa-sign-in-alt";
-                case "LOGIN_FALLIDO": return "fas fa-exclamation-triangle";
-                case "LOGIN_BLOQUEADO": return "fas fa-lock";
-                case "LOGOUT": return "fas fa-sign-out-alt";
-                case "APROBAR": return "fas fa-check";
-                case "RECHAZAR": return "fas fa-times";
-                case "LIQUIDAR": return "fas fa-calculator";
-                case "RETIRAR": return "fas fa-undo";
-                default: return "fas fa-circle";
-            }
-        }
+        /// <summary>Sello de la acción con su nombre en español y su tono (E5-17); el texto sale codificado.</summary>
+        protected static string SelloAccion(object accion) =>
+            EstadoUiHelper.Sello(ConsultaAuditoriaService.NombreAccion(accion), EstadoUiHelper.TonoAccionAuditoria(accion));
 
         protected string TruncateText(object text, int maxLength)
         {

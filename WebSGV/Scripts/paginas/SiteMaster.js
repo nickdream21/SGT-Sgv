@@ -464,13 +464,45 @@
         });
     });
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', preparar);
-    else preparar();
+    // E5-17: details.sgv-filtros y details.sgv-plegable con data-plegar-movil arrancan plegados en el celular
+    // (se cierran al cargar la página; no tras un parcial, para no cerrar lo que el usuario abrió). El marcado
+    // los deja con open, así en escritorio y sin JS se ven abiertos.
+    function plegarAlCargar() {
+        if (!(window.matchMedia && window.matchMedia(MOVIL).matches)) return;
+        document.querySelectorAll('details.sgv-filtros[data-plegar-movil], details.sgv-plegable[data-plegar-movil]')
+            .forEach(function (d) { d.open = false; });
+    }
+
+    // SGV.plegarFiltros(el): para las búsquedas por fetch/AJAX (sin postback). Pliega en el celular los
+    // filtros que contienen a el (o el mismo details) y actualiza su "(n)".
+    var SGV = window.SGV = window.SGV || {};
+    SGV.plegarFiltros = function (el) {
+        var d = el && el.closest ? el.closest('details.sgv-filtros') : null;
+        if (!d) return;
+        rotular(d);
+        if (window.matchMedia && window.matchMedia(MOVIL).matches) d.open = false;
+    };
+
+    function alCargar() { plegarAlCargar(); preparar(); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', alCargar);
+    else alCargar();
     if (window.Sys && Sys.WebForms && Sys.WebForms.PageRequestManager) {
         var prm = Sys.WebForms.PageRequestManager.getInstance();
         prm.add_beginRequest(function (s, a) { if (esBuscar(a.get_postBackElement())) marcar(); });
         prm.add_endRequest(preparar);
     }
+})();
+
+// ── Cargando (E5-17) ───────────────────────────────────────────────
+// SGV.htmlCargando(texto): el bloque .sgv-cargando de sgv-base.css (giratorio y texto, role="status") para
+// pintarlo con .html() mientras llega una respuesta. El texto se escapa.
+(function () {
+    var SGV = window.SGV = window.SGV || {};
+    SGV.htmlCargando = function (texto) {
+        var t = String(texto === null || texto === undefined || texto === '' ? 'Cargando…' : texto)
+            .replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+        return '<div class="sgv-cargando" role="status">' + t + '</div>';
+    };
 })();
 
 // ── Confirmaciones no bloqueantes ───────────────────────────────────

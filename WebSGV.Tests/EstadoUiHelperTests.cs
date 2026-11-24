@@ -86,5 +86,62 @@ namespace WebSGV.Tests
             Assert.Equal("¿Desactivar el tracto ABC-123?", EstadoUiHelper.PreguntaCambioEstado((object)true, "el tracto", (object)"ABC-123"));
             Assert.Equal("¿Activar el tracto?", EstadoUiHelper.PreguntaCambioEstado(System.DBNull.Value, "el tracto", System.DBNull.Value));
         }
+
+        // ── E5-17: sello con tono ─────────────────────────────────────────────────────────────
+
+        [Fact]
+        public void Sello_CodificaElTextoYPoneLaClaseDelTono()
+        {
+            Assert.Equal("<span class=\"sgv-estado sgv-estado-ok\">Activo</span>", EstadoUiHelper.Sello("Activo", TonoEstado.Ok));
+            Assert.Equal("<span class=\"sgv-estado\">CONDUCTOR</span>", EstadoUiHelper.Sello(" CONDUCTOR ", TonoEstado.Neutro));
+            Assert.Equal("<span class=\"sgv-estado sgv-estado-peligro\">&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;</span>",
+                EstadoUiHelper.Sello("<script>alert('x')</script>", TonoEstado.Peligro));
+            Assert.Equal("<span class=\"sgv-estado\"></span>", EstadoUiHelper.Sello(null, TonoEstado.Neutro));
+        }
+
+        [Fact]
+        public void ClaseTono_UsaLasClasesDelSello()
+        {
+            Assert.Equal("", EstadoUiHelper.ClaseTono(TonoEstado.Neutro));
+            Assert.Equal(EstadoUiHelper.ClaseOk, EstadoUiHelper.ClaseTono(TonoEstado.Ok));
+            Assert.Equal(EstadoUiHelper.ClaseAlerta, EstadoUiHelper.ClaseTono(TonoEstado.Alerta));
+            Assert.Equal(EstadoUiHelper.ClasePeligro, EstadoUiHelper.ClaseTono(TonoEstado.Peligro));
+            Assert.Equal(EstadoUiHelper.ClaseInfo, EstadoUiHelper.ClaseTono(TonoEstado.Info));
+            Assert.Equal("", EstadoUiHelper.ClaseTono((TonoEstado)99));
+        }
+
+        [Theory]
+        [InlineData("DELETE", TonoEstado.Peligro)]
+        [InlineData("RECHAZAR", TonoEstado.Peligro)]
+        [InlineData("LOGIN_FALLIDO", TonoEstado.Peligro)]
+        [InlineData("LOGIN_BLOQUEADO", TonoEstado.Peligro)]
+        [InlineData("FIRMA_CONTRASENA_INCORRECTA", TonoEstado.Peligro)]
+        [InlineData("SEGUNDO_FACTOR_FALLIDO", TonoEstado.Peligro)]
+        [InlineData("SEGUNDO_FACTOR_BLOQUEADO", TonoEstado.Peligro)]
+        [InlineData("INTEGRIDAD_PDF", TonoEstado.Peligro)]
+        [InlineData("RETIRAR", TonoEstado.Alerta)]
+        [InlineData("RETIRAR_LIQUIDACION_PRUEBA", TonoEstado.Alerta)]
+        [InlineData("REVERTIR", TonoEstado.Alerta)]
+        [InlineData("OBSERVAR_LIQUIDACION", TonoEstado.Alerta)]
+        [InlineData("SEGUNDO_FACTOR_QUITADO", TonoEstado.Alerta)]
+        [InlineData("INSERT", TonoEstado.Ok)]
+        [InlineData("APROBAR", TonoEstado.Ok)]
+        [InlineData("FIRMAR", TonoEstado.Ok)]
+        [InlineData("CONFORMIDAD", TonoEstado.Ok)]
+        [InlineData("UPDATE", TonoEstado.Info)]
+        [InlineData("login", TonoEstado.Info)]
+        [InlineData(" SEGUNDO_FACTOR_OK ", TonoEstado.Info)]
+        [InlineData("LOGOUT", TonoEstado.Neutro)]
+        [InlineData("CONSULTAR_HORA_GPS", TonoEstado.Neutro)]
+        [InlineData("DESCARGAR_PDF", TonoEstado.Neutro)]
+        [InlineData("OTRA_COSA", TonoEstado.Neutro)]
+        [InlineData("", TonoEstado.Neutro)]
+        [InlineData(null, TonoEstado.Neutro)]
+        public void TonoAccionAuditoria(string accion, TonoEstado esperado) =>
+            Assert.Equal(esperado, EstadoUiHelper.TonoAccionAuditoria(accion));
+
+        [Fact]
+        public void TonoAccionAuditoria_DbNullEsGris() =>
+            Assert.Equal(TonoEstado.Neutro, EstadoUiHelper.TonoAccionAuditoria(DBNull.Value));
     }
 }

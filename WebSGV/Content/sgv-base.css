@@ -396,6 +396,65 @@ details.sgv-filtros[open] > summary { border-bottom: 1px solid var(--sgv-borde);
     font-weight: 400;
 }
 
+/* === Línea de resumen (E5-17): las cifras de una página en una línea de texto, en vez de tarjetas.
+   <p class="sgv-resumen"><span><strong>95</strong> usuarios</span><span><strong>89</strong> activos</span></p>
+   El "·" entre partes lo pone el CSS; en el celular las partes bajan de línea sin cortarse. */
+.sgv-resumen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    color: var(--sgv-texto-medio);
+}
+
+.sgv-resumen > span { white-space: nowrap; }
+.sgv-resumen > span + span::before {
+    content: "\00b7";
+    margin: 0 0.5rem;
+    color: var(--sgv-texto-suave);
+}
+
+.sgv-resumen strong {
+    font-weight: 600;
+    color: var(--sgv-texto);
+    font-variant-numeric: tabular-nums;
+}
+
+.sgv-panel-cab .sgv-resumen,
+.sgv-encabezado .sgv-resumen { margin: 0; }
+
+/* === Cargando (E5-17): texto con un giratorio delante. Uso: <div class="sgv-cargando" role="status">Cargando…</div>
+   (SGV.htmlCargando(texto) arma el mismo bloque en JS). Sin animación si el sistema pide menos movimiento. */
+.sgv-cargando {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.5rem 1rem;
+    font-size: 0.875rem;
+    color: var(--sgv-texto-suave);
+}
+
+.sgv-cargando::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--sgv-borde-fuerte);
+    border-top-color: var(--sgv-primario);
+    border-radius: 50%;
+    animation: sgv-girar 0.8s linear infinite;
+}
+
+@keyframes sgv-girar {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sgv-cargando::before { animation: none; border-top-color: var(--sgv-borde-fuerte); }
+}
+
 /* === Pestañas con contador === */
 .sgv-tabs {
     display: flex;
