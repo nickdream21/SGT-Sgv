@@ -303,12 +303,29 @@ summary:focus-visible,
     .sgv-ayuda { width: 2.75rem; height: 2.75rem; }
 }
 
+/* Texto de ayuda que abre el "?" (E5-16): el botón lleva data-toggle="collapse" data-target="#ayudaPagina"
+   y aria-controls; debajo del encabezado, <div id="ayudaPagina" class="collapse"><p class="sgv-ayuda-texto">…</p></div>.
+   Reemplaza las cajas "Información: …" de los catálogos hasta que llegue la ayuda por pantalla (E5-21). */
+.sgv-ayuda-texto {
+    margin: 0 0 1rem;
+    padding: 0.625rem 1rem;
+    border: 1px solid var(--sgv-info-borde);
+    border-radius: var(--sgv-radio);
+    background: var(--sgv-info-fondo);
+    color: var(--sgv-texto-medio);
+    font-size: 0.875rem;
+}
+
 /* === Filtros plegables (E5-14) ===
    <details class="sgv-filtros" open>
      <summary>Filtros <span class="sgv-filtros-cuenta"></span></summary>
      <div class="sgv-filtros-cuerpo"> campos y botón de buscar </div>
    </details>
    SiteMaster.js escribe "(n)" con los campos llenos y, en el celular (≤ 767.98 px), lo pliega tras buscar. */
+/* details.sgv-plegable (E5-16): el mismo aspecto que sgv-filtros para cualquier bloque que se pliega
+   (<summary>Título</summary><div class="sgv-plegable-cuerpo">…</div>), sin el "(n)" ni el plegado
+   automático tras buscar, que SiteMaster.js hace solo con details.sgv-filtros. */
+details.sgv-plegable,
 details.sgv-filtros {
     margin-bottom: 1rem;
     background: var(--sgv-superficie);
@@ -316,6 +333,7 @@ details.sgv-filtros {
     border-radius: var(--sgv-radio);
 }
 
+details.sgv-plegable > summary,
 details.sgv-filtros > summary {
     padding: 0.625rem 1rem;
     font-size: 0.9375rem;
@@ -324,10 +342,12 @@ details.sgv-filtros > summary {
     cursor: pointer;
 }
 
+details.sgv-plegable[open] > summary,
 details.sgv-filtros[open] > summary { border-bottom: 1px solid var(--sgv-borde); }
 
 .sgv-filtros-cuenta { font-weight: 500; color: var(--sgv-texto-suave); }
 
+.sgv-plegable-cuerpo,
 .sgv-filtros-cuerpo { padding: 1rem; }
 
 /* === Etiqueta de campo (E5-14): regla común; una página con otra medida la redefine en su hoja,
@@ -478,7 +498,7 @@ details.sgv-filtros[open] > summary { border-bottom: 1px solid var(--sgv-borde);
     font-weight: 600 !important;
     border: none !important;
     border-bottom: 1px solid var(--sgv-borde-fuerte) !important;
-    padding: 0.625rem 0.75rem !important;
+    padding: 0.625rem var(--tabla-celda-x, 0.75rem) !important;
     text-align: left !important;
     white-space: nowrap;
 }
@@ -493,10 +513,10 @@ details.sgv-filtros[open] > summary { border-bottom: 1px solid var(--sgv-borde);
 
 .table.sgv-tabla tbody tr:hover { background: var(--sgv-fondo) !important; }
 
-.table.sgv-tabla tbody td {
+.table.sgv-tabla tbody td:not(:where(.sgv-paginador td)) {
     border: none !important;
     border-bottom: 1px solid var(--sgv-borde) !important;
-    padding: 0.5rem 0.75rem !important;
+    padding: 0.5rem var(--tabla-celda-x, 0.75rem) !important;
     vertical-align: middle;
 }
 
@@ -509,6 +529,91 @@ details.sgv-filtros[open] > summary { border-bottom: 1px solid var(--sgv-borde);
 .sgv-positivo { color: var(--sgv-ok); }
 .sgv-negativo { color: var(--sgv-peligro); }
 .sgv-suave { color: var(--sgv-texto-suave); font-size: 0.8125rem; }
+
+/* Celular (< 576 px): medio rem a los lados de cada celda en vez de 0,75 (E5-16), para que un catálogo con
+   placa, estado y acciones quepa a 390 px sin desplazamiento. Variable local de la tabla, no de la paleta. */
+@media (max-width: 575.98px) {
+    .sgv-tabla { --tabla-celda-x: 0.5rem; }
+}
+
+/* Columnas angostas (E5-16): tan anchas como su contenido, sin partirse. */
+.sgv-col-id,
+.sgv-col-estado,
+.sgv-col-acciones {
+    width: 1%;
+    white-space: nowrap;
+}
+
+/* Buscador en la cabecera de una lista (E5-16):
+   <div class="sgv-buscador" role="search" data-enter="…btnBuscar…"> caja + botón Buscar </div> */
+.sgv-buscador {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sgv-buscador .form-control {
+    flex: 1 1 auto;
+    width: 14rem;
+    max-width: 14rem;
+}
+
+@media (max-width: 575.98px) {
+    .sgv-buscador { width: 100%; }
+    .sgv-buscador .form-control { width: auto; max-width: none; }
+}
+
+/* Paginador del GridView (E5-16): <PagerStyle CssClass="sgv-paginador" /> va en la fila <tr> del paginador,
+   que lleva una tabla anidada con una celda por número. App.css y .sgv-tabla dejan fuera esas celdas
+   (td:not(:where(.sgv-paginador td))), así que aquí no hace falta !important. */
+.table .sgv-paginador > td {
+    padding: 0.75rem 1rem;
+    border: none;
+    border-top: 1px solid var(--sgv-borde);
+    background: var(--sgv-superficie);
+}
+
+.table .sgv-paginador table { margin: 0; }
+
+.table .sgv-paginador table td {
+    padding: 0 0.125rem;
+    border: none;
+}
+
+.sgv-paginador a,
+.sgv-paginador span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--sgv-borde-fuerte);
+    border-radius: var(--sgv-radio);
+    background: var(--sgv-superficie);
+    font-size: 0.8125rem;
+    color: var(--sgv-primario);
+    text-decoration: none;
+}
+
+.sgv-paginador span {
+    background: var(--sgv-primario);
+    border-color: var(--sgv-primario);
+    color: var(--sgv-blanco);
+}
+
+.sgv-paginador a:hover { background: var(--sgv-fondo-pagina); text-decoration: none; }
+
+@media (max-width: 767.98px) {
+    .sgv-paginador a,
+    .sgv-paginador span { min-width: 2.5rem; height: 2.5rem; }
+}
+
+/* Panel pegado a unas pestañas (.nav-tabs encima): sin redondeo arriba. */
+.nav-tabs + .sgv-panel {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
 
 .sgv-vacio {
     padding: 2rem 1rem;
@@ -548,6 +653,11 @@ details.sgv-filtros[open] > summary { border-bottom: 1px solid var(--sgv-borde);
 .sgv-acciones {
     display: inline-flex;
     gap: 0.375rem;
+}
+
+/* Celular: 2,5 rem para el dedo (E5-16; también en LiquidacionesPendientes y MovimientosViaje). */
+@media (max-width: 767.98px) {
+    .sgv-btn-icono { width: 2.5rem; height: 2.5rem; }
 }
 
 /* Panel con línea de color arriba, para la tabla principal de una página. */

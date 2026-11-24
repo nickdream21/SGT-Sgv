@@ -4,7 +4,7 @@ Registros de la BD que hay que corregir, completar o cargar. Casi todos están e
 
 Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = menor.
 
-Último id usado: D-036 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: D-037 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Facturas
 
@@ -49,6 +49,7 @@ Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = meno
 - [ ] **D-028** Registrar correos de los usuarios — para que "Olvidé mi contraseña" sirva: 1 de 92 lo tiene; mientras tanto el administrador restablece desde Gestión de usuarios. · C
 - [ ] **D-035** Conductor ficticio de prueba con viaje activo en `sgvActualizada` — la cuenta CONDUCTOR de `privado/CREDENCIALES_USUARIOS.txt` corresponde a un conductor real y no tiene viaje; la BD de pruebas no tiene órdenes, así que no se pueden probar Liquidar, la firma ni los PDF (P-025, P-033, P-037, P-038, P-040). Crear un `Conductor` y un usuario ficticios (datos inventados) con un despacho y viaje `ABIERTO` de prueba, identificables para borrarlos. Control: `SELECT COUNT(*) FROM OrdenViaje; SELECT COUNT(*) FROM ViajesEnProgreso WHERE estadoViaje = 'ABIERTO';`. Solo con aprobación del usuario. · B
 - [ ] **D-036** Nombres de conductores con espacios al final — 54 de 120 (medido el 2026-11-22; por eso el aviso de duplicado sale con huecos, M-078). Control: `SELECT COUNT(*) FROM Conductor WHERE DATALENGTH(nombre) <> DATALENGTH(RTRIM(nombre)) OR DATALENGTH(apPaterno) <> DATALENGTH(RTRIM(apPaterno)) OR DATALENGTH(apMaterno) <> DATALENGTH(RTRIM(apMaterno))`. Con aprobación: `UPDATE Conductor SET nombre = RTRIM(nombre), apPaterno = RTRIM(apPaterno), apMaterno = RTRIM(apMaterno)` sobre esas filas. · C
+- [ ] **D-037** Marca o modelo de semirremolques con espacios al inicio o al final — 6 en `Carreta` (medido el 2026-11-23; p. ej. id 22 "FAMECA "; el modal de edición los muestra tal cual). Control: `SELECT id, marca, modelo FROM Carreta WHERE DATALENGTH(marca) <> DATALENGTH(LTRIM(RTRIM(marca))) OR DATALENGTH(modelo) <> DATALENGTH(LTRIM(RTRIM(modelo)))` (con `<>` directo SQL Server ignora los espacios finales). · C
 
 ## Reglas
 

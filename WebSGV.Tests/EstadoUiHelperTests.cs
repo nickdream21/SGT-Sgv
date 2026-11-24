@@ -70,5 +70,21 @@ namespace WebSGV.Tests
             foreach (var clase in new[] { EstadoUiHelper.ClaseOk, EstadoUiHelper.ClaseInfo, EstadoUiHelper.ClaseAlerta, EstadoUiHelper.ClasePeligro })
                 Assert.Contains("." + clase + " {", css);
         }
+
+        // E5-16: pregunta de data-confirmar del botón Activar/Desactivar de los catálogos.
+        [Theory]
+        [InlineData(true, "el tracto", "ABC-123", "¿Desactivar el tracto ABC-123?")]
+        [InlineData(false, "el semirremolque", " XYZ-789 ", "¿Activar el semirremolque XYZ-789?")]
+        [InlineData(true, "la planta", "", "¿Desactivar la planta?")]
+        [InlineData(false, "el peaje", null, "¿Activar el peaje?")]
+        public void PreguntaCambioEstado(bool activo, string sustantivo, string nombre, string esperado) =>
+            Assert.Equal(esperado, EstadoUiHelper.PreguntaCambioEstado(activo, sustantivo, nombre));
+
+        [Fact]
+        public void PreguntaCambioEstado_ConValoresDeLaFila()
+        {
+            Assert.Equal("¿Desactivar el tracto ABC-123?", EstadoUiHelper.PreguntaCambioEstado((object)true, "el tracto", (object)"ABC-123"));
+            Assert.Equal("¿Activar el tracto?", EstadoUiHelper.PreguntaCambioEstado(System.DBNull.Value, "el tracto", System.DBNull.Value));
+        }
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using WebSGV.Services.Exportacion;
 using WebSGV.Services.Liquidaciones;
 
@@ -37,6 +37,24 @@ namespace WebSGV.Helpers
         /// <summary>Clase CSS del botón de alternar.</summary>
         public static string ObtenerClaseBoton(object activo) =>
             EsActivo(activo) ? "btn btn-warning btn-sm" : "btn btn-success btn-sm";
+
+        /// <summary>
+        /// Pregunta de <c>data-confirmar</c> del botón Activar/Desactivar de una fila (E5-16):
+        /// "¿Desactivar el tracto ABC-123?" si hoy está activo, "¿Activar …?" si no. <paramref name="sustantivo"/>
+        /// lleva su artículo ("el tracto", "la planta"); sin nombre queda "¿Desactivar el tracto?".
+        /// </summary>
+        public static string PreguntaCambioEstado(bool activo, string sustantivo, string nombre)
+        {
+            string verbo = activo ? "Desactivar" : "Activar";
+            string que = (sustantivo ?? "").Trim();
+            string quien = (nombre ?? "").Trim();
+            string texto = verbo + (que.Length > 0 ? " " + que : "") + (quien.Length > 0 ? " " + quien : "");
+            return "¿" + texto + "?";
+        }
+
+        /// <summary><see cref="PreguntaCambioEstado(bool, string, string)"/> con el valor de la columna <c>activo</c>.</summary>
+        public static string PreguntaCambioEstado(object activo, string sustantivo, object nombre) =>
+            PreguntaCambioEstado(EsActivo(activo), sustantivo, nombre == null || nombre == DBNull.Value ? "" : nombre.ToString());
 
         // ── Estados de flujo como sello (E5-14, DN-28) ─────────────────────────────
         // Devuelven el modificador de <span class="sgv-estado ...">: sgv-estado-ok (cerrado bien),

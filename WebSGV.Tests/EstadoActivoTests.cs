@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using WebSGV.Services.Clientes;
 using WebSGV.Services.Common;
 using WebSGV.Services.Usuarios;
@@ -151,11 +152,20 @@ namespace WebSGV.Tests
             // B5-3
             Assert.DoesNotContain("THEN 0 ELSE 1 END", cs);
             Assert.Contains("EstadoActivoService.TryLeerArgumento(", cs);
-            Assert.Contains("CommandArgument='<%# ArgumentoEstado(", aspx);
+            // E5-16: los catálogos con la plantilla común (sin ViewState en la grilla) llevan el argumento en
+            // data-argumento y lo envían por hfArgumentoFila; los demás siguen con CommandArgument hasta E5-16b.
+            if (CatalogosPlantillaTests.Paginas.Contains(pagina))
+            {
+                Assert.Contains("data-argumento='<%#: ArgumentoEstado(", aspx);
+                Assert.DoesNotContain("CommandArgument=", aspx);
+                Assert.Contains("EstadoActivoService.TryLeerArgumento(hfArgumentoFila.Value", cs);
+            }
+            else
+                Assert.Contains("CommandArgument='<%# ArgumentoEstado(", aspx);
 
             // B5-7: el error de la edición va dentro del modal, sin ViewState, y se limpia al abrir otra edición
             Assert.Contains("ID=\"pnlErrorModal\"", aspx);
-            Assert.Contains("EnableViewState=\"false\"", aspx);
+            Assert.Matches("<asp:Panel ID=\"pnlErrorModal\"[^>]*EnableViewState=\"false\"", aspx);
             Assert.True(aspx.IndexOf("ID=\"pnlErrorModal\"", StringComparison.Ordinal) >
                         aspx.IndexOf("<div class=\"modal-body\">", StringComparison.Ordinal),
                 "El panel de error debe estar dentro del cuerpo del modal");

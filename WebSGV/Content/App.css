@@ -33,7 +33,9 @@
     background-color: var(--sgv-fondo) !important;
 }
 
-.table tbody td {
+/* Fuera las celdas del paginador del GridView (.sgv-paginador, E5-16): las pinta sgv-base.css. :where()
+   no suma especificidad, así que la regla gana y pierde contra las mismas reglas de página que antes. */
+.table tbody td:not(:where(.sgv-paginador td)) {
     border: none !important;
     border-bottom: 1px solid var(--sgv-borde) !important;
     padding: 8px !important;

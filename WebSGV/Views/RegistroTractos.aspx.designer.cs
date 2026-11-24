@@ -119,5 +119,11 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtEditarMarca;
         protected global::System.Web.UI.WebControls.TextBox txtEditarModelo;
         protected global::System.Web.UI.WebControls.Button btnActualizarTracto;
+        protected global::System.Web.UI.WebControls.HiddenField hfArgumentoFila;
+        protected global::System.Web.UI.WebControls.HiddenField hfFiltroAplicado;
+        protected global::System.Web.UI.WebControls.Button btnAccionFila;
+        protected global::System.Web.UI.WebControls.Literal litResumen;
+        protected global::System.Web.UI.WebControls.TextBox txtBuscar;
+        protected global::System.Web.UI.WebControls.Button btnBuscar;
     }
 }

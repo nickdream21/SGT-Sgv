@@ -626,8 +626,73 @@
             var bloque = el.closest('.mb-3');
             if (bloque) bloque.style.display = 'none';
         },
-        recargarPagina: function () { location.reload(); }
+        recargarPagina: function () { location.reload(); },
+        // Botón de una fila de grilla sin ViewState (E5-16, catálogos): copia data-argumento al campo
+        // oculto de la página (SGV.hfArgumentoFila) y pulsa su botón oculto (SGV.btnAccionFila), que hace
+        // el postback. Con data-confirmar en el mismo botón, la pregunta va antes (su listener se registra
+        // arriba) y esto solo corre si el usuario acepta. El servidor revalida el argumento.
+        enviarFila: function (el) {
+            var campo = SGV.hfArgumentoFila && document.getElementById(SGV.hfArgumentoFila);
+            var boton = SGV.btnAccionFila && document.getElementById(SGV.btnAccionFila);
+            if (!campo || !boton) return false;
+            campo.value = el.getAttribute('data-argumento') || '';
+            boton.click();
+            return false;
+        }
     });
+})();
+
+// ── Validación de WebForms: llevar al error, no al principio de la página ──
+// ValidationSummaryOnSubmit (WebUIValidation.js) hace window.scrollTo(0, 0) al mostrar un ValidationSummary.
+// En el celular el formulario puede ir debajo de la lista (catálogos, E5-16) y el resumen quedaba fuera de la
+// vista, con el foco en body. Se envuelve: sin ese salto, se muestra el resumen (si no está ya a la vista) y se
+// enfoca el primer campo inválido del grupo. En escritorio, con el resumen visible, la vista no se mueve.
+(function () {
+    function aLaVista(el) {
+        var r = el.getBoundingClientRect();
+        return r.top >= 0 && r.bottom <= (window.innerHeight || document.documentElement.clientHeight);
+    }
+
+    function llevarAlError(grupo) {
+        var validadores = window.Page_Validators || [];
+        var campo = null;
+        for (var i = 0; i < validadores.length && !campo; i++) {
+            var v = validadores[i];
+            if (v.isvalid !== false) continue;
+            if (typeof window.IsValidationGroupMatch === 'function' && !window.IsValidationGroupMatch(v, grupo)) continue;
+            campo = v.controltovalidate ? document.getElementById(v.controltovalidate) : null;
+        }
+        var resumen = null, resumenes = window.Page_ValidationSummaries || [];
+        for (var j = 0; j < resumenes.length && !resumen; j++) {
+            var s = resumenes[j];
+            if (s && s.style.display !== 'none' && s.offsetParent !== null) resumen = s;
+        }
+        var destino = resumen || campo;
+        if (destino && !aLaVista(destino)) destino.scrollIntoView({ block: 'start' });
+        if (campo && typeof campo.focus === 'function') {
+            try { campo.focus({ preventScroll: true }); } catch (e) { campo.focus(); }
+        }
+    }
+
+    function envolver() {
+        var original = window.ValidationSummaryOnSubmit;
+        if (typeof original !== 'function' || original.sgvEnvuelto) return;
+        var envuelto = function (grupo) {
+            var desplazar = window.scrollTo, pidio = false;
+            window.scrollTo = function () { pidio = true; };
+            try { return original.apply(this, arguments); }
+            finally {
+                window.scrollTo = desplazar;
+                if (pidio) llevarAlError(grupo);
+            }
+        };
+        envuelto.sgvEnvuelto = true;
+        window.ValidationSummaryOnSubmit = envuelto;
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', envolver);
+    else envolver();
+    window.addEventListener('load', envolver);
 })();
 
 // ── Cerrar sesión: borradores del navegador fuera ──────────────────

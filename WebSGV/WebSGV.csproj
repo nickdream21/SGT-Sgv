@@ -488,6 +488,7 @@
     <Compile Include="Helpers\MensajeErrorHelper.cs" />
     <Compile Include="Helpers\EmpresaConfigHelper.cs" />
     <Compile Include="Helpers\EstadoUiHelper.cs" />
+    <Compile Include="Helpers\ListaCatalogo.cs" />
     <Compile Include="Helpers\FechaHelper.cs" />
     <Compile Include="Helpers\HashHelper.cs" />
     <Compile Include="Helpers\SesionHelper.cs" />
