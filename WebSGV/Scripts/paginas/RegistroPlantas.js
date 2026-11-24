@@ -17,15 +17,5 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#modalEditar').modal('show');
 });
 
-function filtrarTabla(valor, id) {
-    var filas = document.querySelectorAll('#' + id + ' table tr');
-    valor = valor.toLowerCase();
-    filas.forEach(function (f, i) { if (i > 0) f.style.display = f.textContent.toLowerCase().includes(valor) ? '' : 'none'; });
-}
-
-// Acciones del marcado (data-accion / data-accion-input / data-accion-change): las despacha
-// SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
-window.SGV = window.SGV || {};
-SGV.acciones = Object.assign(SGV.acciones || {}, {
-    filtrarTabla: function (el) { filtrarTabla(el.value, el.getAttribute('data-contenedor')); }
-});
+// La búsqueda va al servidor (E5-16: txtBuscar + Buscar, grilla paginada); Activar/Desactivar usa la acción
+// compartida enviarFila de SiteMaster.js.

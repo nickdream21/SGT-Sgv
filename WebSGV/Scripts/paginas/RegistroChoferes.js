@@ -18,12 +18,6 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#modalEditar').modal('show');
 });
 
-function filtrarTabla(valor, id) {
-    var filas = document.querySelectorAll('#' + id + ' table tr');
-    valor = valor.toLowerCase();
-    filas.forEach(function (f, i) { if (i > 0) f.style.display = f.textContent.toLowerCase().includes(valor) ? '' : 'none'; });
-}
-
 // B5-6: la consulta la hace el servidor (BuscarPorDNI); el token de la API ya no está en este archivo.
 var consultandoDni = false;
 function buscarPorDNI() {
@@ -57,12 +51,28 @@ function buscarPorDNI() {
     });
 }
 
+// Muestra el campo del tipo elegido con la clase d-none de Bootstrap (lleva !important: style.display no
+// podría mostrar un grupo que la tiene en el marcado, como grupoCarnet).
+// El validador del campo oculto se apaga (ValidatorEnable de WebUIValidation.js): si no, un carnet mal
+// escrito y luego cambiado a DNI bloquearía Registrar con un error que no se ve. El servidor hace lo mismo
+// (AjustarValidadoresDocumento).
 function mostrarCampoDocumento() {
     const tipo = document.getElementById(SGV.ddlTipoDocumento).value;
-    document.getElementById('grupoDNI').style.display = 'none';
-    document.getElementById('grupoCarnet').style.display = 'none';
-    if (tipo === 'DNI') document.getElementById('grupoDNI').style.display = 'block';
-    else if (tipo === 'Carnet de Extranjería') document.getElementById('grupoCarnet').style.display = 'block';
+    const esDni = tipo === 'DNI', esCarnet = tipo === 'Carnet de Extranjería';
+    document.getElementById('grupoDNI').classList.toggle('d-none', !esDni);
+    document.getElementById('grupoCarnet').classList.toggle('d-none', !esCarnet);
+    activarValidador(SGV.revDni, esDni);
+    activarValidador(SGV.revCarnet, esCarnet);
+}
+
+function activarValidador(id, activo) {
+    var val = id && document.getElementById(id);
+    // Al cargar, la validación discreta aún no armó Page_Validators: el servidor ya dejó cada validador
+    // encendido o apagado según el tipo elegido (AjustarValidadoresDocumento).
+    if (!val || typeof ValidatorEnable !== 'function' || typeof Page_Validators === 'undefined') return;
+    // Sin ValidatorValidate al encender: el campo recién mostrado se valida al escribir o al registrar.
+    if (activo) val.enabled = true;
+    else ValidatorEnable(val, false);   // apaga y borra el mensaje que hubiera
 }
 
 document.addEventListener('DOMContentLoaded', function () { mostrarCampoDocumento(); });
@@ -71,7 +81,9 @@ document.addEventListener('DOMContentLoaded', function () { mostrarCampoDocument
 // SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
 window.SGV = window.SGV || {};
 SGV.acciones = Object.assign(SGV.acciones || {}, {
-    filtrarTabla: function (el) { filtrarTabla(el.value, el.getAttribute('data-contenedor')); },
     mostrarCampoDocumento: function () { mostrarCampoDocumento(); },
     buscarPorDNI: function () { buscarPorDNI(); return false; }
 });
+
+// La búsqueda va al servidor (E5-16: txtBuscar + Buscar, grilla paginada); Activar/Desactivar usa la acción
+// compartida enviarFila de SiteMaster.js.

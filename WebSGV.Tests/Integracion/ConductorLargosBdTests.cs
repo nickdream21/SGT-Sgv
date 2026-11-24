@@ -126,4 +126,35 @@ namespace WebSGV.Tests.Integracion
             }
         }
     }
+
+    /// <summary>
+    /// M-078, de SOLO LECTURA: el nombre completo del conductor (RegistroConductorService.SqlNombreCompleto, el de
+    /// los mensajes de duplicado, del cambio de estado y de la grilla de RegistroChoferes) no deja dobles espacios
+    /// ni espacios en los bordes con columnas CHAR con relleno o sin apellido materno (antes 54 de 120 filas).
+    /// </summary>
+    public class NombreCompletoConductorBdTests
+    {
+        public NombreCompletoConductorBdTests() => BaseDePruebas.Preparar();
+
+        [FactBD]
+        public void ObtenerDocumentos_no_deja_dobles_espacios_en_el_nombre()
+        {
+            foreach (var d in RegistroConductorService.ObtenerDocumentos())
+            {
+                string n = d.NombreCompleto ?? "";
+                Assert.False(n.Contains("  "), $"Conductor #{d.IdConductor}: nombre con doble espacio");
+                Assert.Equal(n.Trim(), n);
+            }
+        }
+
+        [FactBD]
+        public void El_nombre_de_la_grilla_no_deja_dobles_espacios()
+        {
+            object malos = DbHelper.EjecutarEscalar(
+                "SELECT COUNT(*) FROM Conductor WHERE CHARINDEX('  ', " + RegistroConductorService.SqlNombreCompleto + ") > 0" +
+                " OR DATALENGTH(" + RegistroConductorService.SqlNombreCompleto + ") <> DATALENGTH(LTRIM(RTRIM(" +
+                RegistroConductorService.SqlNombreCompleto + ")))");
+            Assert.Equal(0, Convert.ToInt32(malos));
+        }
+    }
 }

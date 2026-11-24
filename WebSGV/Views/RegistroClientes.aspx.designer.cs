@@ -184,5 +184,11 @@ namespace WebSGV.Views
         /// </summary>
         protected global::System.Web.UI.WebControls.TextBox txtEditarObservaciones;
         protected global::System.Web.UI.WebControls.Button btnActualizarCliente;
+        protected global::System.Web.UI.WebControls.HiddenField hfArgumentoFila;
+        protected global::System.Web.UI.WebControls.HiddenField hfFiltroAplicado;
+        protected global::System.Web.UI.WebControls.Button btnAccionFila;
+        protected global::System.Web.UI.WebControls.Literal litResumen;
+        protected global::System.Web.UI.WebControls.TextBox txtBuscar;
+        protected global::System.Web.UI.WebControls.Button btnBuscar;
     }
 }

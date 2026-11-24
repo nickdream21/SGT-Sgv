@@ -146,12 +146,20 @@ namespace WebSGV.Services.Conductor
 
         // ── Base de datos ────────────────────────────────────────────────
 
+        /// <summary>
+        /// Nombre completo del conductor en SQL (M-078): cada parte recortada (nombre y apellidos son CHAR con
+        /// relleno: "ROBERTO   " + ' ' + "REMINTON  ") y el apellido materno solo si tiene texto, para que no
+        /// queden dobles espacios ni uno al final. La usan ObtenerDocumentos, el cambio de estado y la grilla
+        /// de RegistroChoferes.
+        /// </summary>
+        internal const string SqlNombreCompleto =
+            "LTRIM(RTRIM(LTRIM(RTRIM(ISNULL(nombre,''))) + ' ' + LTRIM(RTRIM(ISNULL(apPaterno,''))) + ISNULL(' ' + NULLIF(LTRIM(RTRIM(apMaterno)),''),'')))";
+
         /// <summary>Documentos de todos los conductores (activos e inactivos).</summary>
         public static List<DocumentoGuardado> ObtenerDocumentos()
         {
             DataTable dt = DbHelper.ConsultarTabla(
-                @"SELECT idConductor, DNI, carnetExtranjeria,
-                         LTRIM(RTRIM(ISNULL(nombre, '') + ' ' + ISNULL(apPaterno, '') + ' ' + ISNULL(apMaterno, ''))) AS nombreCompleto
+                "SELECT idConductor, DNI, carnetExtranjeria, " + SqlNombreCompleto + @" AS nombreCompleto
                     FROM Conductor
                    WHERE DNI IS NOT NULL OR carnetExtranjeria IS NOT NULL");
             return dt.AsEnumerable().Select(r => new DocumentoGuardado
@@ -235,9 +243,7 @@ namespace WebSGV.Services.Conductor
         }
 
         private static readonly TablaActivable TablaActivableConductor = new TablaActivable(
-            "Conductor", "idConductor", "activo",
-            // Cada parte recortada: columnas CHAR con relleno ("ROBERTO   " + ' ' + "REMINTON  ")
-            "LTRIM(RTRIM(LTRIM(RTRIM(ISNULL(nombre, ''))) + ' ' + LTRIM(RTRIM(ISNULL(apPaterno, ''))) + ' ' + LTRIM(RTRIM(ISNULL(apMaterno, '')))))",
+            "Conductor", "idConductor", "activo", SqlNombreCompleto,
             "conductor", femenino: false);
 
         /// <summary>

@@ -1,7 +1,10 @@
 using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
 using WebSGV.Services.Clientes;
 using WebSGV.Services.Common;
 using WebSGV.Services.Conductor;
+using WebSGV.Tests.Integracion;
 using Xunit;
 using G = WebSGV.Services.Conductor.RegistroConductorService.DocumentoGuardado;
 using R = WebSGV.Services.Conductor.RegistroConductorService;
@@ -41,17 +44,94 @@ namespace WebSGV.Tests
         public void NormalizarDni(string entrada, string esperado) =>
             Assert.Equal(esperado, DocumentoConductor.NormalizarDni(entrada));
 
+        /// <summary>
+        /// Carnets para <see cref="DocumentoConductor.EsCarnetValido"/> y para el validador revCarnet de
+        /// RegistroChoferes (M-079), que tiene que decir lo mismo en el navegador. Espacios solo a los lados (el
+        /// validador los admite con su \s*): por dentro el servidor los quita y el validador no.
+        /// </summary>
+        public static readonly TheoryData<string, bool> CasosCarnet = new TheoryData<string, bool>
+        {
+            { "8800123", true },
+            { "008800123", true },
+            { "AB-12345", true },
+            { "ab-12345", true },                  // minúsculas: el servidor las pasa a mayúsculas
+            { " 8800123 ", true },                 // espacios a los lados: el servidor los quita, el validador los admite
+            { "\t8800123", true },
+            { " ABCDEFG ", false },
+            { "12345678901", true },               // 11 = char(11)
+            { "123456789012", false },             // 12 no cabe
+            { "12345", false },
+            { "ABCDEFG", false },                  // sin dígitos
+            { "ABC-DEF", false },                  // sin dígitos, con guion
+            { "------", false },
+            { "1234/567", false },
+            { "12345Ñ", false },
+        };
+
         [Theory]
-        [InlineData("8800123", true)]
-        [InlineData("008800123", true)]
-        [InlineData("AB-12345", true)]
-        [InlineData("12345678901", true)]          // 11 = char(11)
-        [InlineData("123456789012", false)]        // 12 no cabe
-        [InlineData("12345", false)]
-        [InlineData("ABCDEFG", false)]             // sin dígitos
-        [InlineData("1234/567", false)]
+        [MemberData(nameof(CasosCarnet))]
         public void EsCarnetValido(string entrada, bool esperado) =>
             Assert.Equal(esperado, DocumentoConductor.EsCarnetValido(entrada));
+
+        /// <summary>
+        /// M-079: revCarnet aceptaba "ABCDEFG" en el navegador y el servidor lo rechazaba. Se evalúa su
+        /// ValidationExpression como RegularExpressionValidatorEvaluateIsValid de WebUIValidation.js: el valor NO
+        /// se recorta (solo un valor en blanco es válido sin evaluar) y la coincidencia del RegExp del navegador
+        /// (RegexOptions.ECMAScript) tiene que ser el valor entero. También como lo evalúa el validador en el
+        /// servidor (Regex de .NET, coincidencia desde el inicio y de todo el largo).
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(CasosCarnet))]
+        public void Validador_del_carnet_dice_lo_mismo_que_el_servidor(string entrada, bool esperado)
+        {
+            string aspx = File.ReadAllText(Path.Combine(BaseDePruebas.RaizRepo, "WebSGV", "Views", "RegistroChoferes.aspx"));
+            Match validador = Regex.Match(aspx, @"<asp:RegularExpressionValidator\b[^>]*\bID=""revCarnet""[^>]*>");
+            Assert.True(validador.Success, "Falta revCarnet en RegistroChoferes.aspx");
+            Match expresion = Regex.Match(validador.Value, @"ValidationExpression=""(?<e>[^""]*)""");
+            Assert.True(expresion.Success, "revCarnet sin ValidationExpression");
+            string patron = System.Net.WebUtility.HtmlDecode(expresion.Groups["e"].Value);
+
+            string valor = entrada ?? "";
+            bool enBlanco = valor.Trim().Length == 0;   // ValidatorTrim(value).length == 0: no evalúa
+            bool enNavegador = enBlanco || CoincideEntero(new Regex(patron, RegexOptions.ECMAScript), valor);
+            bool enServidor = enBlanco || CoincideEntero(new Regex(patron), valor);
+            Assert.Equal(esperado, enNavegador);
+            Assert.Equal(esperado, enServidor);
+            Assert.Equal(DocumentoConductor.EsCarnetValido(entrada), enNavegador);
+        }
+
+        /// <summary><c>rx.exec(value)</c> y <c>value == matches[0]</c>: la coincidencia es el valor entero, sin recortar.</summary>
+        private static bool CoincideEntero(Regex rx, string valor)
+        {
+            Match m = rx.Match(valor);
+            return m.Success && m.Index == 0 && m.Value == valor;
+        }
+
+        /// <summary>
+        /// M-078: el nombre completo del conductor sale de una sola expresión SQL (cada parte recortada y el
+        /// apellido materno solo si tiene texto), no de concatenaciones sueltas que dejaban dobles espacios.
+        /// </summary>
+        [Fact]
+        public void Nombre_completo_del_conductor_usa_una_sola_expresion()
+        {
+            string servicio = File.ReadAllText(Path.Combine(BaseDePruebas.RaizRepo, "WebSGV", "Services", "Conductor", "RegistroConductorService.cs"));
+            string pagina = File.ReadAllText(Path.Combine(BaseDePruebas.RaizRepo, "WebSGV", "Views", "RegistroChoferes.aspx.cs"));
+
+            Assert.Contains("internal const string SqlNombreCompleto", servicio);
+            Assert.Contains("\"SELECT idConductor, DNI, carnetExtranjeria, \" + SqlNombreCompleto", servicio);
+            Assert.Contains("\"Conductor\", \"idConductor\", \"activo\", SqlNombreCompleto,", servicio);
+            Assert.Contains("RegistroConductorService.SqlNombreCompleto + @\" AS nombreCompleto", pagina);
+
+            // Las formas que dejaban dobles espacios (columnas CHAR con relleno o apMaterno vacío).
+            var viejas = new Regex(@"ISNULL\(\s*nombre\s*,\s*''\s*\)\s*\+\s*' '|nombre\s*\+\s*' '\s*\+\s*apPaterno|\+\s*' '\s*\+\s*LTRIM\(RTRIM\(ISNULL\(apMaterno",
+                RegexOptions.IgnoreCase);
+            Assert.DoesNotMatch(viejas, servicio);
+            Assert.DoesNotMatch(viejas, pagina);
+
+            // La expresión: el materno va con ISNULL(' ' + NULLIF(...), ''), sin un ' ' suelto antes.
+            const string esperada = "LTRIM(RTRIM(LTRIM(RTRIM(ISNULL(nombre,''))) + ' ' + LTRIM(RTRIM(ISNULL(apPaterno,''))) + ISNULL(' ' + NULLIF(LTRIM(RTRIM(apMaterno)),''),'')))";
+            Assert.Equal(esperada, RegistroConductorService.SqlNombreCompleto);
+        }
 
         [Fact]
         public void ListaDeChoferes_conserva_la_misma_normalizacion()

@@ -19,5 +19,11 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.HiddenField hfIdEstacion;
         protected global::System.Web.UI.WebControls.TextBox txtEditarNombre;
         protected global::System.Web.UI.WebControls.Button btnActualizarPeaje;
+        protected global::System.Web.UI.WebControls.HiddenField hfArgumentoFila;
+        protected global::System.Web.UI.WebControls.HiddenField hfFiltroAplicado;
+        protected global::System.Web.UI.WebControls.Button btnAccionFila;
+        protected global::System.Web.UI.WebControls.Literal litResumen;
+        protected global::System.Web.UI.WebControls.TextBox txtBuscar;
+        protected global::System.Web.UI.WebControls.Button btnBuscar;
     }
 }

@@ -17,10 +17,14 @@ namespace WebSGV.Tests
     public class CatalogosPlantillaTests
     {
         /// <summary>
-        /// Páginas con la plantilla. E5-16a: Tractos y Semirremolques; E5-16b la amplía a las 8 (Choferes, Clientes,
-        /// Plantas, Peajes, CatalogoCliente y DestinoDescarga).
+        /// Páginas con la plantilla. E5-16a: Tractos y Semirremolques; E5-16b: Choferes, Clientes, Plantas y Peajes;
+        /// E5-16c sumará CatalogoCliente y DestinoDescarga.
         /// </summary>
-        public static readonly string[] Paginas = { "RegistroTractos", "RegistroSemiremolques" };
+        public static readonly string[] Paginas =
+        {
+            "RegistroTractos", "RegistroSemiremolques", "RegistroChoferes", "RegistroClientes",
+            "RegistroPlantas", "RegistroPeajes"
+        };
 
         public static IEnumerable<object[]> Casos() => Paginas.Select(p => new object[] { p });
 
@@ -216,6 +220,59 @@ namespace WebSGV.Tests
             Assert.True(columnas[0].Index > alta && columnas[0].Index < grilla,
                 "La columna de la lista (con order-first) debe ir después del alta y contener la grilla");
             Assert.Contains("order-md-0", columnas[0].Value);
+        }
+
+        // ── (g) Propias de cada página (E5-16b) ──────────────────────────────────────────────
+
+        [Fact]
+        public void G_Choferes_cargaDeLaListaPlegableYCarnetConDNone()
+        {
+            string aspx = Aspx("RegistroChoferes");
+            string cs = Cs("RegistroChoferes");
+            string js = Js("RegistroChoferes");
+
+            // La carga de la lista va plegada salvo con una comparación o un error (CargaAbierta).
+            Assert.Contains("<details class=\"sgv-plegable\"<%= CargaAbierta ? \" open\" : \"\" %>>", aspx);
+            Assert.Contains("<div class=\"sgv-plegable-cuerpo\">", aspx);
+            Assert.Contains("protected bool CargaAbierta", cs);
+            Assert.True(aspx.IndexOf("ID=\"btnCompararLista\"", StringComparison.Ordinal) > aspx.IndexOf("<details", StringComparison.Ordinal));
+
+            // grupoCarnet se oculta con d-none (lleva !important): el script tiene que alternar la clase, no
+            // style.display, o el campo del carnet no se podría mostrar nunca.
+            Assert.Matches(@"<div\b[^>]*\bclass=""[^""]*\bd-none\b[^""]*""[^>]*\bid=""grupoCarnet""", aspx);
+            Assert.Contains("classList.toggle('d-none'", js);
+            Assert.DoesNotMatch(@"getElementById\('grupo(Carnet|DNI)'\)\.style", js);
+
+            // El validador del tipo oculto no bloquea Registrar: se apaga en el navegador y en el servidor (antes de
+            // la validación, que corre después de Page_Load), y cada mensaje va en la columna de su campo.
+            Assert.Contains("ValidatorEnable(val, false)", js);
+            Assert.Contains("activarValidador(SGV.revCarnet, esCarnet)", js);
+            Assert.Contains("revCarnet: '<%= revCarnet.ClientID %>'", aspx);
+            Assert.Contains("revCarnet.Enabled = esCarnet;", cs);
+            Assert.Contains("revDni.Enabled = !esCarnet;", cs);
+            int load = cs.IndexOf("void Page_Load(", StringComparison.Ordinal);
+            Assert.True(cs.IndexOf("AjustarValidadoresDocumento();", load, StringComparison.Ordinal) <
+                        cs.IndexOf("\n        }", load, StringComparison.Ordinal), "AjustarValidadoresDocumento va en Page_Load");
+            foreach (var par in new[] { ("grupoDNI", "revDni"), ("grupoCarnet", "revCarnet") })
+            {
+                Match grupo = Regex.Match(aspx, @"<div\b[^>]*\bid=""" + par.Item1 + @"""[^>]*>(?<c>.*?)\n {28}</div>", RegexOptions.Singleline);
+                Assert.True(grupo.Success, "No se encontró " + par.Item1);
+                Assert.Contains("ID=\"" + par.Item2 + "\"", grupo.Groups["c"].Value);
+            }
+
+            // La grilla de la comparación (HTML armado en el servidor) sin anchos en línea.
+            Assert.Contains("<th class=\\\"sgv-col-acciones\\\">", cs);
+        }
+
+        [Fact]
+        public void G_Clientes_contactoYTelefonoEnBloquesSinPlaceHolder()
+        {
+            // M-084: con el contacto vacío el teléfono ya no baja una línea (antes iba tras un <br/>).
+            string c = LaGrilla(Aspx("RegistroClientes")).Groups["c"].Value;
+            Assert.Contains("<div><%#: Eval(\"contacto\") %></div>", c);
+            Assert.Contains("<div class=\"small text-muted\"><%#: Eval(\"telefono\") %></div>", c);
+            Assert.DoesNotContain("<asp:PlaceHolder", c);
+            Assert.DoesNotMatch(new Regex(@"<br\s*/?>", RegexOptions.IgnoreCase), c);
         }
     }
 }

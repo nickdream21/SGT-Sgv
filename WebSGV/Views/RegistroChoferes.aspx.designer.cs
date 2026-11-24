@@ -179,5 +179,13 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.TextBox txtEditarApellidoMaterno;
         protected global::System.Web.UI.WebControls.TextBox txtEditarTelefono;
         protected global::System.Web.UI.WebControls.Button btnActualizarConductor;
+        protected global::System.Web.UI.WebControls.HiddenField hfArgumentoFila;
+        protected global::System.Web.UI.WebControls.HiddenField hfFiltroAplicado;
+        protected global::System.Web.UI.WebControls.Button btnAccionFila;
+        protected global::System.Web.UI.WebControls.Literal litResumen;
+        protected global::System.Web.UI.WebControls.TextBox txtBuscar;
+        protected global::System.Web.UI.WebControls.Button btnBuscar;
+        protected global::System.Web.UI.WebControls.RegularExpressionValidator revDni;
+        protected global::System.Web.UI.WebControls.RegularExpressionValidator revCarnet;
     }
 }

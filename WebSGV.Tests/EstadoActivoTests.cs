@@ -153,7 +153,7 @@ namespace WebSGV.Tests
             Assert.DoesNotContain("THEN 0 ELSE 1 END", cs);
             Assert.Contains("EstadoActivoService.TryLeerArgumento(", cs);
             // E5-16: los catálogos con la plantilla común (sin ViewState en la grilla) llevan el argumento en
-            // data-argumento y lo envían por hfArgumentoFila; los demás siguen con CommandArgument hasta E5-16b.
+            // data-argumento y lo envían por hfArgumentoFila; CatalogoCliente sigue con CommandArgument hasta E5-16c.
             if (CatalogosPlantillaTests.Paginas.Contains(pagina))
             {
                 Assert.Contains("data-argumento='<%#: ArgumentoEstado(", aspx);

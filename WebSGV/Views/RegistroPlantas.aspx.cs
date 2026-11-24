@@ -18,26 +18,62 @@ namespace WebSGV.Views
             SecurityHelper.AgregarHeadersSeguridad();
 
             if (!IsPostBack)
-            {
                 EnvioUnicoHelper.Emitir(ClaveEnvioUnico, hfEnvioUnico);
+
+            // La grilla no guarda ViewState (E5-16): se enlaza en cada petición, en el manejador que cambia
+            // algo o, si ninguno lo hizo, en OnPreRender. El filtro aplicado vive en hfFiltroAplicado
+            // (solo lo escribe Buscar) y la página en el ControlState del GridView.
+        }
+
+        /// <summary>true cuando CargarPlantas ya enlazó la grilla en esta petición.</summary>
+        private bool _grillaEnlazada;
+
+        protected override void OnPreRender(EventArgs e)
+        {
+            if (!_grillaEnlazada && !Response.IsRequestBeingRedirected)
                 CargarPlantas();
-            }
+            base.OnPreRender(e);
         }
 
         private void CargarPlantas()
         {
+            _grillaEnlazada = true;
             try
             {
                 DataTable dt = DbHelper.ConsultarTabla(
                     "SELECT idPlanta, nombre, esInternacional, activo FROM Planta ORDER BY esInternacional, nombre");
-                gvPlantas.DataSource = dt;
+                // El filtro es el que se aplicó con Buscar (hfFiltroAplicado), no lo que haya en la caja.
+                string texto = hfFiltroAplicado.Value;
+                texto = ListaCatalogo.RecortarBusqueda(texto);   // el campo oculto lo puede cambiar el usuario
+                if (txtBuscar.Text != texto) txtBuscar.Text = texto;
+                DataTable filtradas = ListaCatalogo.Filtrar(dt, texto, "nombre");
+                bool conFiltro = ListaCatalogo.Normalizar(texto).Length > 0;
+
+                gvPlantas.PageIndex = ListaCatalogo.IndiceValido(gvPlantas.PageIndex, filtradas.Rows.Count);
+                gvPlantas.EmptyDataText = conFiltro ? "Ninguna planta coincide con la búsqueda." : "No hay plantas registradas.";
+                gvPlantas.DataSource = filtradas;
                 gvPlantas.DataBind();
+
                 lblTotalPlantas.Text = dt.Rows.Count + " registro(s)";
+                litResumen.Text = ListaCatalogo.Resumen(gvPlantas.PageIndex, filtradas.Rows.Count, dt.Rows.Count, texto);
             }
             catch (Exception ex)
             {
                 MostrarMensaje("Error al cargar las plantas: " + MensajeErrorHelper.ParaUsuario(ex));
             }
+        }
+
+        protected void btnBuscar_Click(object sender, EventArgs e)
+        {
+            hfFiltroAplicado.Value = ListaCatalogo.RecortarBusqueda(txtBuscar.Text);
+            gvPlantas.PageIndex = 0;
+            CargarPlantas();
+        }
+
+        protected void gvPlantas_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            gvPlantas.PageIndex = e.NewPageIndex;
+            CargarPlantas();
         }
 
         /// <summary>Clave del formulario de registro en <see cref="EnvioUnicoHelper"/> (E5-3).</summary>
@@ -110,12 +146,17 @@ namespace WebSGV.Views
             }
         }
 
-        protected void gvPlantas_RowCommand(object sender, GridViewCommandEventArgs e)
+        /// <summary>
+        /// Activar/Desactivar de una fila (E5-16): el botón de la fila deja "id|estadoDestino" en hfArgumentoFila
+        /// y pulsa este botón oculto. El campo lo puede cambiar el usuario: se revalida el formato y
+        /// CambiarEstado solo toca la tabla de plantas y exige que la fila exista.
+        /// </summary>
+        protected void btnAccionFila_Click(object sender, EventArgs e)
         {
-            if (e.CommandName != "ToggleActivo") return;
-
             // Estado destino explícito "id|0" / "id|1" (B5-3): un F5 o una segunda pestaña ya no invierte el estado.
-            if (!EstadoActivoService.TryLeerArgumento(e.CommandArgument, out int id, out bool nuevoActivo))
+            bool leido = EstadoActivoService.TryLeerArgumento(hfArgumentoFila.Value, out int id, out bool nuevoActivo);
+            hfArgumentoFila.Value = "";
+            if (!leido)
             {
                 MostrarMensaje("No se pudo leer la fila; recargue la página.");
                 return;
@@ -151,6 +192,10 @@ namespace WebSGV.Views
         protected string ObtenerTextoBoton(object activo) => EstadoUiHelper.ObtenerTextoBoton(activo);
 
         protected string ObtenerClaseBoton(object activo) => EstadoUiHelper.ObtenerClaseBoton(activo);
+
+        /// <summary>Pregunta de data-confirmar: "¿Desactivar la planta PLANTA X?".</summary>
+        protected string PreguntaEstado(object activo, object nombre) =>
+            EstadoUiHelper.PreguntaCambioEstado(activo, "la planta", nombre);
 
         protected string AttrEncode(object val) =>
             System.Web.HttpUtility.HtmlAttributeEncode(val?.ToString() ?? "");
@@ -208,7 +253,7 @@ namespace WebSGV.Views
             AvisoHelper.Mostrar(Page, pnlMensaje, lblMensaje, mensaje, tipo ?? (esExito ? AvisoHelper.Exito : AvisoHelper.Peligro));
         }
 
-        /// <summary>CommandArgument del botón Activar/Desactivar: "id|estadoDestino" (B5-3).</summary>
+        /// <summary>data-argumento del botón Activar/Desactivar: "id|estadoDestino" (B5-3).</summary>
         protected string ArgumentoEstado(object id, object activo) => EstadoActivoService.ArgumentoComando(id, activo);
 
         /// <summary>Verde si cambió; amarillo si ya tenía ese estado (otra pestaña o F5).</summary>
