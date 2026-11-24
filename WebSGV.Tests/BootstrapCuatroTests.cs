@@ -49,7 +49,7 @@ namespace WebSGV.Tests
         /// </summary>
         private static readonly Dictionary<string, int> TopeImportant = new Dictionary<string, int>(StringComparer.Ordinal)
         {
-            ["Content/App.css"] = 63,
+            ["Content/App.css"] = 55,
             ["Content/sgv-base.css"] = 40,
             ["Content/paginas/DashboardConductor.css"] = 3,
             ["Content/paginas/Exportacion/DashboardExportacion.css"] = 2,

@@ -27,6 +27,18 @@ namespace WebSGV.Services.Despachos
         public const string AvisoPorElegir = "Ni el tracto ni la carreta coinciden: elija el despacho programado.";
 
         /// <summary>
+        /// Otro transporte del pedido (no ya registrado) al que se le propuso completar ese despacho programado
+        /// (M-080): su número, para rotular la opción del selector ("lo completa el transporte …"); null si ninguno.
+        /// La opción no se quita: al confirmar se rechaza un programado elegido en más de una guía.
+        /// </summary>
+        public static string TransporteQueLoCompleta(IEnumerable<TractoImportado> tractos, TractoImportado actual, int idDespachoProgramado) =>
+            (tractos ?? Enumerable.Empty<TractoImportado>())
+                .Where(t => t != null && !ReferenceEquals(t, actual) && !t.YaRegistrado
+                            && t.Programacion?.IdDespachoProgramado == idDespachoProgramado)
+                .Select(t => t.NumeroTransporte ?? t.NumeroGuia)
+                .FirstOrDefault(n => !string.IsNullOrWhiteSpace(n));
+
+        /// <summary>
         /// Las secciones de carga dicen "CARGAN &lt;fecha&gt;" en el título; si no, se reconocen
         /// por la columna HORARIO sin N° de pedido (las de descarga traen pedido y CAMBIO).
         /// Las de los clientes sin pedido (Crisar, Novopan, Polinplast) las dice su título:

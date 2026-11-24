@@ -360,6 +360,60 @@ namespace WebSGV.Tests
             Assert.StartsWith("CPIC 0003900: no se registró porque no se eligió el camión de las guías de su pedido 4400000001.", quedo);
         }
 
+        private static CpicBandeja CpicQueEspera() => new CpicBandeja
+        {
+            Archivo = "c.pdf", Estado = EstadoAduanaBandeja.NoSeRegistra, EsperaSuPedido = true, Pedido = "4400000001",
+            Detalle = BandejaDocumentosService.DetalleCpicEsperaCamion,
+            Cpic = new WebSGV.Services.Despachos.Importacion.CpicLeido { Numero = "0003900" }
+        };
+
+        [Fact]
+        public void La_cpic_cuyas_guias_quedaron_en_no_registrar_ahora_lo_dice()
+        {
+            // M-080: el usuario sí eligió ("No registrar ahora"); no es que faltara elegir el camión.
+            var b = Guia("T660-2", 30, 40);
+            var l = Lectura(b);
+            Assert.NotEmpty(b.Candidatos);
+            Assert.Empty(BandejaDocumentosService.AplicarEleccion(l, new Dictionary<string, EleccionGuia>
+            {
+                ["T660-2"] = BandejaDocumentosService.EleccionDesdeSelector(BandejaDocumentosService.NoRegistrar)
+            }));
+            l.Cpics.Add(CpicQueEspera());
+
+            var quedo = BandejaDocumentosService.QuedoSinRegistrar(l);
+            Assert.Contains("CPIC 0003900: no se registró porque las guías de su pedido 4400000001 quedaron en «No registrar ahora». " +
+                            "Vuelva a subirla junto con el ZIP del pedido cuando registre sus guías.", quedo);
+            Assert.DoesNotContain(quedo, x => x.Contains("no se eligió el camión"));
+        }
+
+        [Fact]
+        public void La_cpic_con_guias_todavia_por_elegir_sigue_diciendo_que_falta_el_camion()
+        {
+            var b = Guia("T660-2", 30, 40);
+            var l = Lectura(b);
+            Assert.True(b.PorElegir);
+            l.Cpics.Add(CpicQueEspera());
+            Assert.Contains(BandejaDocumentosService.QuedoSinRegistrar(l),
+                x => x.StartsWith("CPIC 0003900: no se registró porque no se eligió el camión de las guías de su pedido 4400000001."));
+        }
+
+        [Fact]
+        public void El_programado_que_ya_completa_otra_guia_se_nombra()
+        {
+            // M-080: la opción se marca en el selector, no se quita (al registrar se rechaza el repetido).
+            var a = Guia("T660-1", 10, 20);
+            var b = Guia("T660-2", 30, 40);
+            var l = Lectura(a, b);
+            Assert.Equal(EstadoGuiaBandeja.Unida, a.Estado);
+            Assert.Equal(1, a.IdProgramado);
+            Assert.Contains(1, b.Candidatos);
+
+            Assert.Equal("T660-1", BandejaDocumentosService.GuiaQueYaLoCompleta(l, b, 1));
+            Assert.Null(BandejaDocumentosService.GuiaQueYaLoCompleta(l, a, 1));   // la suya no
+            Assert.Null(BandejaDocumentosService.GuiaQueYaLoCompleta(l, b, 2));
+            Assert.Null(BandejaDocumentosService.GuiaQueYaLoCompleta(null, b, 1));
+        }
+
         [Fact]
         public void Un_despacho_invalido_da_error_y_la_guia_sigue_por_elegir()
         {

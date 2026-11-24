@@ -1569,8 +1569,14 @@ namespace WebSGV.Views
                     ddlProgramado.CssClass += " is-invalid";
                 }
                 ddlProgramado.Items.Add(new ListItem("Despacho nuevo", "0"));
+                // M-080: el que ya se propuso a otro transporte se marca en el texto (no se quita: confirmar rechaza el repetido).
+                var tractosDelPedido = ((Repeater)sender).DataSource as IEnumerable<TractoImportado>;
                 foreach (var p in _programadosImp)
-                    ddlProgramado.Items.Add(new ListItem("Programado: " + p.Texto, p.IdDespacho.ToString()));
+                {
+                    string otro = ProgramacionCarga.TransporteQueLoCompleta(tractosDelPedido, t, p.IdDespacho);
+                    ddlProgramado.Items.Add(new ListItem("Programado: " + p.Texto + (otro == null ? "" : " (lo completa el transporte " + otro + ")"),
+                        p.IdDespacho.ToString()));
+                }
                 if (!porElegir) RestaurarSeleccion(ddlProgramado, t.Programacion?.IdDespachoProgramado?.ToString() ?? "0");
             }
 

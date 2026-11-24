@@ -42,20 +42,6 @@
     vertical-align: middle !important;
 }
 
-/* === Tarjetas ===
-   .card.shadow-sm (unas 45 tarjetas de catálogos y reportes) y .mb-0.font-weight-bold (hoy solo la etiqueta
-   "Placas de los tractos" de ReporteGps) siguen vivas: quitarlas cambia lo que se ve; se van con esas páginas
-   en E5-16/E5-17 (M-144). .card-body.p-3 y .card-title.mb-1 se quitaron en E5-13 (sin usos). */
-.card.shadow-sm {
-    border-radius: var(--sgv-radio) !important;
-    overflow: hidden !important;
-    margin-bottom: 1rem !important;
-}
-
-.mb-0.font-weight-bold {
-    font-size: 1.5rem !important;
-}
-
 /* === Modales: cabecera clara con texto oscuro === */
 .modal {
     z-index: 1050 !important;
@@ -158,14 +144,6 @@
     .table thead th {
         font-size: 12px !important;
     }
-
-    .card.shadow-sm .card-body {
-        padding: 10px !important;
-    }
-
-    .mb-0.font-weight-bold {
-        font-size: 1.2rem !important;
-    }
 }
 
 /* === Celular (< 576 px) === */
@@ -177,14 +155,6 @@
 
     .modal-body {
         padding: 1rem !important;
-    }
-
-    .card.shadow-sm .card-body {
-        padding: 8px !important;
-    }
-
-    .mb-0.font-weight-bold {
-        font-size: 1rem !important;
     }
 }
 

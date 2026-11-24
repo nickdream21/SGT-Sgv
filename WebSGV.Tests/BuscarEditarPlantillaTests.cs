@@ -13,16 +13,18 @@ namespace WebSGV.Tests
     /// sgv-paginador, filtros en details.sgv-filtros, cifras en una línea (sgv-resumen) en vez de tarjetas, sellos
     /// sgv-estado y el giratorio sgv-cargando. La lista de páginas crece con cada parte de E5-17 (a: GestionUsuarios,
     /// Auditoria y DashboardAdminSistema; b: ReporteCargas, ReportesOrdenesViaje, ReporteGps y
-    /// LiquidacionesAprobadasContabilidad). Leen las páginas como texto sin comentarios, igual que
+    /// LiquidacionesAprobadasContabilidad; c: FacturasFlete, BandejaDocumentos y SaldosConductores). Leen las
+    /// páginas como texto sin comentarios, igual que
     /// <see cref="CatalogosPlantillaTests"/>.
     /// </summary>
     public class BuscarEditarPlantillaTests
     {
-        /// <summary>Páginas con la plantilla (crece con E5-17c).</summary>
+        /// <summary>Páginas con la plantilla (las diez de E5-17).</summary>
         public static readonly string[] Paginas =
         {
             "GestionUsuarios", "Auditoria", "DashboardAdminSistema",
-            "ReporteCargas", "ReportesOrdenesViaje", "ReporteGps", "LiquidacionesAprobadasContabilidad"
+            "ReporteCargas", "ReportesOrdenesViaje", "ReporteGps", "LiquidacionesAprobadasContabilidad",
+            "FacturasFlete", "BandejaDocumentos", "SaldosConductores"
         };
 
         /// <summary>
@@ -31,7 +33,8 @@ namespace WebSGV.Tests
         /// </summary>
         public static readonly string[] PaginasConFiltros =
         {
-            "GestionUsuarios", "Auditoria", "ReporteCargas", "ReportesOrdenesViaje", "LiquidacionesAprobadasContabilidad"
+            "GestionUsuarios", "Auditoria", "ReporteCargas", "ReportesOrdenesViaje", "LiquidacionesAprobadasContabilidad",
+            "FacturasFlete", "BandejaDocumentos", "SaldosConductores"
         };
 
         /// <summary>
@@ -41,6 +44,7 @@ namespace WebSGV.Tests
         public static readonly Dictionary<string, int> StylePermitidos = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
             ["Views/ReporteCargas.aspx.cs"] = 1,   // Barra(): width:% del peso de cada cliente o producto
+            ["Views/BandejaDocumentos.aspx.cs"] = 1,   // barra de avance del expediente: width:% de documentos listos
         };
 
         /// <summary>Clases retiradas en E5-17a y E5-17b: no vuelven en el marcado, el código, el script ni la hoja de la página.</summary>
@@ -51,7 +55,10 @@ namespace WebSGV.Tests
             // E5-17b
             "rc-tarjeta", "rc-doc-", "rc-faltante", "badge-secondary", "summary-card", "summary-icon", "section-card",
             "section-header", "tab-btn", "btn-export", "btn-info-action", "alert-info-light", "badge-count", "table-reportes",
-            "modal-header-info", "page-item", "page-link", "\"pagination", "fa-spinner", "fa-info-circle"
+            "modal-header-info", "page-item", "page-link", "\"pagination", "fa-spinner", "fa-info-circle",
+            // E5-17c
+            "ff-tarjeta", "ff-chip", "ff-monto-2", "bd-chip", "bd-doc-", "bd-txt-", "bd-contador",
+            "bd-tablero-cabecera", "sc-resumen", "fa-check-circle", "fa-times"
         };
 
         public static IEnumerable<object[]> Casos() => Paginas.Select(p => new object[] { p });
@@ -608,6 +615,196 @@ namespace WebSGV.Tests
                                               "LiquidacionesPendientes.aspx/ObtenerDetalleLiquidacion",
                                               "LiquidacionesPendientes.aspx/ObtenerUrlPdfOrdenViaje" })
                 Assert.Contains("'" + metodo + "'", js);
+        }
+
+        // ── (k) FacturasFlete (E5-17c) ──────────────────────────────────────────────────────
+
+        [Fact]
+        public void K_FacturasFlete_resumenEnUnaLineaSubirPlegableYLasClasesQueLeeSuScript()
+        {
+            string aspx = Aspx("FacturasFlete");
+            string cs = Cs("FacturasFlete");
+            Assert.True(Detalle(aspx, "sgv-plegable", "ID=\"btnSubir\"").Success, "Subir facturas va en details.sgv-plegable");
+            Assert.Contains("data-plegar-movil", Detalle(aspx, "sgv-plegable", "ID=\"btnSubir\"").Value);
+            Match filtros = Detalle(aspx, "sgv-filtros", "ID=\"btnBuscar\"");
+            Assert.True(filtros.Success);
+            Assert.Contains("data-enter=\"<%= btnBuscar.ClientID %>\"", filtros.Value);
+            // El Excel queda en el encabezado (se ve con los filtros plegados) y sigue pasando por LeerFiltros.
+            Assert.DoesNotContain("btnExcel", filtros.Value);
+            Assert.True(aspx.IndexOf("ID=\"btnExcel\"", StringComparison.Ordinal) > aspx.IndexOf("sgv-encabezado-acciones", StringComparison.Ordinal));
+            Assert.Matches(@"void btnExcel_Click\(object sender, EventArgs e\)\s*\{\s*if \(!LeerFiltros\(", cs);
+
+            // Lo que lee FacturasFlete.js sigue en el marcado o en el HTML armado.
+            foreach (string clase in new[] { "ff-pestanas", "ff-cuenta", "ff-buscar", "ff-filtro", "ff-contenido", "ff-contador" })
+                Assert.Contains(clase, aspx);
+            Assert.Contains("table class=\\\"table table-sm ff-tabla\\\"", cs);
+            Assert.Contains("data-estado=", cs);
+            string js = Js("FacturasFlete");
+            foreach (string selector in new[] { ".ff-pestanas a[data-pestana=", ".ff-buscar input", ".ff-filtro [data-filtro]", "table.ff-tabla > tbody > tr" })
+                Assert.Contains(selector, js);
+
+            Assert.Contains("litResumen.Text = HtmlResumen(", cs);
+            Assert.Contains("EstadoUiHelper.Sello(FacturaFleteService.TextoEstado(e), tono)", cs);
+        }
+
+        [Fact]
+        public void K2_FacturasFlete_cifrasEnUnaLineaConLoQuePideRevisar()
+        {
+            var hoy = new DateTime(2026, 11, 20);
+            var filas = new List<WebSGV.Models.Facturas.FilaConciliacion>
+            {
+                new WebSGV.Models.Facturas.FilaConciliacion { Estado = WebSGV.Models.Facturas.EstadoConciliacion.Conforme },
+                new WebSGV.Models.Facturas.FilaConciliacion { Estado = WebSGV.Models.Facturas.EstadoConciliacion.Diferencia },
+                new WebSGV.Models.Facturas.FilaConciliacion { Estado = WebSGV.Models.Facturas.EstadoConciliacion.PorFacturar, Moneda = "USD", ImporteEstimado = 500m },
+            };
+            var emitidas = new List<WebSGV.Models.Facturas.FacturaFleteRegistrada>
+            {
+                new WebSGV.Models.Facturas.FacturaFleteRegistrada { Moneda = "USD", ImporteTotal = 1000m, FechaEmision = hoy },
+            };
+            string html = WebSGV.Views.FacturasFlete.HtmlResumen(filas, emitidas, hoy);
+            Assert.StartsWith("<p class=\"sgv-resumen\"><span>Facturado <strong>US$ 1", html);
+            Assert.Contains("(1 factura)</span>", html);
+            Assert.Contains("<span><strong>1</strong> de <strong>2</strong> pedidos conformes</span>", html);
+            Assert.Contains("<span><strong class=\"ff-mal\">1</strong> con diferencia</span>", html);
+            Assert.Contains("<strong class=\"ff-aviso\">1</strong> pedido por facturar (<strong>", html);
+            Assert.DoesNotContain("sin carga", html);   // lo que está en cero no se nombra
+            Assert.EndsWith("</span></p>", html);
+            Assert.False(InterfazFormalTests.TieneTarjetasKpi(html));
+
+            string vacio = WebSGV.Views.FacturasFlete.HtmlResumen(new List<WebSGV.Models.Facturas.FilaConciliacion>(),
+                new List<WebSGV.Models.Facturas.FacturaFleteRegistrada>(), hoy);
+            Assert.Contains("<span>Sin facturas emitidas en el per&#xED;odo</span>", vacio);
+        }
+
+        // ── (l) BandejaDocumentos (E5-17c) ──────────────────────────────────────────────────
+
+        [Fact]
+        public void L_BandejaDocumentos_filtrosConEnterYSellosEnVezDeIconos()
+        {
+            string aspx = Aspx("BandejaDocumentos");
+            string cs = Cs("BandejaDocumentos");
+            Match filtros = Detalle(aspx, "sgv-filtros", "ID=\"btnBuscar\"");
+            Assert.True(filtros.Success);
+            Assert.Contains("data-enter=\"<%= btnBuscar.ClientID %>\"", filtros.Value);
+            Assert.DoesNotContain("DefaultButton=\"btnBuscar\"", aspx);
+            Assert.DoesNotContain("pnlFiltros", aspx + cs);
+
+            // Quedan dos iconos: el aviso de observaciones y la flecha de plegar (funcional). La lupa de la búsqueda
+            // de FacturasFlete era adorno y se fue.
+            Assert.DoesNotContain("fa-search", Aspx("FacturasFlete"));
+            var iconos = Regex.Matches(cs, @"<i class='fa[srlbd]? [^']*'").Cast<Match>().Select(m => m.Value).ToList();
+            Assert.Equal(new[] { "<i class='fas fa-exclamation-triangle mr-1'", "<i class='fas fa-chevron-right bd-plegar'" }, iconos);
+            Assert.Contains("EstadoUiHelper.Sello(texto, tipo == \"ok\" ? TonoEstado.Ok", cs);
+            Assert.Contains("EstadoUiHelper.Sello(TextoDocumento(nombre, faltan, e.Despachos)", cs);
+
+            // Lo que lee su script.
+            Assert.Contains("bd-selector", cs);
+            Assert.Contains("class='bd-fila-nuevo' data-indice=", cs);
+            Assert.Contains("data-indice='{indice}'", cs);
+            Assert.Contains("id=\"bdZona\"", aspx);
+            Assert.Contains("id=\"bdArchivos\"", aspx);
+            Assert.Contains("bd-zona-input", aspx);
+            // La página ancha sigue (Content/paginas/BandejaDocumentos.css: .container:has(> .bd-pagina)).
+            Assert.Contains("<div class=\"bd-pagina\">", aspx);
+            Assert.Contains(".container:has(> .bd-pagina)", Css("BandejaDocumentos"));
+            Assert.DoesNotContain("text-transform: uppercase", Css("BandejaDocumentos"));
+        }
+
+        [Theory]
+        [InlineData("Pedido", 0, 3, "Pedido")]
+        [InlineData("Pedido", 3, 3, "Pedido: falta")]
+        [InlineData("Guías", 1, 3, "Guías 2/3")]
+        [InlineData("CPIC", 5, 3, "CPIC: falta")]
+        public void L2_BandejaDocumentos_textoDelSelloDeCadaDocumento(string nombre, int faltan, int despachos, string esperado)
+        {
+            Assert.Equal(esperado, WebSGV.Views.BandejaDocumentos.TextoDocumento(nombre, faltan, despachos));
+        }
+
+        [Fact]
+        public void L3_BandejaDocumentos_ayudaParaCompletarSoloSiFaltaAlgo()
+        {
+            // M-085: con el expediente completo no se pide subir nada.
+            Assert.Null(WebSGV.Views.BandejaDocumentos.AyudaCompletar(0, 0, "PEDIDO"));
+            Assert.Equal("Para completar, suba arriba el ZIP del correo, la CPIC o los MCI: la bandeja los une solos.",
+                WebSGV.Views.BandejaDocumentos.AyudaCompletar(2, 0, "PEDIDO"));
+            Assert.Equal("Para completar, suba arriba la CPIC o los MCI: la bandeja los une solos.",
+                WebSGV.Views.BandejaDocumentos.AyudaCompletar(0, 1, "CPIC"));
+            Assert.Equal("Para completar, suba arriba nuestra GRE transportista de SUNAT: la bandeja los une solos.",
+                WebSGV.Views.BandejaDocumentos.AyudaCompletar(1, 1, "GUIA"));
+            Assert.Contains("string ayuda = AyudaCompletar(e.Faltan, e.SinPdf, e.Perfil);", Cs("BandejaDocumentos"));
+            Assert.Contains(".Append(ayuda == null ? \"\" : \" \" + H(ayuda))", Cs("BandejaDocumentos"));
+        }
+
+        // ── (m) SaldosConductores (E5-17c) ──────────────────────────────────────────────────
+
+        [Fact]
+        public void M_SaldosConductores_filtrosConBotonVerResumenPorMonedaYRepeaterSinViewState()
+        {
+            string aspx = Aspx("SaldosConductores");
+            string cs = Cs("SaldosConductores");
+            Match boton = Regex.Match(aspx, @"<asp:Button\b[^>]*\bID=""btnBuscar""[^>]*>");
+            Assert.True(boton.Success, "btnBuscar es un asp:Button");
+            Assert.Contains("Text=\"Ver\"", boton.Value);
+            Assert.DoesNotContain("LinkButton ID=\"btnBuscar\"", aspx);
+            Assert.DoesNotContain("data-enter", aspx);   // mueve dinero: Enter no hace nada (MarcadoEnterYContrasenaTests)
+
+            Match rpt = Regex.Match(aspx, @"<asp:Repeater\b[^>]*\bID=""rptConductores""[^>]*>");
+            Assert.Contains("EnableViewState=\"false\"", rpt.Value);
+            Assert.Contains("override void OnPreRender(", cs);
+            Assert.Contains("!_enlazado && !Response.IsRequestBeingRedirected", cs);
+            Assert.Contains("litResumen.Text = HtmlResumen(tot, grupos.Count);", cs);
+
+            // El script suma los saldos marcados por moneda, de atributos con punto decimal (M-070).
+            Assert.Contains("data-saldo-soles='<%#: Eval(\"SolesInvariante\") %>' data-saldo-dolares='<%#: Eval(\"DolaresInvariante\") %>'", aspx);
+            Assert.Contains("s.ToString(\"0.00\", CultureInfo.InvariantCulture)", cs);
+            string js = Js("SaldosConductores");
+            Assert.DoesNotContain("td').eq(", js);
+            Assert.Contains("getAttribute('data-saldo-soles')", js);
+            Assert.Contains("getAttribute('data-saldo-dolares')", js);
+            Assert.Contains("SaldosConductorService.TextoSaldo(netoS, netoD)", cs);
+            Assert.Contains("SaldosConductorService.ClaseSentido(", cs);
+        }
+
+        [Fact]
+        public void M2_SaldosConductores_resumenPorMoneda()
+        {
+            var tot = new WebSGV.Services.Liquidaciones.TotalesSaldos
+            {
+                DescontarSoles = 60m, DescontarDolares = 25m, ReintegrarSoles = 25m, ReintegrarDolares = 0m, Pendientes = 5
+            };
+            Assert.Equal("<p class=\"sgv-resumen\"><span>A descontar <strong>S/ 60.00</strong> y <strong>US$ 25.00</strong></span>" +
+                         "<span>A reintegrar <strong>S/ 25.00</strong></span><span><strong>5</strong> liquidaciones pendientes</span>" +
+                         "<span><strong>3</strong> conductores</span></p>",
+                WebSGV.Views.SaldosConductores.HtmlResumen(tot, 3));
+            // Solo dólares a reintegrar: no se nombran los soles en cero.
+            string html = WebSGV.Views.SaldosConductores.HtmlResumen(new WebSGV.Services.Liquidaciones.TotalesSaldos { ReintegrarDolares = 10m, Pendientes = 1 }, 1);
+            Assert.Contains("<span>A reintegrar <strong>US$ 10.00</strong></span>", html);
+            Assert.Contains("<span>A descontar <strong>S/ 0.00</strong></span>", html);
+            Assert.Contains("<strong>1</strong> liquidación pendiente</span><span><strong>1</strong> conductor</span>", html);
+            Assert.False(InterfazFormalTests.TieneTarjetasKpi(html));
+        }
+
+        [Fact]
+        public void M3_SaldosConductores_elNumeroAbreElPdfFirmadoDeLaLiquidacion()
+        {
+            // M-071: DetalleOrdenViaje.aspx manda a otro lado a quien no es conductor; el PDF guardado (con su hash)
+            // lo pueden abrir administración y supervisión (AccesoLiquidacion.VeTodasLasOrdenes).
+            string aspx = Aspx("SaldosConductores");
+            Assert.DoesNotContain("DetalleOrdenViaje", aspx);
+            Assert.Contains("ResolveUrl(\"~/Views/DescargarPdfOrdenViaje.aspx?id=\" + Eval(\"IdOrdenViaje\"))", aspx);
+            Match enlace = Regex.Matches(aspx, @"<a\s(?:(?><%.*?%>)|[^<>])*>", RegexOptions.Singleline).Cast<Match>()
+                .FirstOrDefault(m => m.Value.Contains("DescargarPdfOrdenViaje"));
+            Assert.NotNull(enlace);
+            Assert.Contains("target=\"_blank\"", enlace.Value);
+            Assert.Contains("rel=\"noopener\"", enlace.Value);
+            Assert.Contains("title=\"PDF de la liquidación aprobada\"", enlace.Value);
+
+            foreach (string rol in new[] { "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE", "SUPERVISOR" })
+                Assert.True(WebSGV.Services.Liquidaciones.AccesoLiquidacion.Permite(rol, WebSGV.Services.Liquidaciones.EstadosOrden.Aprobado, false), rol);
+            // La descarga sirve el archivo guardado verificado, nunca uno regenerado.
+            string descarga = File.ReadAllText(Path.Combine(RaizWeb(), "Views", "DescargarPdfOrdenViaje.aspx.cs"));
+            Assert.Contains("ArchivoOrdenViajeService.Obtener(idOrdenViaje, idFirma)", descarga);
+            Assert.Contains("AccesoLiquidacion.PuedeConsultar(idOrdenViaje, idUsuario, SecurityHelper.ObtenerRol())", descarga);
         }
     }
 }

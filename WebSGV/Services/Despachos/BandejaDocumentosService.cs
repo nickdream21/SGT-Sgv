@@ -1243,10 +1243,14 @@ namespace WebSGV.Services.Despachos
                 }
             }
             foreach (var c in l.Cpics.Where(x => x.Estado == EstadoAduanaBandeja.NoSeRegistra))
-                quedo.Add(c.EsperaSuPedido
-                    ? $"CPIC {c.Cpic.Numero ?? c.Archivo}: no se registró porque no se eligió el camión de las guías de su pedido {c.Pedido}. " +
-                      "Vuelva a subirla junto con el ZIP del pedido."
-                    : $"CPIC {c.Cpic.Numero ?? c.Archivo}: {c.Detalle}");
+                quedo.Add(!c.EsperaSuPedido
+                    ? $"CPIC {c.Cpic.Numero ?? c.Archivo}: {c.Detalle}"
+                    // M-080: si el usuario dejó las guías del pedido en "No registrar ahora", el camión no quedó "sin elegir".
+                    : GuiasDelPedidoEnNoRegistrar(l, c.Pedido)
+                    ? $"CPIC {c.Cpic.Numero ?? c.Archivo}: no se registró porque las guías de su pedido {c.Pedido} quedaron en «No registrar ahora». " +
+                      "Vuelva a subirla junto con el ZIP del pedido cuando registre sus guías."
+                    : $"CPIC {c.Cpic.Numero ?? c.Archivo}: no se registró porque no se eligió el camión de las guías de su pedido {c.Pedido}. " +
+                      "Vuelva a subirla junto con el ZIP del pedido.");
             foreach (var m in l.Mcis)
             {
                 string mci = m.Mci.Numero ?? m.Archivo;
@@ -1269,6 +1273,30 @@ namespace WebSGV.Services.Despachos
             quedo.AddRange(l.NoReconocidos);
             return quedo;
         }
+
+        /// <summary>
+        /// Las guías del pedido que podían completar un despacho programado quedaron todas en "No registrar ahora"
+        /// (sin despacho y ya elegidas, no "por elegir"). Pedido que no está en la lectura: false.
+        /// </summary>
+        internal static bool GuiasDelPedidoEnNoRegistrar(LecturaBandeja l, string pedido)
+        {
+            // Sin número de pedido no se sabe cuál es (dos pedidos sin número coincidirían): mensaje de siempre.
+            if (string.IsNullOrWhiteSpace(pedido)) return false;
+            var p = l.Pedidos.FirstOrDefault(x => string.Equals(x.Pedido?.NumeroPedido, pedido, StringComparison.OrdinalIgnoreCase));
+            var conCandidatos = p?.Guias.Where(g => g.Candidatos.Count > 0).ToList();
+            return conCandidatos != null && conCandidatos.Count > 0
+                   && conCandidatos.All(g => g.Estado == EstadoGuiaBandeja.SinProgramado && !g.PorElegir);
+        }
+
+        /// <summary>
+        /// Otra guía de la lectura que ya completa ese despacho programado (M-080): su número, para rotular la opción del
+        /// selector ("ya lo completa la guía …"); null si ninguna. La opción no se quita: el servidor rechaza al registrar
+        /// un despacho elegido para dos guías.
+        /// </summary>
+        public static string GuiaQueYaLoCompleta(LecturaBandeja l, GuiaBandeja guia, int idProgramado) =>
+            l?.Guias.Where(g => !ReferenceEquals(g, guia) && g.Estado == EstadoGuiaBandeja.Unida && g.IdProgramado == idProgramado)
+                .Select(g => g.Tracto?.NumeroGuia ?? g.Tracto?.NumeroTransporte)
+                .FirstOrDefault();
 
         /// <summary>Antes de escribir: los programados elegidos siguen esperando documentos y los tractos/carretas de los nuevos están libres.</summary>
         private static void Revalidar(LecturaBandeja l, ResultadoBandeja r)

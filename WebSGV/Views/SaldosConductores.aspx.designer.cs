@@ -16,11 +16,8 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.DropDownList ddlConductor;
         protected global::System.Web.UI.WebControls.CheckBox chkPendientesAnteriores;
         protected global::System.Web.UI.WebControls.CheckBox chkSoloPendientes;
-        protected global::System.Web.UI.WebControls.LinkButton btnBuscar;
-        protected global::System.Web.UI.WebControls.Literal litDescontar;
-        protected global::System.Web.UI.WebControls.Literal litReintegrar;
-        protected global::System.Web.UI.WebControls.Literal litPendientes;
-        protected global::System.Web.UI.WebControls.Literal litConductores;
+        protected global::System.Web.UI.WebControls.Button btnBuscar;
+        protected global::System.Web.UI.WebControls.Literal litResumen;
         protected global::System.Web.UI.WebControls.Panel pnlVacio;
         protected global::System.Web.UI.WebControls.Repeater rptConductores;
         protected global::System.Web.UI.WebControls.HiddenField hfConductor;

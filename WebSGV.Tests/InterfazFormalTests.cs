@@ -761,13 +761,12 @@ namespace WebSGV.Tests
             Assert.Empty(BotonesSoloIconoSinAriaLabelCodigo("html += '<button class=\"btn\"><i class=\"fas fa-eye\"></i> Ver</button>';"));
         }
 
-        // ── Regla 9: tarjetas KPI solo en la lista cerrada (las rehacen E5-17 y E5-18) ────────
+        // ── Regla 9: tarjetas KPI solo en la lista cerrada (E5-17 ya rehízo las suyas; quedan las de E5-18) ────────
 
         /// <summary>Páginas que todavía tienen tarjetas KPI (con sus iconos), y la tarea que las rehace.
         /// Lista cerrada: solo se achica (al rehacer una página, sáquela de aquí).</summary>
         internal static readonly Dictionary<string, string> PaginasConTarjetasKpi = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Views/FacturasFlete.aspx"] = "E5-17",
             ["Views/ListaDespachos.aspx"] = "E5-18 (M-082)",
             ["Views/Exportacion/DashboardExportacion.aspx"] = "E5-18",
         };
@@ -901,10 +900,13 @@ namespace WebSGV.Tests
         /// Auditoria y el de DashboardAdminSistema; queda la lupa del detalle de Auditoria, botón compacto con aria-label).
         /// E5-17b: 84 a 77 (fuera las cuatro tarjetas, el aviso y el fa-info-circle de ReportesOrdenesViaje y el
         /// giratorio fa-spinner de LiquidacionesAprobadasContabilidad; queda el ojo del detalle, botón compacto con aria-label).
+        /// E5-17c: 77 a 76 (fuera la lupa decorativa de la búsqueda de FacturasFlete).
         /// Igualdad exacta: al quitar iconos, baje la cifra.</summary>
-        private const int TopeIconosMarcado = 77;
-        /// <summary>Iconos armados en .cs/.js (sobre todo BandejaDocumentos y RegistroDespacho, de E5-17/E5-18).</summary>
-        private const int TopeIconosCodigo = 55;
+        private const int TopeIconosMarcado = 76;
+        /// <summary>Iconos armados en .cs/.js. E5-17c: 55 a 39 (fuera los 16 de BandejaDocumentos que eran estado o
+        /// adorno, pasados a sellos sgv-estado con texto; quedan su aviso de observaciones y la flecha de plegar, que es
+        /// funcional). Lo que queda es sobre todo RegistroDespacho (E5-18) y botones compactos con aria-label.</summary>
+        private const int TopeIconosCodigo = 39;
 
         private static readonly Regex IconoDinamico = new Regex(@"<i\s+class\s*=\s*[""']<%", RegexOptions.IgnoreCase);
         private static readonly Regex IconoEnCodigo = new Regex(@"<i class=[\\""']+fa[srlbd]? ");

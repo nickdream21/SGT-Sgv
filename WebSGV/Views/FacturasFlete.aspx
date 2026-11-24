@@ -17,16 +17,18 @@
                     factura se une a su carga por la factura comercial o la gu&#xED;a que menciona.
                 </p>
             </div>
+            <div class="sgv-acciones sgv-encabezado-acciones">
+                <asp:Button ID="btnExcel" runat="server" CssClass="btn btn-success btn-sm" Text="Excel" OnClick="btnExcel_Click" data-descarga="true"
+                    ToolTip="Hojas de conciliaci&#xF3;n y de facturas emitidas" />
+            </div>
         </div>
 
         <div class="row">
-            <%-- ===== Subir facturas ===== --%>
+            <%-- ===== Subir facturas (en el celular arranca plegado: lo de todos los días es consultar) ===== --%>
             <div class="col-lg-4 col-xl-3 mb-3">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Subir facturas</h5>
-                    </div>
-                    <div class="card-body">
+                <details class="sgv-plegable" open data-plegar-movil>
+                    <summary>Subir facturas</summary>
+                    <div class="sgv-plegable-cuerpo">
                         <p class="small text-muted">
                             Elija uno o varios PDF de SUNAT (la representaci&#xF3;n impresa que se descarga con la clave SOL).
                             Volver a subir una factura no la duplica: se actualiza si cambi&#xF3; algo. Hasta 10 MB por PDF y 45 MB en total.
@@ -36,27 +38,25 @@
                         </div>
                         <asp:Button ID="btnSubir" runat="server" CssClass="btn btn-primary" Text="Leer y registrar" OnClick="btnSubir_Click" data-espera="300" />
                     </div>
-                </div>
+                </details>
             </div>
 
             <%-- ===== Filtros ===== --%>
             <div class="col-lg-8 col-xl-9 mb-3">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Per&#xED;odo de carga</h5>
-                    </div>
-                    <div class="card-body" data-enter="<%= btnBuscar.ClientID %>">
+                <details class="sgv-filtros" open data-plegar-movil>
+                    <summary>Per&#xED;odo de carga <span class="sgv-filtros-cuenta"></span></summary>
+                    <div class="sgv-filtros-cuerpo" data-enter="<%= btnBuscar.ClientID %>">
                         <div class="row align-items-end">
                             <div class="col-sm-6 col-md-3 col-xl-auto ff-col-fecha form-group">
-                                <label class="font-weight-bold" for="<%= txtDesde.ClientID %>">Desde</label>
+                                <label class="sgv-etiqueta" for="<%= txtDesde.ClientID %>">Desde</label>
                                 <asp:TextBox ID="txtDesde" runat="server" TextMode="Date" CssClass="form-control"></asp:TextBox>
                             </div>
                             <div class="col-sm-6 col-md-3 col-xl-auto ff-col-fecha form-group">
-                                <label class="font-weight-bold" for="<%= txtHasta.ClientID %>">Hasta</label>
+                                <label class="sgv-etiqueta" for="<%= txtHasta.ClientID %>">Hasta</label>
                                 <asp:TextBox ID="txtHasta" runat="server" TextMode="Date" CssClass="form-control"></asp:TextBox>
                             </div>
                             <div class="col-sm-12 col-md-6 col-xl form-group">
-                                <label class="font-weight-bold" for="<%= ddlCliente.ClientID %>">Cliente</label>
+                                <label class="sgv-etiqueta" for="<%= ddlCliente.ClientID %>">Cliente</label>
                                 <asp:DropDownList ID="ddlCliente" runat="server" CssClass="form-control"></asp:DropDownList>
                             </div>
                             <div class="col-12 col-xl-auto form-group">
@@ -64,8 +64,6 @@
                                     <asp:Button ID="btnMesActual" runat="server" CssClass="btn btn-outline-secondary" Text="Este mes" OnClick="btnMesActual_Click" />
                                     <asp:Button ID="btnMesAnterior" runat="server" CssClass="btn btn-outline-secondary" Text="Mes anterior" OnClick="btnMesAnterior_Click" />
                                     <asp:Button ID="btnBuscar" runat="server" CssClass="btn btn-primary" Text="Buscar" OnClick="btnBuscar_Click" />
-                                    <asp:Button ID="btnExcel" runat="server" CssClass="btn btn-success" Text="Excel" OnClick="btnExcel_Click" data-descarga="true"
-                                        ToolTip="Hojas de conciliaci&#xF3;n y de facturas emitidas" />
                                 </div>
                             </div>
                         </div>
@@ -73,21 +71,19 @@
                             Las cargas del per&#xED;odo con sus facturas (aunque se hayan emitido despu&#xE9;s) y las facturas emitidas en el per&#xED;odo.
                         </p>
                     </div>
-                </div>
+                </details>
             </div>
         </div>
 
-        <asp:Panel ID="pnlResultadoCarga" runat="server" Visible="false" CssClass="card shadow-sm mb-4">
-            <div class="card-header bg-light"><h6 class="mb-0">Facturas le&#xED;das</h6></div>
-            <div class="card-body p-0"><div class="ff-tabla-wrap ff-tabla-wrap-corta"><asp:Literal ID="litResultadoCarga" runat="server" EnableViewState="false" /></div></div>
+        <asp:Panel ID="pnlResultadoCarga" runat="server" Visible="false" CssClass="sgv-panel mb-4">
+            <div class="sgv-panel-cab"><h2 class="sgv-panel-titulo">Facturas le&#xED;das</h2></div>
+            <div class="ff-tabla-wrap ff-tabla-wrap-corta"><asp:Literal ID="litResultadoCarga" runat="server" EnableViewState="false" /></div>
         </asp:Panel>
 
         <asp:HiddenField ID="hfPestana" runat="server" Value="conciliacion" />
 
         <asp:Panel ID="pnlResultados" runat="server" Visible="false">
-            <div class="ff-tarjetas">
-                <asp:Literal ID="litTarjetas" runat="server" EnableViewState="false" />
-            </div>
+            <asp:Literal ID="litResumen" runat="server" EnableViewState="false" />
 
             <ul class="nav nav-tabs ff-pestanas" role="tablist">
                 <li class="nav-item">
@@ -111,7 +107,6 @@
                     <button type="button" class="btn btn-outline-secondary" data-filtro="ok">Conformes</button>
                 </div>
                 <div class="ff-buscar">
-                    <i class="fas fa-search"></i>
                     <input type="search" class="form-control form-control-sm" placeholder="Buscar cliente, pedido, factura o gu&#xED;a&#x2026;" aria-label="Buscar" />
                 </div>
                 <span class="ff-contador small text-muted"></span>
@@ -119,21 +114,21 @@
 
             <div class="tab-content ff-contenido">
                 <div class="tab-pane fade" id="ffConciliacion" role="tabpanel" aria-labelledby="ffTabConciliacion">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-body p-0"><div class="ff-tabla-wrap"><asp:Literal ID="litConciliacion" runat="server" EnableViewState="false" /></div></div>
-                        <div class="card-footer bg-white small text-muted"><asp:Literal ID="litPieConciliacion" runat="server" EnableViewState="false" /></div>
-                    </div>
+                    <section class="sgv-panel mb-4">
+                        <div class="ff-tabla-wrap"><asp:Literal ID="litConciliacion" runat="server" EnableViewState="false" /></div>
+                        <p class="sgv-panel-nota ff-pie"><asp:Literal ID="litPieConciliacion" runat="server" EnableViewState="false" /></p>
+                    </section>
                 </div>
                 <div class="tab-pane fade" id="ffPorFacturar" role="tabpanel" aria-labelledby="ffTabPorFacturar">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-body p-0"><div class="ff-tabla-wrap"><asp:Literal ID="litPorFacturar" runat="server" EnableViewState="false" /></div></div>
-                    </div>
+                    <section class="sgv-panel mb-4">
+                        <div class="ff-tabla-wrap"><asp:Literal ID="litPorFacturar" runat="server" EnableViewState="false" /></div>
+                    </section>
                 </div>
                 <div class="tab-pane fade" id="ffFacturas" role="tabpanel" aria-labelledby="ffTabFacturas">
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-body p-0"><div class="ff-tabla-wrap"><asp:Literal ID="litFacturas" runat="server" EnableViewState="false" /></div></div>
-                        <div class="card-footer bg-white small text-muted">El sistema todav&#xED;a no registra los pagos: los d&#xED;as son hasta el vencimiento de cada factura.</div>
-                    </div>
+                    <section class="sgv-panel mb-4">
+                        <div class="ff-tabla-wrap"><asp:Literal ID="litFacturas" runat="server" EnableViewState="false" /></div>
+                        <p class="sgv-panel-nota ff-pie">El sistema todav&#xED;a no registra los pagos: los d&#xED;as son hasta el vencimiento de cada factura.</p>
+                    </section>
                 </div>
             </div>
         </asp:Panel>

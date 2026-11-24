@@ -46,9 +46,6 @@
 .bd-previa-acciones { display: flex; gap: .5rem; }
 .bd-btn-registrar { min-width: 160px; font-weight: 600; }
 .bd-previa-resumen { font-size: .9rem; color: var(--sgv-texto-suave); }
-.bd-txt-ok { color: var(--sgv-ok); font-weight: 600; }
-.bd-txt-aviso { color: var(--sgv-alerta); font-weight: 600; }
-.bd-txt-mal { color: var(--sgv-peligro); font-weight: 600; }
 
 .bd-pedido { border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); margin-bottom: 1rem; overflow: hidden; }
 .bd-pedido-cabecera { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem; padding: .7rem .9rem; background: var(--sgv-fondo); border-bottom: 1px solid var(--sgv-borde); }
@@ -84,11 +81,8 @@
 .bd-avisos { margin: 0; padding-left: 1rem; font-size: .78rem; color: var(--sgv-alerta-texto); }
 .bd-avisos-pedido { padding: .5rem 1.8rem; background: var(--sgv-ambar-50); border-bottom: 1px solid var(--sgv-ambar-200); }
 
-.bd-chip { display: inline-block; font-size: .72rem; font-weight: 600; padding: .2em .65em; border-radius: var(--sgv-radio); white-space: nowrap; }
-.bd-chip-ok { background: var(--sgv-ok-fondo); color: var(--sgv-ok-texto); }
-.bd-chip-aviso { background: var(--sgv-alerta-fondo); color: var(--sgv-alerta-texto); }
-.bd-chip-mal { background: var(--sgv-peligro-fondo); color: var(--sgv-peligro-texto); }
-.bd-chip-gris { background: var(--sgv-fondo-pagina); color: var(--sgv-texto-suave); }
+/* Sellos sgv-estado (E5-17) dentro de las tablas y cabeceras: sin cortarse. */
+.bd-pagina .sgv-estado { white-space: nowrap; }
 
 .bd-bloque { border-radius: var(--sgv-radio); padding: .75rem 1rem; margin-bottom: 1rem; font-size: .85rem; }
 .bd-bloque-aviso { background: var(--sgv-ambar-50); border: 1px solid var(--sgv-ambar-200); color: var(--sgv-ambar-900); }
@@ -96,9 +90,7 @@
 .bd-vacio { padding: 1.25rem; color: var(--sgv-texto-suave); text-align: center; }
 
 /* Tablero */
-.bd-tablero-cabecera { display: flex; justify-content: space-between; align-items: center; margin-bottom: .85rem; }
-.bd-contador { background: var(--sgv-indigo-100); color: var(--sgv-indigo-800); border-radius: var(--sgv-radio); padding: .15rem .7rem; font-size: .8rem; font-weight: 600; }
-.bd-filtros { display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-end; padding: .75rem; background: var(--sgv-fondo); border-radius: var(--sgv-radio); margin-bottom: 1rem; }
+.bd-filtros { display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-end; }
 .bd-filtro { display: flex; flex-direction: column; min-width: 150px; }
 .bd-filtro label { font-size: .75rem; font-weight: 600; color: var(--sgv-texto-suave); margin-bottom: .2rem; }
 .bd-filtro-ancho { flex: 1 1 240px; }
@@ -107,10 +99,7 @@
 .bd-cliente-titulo { font-weight: 600; color: var(--sgv-texto); padding: .4rem 0; border-bottom: 2px solid var(--sgv-borde); margin-bottom: .25rem; display: flex; justify-content: space-between; align-items: baseline; }
 .bd-cliente-cuenta { font-size: .8rem; color: var(--sgv-texto-suave); font-weight: 500; }
 .bd-docs { white-space: normal; }
-.bd-doc { display: inline-flex; align-items: center; gap: .25rem; font-size: .72rem; font-weight: 600; padding: .15em .55em; border-radius: var(--sgv-radio); margin: .1rem .15rem .1rem 0; }
-.bd-doc i { font-size: .65rem; }
-.bd-doc-ok { background: var(--sgv-ok-fondo); color: var(--sgv-ok-texto); }
-.bd-doc-falta { background: var(--sgv-alerta-fondo); color: var(--sgv-alerta-texto); }
+.bd-docs .sgv-estado { margin: .1rem 0; }
 .bd-fila-atrasada td:first-child { box-shadow: inset 3px 0 0 var(--sgv-rojo-600); }
 
 @media (max-width: 575.98px) {
@@ -144,7 +133,7 @@
 .bd-exp-docs { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
 .bd-exp-doc { flex: 1 1 14rem; border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); padding: .6rem .8rem; background: var(--sgv-superficie); }
 .bd-exp-doc-falta { border-color: var(--sgv-alerta-borde); background: var(--sgv-ambar-50); }
-.bd-exp-doc-titulo { font-size: .8rem; text-transform: uppercase; color: var(--sgv-texto-suave); letter-spacing: .02em; }
+.bd-exp-doc-titulo { font-size: .8rem; color: var(--sgv-texto-suave); }
 .bd-exp-doc-numero { font-size: 1rem; font-weight: 600; margin: .15rem 0; }
 .bd-exp-subtitulo { margin: .5rem 0; }
 .bd-exp-tabla td { vertical-align: top; }

@@ -68,8 +68,19 @@ namespace WebSGV.Views
                 chkPendientesAnteriores.Checked, chkSoloPendientes.Checked);
         }
 
+        private bool _enlazado;
+
+        // El Repeater va sin ViewState: si ningún evento lo enlazó (un postback que no recarga), se enlaza aquí.
+        protected override void OnPreRender(EventArgs e)
+        {
+            if (!_enlazado && !Response.IsRequestBeingRedirected)
+                Cargar();
+            base.OnPreRender(e);
+        }
+
         private void Cargar()
         {
+            _enlazado = true;
             DataTable dt = Datos();
             var filas = dt.Rows.Cast<DataRow>().ToList();
 
@@ -78,19 +89,18 @@ namespace WebSGV.Views
                 // El neto del conductor cuenta solo lo pendiente: lo ya saldado no se vuelve a cobrar ni pagar.
                 var pendientes = g.Where(r => r.IsNull("idPagoSaldo")).ToList();
                 decimal netoS = pendientes.Sum(r => D(r, "SaldoSoles")), netoD = pendientes.Sum(r => D(r, "SaldoDolares"));
-                string sentido = SaldosConductorService.Sentido(netoS, netoD);
                 return new
                 {
                     IdConductor = g.Key,
                     Conductor = Convert.ToString(g.First()["Conductor"]),
                     Dni = Convert.ToString(g.First()["Dni"]),
                     HayPendientes = pendientes.Count > 0,
-                    CssSentido = Css(sentido),
+                    CssSentido = pendientes.Count == 0 ? EstadoUiHelper.ClaseOk : SaldosConductorService.ClaseSentido(netoS, netoD),
                     TextoTotal = pendientes.Count == 0 ? "Todo saldado"
-                        : sentido + " " + Montos(Math.Abs(netoS), Math.Abs(netoD)) + $" ({pendientes.Count} pend.)",
+                        : SaldosConductorService.TextoSaldo(netoS, netoD) + $" ({pendientes.Count} pend.)",
                     Filas = g.Select(r =>
                     {
-                        string s = Convert.ToString(r["Sentido"]);
+                        decimal s = D(r, "SaldoSoles"), d = D(r, "SaldoDolares");
                         return new
                         {
                             IdOrdenViaje = Convert.ToInt32(r["idOrdenViaje"]),
@@ -99,10 +109,13 @@ namespace WebSGV.Views
                             Entregado = N(D(r, "EntregadoSoles")),
                             Gastos = N(D(r, "GastosSoles")),
                             Ajustes = N(D(r, "DescuentoSoles") - D(r, "ReintegroSoles")),
-                            SaldoSoles = N(D(r, "SaldoSoles")),
-                            SaldoDolares = N(D(r, "SaldoDolares")),
-                            Sentido = s,
-                            CssSentido = Css(s),
+                            SaldoSoles = N(s),
+                            SaldoDolares = N(d),
+                            // Para el script (suma de lo marcado): con punto decimal y sin separador de miles.
+                            SolesInvariante = s.ToString("0.00", CultureInfo.InvariantCulture),
+                            DolaresInvariante = d.ToString("0.00", CultureInfo.InvariantCulture),
+                            Sentido = Convert.ToString(r["Sentido"]),
+                            CssSentido = SaldosConductorService.ClaseSentido(s, d),
                             Pendiente = r.IsNull("idPagoSaldo"),
                             IdPagoSaldo = r.IsNull("idPagoSaldo") ? 0 : Convert.ToInt32(r["idPagoSaldo"]),
                             Estado = Convert.ToString(r["Estado"]),
@@ -117,10 +130,28 @@ namespace WebSGV.Views
 
             // Misma cuenta que el Excel: solo pendientes, neto por conductor y por moneda.
             var tot = SaldosConductorService.Totales(dt);
-            litDescontar.Text = Montos(tot.DescontarSoles, tot.DescontarDolares);
-            litReintegrar.Text = Montos(tot.ReintegrarSoles, tot.ReintegrarDolares);
-            litPendientes.Text = tot.Pendientes.ToString();
-            litConductores.Text = grupos.Count.ToString();
+            litResumen.Text = HtmlResumen(tot, grupos.Count);
+        }
+
+        /// <summary>
+        /// Cifras de la página en una línea (sgv-resumen), por moneda: "A descontar S/ 60.00 y US$ 25.00 · A reintegrar
+        /// S/ 25.00 · 5 liquidaciones pendientes · 3 conductores". Una moneda en cero no se nombra (los soles sí, si
+        /// tampoco hay dólares).
+        /// </summary>
+        public static string HtmlResumen(TotalesSaldos tot, int conductores)
+        {
+            string Parte(string rotulo, decimal soles, decimal dolares)
+            {
+                var montos = new List<string>();
+                if (soles != 0 || dolares == 0) montos.Add("<strong>S/ " + N(soles) + "</strong>");
+                if (dolares != 0) montos.Add("<strong>US$ " + N(dolares) + "</strong>");
+                return "<span>" + rotulo + " " + string.Join(" y ", montos) + "</span>";
+            }
+            return "<p class=\"sgv-resumen\">" +
+                   Parte("A descontar", tot.DescontarSoles, tot.DescontarDolares) +
+                   Parte("A reintegrar", tot.ReintegrarSoles, tot.ReintegrarDolares) +
+                   "<span><strong>" + tot.Pendientes + "</strong> " + (tot.Pendientes == 1 ? "liquidación pendiente" : "liquidaciones pendientes") + "</span>" +
+                   "<span><strong>" + conductores + "</strong> " + (conductores == 1 ? "conductor" : "conductores") + "</span></p>";
         }
 
         protected void btnBuscar_Click(object sender, EventArgs e) => Cargar();
@@ -165,6 +196,7 @@ namespace WebSGV.Views
 
         private void Enviar(bool imagen)
         {
+            _enlazado = true; // la respuesta es el archivo: OnPreRender no vuelve a consultar para un Repeater que no se envía
             var q = QuincenaElegida();
             var filtros = new List<string> { SaldosConductorService.NombreQuincena(q.Item1) + $" ({q.Item1:dd/MM/yyyy} al {q.Item2:dd/MM/yyyy})" };
             if (ddlConductor.SelectedValue != "0") filtros.Add("Conductor: " + ddlConductor.SelectedItem.Text);
@@ -192,12 +224,6 @@ namespace WebSGV.Views
         {
             AvisoHelper.Mostrar(Page, pnlMensaje, lblMensaje, texto, tipo, "mb-0");
         }
-
-        private static string Css(string sentido) =>
-            sentido == "A descontar" ? "sgv-estado-alerta" : sentido == "A reintegrar" ? "sgv-estado-info" : "sgv-estado-ok";
-
-        private static string Montos(decimal s, decimal d) =>
-            "S/ " + N(s) + (d != 0 ? " · US$ " + N(d) : "");
 
         private static string N(decimal v) => v.ToString("N2", Pe);
         private static decimal D(DataRow r, string c) => r.IsNull(c) ? 0m : Convert.ToDecimal(r[c]);

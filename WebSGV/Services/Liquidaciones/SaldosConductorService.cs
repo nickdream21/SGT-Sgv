@@ -42,12 +42,47 @@ namespace WebSGV.Services.Liquidaciones
         public static string NombreQuincena(DateTime desde) =>
             (desde.Day <= 15 ? "1.ª" : "2.ª") + " quincena de " + Pe.DateTimeFormat.GetMonthName(desde.Month).ToLowerInvariant() + " " + desde.Year;
 
-        /// <summary>"A descontar" (el conductor devuelve), "A reintegrar" (la empresa le paga) o "Cuadrado".</summary>
+        /// <summary>
+        /// "A descontar" (el conductor devuelve), "A reintegrar" (la empresa le paga) o "Cuadrado", mirando las dos
+        /// monedas (M-070): si una sale a descontar y la otra a reintegrar se nombran las dos
+        /// ("A descontar S/, a reintegrar US$" o al revés); una moneda en cero no cuenta.
+        /// </summary>
         public static string Sentido(decimal saldoSoles, decimal saldoDolares)
         {
-            decimal referencia = saldoSoles != 0 ? saldoSoles : saldoDolares;
-            return referencia > 0 ? "A descontar" : referencia < 0 ? "A reintegrar" : "Cuadrado";
+            if (saldoSoles > 0 && saldoDolares < 0) return "A descontar S/, a reintegrar US$";
+            if (saldoSoles < 0 && saldoDolares > 0) return "A reintegrar S/, a descontar US$";
+            if (saldoSoles > 0 || saldoDolares > 0) return "A descontar";
+            if (saldoSoles < 0 || saldoDolares < 0) return "A reintegrar";
+            return "Cuadrado";
         }
+
+        /// <summary>
+        /// Saldo con sus montos, por moneda (M-070): "A descontar S/ 100.00 · A reintegrar US$ 50.00" si van en
+        /// sentidos opuestos, "A descontar S/ 100.00 · US$ 50.00" si van en el mismo, sin la moneda que está en
+        /// cero, y "Cuadrado" si las dos lo están. Los montos van sin signo.
+        /// </summary>
+        public static string TextoSaldo(decimal saldoSoles, decimal saldoDolares)
+        {
+            if (saldoSoles == 0 && saldoDolares == 0) return "Cuadrado";
+            string soles = saldoSoles == 0 ? null : "S/ " + Math.Abs(saldoSoles).ToString("N2", Pe);
+            string dolares = saldoDolares == 0 ? null : "US$ " + Math.Abs(saldoDolares).ToString("N2", Pe);
+            if (soles == null) return SentidoDe(saldoDolares) + " " + dolares;
+            if (dolares == null) return SentidoDe(saldoSoles) + " " + soles;
+            return Math.Sign(saldoSoles) == Math.Sign(saldoDolares)
+                ? SentidoDe(saldoSoles) + " " + soles + " · " + dolares
+                : SentidoDe(saldoSoles) + " " + soles + " · " + SentidoDe(saldoDolares) + " " + dolares;
+        }
+
+        /// <summary>
+        /// Modificador del sello <c>sgv-estado</c> del saldo: <c>sgv-estado-alerta</c> si algo se le descuenta,
+        /// <c>sgv-estado-info</c> si solo se le reintegra, <c>sgv-estado-ok</c> si está cuadrado.
+        /// </summary>
+        public static string ClaseSentido(decimal saldoSoles, decimal saldoDolares) =>
+            saldoSoles > 0 || saldoDolares > 0 ? EstadoUiHelper.ClaseAlerta
+            : saldoSoles < 0 || saldoDolares < 0 ? EstadoUiHelper.ClaseInfo
+            : EstadoUiHelper.ClaseOk;
+
+        private static string SentidoDe(decimal saldo) => saldo > 0 ? "A descontar" : "A reintegrar";
 
         /// <summary>
         /// Liquidaciones aprobadas (con la conformidad firmada) cuya fecha de aprobación cae en el rango y, con

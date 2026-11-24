@@ -268,28 +268,30 @@ namespace WebSGV.Views
 
             var resumen = new List<string>();
             if (l.Pedidos.Count > 0) resumen.Add($"{l.Pedidos.Count} pedido(s), {guias.Count} guía(s)");
-            if (unidas > 0) resumen.Add($"<span class='bd-txt-ok'>{unidas} se completan</span>");
-            if (porElegir > 0) resumen.Add($"<span class='bd-txt-aviso'><strong>{porElegir} guía(s) por elegir</strong> (no se registran hasta que elija el camión)</span>");
-            if (nuevas > 0) resumen.Add($"<span class='bd-txt-aviso'>{nuevas} despacho(s) nuevo(s) por revisar</span>");
-            if (sin > 0) resumen.Add($"<span class='bd-txt-aviso'>{sin} sin despacho</span>");
+            // Lo que se registra va en texto; lo que pide revisar, en un sello ámbar.
+            string Aviso(string texto) => EstadoUiHelper.Sello(texto, TonoEstado.Alerta);
+            if (unidas > 0) resumen.Add($"{unidas} se completan");
+            if (porElegir > 0) resumen.Add(Aviso($"{porElegir} guía(s) por elegir") + " (no se registran hasta que elija el camión)");
+            if (nuevas > 0) resumen.Add(Aviso($"{nuevas} despacho(s) nuevo(s) por revisar"));
+            if (sin > 0) resumen.Add(Aviso($"{sin} sin despacho"));
             int cpics = l.Cpics.Count(c => c.Estado == EstadoAduanaBandeja.Registrar);
             int mcis = l.Mcis.Count(m => m.Estado == EstadoAduanaBandeja.Registrar || m.Estado == EstadoAduanaBandeja.TrasSuCpic);
             int mcisPorElegir = l.Mcis.Count(m => m.Estado == EstadoAduanaBandeja.Elegir);
-            if (cpics > 0) resumen.Add($"<span class='bd-txt-ok'>{cpics} CPIC</span>");
-            if (mcis > 0) resumen.Add($"<span class='bd-txt-ok'>{mcis} manifiesto(s)</span>");
-            if (mcisPorElegir > 0) resumen.Add($"<span class='bd-txt-aviso'>{mcisPorElegir} manifiesto(s) por elegir</span>");
+            if (cpics > 0) resumen.Add($"{cpics} CPIC");
+            if (mcis > 0) resumen.Add($"{mcis} manifiesto(s)");
+            if (mcisPorElegir > 0) resumen.Add(Aviso($"{mcisPorElegir} manifiesto(s) por elegir"));
             int gresUnidas = l.Gres.Count(g => g.Estado == EstadoGreBandeja.Unida);
             int gresNuevas = l.Gres.Count(g => g.Estado == EstadoGreBandeja.Nueva);
             int gresRevisar = l.Gres.Count(g => g.Estado == EstadoGreBandeja.Elegir || g.Estado == EstadoGreBandeja.NoSeRegistra);
-            if (gresUnidas > 0) resumen.Add($"<span class='bd-txt-ok'>{gresUnidas} GRE en su carga</span>");
-            if (gresNuevas > 0) resumen.Add($"<span class='bd-txt-aviso'>{gresNuevas} GRE con despacho nuevo</span>");
-            if (gresRevisar > 0) resumen.Add($"<span class='bd-txt-aviso'>{gresRevisar} GRE por revisar</span>");
+            if (gresUnidas > 0) resumen.Add($"{gresUnidas} GRE en su carga");
+            if (gresNuevas > 0) resumen.Add(Aviso($"{gresNuevas} GRE con despacho nuevo"));
+            if (gresRevisar > 0) resumen.Add(Aviso($"{gresRevisar} GRE por revisar"));
             if (ya > 0) resumen.Add($"{ya} ya registrada(s)");
             int pdfs = l.Pedidos.Count(p => p.FaltaPdfQueTrae);
-            if (pdfs > 0) resumen.Add($"<span class='bd-txt-ok'>{pdfs} PDF de factura por adjuntar</span>");
-            if (l.GuiasSinPdf.Count > 0) resumen.Add($"<span class='bd-txt-ok'>{l.GuiasSinPdf.Count} PDF de guía(s) por guardar</span>");
+            if (pdfs > 0) resumen.Add($"{pdfs} PDF de factura por adjuntar");
+            if (l.GuiasSinPdf.Count > 0) resumen.Add($"{l.GuiasSinPdf.Count} PDF de guía(s) por guardar");
             if (fletes > 0) resumen.Add($"{fletes} factura(s) de flete");
-            if (l.NoReconocidos.Count > 0) resumen.Add($"<span class='bd-txt-aviso'>{l.NoReconocidos.Count} archivo(s) con observaciones</span>");
+            if (l.NoReconocidos.Count > 0) resumen.Add(Aviso($"{l.NoReconocidos.Count} archivo(s) con observaciones"));
             litResumenPrevia.Text = "<div class='bd-previa-resumen'>" + string.Join(" &#xB7; ", resumen) + "</div>";
 
             btnRegistrar.Enabled = l.HayAlgoQueRegistrar;
@@ -325,12 +327,12 @@ namespace WebSGV.Views
             var sinObservaciones = bloques.Where(b => !b.Key).ToList();
             if (porRevisar.Count > 0)
             {
-                sb.Append($"<div class='bd-grupo bd-grupo-revisar'><i class='fas fa-exclamation-circle mr-1'></i>Para revisar ({porRevisar.Count})</div>");
+                sb.Append($"<div class='bd-grupo bd-grupo-revisar'>Para revisar ({porRevisar.Count})</div>");
                 foreach (var b in porRevisar) sb.Append(b.Value(true));
             }
             if (sinObservaciones.Count > 0)
             {
-                sb.Append($"<div class='bd-grupo'><i class='fas fa-check-circle mr-1'></i>Sin observaciones ({sinObservaciones.Count}): ábralos si quiere ver el detalle</div>");
+                sb.Append($"<div class='bd-grupo'>Sin observaciones ({sinObservaciones.Count}): ábralos si quiere ver el detalle</div>");
                 foreach (var b in sinObservaciones) sb.Append(b.Value(abrirTodo));
             }
             if (bloques.Count == 0)
@@ -385,7 +387,7 @@ namespace WebSGV.Views
         {
             bool visible = g.Estado == EstadoGuiaBandeja.Nueva;
             return $"<tr class='bd-fila-nuevo' data-indice='{indice}'{(visible ? "" : " hidden")}><td></td><td colspan='5'>" +
-                   "<div class='bd-nuevo'><span class='bd-nuevo-titulo'><i class='fas fa-plus-circle mr-1'></i>Despacho nuevo</span>" +
+                   "<div class='bd-nuevo'><span class='bd-nuevo-titulo'>Despacho nuevo</span>" +
                    $"<label>Chofer<select name='{PrefijoNuevo}con_{indice}' class='form-control form-control-sm'>{Opciones(c.Conductores, g.NuevoIdConductor, "— Elija —")}</select></label>" +
                    $"<label>Tracto<select name='{PrefijoNuevo}tra_{indice}' class='form-control form-control-sm'>{Opciones(c.Tractos, g.NuevoIdTracto, "—")}</select></label>" +
                    $"<label>Carreta<select name='{PrefijoNuevo}car_{indice}' class='form-control form-control-sm'>{Opciones(c.Carretas, g.NuevoIdCarreta, "—")}</select></label>" +
@@ -400,7 +402,7 @@ namespace WebSGV.Views
             var sb = new StringBuilder(AperturaBloque(abierto));
             sb.Append("<summary class='bd-pedido-cabecera'><div>")
               .Append($"<div class='bd-pedido-titulo'>{Flecha}{H(imp.NombreCliente ?? "Cliente no reconocido")} &#xB7; Pedido {H(imp.NumeroPedido ?? "sin número")}</div>")
-              .Append($"<div class='bd-pedido-sub'><i class='far fa-file-archive mr-1'></i>{H(p.Archivo)}");
+              .Append($"<div class='bd-pedido-sub'>Archivo {H(p.Archivo)}");
             if (!string.IsNullOrEmpty(imp.Destino)) sb.Append($" &#xB7; destino {H(imp.Destino)}");
             sb.Append("</div>")
               .Append(Conteos(
@@ -413,7 +415,7 @@ namespace WebSGV.Views
             if (f?.NumeroFactura != null)
             {
                 string monto = f.ValorTotal.HasValue ? $" &#xB7; {(f.Moneda == "USD" ? "US$" : "S/")} {f.ValorTotal.Value.ToString("N2", Pe)}" : "";
-                sb.Append($"<span class='bd-factura-num'><i class='fas fa-receipt mr-1'></i>{H(f.NumeroFactura)}</span>")
+                sb.Append($"<span class='bd-factura-num'>Factura {H(f.NumeroFactura)}</span>")
                   .Append($"<span class='bd-factura-det'>{(f.FechaEmision.HasValue ? f.FechaEmision.Value.ToString("dd/MM/yyyy") : "")}{monto}</span>")
                   .Append(p.IdFacturaExistente.HasValue ? Chip("Ya registrada", "gris") : Chip("Factura nueva", "ok"));
                 bool seCrea = !p.IdFacturaExistente.HasValue && p.Guias.Any(g => g.Estado == EstadoGuiaBandeja.Unida || g.Estado == EstadoGuiaBandeja.Nueva);
@@ -474,7 +476,10 @@ namespace WebSGV.Views
             foreach (int id in g.Candidatos)
             {
                 if (!l.Programados.TryGetValue(id, out var p)) continue;
-                sb.Append($"<option value='{id}'{(g.IdProgramado == id ? " selected" : "")}>{H(p.Texto)}</option>");
+                // M-080: el que ya completa otra guía se marca en el texto (no se quita: al registrar se rechaza el repetido).
+                string otra = BandejaDocumentosService.GuiaQueYaLoCompleta(l, g, id);
+                sb.Append($"<option value='{id}'{(g.IdProgramado == id ? " selected" : "")}>{H(p.Texto)}" +
+                          $"{(otra == null ? "" : H($" (ya lo completa la guía {otra})"))}</option>");
             }
             if (g.Candidatos.Count > 0) sb.Append("</optgroup>");
             sb.Append($"<option value='{ValorNuevo}'{(nuevo ? " selected" : "")}>+ Crear despacho nuevo</option>");
@@ -484,7 +489,7 @@ namespace WebSGV.Views
         private static string HtmlCpics(LecturaBandeja l, bool abierto)
         {
             var sb = new StringBuilder(AperturaBloque(abierto)).Append("<summary class='bd-pedido-cabecera'><div class='bd-pedido-titulo'>")
-                .Append($"{Flecha}<i class='fas fa-shipping-fast mr-1'></i>Cartas de porte (CPIC)</div>")
+                .Append($"{Flecha}Cartas de porte (CPIC)</div>")
                 .Append(Conteos(
                     (l.Cpics.Count(c => c.Estado == EstadoAduanaBandeja.NoSeRegistra), "no se registra(n)", "mal"),
                     (l.Cpics.Count(c => c.Estado == EstadoAduanaBandeja.Registrar), "se registra(n)", "ok"),
@@ -506,7 +511,7 @@ namespace WebSGV.Views
         private static string HtmlMcis(LecturaBandeja l, bool abierto)
         {
             var sb = new StringBuilder(AperturaBloque(abierto)).Append("<summary class='bd-pedido-cabecera'><div class='bd-pedido-titulo'>")
-                .Append($"{Flecha}<i class='fas fa-passport mr-1'></i>Manifiestos de carga (MCI)</div>")
+                .Append($"{Flecha}Manifiestos de carga (MCI)</div>")
                 .Append(Conteos(
                     (l.Mcis.Count(m => m.Estado == EstadoAduanaBandeja.Elegir), "por elegir", "aviso"),
                     (l.Mcis.Count(m => m.Estado == EstadoAduanaBandeja.NoSeRegistra), "no se registra(n)", "mal"),
@@ -542,7 +547,7 @@ namespace WebSGV.Views
         private static string HtmlGres(LecturaBandeja l, bool abierto)
         {
             var sb = new StringBuilder(AperturaBloque(abierto)).Append("<summary class='bd-pedido-cabecera'><div class='bd-pedido-titulo'>")
-                .Append($"{Flecha}<i class='fas fa-truck mr-1'></i>Gu&#xED;as transportista (GRE de SUNAT)</div>")
+                .Append($"{Flecha}Gu&#xED;as transportista (GRE de SUNAT)</div>")
                 .Append(Conteos(
                     (l.Gres.Count(g => g.Estado == EstadoGreBandeja.Elegir), "por elegir", "aviso"),
                     (l.Gres.Count(g => g.Estado == EstadoGreBandeja.NoSeRegistra), "no se registra(n)", "mal"),
@@ -600,7 +605,7 @@ namespace WebSGV.Views
         private static string HtmlFacturasFlete(LecturaBandeja l, bool abierto)
         {
             var sb = new StringBuilder(AperturaBloque(abierto)).Append("<summary class='bd-pedido-cabecera'><div class='bd-pedido-titulo'>")
-                .Append($"{Flecha}<i class='fas fa-file-invoice-dollar mr-1'></i>Facturas de flete (SUNAT)</div>")
+                .Append($"{Flecha}Facturas de flete (SUNAT)</div>")
                 .Append(Conteos(
                     (l.FacturasFlete.Count(f => f.Estado == EstadoFacturaFleteBandeja.NoValida), "no se registra(n)", "mal"),
                     (l.FacturasFlete.Count(f => f.Estado == EstadoFacturaFleteBandeja.Nueva), "nueva(s)", "ok"),
@@ -653,7 +658,7 @@ namespace WebSGV.Views
                 var lotes = ListaDespachosService.ObtenerLotesRegistrados(idCliente, null, null, pedido, desde, hasta, "ACTIVO",
                         numeroFactura: factura, nombreConductor: chofer, documentos: documentos)
                     .OrderBy(x => x.NombreCliente).ThenBy(x => x.FechaProgramacion).ToList();
-                litContadorTablero.Text = $"<span class='bd-contador'>{lotes.Count} lote(s)</span>";
+                litContadorTablero.Text = $"<p class='sgv-panel-nota mb-0'>{lotes.Count} lote(s)</p>";
                 litTablero.Text = HtmlTablero(lotes);
             }
             catch (Exception ex)
@@ -666,7 +671,7 @@ namespace WebSGV.Views
         private string HtmlTablero(List<LoteRegistrado> lotes)
         {
             if (lotes.Count == 0)
-                return "<div class='bd-vacio'><i class='fas fa-check-circle mr-1 text-success'></i>No hay lotes con esos filtros.</div>";
+                return "<div class='bd-vacio'>No hay lotes con esos filtros.</div>";
             DateTime hoy = FechaHelper.Hoy();
             string filtros = FiltrosComoQuery();
             var sb = new StringBuilder();
@@ -688,7 +693,7 @@ namespace WebSGV.Views
                       .Append($"<td>{H(lote.PlantaOperacion)}</td>")
                       .Append($"<td class='bd-num'>{e.Despachos}</td>")
                       .Append($"<td class='bd-docs'>{ChipsDocumentos(lote, e)}</td>")
-                      .Append($"<td class='{(atrasado ? "bd-txt-mal" : "")}'>{H(e.Antiguedad(lote.FechaProgramacion, hoy))}</td>")
+                      .Append($"<td>{(atrasado ? EstadoUiHelper.Sello(e.Antiguedad(lote.FechaProgramacion, hoy), TonoEstado.Peligro) : H(e.Antiguedad(lote.FechaProgramacion, hoy)))}</td>")
                       .Append($"<td class='text-right'><a class='btn btn-outline-primary btn-sm' href='{H(url)}'>Abrir</a></td></tr>");
                 }
                 sb.Append("</tbody></table></div></div>");
@@ -696,16 +701,14 @@ namespace WebSGV.Views
             return sb.ToString();
         }
 
-        /// <summary>Una pastilla por documento: verde si está, ámbar si falta (con cuántos faltan).</summary>
+        /// <summary>Un sello por documento: verde si está, ámbar si falta, dicho en el texto ("Pedido: falta", "Guías 2/3").</summary>
         private static string ChipsDocumentos(LoteRegistrado lote, EstadoDocumental e)
         {
             var sb = new StringBuilder();
             void Doc(string nombre, int faltan, bool aplica = true)
             {
                 if (!aplica) return;
-                bool ok = faltan == 0;
-                string detalle = ok || faltan >= e.Despachos ? "" : $" {e.Despachos - faltan}/{e.Despachos}";
-                sb.Append($"<span class='bd-doc {(ok ? "bd-doc-ok" : "bd-doc-falta")}'><i class='fas {(ok ? "fa-check" : "fa-times")}'></i>{H(nombre)}{detalle}</span>");
+                sb.Append(EstadoUiHelper.Sello(TextoDocumento(nombre, faltan, e.Despachos), faltan == 0 ? TonoEstado.Ok : TonoEstado.Alerta)).Append(' ');
             }
             bool carga = lote.TipoOperacion == "CARGA";
             // Cada cliente manda lo suyo: Vitapro el ZIP (pedido, factura con PDF, guías); Crisar y Novopan la CPIC
@@ -719,7 +722,26 @@ namespace WebSGV.Views
             // Un lote nacional no exige CPIC, pero si ya tiene una (la de su pedido) se espera su PDF (EstadoDocumental).
             Doc("PDF CPIC", e.SinPdfCPIC, lote.EsInternacional || !string.IsNullOrEmpty(lote.NumeroCPIC));
             Doc("MCI", e.SinManifiesto, lote.EsInternacional || (carga && cpic));
-            return sb.ToString();
+            return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>
+        /// Texto del sello de un documento del tablero: "Pedido" si está en todos los camiones, "Pedido: falta" si no
+        /// está en ninguno y "Guías 2/3" si está en algunos.
+        /// </summary>
+        internal static string TextoDocumento(string nombre, int faltan, int despachos) =>
+            faltan <= 0 ? nombre : faltan >= despachos ? nombre + ": falta" : $"{nombre} {despachos - faltan}/{despachos}";
+
+        /// <summary>
+        /// Qué subir para completar el expediente (M-085), según lo que manda el cliente; null si ya está completo
+        /// (ningún documento falta y todos tienen su PDF).
+        /// </summary>
+        internal static string AyudaCompletar(int faltan, int sinPdf, string perfil)
+        {
+            if (faltan <= 0 && sinPdf <= 0) return null;
+            string queSube = perfil == "PEDIDO" ? "el ZIP del correo, la CPIC o los MCI"
+                           : perfil == "CPIC" ? "la CPIC o los MCI" : "nuestra GRE transportista de SUNAT";
+            return $"Para completar, suba arriba {queSube}: la bandeja los une solos.";
         }
 
         // ── Expediente ───────────────────────────────────────────────────────
@@ -759,15 +781,14 @@ namespace WebSGV.Views
             string volver = H(ResolveUrl("~/Views/BandejaDocumentos.aspx"));
             string lote = H(ResolveUrl("~/Views/ListaDespachos.aspx") + "?lote=" + HttpUtility.UrlEncode(e.IdLote));
             string manual = H(ResolveUrl("~/Views/ListaDespachos.aspx") + "?manual=1&lote=" + HttpUtility.UrlEncode(e.IdLote));
-            string queSube = e.Perfil == "PEDIDO" ? "el ZIP del correo, la CPIC o los MCI"
-                           : e.Perfil == "CPIC" ? "la CPIC o los MCI" : "nuestra GRE transportista de SUNAT";
+            string ayuda = AyudaCompletar(e.Faltan, e.SinPdf, e.Perfil);
 
             var sb = new StringBuilder();
             sb.Append("<div class='bd-exp-cabecera'><div>")
               .Append($"<a class='bd-exp-volver' href='{volver}'>Volver a la bandeja</a>")
               .Append($"<h5 class='mb-1'>{H(e.Cliente)}{(string.IsNullOrEmpty(e.NumeroPedido) ? "" : " &#xB7; pedido " + H(e.NumeroPedido))}</h5>")
-              .Append($"<div class='text-muted small'>{e.Filas.Count} camión(es){(e.Filas.Count > 0 ? $", carga del {e.Filas.Min(f => f.Fecha):dd/MM/yyyy}" : "")}. ")
-              .Append($"Para completar, suba arriba {queSube}: la bandeja los une solos.</div></div>")
+              .Append($"<div class='text-muted small'>{e.Filas.Count} camión(es){(e.Filas.Count > 0 ? $", carga del {e.Filas.Min(f => f.Fecha):dd/MM/yyyy}" : "")}.")
+              .Append(ayuda == null ? "" : " " + H(ayuda)).Append("</div></div>")
               .Append("<div class='bd-exp-acciones'>")
               .Append($"<a class='btn btn-outline-secondary btn-sm' href='{lote}'>Ver el lote (viajes y choferes)</a>")
               .Append($"<a class='btn btn-link btn-sm' href='{manual}' title='Solo si no tiene el documento: escribir números a mano'>Registro manual</a>")
@@ -777,7 +798,7 @@ namespace WebSGV.Views
             sb.Append($"<div class='bd-exp-avance'><div class='bd-exp-avance-texto'><strong>{H(estado)}</strong><span>{listos} de {e.Requeridos}</span></div>")
               .Append($"<div class='progress bd-exp-barra'><div class='progress-bar {(e.Faltan == 0 ? "bg-success" : "bg-warning")}' style='width:{pct}%'></div></div>");
             if (e.SinPdf > 0)
-                sb.Append($"<div class='small text-muted mt-1'><i class='fas fa-info-circle mr-1'></i>{e.SinPdf} documento(s) tienen el número pero no el PDF: vuelva a subir el ZIP o la GRE y la bandeja solo agrega el PDF.</div>");
+                sb.Append($"<div class='small text-muted mt-1'>{e.SinPdf} documento(s) tienen el número pero no el PDF: vuelva a subir el ZIP o la GRE y la bandeja solo agrega el PDF.</div>");
             sb.Append("</div>");
 
             // Documentos del pedido
@@ -821,12 +842,14 @@ namespace WebSGV.Views
             return sb.ToString();
         }
 
-        /// <summary>Tarjeta de un documento del pedido: número, PDF o lo que falta.</summary>
+        /// <summary>Tarjeta de un documento del pedido: número, PDF o lo que falta, con su estado en un sello.</summary>
         private string Tarjeta(string titulo, DocumentoExpediente d)
         {
-            string icono = d.Falta ? "fa-times bd-txt-mal" : d.SinPdf ? "fa-exclamation bd-txt-aviso" : "fa-check bd-txt-ok";
-            return $"<div class='bd-exp-doc {(d.Falta ? "bd-exp-doc-falta" : "")}'><div class='bd-exp-doc-titulo'><i class='fas {icono} mr-1'></i>{H(titulo)}</div>"
-                 + $"<div class='bd-cod bd-exp-doc-numero'>{H(d.Numero ?? "Falta")}</div>{EnlacePdf(d)}</div>";
+            string sello = d.Falta ? EstadoUiHelper.Sello("Falta", TonoEstado.Peligro)
+                         : d.SinPdf ? EstadoUiHelper.Sello("Sin PDF", TonoEstado.Alerta)
+                         : EstadoUiHelper.Sello("Completo", TonoEstado.Ok);
+            return $"<div class='bd-exp-doc {(d.Falta ? "bd-exp-doc-falta" : "")}'><div class='bd-exp-doc-titulo'>{H(titulo)} {sello}</div>"
+                 + $"<div class='bd-cod bd-exp-doc-numero'>{H(d.Numero ?? "—")}</div>{EnlacePdf(d)}</div>";
         }
 
         /// <summary>
@@ -838,11 +861,11 @@ namespace WebSGV.Views
             string url = ResolveUrl("~/Views/FacturasFlete.aspx");
             var sb = new StringBuilder("<div class='bd-exp-doc bd-exp-doc-flete'><div class='bd-exp-doc-titulo'>");
             if (e.FacturasFlete.Count == 0)
-                return sb.Append("<i class='fas fa-hourglass-half mr-1 text-muted'></i>Factura de flete</div>")
+                return sb.Append("Factura de flete</div>")
                          .Append("<div class='bd-exp-doc-numero text-muted'>Sin facturar</div>")
                          .Append($"<a class='small' href='{H(url)}'>Ir a Facturas de flete</a></div>").ToString();
 
-            sb.Append("<i class='fas fa-file-invoice-dollar mr-1 bd-txt-ok'></i>Factura de flete</div>");
+            sb.Append("Factura de flete</div>");
             foreach (var f in e.FacturasFlete)
             {
                 string monto = (f.Moneda == "PEN" ? "S/ " : "US$ ") + f.ImporteTotal.ToString("N2", Pe);
@@ -861,7 +884,7 @@ namespace WebSGV.Views
         private string Celda(DocumentoExpediente d, string prefijo)
         {
             if (d.Numero == null && d.RutaPdf == null)
-                return d.Requerido ? "<div><span class='bd-doc bd-doc-falta'><i class='fas fa-times'></i>Falta</span></div>" : "<div class='text-muted'>—</div>";
+                return d.Requerido ? "<div>" + EstadoUiHelper.Sello("Falta", TonoEstado.Alerta) + "</div>" : "<div class='text-muted'>—</div>";
             return $"<div class='bd-exp-celda'><span class='bd-cod'>{H(prefijo + (d.Numero ?? ""))}</span> {EnlacePdf(d)}</div>";
         }
 
@@ -879,7 +902,9 @@ namespace WebSGV.Views
 
         // ── Utilidades ───────────────────────────────────────────────────────
 
-        private static string Chip(string texto, string tipo) => $"<span class='bd-chip bd-chip-{tipo}'>{H(texto)}</span>";
+        /// <summary>Sello de estado (E5-17): tipo ok (verde), aviso (ámbar), mal (rojo) o gris.</summary>
+        private static string Chip(string texto, string tipo) =>
+            EstadoUiHelper.Sello(texto, tipo == "ok" ? TonoEstado.Ok : tipo == "aviso" ? TonoEstado.Alerta : tipo == "mal" ? TonoEstado.Peligro : TonoEstado.Neutro);
 
         private static string H(string s) => HttpUtility.HtmlEncode(s ?? "");
 

@@ -26,7 +26,7 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Literal litResultadoCarga;
         protected global::System.Web.UI.WebControls.HiddenField hfPestana;
         protected global::System.Web.UI.WebControls.Panel pnlResultados;
-        protected global::System.Web.UI.WebControls.Literal litTarjetas;
+        protected global::System.Web.UI.WebControls.Literal litResumen;
         protected global::System.Web.UI.WebControls.Literal litConciliacion;
         protected global::System.Web.UI.WebControls.Literal litPieConciliacion;
         protected global::System.Web.UI.WebControls.Literal litPorFacturar;

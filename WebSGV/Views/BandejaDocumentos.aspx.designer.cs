@@ -22,7 +22,6 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Button btnRegistrar;
         protected global::System.Web.UI.WebControls.Literal litVistaPrevia;
         protected global::System.Web.UI.WebControls.Literal litContadorTablero;
-        protected global::System.Web.UI.WebControls.Panel pnlFiltros;
         protected global::System.Web.UI.WebControls.DropDownList ddlCliente;
         protected global::System.Web.UI.WebControls.TextBox txtBuscar;
         protected global::System.Web.UI.WebControls.TextBox txtDesde;

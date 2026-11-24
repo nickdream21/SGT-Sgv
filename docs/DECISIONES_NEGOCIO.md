@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-30 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-31 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -50,6 +50,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-28 | Aspecto del sistema: dirección "Expediente", iconos solo en acciones y avisos, sin emojis |
 | DN-29 | Contabilidad: liquidaciones aprobadas de los últimos 90 días al abrir, 50 por página (opción recomendada, a confirmar) |
 | DN-30 | Gráficos con su paleta propia de datos; tarjetas grandes de totales fuera (aspecto aprobado de E5-12) |
+| DN-31 | Pantallas de buscar y editar (E5-17): saldo por moneda, PDF firmado, filtros plegados en el celular (opción recomendada, a confirmar) |
 
 ---
 
@@ -147,6 +148,26 @@ de Lista de despachos "se notan muy IA": se quitan como ya dice DN-28 (los conta
 - Desde: 2026-11-23.
 - En el código: `WebSGV/Content/sgv-base.css` (E5-12); gráficos en `ReporteCargas` y `DashboardExportacion`; tarjetas, E5-18.
 - Estado: vigente.
+
+### DN-31 — Pantallas de buscar y editar (E5-17): saldo por moneda, PDF firmado, filtros plegados en el celular (opción recomendada, a confirmar)
+Decisiones tomadas por el orquestador con la opción recomendada mientras el usuario no estaba (pidió terminar la Etapa 5
+decidiendo lo necesario):
+1. Saldos de conductores: cuando las dos monedas van en sentidos opuestos se nombran las dos ("A descontar S/ 100.00 ·
+   A reintegrar US$ 50.00"); antes el sentido salía solo de la moneda en soles. Las cifras no cambian (M-070).
+2. El número de liquidación de Saldos abre el PDF firmado y guardado (`DescargarPdfOrdenViaje.aspx`, verificado por hash),
+   no el detalle de la orden, que no abre para la oficina (M-071).
+3. El filtro de acción de Auditoría sale de las acciones que hay en la BD, con su nombre en español donde lo hay y el
+   código en las demás (M-135; nombrarlas todas queda en M-165).
+4. En el celular (≤ 767 px) los filtros, los gráficos y las cargas de archivos arrancan plegados (`data-plegar-movil`); en
+   escritorio, abiertos.
+5. En los selectores de Bandeja y Registro de despacho, la opción que ya completa otra guía o transporte se rotula
+   ("ya lo completa la guía …"), no se quita: el servidor sigue rechazando el doble uso al registrar (M-080).
+- Desde: 2026-11-24.
+- En el código: `Services/Liquidaciones/SaldosConductorService.cs` (`Sentido`, `TextoSaldo`, `ClaseSentido`),
+  `Views/SaldosConductores.aspx`, `Services/Auditoria/ConsultaAuditoriaService.cs` (`ObtenerAcciones`, `NombreAccion`),
+  `Scripts/paginas/SiteMaster.js` (`data-plegar-movil`), `BandejaDocumentosService.GuiaQueYaLoCompleta` y
+  `ProgramacionCarga.TransporteQueLoCompleta`.
+- Estado: vigente, a confirmar.
 
 ## 2. Usuarios y acceso
 

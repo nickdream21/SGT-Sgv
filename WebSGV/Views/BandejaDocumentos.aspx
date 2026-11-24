@@ -3,7 +3,7 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/BandejaDocumentos.css") %>" rel="stylesheet" />
 
-    <div class="container-fluid px-3 bd-pagina">
+    <div class="bd-pagina">
 
         <div class="sgv-encabezado">
             <div class="sgv-encabezado-titulo">
@@ -57,41 +57,49 @@
         </asp:Panel>
 
         <%-- ===== 3b. Tablero de pendientes ===== --%>
-        <asp:Panel ID="pnlTablero" runat="server" CssClass="bd-card">
-            <div class="bd-tablero-cabecera">
-                <h5 class="mb-0">Documentos por cliente y pedido</h5>
-                <asp:Literal ID="litContadorTablero" runat="server" EnableViewState="false" />
-            </div>
-            <asp:Panel ID="pnlFiltros" runat="server" CssClass="bd-filtros" DefaultButton="btnBuscar">
-                <div class="bd-filtro">
-                    <label for="<%= ddlCliente.ClientID %>">Cliente</label>
-                    <asp:DropDownList ID="ddlCliente" runat="server" CssClass="form-control form-control-sm"></asp:DropDownList>
+        <asp:Panel ID="pnlTablero" runat="server">
+            <%-- Enter busca (data-enter); en el celular los filtros arrancan plegados. --%>
+            <details class="sgv-filtros" open data-plegar-movil>
+                <summary>Filtros <span class="sgv-filtros-cuenta"></span></summary>
+                <div class="sgv-filtros-cuerpo bd-filtros" data-enter="<%= btnBuscar.ClientID %>">
+                    <div class="bd-filtro">
+                        <label for="<%= ddlCliente.ClientID %>">Cliente</label>
+                        <asp:DropDownList ID="ddlCliente" runat="server" CssClass="form-control form-control-sm"></asp:DropDownList>
+                    </div>
+                    <div class="bd-filtro bd-filtro-ancho">
+                        <label for="<%= txtBuscar.ClientID %>">Pedido, factura o chofer</label>
+                        <asp:TextBox ID="txtBuscar" runat="server" CssClass="form-control form-control-sm" MaxLength="60" placeholder="4400134530, F222-00008598, REYES"></asp:TextBox>
+                    </div>
+                    <div class="bd-filtro">
+                        <label for="<%= txtDesde.ClientID %>">Desde</label>
+                        <asp:TextBox ID="txtDesde" runat="server" TextMode="Date" CssClass="form-control form-control-sm"></asp:TextBox>
+                    </div>
+                    <div class="bd-filtro">
+                        <label for="<%= txtHasta.ClientID %>">Hasta</label>
+                        <asp:TextBox ID="txtHasta" runat="server" TextMode="Date" CssClass="form-control form-control-sm"></asp:TextBox>
+                    </div>
+                    <div class="bd-filtro">
+                        <label for="<%= ddlVer.ClientID %>">Ver</label>
+                        <asp:DropDownList ID="ddlVer" runat="server" CssClass="form-control form-control-sm">
+                            <asp:ListItem Value="PENDIENTES" Text="Con documentos pendientes"></asp:ListItem>
+                            <asp:ListItem Value="" Text="Todos"></asp:ListItem>
+                            <asp:ListItem Value="COMPLETOS" Text="Completos"></asp:ListItem>
+                        </asp:DropDownList>
+                    </div>
+                    <div class="bd-filtro bd-filtro-boton">
+                        <asp:Button ID="btnBuscar" runat="server" Text="Buscar" CssClass="btn btn-primary btn-sm" OnClick="btnBuscar_Click" CausesValidation="false" />
+                    </div>
                 </div>
-                <div class="bd-filtro bd-filtro-ancho">
-                    <label for="<%= txtBuscar.ClientID %>">Pedido, factura o chofer</label>
-                    <asp:TextBox ID="txtBuscar" runat="server" CssClass="form-control form-control-sm" MaxLength="60" placeholder="4400134530, F222-00008598, REYES"></asp:TextBox>
+            </details>
+            <section class="sgv-panel mb-3">
+                <div class="sgv-panel-cab">
+                    <h2 class="sgv-panel-titulo">Documentos por cliente y pedido</h2>
+                    <asp:Literal ID="litContadorTablero" runat="server" EnableViewState="false" />
                 </div>
-                <div class="bd-filtro">
-                    <label for="<%= txtDesde.ClientID %>">Desde</label>
-                    <asp:TextBox ID="txtDesde" runat="server" TextMode="Date" CssClass="form-control form-control-sm"></asp:TextBox>
+                <div class="sgv-panel-cuerpo">
+                    <asp:Literal ID="litTablero" runat="server" EnableViewState="false" />
                 </div>
-                <div class="bd-filtro">
-                    <label for="<%= txtHasta.ClientID %>">Hasta</label>
-                    <asp:TextBox ID="txtHasta" runat="server" TextMode="Date" CssClass="form-control form-control-sm"></asp:TextBox>
-                </div>
-                <div class="bd-filtro">
-                    <label for="<%= ddlVer.ClientID %>">Ver</label>
-                    <asp:DropDownList ID="ddlVer" runat="server" CssClass="form-control form-control-sm">
-                        <asp:ListItem Value="PENDIENTES" Text="Con documentos pendientes"></asp:ListItem>
-                        <asp:ListItem Value="" Text="Todos"></asp:ListItem>
-                        <asp:ListItem Value="COMPLETOS" Text="Completos"></asp:ListItem>
-                    </asp:DropDownList>
-                </div>
-                <div class="bd-filtro bd-filtro-boton">
-                    <asp:Button ID="btnBuscar" runat="server" Text="Buscar" CssClass="btn btn-primary btn-sm" OnClick="btnBuscar_Click" CausesValidation="false" />
-                </div>
-            </asp:Panel>
-            <asp:Literal ID="litTablero" runat="server" EnableViewState="false" />
+            </section>
         </asp:Panel>
     </div>
 

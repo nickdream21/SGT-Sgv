@@ -1,7 +1,7 @@
 <%@ Page Title="Descuentos y reintegros" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="SaldosConductores.aspx.cs" Inherits="WebSGV.Views.SaldosConductores" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
-    <div class="container-fluid px-3 sc-pagina">
+    <div class="sc-pagina">
         <div class="sgv-encabezado">
             <div class="sgv-encabezado-titulo">
                 <h1 class="h2">Descuentos y reintegros</h1>
@@ -20,8 +20,9 @@
             <asp:Label ID="lblMensaje" runat="server"></asp:Label>
         </asp:Panel>
 
-        <div class="sgv-panel mb-3">
-            <div class="sgv-panel-cuerpo sc-filtros">
+        <details class="sgv-filtros" open data-plegar-movil>
+            <summary>Filtros <span class="sgv-filtros-cuenta"></span></summary>
+            <div class="sgv-filtros-cuerpo sc-filtros">
                 <div>
                     <label for="<%= ddlQuincena.ClientID %>">Quincena</label>
                     <asp:DropDownList ID="ddlQuincena" runat="server" CssClass="form-control form-control-sm" />
@@ -35,24 +36,18 @@
                     <label class="mb-0"><asp:CheckBox ID="chkSoloPendientes" runat="server" /> Solo pendientes</label>
                 </div>
                 <div>
-                    <asp:LinkButton ID="btnBuscar" runat="server" CssClass="btn btn-primary btn-sm" OnClick="btnBuscar_Click">
-                        Ver</asp:LinkButton>
+                    <asp:Button ID="btnBuscar" runat="server" Text="Ver" CssClass="btn btn-primary btn-sm" OnClick="btnBuscar_Click" />
                 </div>
             </div>
-        </div>
+        </details>
 
-        <div class="sc-resumen mb-3">
-            <div class="sgv-panel"><div class="sgv-panel-cuerpo"><span>A descontar</span><strong class="sgv-positivo"><asp:Literal ID="litDescontar" runat="server" /></strong></div></div>
-            <div class="sgv-panel"><div class="sgv-panel-cuerpo"><span>A reintegrar</span><strong class="sgv-negativo"><asp:Literal ID="litReintegrar" runat="server" /></strong></div></div>
-            <div class="sgv-panel"><div class="sgv-panel-cuerpo"><span>Liquidaciones pendientes</span><strong><asp:Literal ID="litPendientes" runat="server" /></strong></div></div>
-            <div class="sgv-panel"><div class="sgv-panel-cuerpo"><span>Conductores</span><strong><asp:Literal ID="litConductores" runat="server" /></strong></div></div>
-        </div>
+        <asp:Literal ID="litResumen" runat="server" EnableViewState="false" />
 
         <asp:Panel ID="pnlVacio" runat="server" Visible="false" CssClass="sgv-vacio">
             No hay liquidaciones aprobadas en esta quincena ni pendientes de saldar.
         </asp:Panel>
 
-        <asp:Repeater ID="rptConductores" runat="server">
+        <asp:Repeater ID="rptConductores" runat="server" EnableViewState="false">
             <ItemTemplate>
                 <div class="sgv-panel mb-3 sc-conductor" data-conductor='<%#: Eval("IdConductor") %>'>
                     <div class="sgv-panel-cab">
@@ -84,13 +79,15 @@
                             <tbody>
                                 <asp:Repeater ID="rptFilas" runat="server" DataSource='<%# Eval("Filas") %>'>
                                     <ItemTemplate>
-                                        <tr class='<%#: (bool)Eval("Pendiente") ? "" : "sc-saldada" %>'>
+                                        <tr class='<%#: (bool)Eval("Pendiente") ? "" : "sc-saldada" %>'
+                                            data-saldo-soles='<%#: Eval("SolesInvariante") %>' data-saldo-dolares='<%#: Eval("DolaresInvariante") %>'>
                                             <td class="sc-col-check">
                                                 <asp:PlaceHolder runat="server" Visible='<%# (bool)Eval("Pendiente") %>'>
                                                     <input type="checkbox" class="sc-sel" checked value="<%#: Eval("IdOrdenViaje") %>" aria-label="Incluir" />
                                                 </asp:PlaceHolder>
                                             </td>
-                                            <td><a href='<%#: ResolveUrl("~/Views/DetalleOrdenViaje.aspx?id=" + Eval("IdOrdenViaje")) %>' target="_blank" rel="noopener"><%#: Eval("Numero") %></a></td>
+                                            <td><a href='<%#: ResolveUrl("~/Views/DescargarPdfOrdenViaje.aspx?id=" + Eval("IdOrdenViaje")) %>' target="_blank" rel="noopener"
+                                                   title="PDF de la liquidación aprobada"><%#: Eval("Numero") %></a></td>
                                             <td><%#: Eval("Aprobada") %></td>
                                             <td class="sgv-num"><%#: Eval("Entregado") %></td>
                                             <td class="sgv-num"><%#: Eval("Gastos") %></td>

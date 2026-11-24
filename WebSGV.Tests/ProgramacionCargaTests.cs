@@ -452,5 +452,24 @@ namespace WebSGV.Tests
             Assert.Contains(ProgramacionCarga.AvisoPorElegir, propuestas[1].Avisos);
             Assert.Contains(generales, g => g.Contains("2 despacho(s) programado(s) quedaron sin guía") && g.Contains("CCC-333"));
         }
+
+        [Fact]
+        public void TransporteQueLoCompleta_nombraAOtroTransporteConEseProgramado()
+        {
+            // M-080: el selector de RegistroDespacho rotula el programado que ya se propuso a otro transporte.
+            var a = Guia("1", "PEDRO RAMOS", "AAA-111", 1);
+            var b = Guia("2", "MARIO QUISPE", "BBB-222", 2);
+            var c = Guia("3", "ANA TORRES", "CCC-333", 3);
+            a.Programacion = new PropuestaCarga { IdDespachoProgramado = 501 };
+            c.Programacion = new PropuestaCarga { IdDespachoProgramado = 502 };
+            c.YaRegistrado = true;   // ya registrado: no cuenta
+            var todos = new[] { a, b, c };
+
+            Assert.Equal("1", ProgramacionCarga.TransporteQueLoCompleta(todos, b, 501));
+            Assert.Null(ProgramacionCarga.TransporteQueLoCompleta(todos, a, 501));   // el suyo no se rotula
+            Assert.Null(ProgramacionCarga.TransporteQueLoCompleta(todos, b, 502));
+            Assert.Null(ProgramacionCarga.TransporteQueLoCompleta(todos, b, 999));
+            Assert.Null(ProgramacionCarga.TransporteQueLoCompleta(null, b, 501));
+        }
     }
 }

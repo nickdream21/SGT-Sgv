@@ -29,9 +29,49 @@ namespace WebSGV.Tests
         [InlineData(-80, 0, "A reintegrar")]     // puso de su plata
         [InlineData(0, 0, "Cuadrado")]
         [InlineData(0, -20, "A reintegrar")]     // solo en dólares
+        [InlineData(0, 30, "A descontar")]
+        [InlineData(100, 40, "A descontar")]     // las dos monedas en el mismo sentido
+        [InlineData(-100, -40, "A reintegrar")]
+        // M-070: monedas en sentidos opuestos, se nombran las dos (antes mandaba solo la de soles).
+        [InlineData(100, -50, "A descontar S/, a reintegrar US$")]
+        [InlineData(-100, 50, "A reintegrar S/, a descontar US$")]
         public void Sentido_SegunElSaldo(double soles, double dolares, string esperado)
         {
             Assert.Equal(esperado, SaldosConductorService.Sentido((decimal)soles, (decimal)dolares));
+        }
+
+        [Theory]
+        [InlineData(100, -50, "A descontar S/ 100.00 · A reintegrar US$ 50.00")]
+        [InlineData(-100, 50, "A reintegrar S/ 100.00 · A descontar US$ 50.00")]
+        [InlineData(1234.5, 0, "A descontar S/ 1,234.50")]
+        [InlineData(0, -20, "A reintegrar US$ 20.00")]
+        [InlineData(100, 40, "A descontar S/ 100.00 · US$ 40.00")]
+        [InlineData(0, 0, "Cuadrado")]
+        public void TextoSaldo_PorMoneda(double soles, double dolares, string esperado)
+        {
+            Assert.Equal(esperado, SaldosConductorService.TextoSaldo((decimal)soles, (decimal)dolares));
+        }
+
+        [Theory]
+        [InlineData(100, -50, "sgv-estado-alerta")]   // algo se le descuenta
+        [InlineData(-100, 50, "sgv-estado-alerta")]
+        [InlineData(0, 30, "sgv-estado-alerta")]
+        [InlineData(-100, 0, "sgv-estado-info")]      // solo se le reintegra
+        [InlineData(0, -20, "sgv-estado-info")]
+        [InlineData(0, 0, "sgv-estado-ok")]
+        public void ClaseSentido_PorMoneda(double soles, double dolares, string esperado)
+        {
+            Assert.Equal(esperado, SaldosConductorService.ClaseSentido((decimal)soles, (decimal)dolares));
+        }
+
+        [Fact]
+        public void Reporte_ColumnaResultadoConElMismoTextoQueLaPantalla()
+        {
+            // M-070: la columna RESULTADO del Excel nombra las dos monedas cuando van en sentidos opuestos.
+            var dt = Filas((1, 100m, -50m, false));
+            var r = SaldosConductorService.Reporte(dt, new string[0], "prueba");
+            var resultado = r.Columnas.Single(c => c.Titulo == "RESULTADO");
+            Assert.Equal("A descontar S/, a reintegrar US$", resultado.Valor(dt.Rows[0]));
         }
 
         /// <summary>Filas como las de <see cref="SaldosConductorService.Listar"/> (solo las columnas que usan los totales y el reporte).</summary>

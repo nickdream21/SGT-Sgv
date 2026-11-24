@@ -133,11 +133,11 @@ namespace WebSGV.Views
             foreach (var r in resultados)
             {
                 var f = r.Factura;
-                string chip = !r.Ok ? "ff-chip-mal" : r.Estado == "Sin cambios" ? "ff-chip-gris" : "ff-chip-ok";
+                var tono = !r.Ok ? TonoEstado.Peligro : r.Estado == "Sin cambios" ? TonoEstado.Neutro : TonoEstado.Ok;
                 sb.Append("<tr>")
                   .Append($"<td>{H(r.Archivo)}</td>")
                   .Append($"<td class=\"ff-cod\">{H(f?.NumeroFactura)}</td>")
-                  .Append($"<td><span class=\"ff-chip {chip}\">{H(r.Estado)}</span></td>")
+                  .Append($"<td>{EstadoUiHelper.Sello(r.Estado, tono)}</td>")
                   .Append($"<td class=\"ff-cod\">{(f?.FechaEmision.HasValue == true ? f.FechaEmision.Value.ToString("dd/MM/yyyy") : "")}</td>")
                   .Append($"<td class=\"ff-cod\">{(f == null ? "" : string.Join("<br>", f.Items.Select(i => i.Referencia).Where(x => x != null).Distinct().Select(H)))}</td>")
                   .Append($"<td class=\"ff-num\">{(f?.ImporteTotal.HasValue == true ? H(Monto(f.Moneda, f.ImporteTotal.Value)) : "")}</td>")
@@ -198,7 +198,7 @@ namespace WebSGV.Views
                     datos.Filas.SelectMany(x => new[] { x.Referencia, x.Pedido?.Referencia })
                          .Concat(emitidas.SelectMany(FacturaFleteService.Referencias)));
 
-                litTarjetas.Text = HtmlTarjetas(datos.Filas, emitidas, hoy);
+                litResumen.Text = HtmlResumen(datos.Filas, emitidas, hoy);
                 litConciliacion.Text = HtmlConciliacion(datos.Filas.Where(x => x.Estado != EstadoConciliacion.PorFacturar
                                                                               && x.Estado != EstadoConciliacion.SinDocumentos).ToList());
                 litPorFacturar.Text = HtmlPorFacturar(datos.Filas.Where(x => x.Estado == EstadoConciliacion.PorFacturar
@@ -254,44 +254,53 @@ namespace WebSGV.Views
 
         // ── HTML ─────────────────────────────────────────────────────────────
 
-        private static string HtmlTarjetas(List<FilaConciliacion> filas, List<FacturaFleteRegistrada> emitidas, DateTime hoy)
+        /// <summary>
+        /// Cifras del período en una línea (sgv-resumen, E5-17) en vez de siete tarjetas: facturado, conformes, con
+        /// diferencia, por facturar, sin documentos, facturas sin carga y lo que vence pronto. Lo que pide revisar
+        /// lleva su número en rojo (ff-mal) o ámbar (ff-aviso).
+        /// </summary>
+        public static string HtmlResumen(List<FilaConciliacion> filas, List<FacturaFleteRegistrada> emitidas, DateTime hoy)
         {
-            var sb = new StringBuilder();
-            var facturado = emitidas.GroupBy(f => f.Moneda).OrderByDescending(g => g.Key)
-                .Select(g => H(Monto(g.Key, g.Sum(x => x.ImporteTotal)))).ToList();
-            sb.Append(Tarjeta("Facturado en el per&#xED;odo", facturado.Count == 0 ? "—" : string.Join("", facturado.Select((m, i) => $"<em class=\"{(i == 0 ? "" : "ff-monto-2")}\">{m}</em>")),
-                              $"<small>{emitidas.Count} factura(s)</small>", ""));
+            var sb = new StringBuilder("<p class=\"sgv-resumen\">");
+            void Parte(string html) => sb.Append("<span>").Append(html).Append("</span>");
+            string Num(int n, string clase) => $"<strong{(clase == null ? "" : $" class=\"{clase}\"")}>{n.ToString("N0", Pe)}</strong>";
+            string Montos(IEnumerable<IGrouping<string, decimal>> grupos, string prefijo) =>
+                string.Join(" y ", grupos.OrderByDescending(g => g.Key).Select(g => "<strong>" + H(prefijo + Monto(g.Key, g.Sum())) + "</strong>"));
+
+            var facturado = Montos(emitidas.GroupBy(f => f.Moneda, f => f.ImporteTotal), "");
+            Parte(emitidas.Count == 0 ? "Sin facturas emitidas en el per&#xED;odo"
+                : $"Facturado {facturado} ({Plural(emitidas.Count, "factura", "facturas")})");
 
             int facturados = filas.Count(x => x.Estado == EstadoConciliacion.Conforme || x.Estado == EstadoConciliacion.Diferencia);
             int conformes = filas.Count(x => x.Estado == EstadoConciliacion.Conforme);
-            sb.Append(Tarjeta("Pedidos conformes", $"{conformes} de {facturados}", "<small>Facturado = cargado</small>",
-                              conformes == facturados ? "ff-tarjeta-ok" : ""));
+            Parte($"{Num(conformes, null)} de {Num(facturados, null)} {(facturados == 1 ? "pedido conforme" : "pedidos conformes")}");
 
             int dif = filas.Count(x => x.Estado == EstadoConciliacion.Diferencia);
-            sb.Append(Tarjeta("Con diferencia", dif.ToString(), "<small>Facturado distinto de lo cargado</small>", dif > 0 ? "ff-tarjeta-mal" : "ff-tarjeta-ok"));
+            if (dif > 0) Parte($"{Num(dif, "ff-mal")} con diferencia");
 
             var porFacturar = filas.Where(x => x.Estado == EstadoConciliacion.PorFacturar).ToList();
-            var estimado = porFacturar.Where(x => x.ImporteEstimado.HasValue).GroupBy(x => x.Moneda)
-                .Select(g => H("≈ " + Monto(g.Key, g.Sum(x => x.ImporteEstimado.Value)))).ToList();
-            sb.Append(Tarjeta("Por facturar", porFacturar.Count + " pedido(s)",
-                              estimado.Count == 0 ? "<small>—</small>" : $"<small>{string.Join(" · ", estimado)}</small>",
-                              porFacturar.Count > 0 ? "ff-tarjeta-aviso" : "ff-tarjeta-ok"));
+            if (porFacturar.Count > 0)
+            {
+                string estimado = Montos(porFacturar.Where(x => x.ImporteEstimado.HasValue)
+                    .GroupBy(x => x.Moneda, x => x.ImporteEstimado.Value), "≈ ");
+                Parte($"{Num(porFacturar.Count, "ff-aviso")} {(porFacturar.Count == 1 ? "pedido" : "pedidos")} por facturar" +
+                      (estimado.Length > 0 ? " (" + estimado + ")" : ""));
+            }
 
             int sinDocs = filas.Where(x => x.Estado == EstadoConciliacion.SinDocumentos).Sum(x => x.Pedido.Unidades);
-            sb.Append(Tarjeta("Cargas sin documentos", sinDocs + " unidad(es)", "<small>Esperan el ZIP del correo</small>", sinDocs > 0 ? "ff-tarjeta-aviso" : "ff-tarjeta-ok"));
+            if (sinDocs > 0) Parte($"{Num(sinDocs, "ff-aviso")} {(sinDocs == 1 ? "unidad" : "unidades")} sin documentos");
 
             int sinCarga = filas.Count(x => x.Estado == EstadoConciliacion.SinCarga);
-            sb.Append(Tarjeta("Facturas sin carga", sinCarga.ToString(), "<small>Su pedido no est&#xE1; en el sistema</small>", sinCarga > 0 ? "ff-tarjeta-mal" : "ff-tarjeta-ok"));
+            if (sinCarga > 0) Parte($"{Num(sinCarga, "ff-mal")} {(sinCarga == 1 ? "factura" : "facturas")} sin carga");
 
             var porVencer = emitidas.Where(f => { int? d = FacturaFleteService.DiasParaVencer(f, hoy); return d.HasValue && d.Value >= 0 && d.Value <= DiasAvisoVencimiento; }).ToList();
-            var montoVencer = porVencer.GroupBy(f => f.Moneda).Select(g => H(Monto(g.Key, g.Sum(x => x.ImporteTotal)))).ToList();
-            sb.Append(Tarjeta($"Vencen en {DiasAvisoVencimiento} d&#xED;as", montoVencer.Count == 0 ? "—" : string.Join("", montoVencer.Select((m, i) => $"<em class=\"{(i == 0 ? "" : "ff-monto-2")}\">{m}</em>")),
-                              $"<small>{porVencer.Count} factura(s) del per&#xED;odo</small>", porVencer.Count > 0 ? "ff-tarjeta-aviso" : ""));
-            return sb.ToString();
+            if (porVencer.Count > 0)
+                Parte($"Vencen en {DiasAvisoVencimiento} d&#xED;as {Montos(porVencer.GroupBy(f => f.Moneda, f => f.ImporteTotal), "")} " +
+                      $"({Plural(porVencer.Count, "factura", "facturas")})");
+            return sb.Append("</p>").ToString();
         }
 
-        private static string Tarjeta(string etiqueta, string valorHtml, string pieHtml, string clase) =>
-            $"<div class=\"ff-tarjeta {clase}\"><span>{etiqueta}</span><strong>{valorHtml}</strong>{pieHtml}</div>";
+        private static string Plural(int n, string uno, string varios) => n.ToString("N0", Pe) + " " + (n == 1 ? uno : varios);
 
         private string HtmlConciliacion(List<FilaConciliacion> filas)
         {
@@ -419,15 +428,15 @@ namespace WebSGV.Views
 
         private static string Chip(EstadoConciliacion e)
         {
-            string clase;
+            TonoEstado tono;
             switch (e)
             {
-                case EstadoConciliacion.Conforme: clase = "ff-chip-ok"; break;
-                case EstadoConciliacion.PorFacturar: clase = "ff-chip-aviso"; break;
-                case EstadoConciliacion.SinDocumentos: clase = "ff-chip-espera"; break;
-                default: clase = "ff-chip-mal"; break;
+                case EstadoConciliacion.Conforme: tono = TonoEstado.Ok; break;
+                case EstadoConciliacion.PorFacturar: tono = TonoEstado.Alerta; break;
+                case EstadoConciliacion.SinDocumentos: tono = TonoEstado.Info; break;
+                default: tono = TonoEstado.Peligro; break;
             }
-            return $"<span class=\"ff-chip {clase}\">{H(FacturaFleteService.TextoEstado(e))}</span>";
+            return EstadoUiHelper.Sello(FacturaFleteService.TextoEstado(e), tono);
         }
 
         /// <summary>Celda del cliente en una línea (el nombre completo en el título).</summary>

@@ -3,8 +3,6 @@
 /* Página ancha: la conciliación tiene muchas columnas y los avisos necesitan espacio. */
 .container:has(> .ff-pagina) { max-width: min(1880px, 97vw); }
 
-.ff-pagina .card-header h5 { font-size: 1rem; font-weight: 600; color: var(--sgv-texto); }
-.ff-pagina .card-header { padding: .6rem 1rem; }
 .ff-pagina .form-group { margin-bottom: .75rem; }
 .ff-pagina label { font-size: .85rem; margin-bottom: .25rem; }
 .ff-acciones { gap: .5rem; }
@@ -12,26 +10,12 @@
 @media (min-width: 1200px) { .ff-acciones { flex-wrap: nowrap !important; } }
 .ff-pagina input[type=file] { font-size: .85rem; max-width: 100%; }
 
-/* Tarjetas: se reparten el ancho y bajan de línea solas. */
-.ff-tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
-.ff-tarjeta {
-    background: var(--sgv-superficie);
-    border: 1px solid var(--sgv-borde);
-    border-left: 4px solid var(--sgv-azul-600);
-    border-radius: var(--sgv-radio);
-    padding: .7rem .95rem;
-    box-shadow: none;
-    min-width: 0;
-}
-.ff-tarjeta span { display: block; font-size: .72rem; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--sgv-texto-suave); }
-.ff-tarjeta strong { display: block; font-size: 1.35rem; color: var(--sgv-texto); font-weight: 700; line-height: 1.25; margin-top: .2rem; white-space: nowrap; }
-.ff-tarjeta strong em { display: block; font-style: normal; }
-.ff-tarjeta strong em.ff-monto-2 { font-size: .95rem; font-weight: 600; color: var(--sgv-texto-medio); }
-.ff-tarjeta small { display: block; font-size: .75rem; color: var(--sgv-texto-suave); margin-top: .2rem; }
-.ff-tarjeta-ok { border-left-color: var(--sgv-verde-600); }
-.ff-tarjeta-aviso { border-left-color: var(--sgv-ambar-600); background: var(--sgv-ambar-50); }
-.ff-tarjeta-mal { border-left-color: var(--sgv-rojo-600); background: var(--sgv-rojo-50); }
-.ff-tarjeta-mal strong { color: var(--sgv-peligro); }
+/* Subir facturas y Período de carga: misma altura en escritorio, uno sobre otro en el celular. */
+.ff-pagina .row > [class*="col-"] > details { height: 100%; margin-bottom: 0; }
+
+/* Línea de cifras (sgv-resumen): lo que pide revisar, en color. */
+.sgv-resumen strong.ff-mal { color: var(--sgv-peligro); }
+.sgv-resumen strong.ff-aviso { color: var(--sgv-alerta); }
 
 /* Pestañas con su cuenta. */
 .ff-pestanas .nav-link { color: var(--sgv-texto-suave); font-weight: 500; }
@@ -44,8 +28,6 @@
 .ff-barra { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding: .75rem 0 .5rem; }
 .ff-filtro .btn.active { background: var(--sgv-texto); border-color: var(--sgv-texto); color: var(--sgv-blanco); }
 .ff-buscar { position: relative; flex: 0 1 360px; }
-.ff-buscar i { position: absolute; left: .65rem; top: 50%; transform: translateY(-50%); color: var(--sgv-texto-suave); font-size: .8rem; }
-.ff-buscar input { padding-left: 1.9rem; }
 .ff-contador { margin-left: auto; }
 .ff-contenido { padding-top: .25rem; }
 
@@ -69,12 +51,8 @@
 .ff-tabla tfoot th { position: sticky; bottom: 0; background: var(--sgv-fondo-pagina); color: var(--sgv-texto); box-shadow: inset 0 1px 0 var(--sgv-borde-fuerte); }
 .ff-tabla tr.ff-oculta { display: none; }
 
-.ff-chip { display: inline-block; font-size: .72rem; font-weight: 600; padding: .2em .65em; border-radius: var(--sgv-radio); white-space: nowrap; }
-.ff-chip-ok { background: var(--sgv-ok-fondo); color: var(--sgv-ok-texto); }
-.ff-chip-mal { background: var(--sgv-peligro-fondo); color: var(--sgv-peligro-texto); }
-.ff-chip-aviso { background: var(--sgv-alerta-fondo); color: var(--sgv-alerta-texto); }
-.ff-chip-espera { background: var(--sgv-indigo-100); color: var(--sgv-indigo-800); }
-.ff-chip-gris { background: var(--sgv-fondo-pagina); color: var(--sgv-texto-suave); }
+.ff-tabla .sgv-estado { white-space: nowrap; }
+.ff-pie { margin: 0; padding: .5rem 1rem; border-top: 1px solid var(--sgv-borde); }
 
 .ff-avisos { margin: 0; padding-left: 1rem; font-size: .78rem; color: var(--sgv-naranja-900); line-height: 1.35; }
 .ff-avisos li + li { margin-top: .15rem; }
@@ -86,9 +64,9 @@
 .ff-sin-coincidencias { padding: 1rem 1.25rem; color: var(--sgv-texto-suave); font-size: .875rem; }
 
 @media (max-width: 767.98px) {
-    .ff-tarjetas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .ff-tarjeta strong { font-size: 1.1rem; white-space: normal; }
     .ff-buscar { flex: 1 1 100%; }
+    /* "Facturado US$ … y S/ … (n facturas)" no cabe en una línea: en el celular cada parte puede partirse. */
+    .ff-pagina .sgv-resumen > span { white-space: normal; }
     .ff-contador { margin-left: 0; }
     .ff-tabla-wrap { max-height: 70vh; }
 }
