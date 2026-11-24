@@ -267,10 +267,10 @@ namespace WebSGV.Tests
         // 2026-11-24): el rol SUPERVISOR se retiró; las páginas que compartía con la administración quedan
         // solo para ella, y SUPERVISOR pasa a RolesRetirados (no entra a ninguna página con guarda de rol).
 
-        private const string A = "ADMIN", C = "CONDUCTOR", K = "CONTABILIDAD", Y = "SISTEMA";
+        internal const string A = "ADMIN", C = "CONDUCTOR", K = "CONTABILIDAD", Y = "SISTEMA";
         private static readonly string[] Todos = { A, C, K, Y };
 
-        private static readonly Dictionary<string, string[]> AccesoEsperado =
+        internal static readonly Dictionary<string, string[]> AccesoEsperado =
             new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
             {
                 { "Views/Auditoria.aspx",                         new[] { Y } },
@@ -312,7 +312,7 @@ namespace WebSGV.Tests
             };
 
         /// <summary>Valores reales de Usuarios.rol de cada grupo de la tabla (con sus alias).</summary>
-        private static readonly Dictionary<string, string[]> RolesDelGrupo = new Dictionary<string, string[]>
+        internal static readonly Dictionary<string, string[]> RolesDelGrupo = new Dictionary<string, string[]>
         {
             { A, new[] { "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE" } },
             { C, new[] { "CONDUCTOR", "CHOFER" } },
@@ -321,7 +321,7 @@ namespace WebSGV.Tests
         };
 
         // Retirados (2026-11): ninguna página con guarda de rol los deja pasar.
-        private static readonly string[] RolesRetirados = { "ADMINISTRADOR DE GRIFO", "ADMINISTRADOR DE MAQUINARIA", "OPERADOR", "SUPERVISOR" };
+        internal static readonly string[] RolesRetirados = { "ADMINISTRADOR DE GRIFO", "ADMINISTRADOR DE MAQUINARIA", "OPERADOR", "SUPERVISOR" };
 
         /// <summary>
         /// Lo que deja pasar la guarda con sesión del rol indicado (en mayúsculas). Repite las reglas de

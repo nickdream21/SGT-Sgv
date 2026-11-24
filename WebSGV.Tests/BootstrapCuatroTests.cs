@@ -76,8 +76,9 @@ namespace WebSGV.Tests
             ["Content/paginas/Exportacion/DashboardExportacion.css"] = new[] { 1100 },
             // Acompaña a las columnas col-xl-* de la página (el punto xl de Bootstrap 4).
             ["Content/paginas/FacturasFlete.css"] = new[] { 1200 },
-            // Barra de menú compacta de 992 a 1599 px: incluye las pantallas de 1366 px de la oficina.
-            ["Content/paginas/SiteMaster.css"] = new[] { 1600 },
+            // Barra de menú compacta de 992 a 1599 px: incluye las pantallas de 1366 px de la oficina; y de 992 a
+            // 1199 px (el punto xl de Bootstrap 4) el nombre del usuario se oculta para que el menú no se parta (E5-19c).
+            ["Content/paginas/SiteMaster.css"] = new[] { 1600, 1200 },
         };
 
         // ------------------------------------------------------------------ lectura

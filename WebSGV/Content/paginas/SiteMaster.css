@@ -66,10 +66,18 @@
     background-color: var(--sgv-fondo);
 }
 
-/* Active state */
-.nav-item.active > .nav-link {
-    color: var(--sgv-primario) !important;
+/* Página actual (M-076, E5-19c): el menú que la contiene y su opción. La opción no usa el fondo azul
+   de Bootstrap (.dropdown-item.active): se marca con la tinta del sitio y una barra a la izquierda. */
+/* Especificidad mayor que la de Bootstrap (.navbar-light .navbar-nav .active > .nav-link), sin !important. */
+.navbar-light .navbar-nav .nav-item.active > .nav-link {
+    color: var(--sgv-primario);
     font-weight: 600;
+}
+.navbar .dropdown-menu .dropdown-item.active {
+    background-color: var(--sgv-primario-claro);
+    color: var(--sgv-primario);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--sgv-primario);
 }
 
 /* af-shield: campos protegidos contra autocompletado agresivo del navegador
@@ -146,6 +154,17 @@ table[border="1"] td .btn { white-space: nowrap; }
     .user-info .badge-rol { display: none; }
     /* Sin iconos (E5-24b) el nombre cabe con el menú más largo (seis menús, administrador de transporte):
        a 1366 px el menú termina hacia x=880 y el nombre empieza en x=1133. */
+}
+
+/* De 992 a 1199 px (p. ej. 1000 o 1024 px) los seis menús de la administración no cabían junto al nombre:
+   "Cerrar sesión" se partía en dos líneas y la barra crecía. El nombre queda solo en el pie de página y
+   los menús se angostan (E5-19c). */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .user-info .user-nombre { display: none; }
+    .user-info { margin-right: 0.5rem; }
+    /* El relleno general de .nav-link va con !important (arriba): solo así se angosta aquí. */
+    .navbar-nav .nav-link { padding: 0.5rem 0.4rem !important; }
+    .navbar .btn-outline-danger { white-space: nowrap; }
 }
 
 /* Celular (< 576 px): se aprovecha todo el ancho, los encabezados con botón bajan de línea en vez

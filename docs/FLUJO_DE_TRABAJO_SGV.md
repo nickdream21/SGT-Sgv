@@ -281,16 +281,34 @@ Admin revisa liquidación pendiente:
 
 ## 🗂️ Estructura de Navegación (Navbar)
 
-### Menú Admin
+Los menús salen de una sola fuente, `Helpers/MenuSitio.cs` (E5-19c): nadie ve una opción cuya guarda no
+pase (sección de `RolesHelper.TienePermiso` o la misma regla de rol), y la de la página actual queda
+marcada. Excepción a propósito: "Liquidaciones aprobadas" solo sale a contabilidad, aunque el
+administrador también puede entrar. "Configuración" (Cambiar contraseña y, con segundo factor, Mi seguridad),
+el nombre y "Cerrar sesión" van en `Site.Master`. Lo que ve cada rol lo fija `MenuSitioTests`.
+
+### Menú Admin (ADMIN, ADMINISTRADOR, ADMINISTRADOR DE TRANSPORTE)
 ```
-├── Despacho
-├── Seguimiento
-├── Liquidaciones
-├── Reportes
-├── Catálogos
-└── Cuenta: Cambiar contraseña
-Rutas y Productos no tienen entrada de menú (solo administración, por URL).
-Gestión de usuarios y Auditoría: solo ADMINISTRADOR DE SISTEMA, en su propio menú.
+├── Despacho: Registro de despachos, Bandeja de documentos, Lista de despachos, Destino de descarga
+├── Seguimiento: Tablero de seguimiento, Dashboard de exportación
+├── Liquidaciones: Liquidaciones pendientes, Descuentos y reintegros (quincena),
+│                  Dinero y pagos del viaje (solo con MovimientosViaje.Habilitado)
+├── Reportes: Reporte de cargas, Reporte de liquidaciones y viajes, Facturas de flete, Reporte GPS por placas
+├── Catálogos: Conductores, Tractos, Semirremolques, Clientes, Catálogo del cliente, Plantas, Peajes
+└── Configuración: Cambiar contraseña, Mi seguridad
+Productos y rutas se gestionan en Catálogo del cliente.
+```
+
+### Menú Administrador de Sistema
+```
+├── Administración: Panel del sistema, Gestión de usuarios, Auditoría del sistema
+└── Configuración: Cambiar contraseña, Mi seguridad
+```
+
+### Menú Contabilidad
+```
+├── Liquidaciones aprobadas
+└── Configuración: Cambiar contraseña, Mi seguridad
 ```
 
 ### Menú Conductor

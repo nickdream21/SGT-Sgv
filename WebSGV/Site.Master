@@ -51,184 +51,36 @@
 
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav mr-auto">
-                    <!-- ==================== MENÚ PARA ADMIN ==================== -->
-                    <% if (EsAdmin)
+                    <%-- Menús y opciones de Helpers/MenuSitio.cs (E5-19c): una sola fuente, filtrada por rol con la
+                         matriz de RolesHelper. La opción de la página actual lleva "active" y aria-current="page",
+                         y su menú también "active" (M-076). Textos y URLs codificados. --%>
+                    <% foreach (var grupo in Menu)
                         { %>
-
-                    <!-- Despacho -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDespacho" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            Despacho
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownDespacho">
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroDespacho.aspx") %>'>
-                                Registro de despachos
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/BandejaDocumentos.aspx") %>'>
-                                Bandeja de documentos
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ListaDespachos.aspx") %>'>
-                                Lista de despachos
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/DestinoDescarga.aspx") %>'>
-                                Destino de descarga
-                            </a>
-                        </div>
+                    <% if (grupo.EsEnlaceDirecto)
+                        {
+                            var directa = grupo.Entradas[0]; %>
+                    <li class="<%: ClaseGrupo(grupo) %>">
+                        <a class="<%: ClaseEntrada(grupo, directa) %>" href="<%: ResolveUrl(directa.Url) %>"<%= AriaActual(directa) %>><%: directa.Texto %></a>
                     </li>
-                    <% } %>
-
-                    <!-- ==================== SEGUIMIENTO (ADMIN) ==================== -->
-                    <% if (EsAdmin)
+                    <% }
+                        else
                         { %>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownExportacion" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            Seguimiento
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownExportacion">
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/Exportacion/RegistroSeguimiento.aspx") %>'>
-                                Tablero de seguimiento
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/Exportacion/DashboardExportacion.aspx") %>'>
-                                Dashboard de exportaci&#xF3;n
-                            </a>
-                        </div>
-                    </li>
-                    <% } %>
-
-                    <% if (EsAdmin)
-                        { %>
-                    <!-- Liquidaciones -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownOrdenViaje" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            Liquidaciones
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownOrdenViaje">
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/LiquidacionesPendientes.aspx") %>'>
-                                Liquidaciones pendientes
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/SaldosConductores.aspx") %>'>
-                                Descuentos y reintegros (quincena)
-                            </a>
-                            <% if (WebSGV.Services.Liquidaciones.MovimientosViajeService.Habilitado) { %>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/MovimientosViaje.aspx") %>'>
-                                Dinero y pagos del viaje
-                            </a>
+                    <li class="<%: ClaseGrupo(grupo) %>">
+                        <a class="nav-link dropdown-toggle" href="#" id="<%: grupo.Id %>" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><%: grupo.Texto %></a>
+                        <div class="dropdown-menu" aria-labelledby="<%: grupo.Id %>">
+                            <% for (int i = 0; i < grupo.Entradas.Count; i++)
+                                {
+                                    var opcion = grupo.Entradas[i]; %>
+                            <% if (grupo.LlevaSeparador(i)) { %><div class="dropdown-divider"></div><% } %>
+                            <a class="<%: ClaseEntrada(grupo, opcion) %>" href="<%: ResolveUrl(opcion.Url) %>"<%= AriaActual(opcion) %>><%: opcion.Texto %></a>
                             <% } %>
-
                         </div>
                     </li>
                     <% } %>
-
-                    <!-- ==================== REPORTES (ADMIN) ==================== -->
-                    <% if (EsAdmin)
-                        { %>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownReportes" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            Reportes
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownReportes">
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ReporteCargas.aspx") %>'>
-                                Reporte de cargas (pedidos, gu&#xED;as y carga)
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ReportesOrdenesViaje.aspx") %>'>
-                                Reporte de liquidaciones y viajes
-                            </a>
-                            <% if (EsAdmin)
-                                { %>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/FacturasFlete.aspx") %>'>
-                                Facturas de flete (conciliaci&#xF3;n)
-                            </a>
-                            <% } %>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/ReporteGps.aspx") %>'>
-                                Reporte GPS por placas
-                            </a>
-                        </div>
-                    </li>
-                    <% } %>
-
-                    <% if (EsAdmin)
-                        { %>
-                    <!-- Catálogos -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownRegistro" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            Cat&#xE1;logos
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownRegistro">
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroChoferes.aspx") %>'>
-                                Conductores
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroTractos.aspx") %>'>
-                                Tractos
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroSemiremolques.aspx") %>'>
-                                Semirremolques
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroClientes.aspx") %>'>
-                                Clientes
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/CatalogoCliente.aspx") %>'>
-                                Cat&#xE1;logo del cliente
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroPlantas.aspx") %>'>
-                                Plantas
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/RegistroPeajes.aspx") %>'>
-                                Peajes
-                            </a>
-                        </div>
-                    </li>
-                    <% } %>
-
-                    <!-- ==================== MENÚ EXCLUSIVO ADMINISTRADOR DE SISTEMA ==================== -->
-                    <% if (EsAdminSistema)
-                        { %>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAdminSistema" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            Administración
-                        </a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownAdminSistema">
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/DashboardAdminSistema.aspx") %>'>
-                                Panel del sistema
-                            </a>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/GestionUsuarios.aspx") %>'>
-                                Gestión de usuarios
-                            </a>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/Auditoria.aspx") %>'>
-                                Auditoría del sistema
-                            </a>
-                        </div>
-                    </li>
-                    <% } %>
-
-                    <!-- ==================== MENÚ PARA CONDUCTOR ==================== -->
-                    <% if (EsConductor)
-                        { %>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href='<%= ResolveUrl("~/Views/DashboardConductor.aspx") %>'>
-                            Mi viaje
-                        </a>
-                    </li>
-
-                    <% } %>
-
-                    <!-- ==================== MENÚ PARA CONTABILIDAD ==================== -->
-                    <% if (EsContabilidad)
-                        { %>
-
-                    <li class="nav-item">
-                        <a class="nav-link" href='<%= ResolveUrl("~/Views/LiquidacionesAprobadasContabilidad.aspx") %>'>
-                            Liquidaciones aprobadas
-                        </a>
-                    </li>
-
                     <% } %>
 
                     <!-- Configuración: visible para TODOS los roles -->
-                    <li class="nav-item dropdown">
+                    <li class="<%: ClaseConfiguracion %>">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownConfig" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             Configuración
                         </a>
@@ -237,14 +89,8 @@
                                 Cambiar contraseña
                             </a>
                             <% if (MuestraMiSeguridad) { %>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/MiSeguridad.aspx") %>'>
+                            <a class="<%: ClaseMiSeguridad %>" href="<%: ResolveUrl(UrlMiSeguridad) %>"<%= AriaMiSeguridad %>>
                                 Mi seguridad
-                            </a>
-                            <% } %>
-                            <% if (EsAdminSistema) { %>
-                            <div class="dropdown-divider"></div>
-                            <a class="dropdown-item" href='<%= ResolveUrl("~/Views/Auditoria.aspx") %>'>
-                                Auditoría del sistema
                             </a>
                             <% } %>
                         </div>

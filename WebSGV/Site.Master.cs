@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlClient;
 using System.Web;
@@ -13,14 +14,40 @@ namespace WebSGV
         // Propiedades públicas para el Site.Master
         public string RolUsuario { get; set; }
         public string NombreUsuario { get; set; }
-        public bool EsAdmin { get; set; }
-        public bool EsConductor { get; set; }
-        public bool EsAdminSistema { get; set; }
-        public bool EsContabilidad { get; set; }
+        /// <summary>Menús que ve el rol actual (MenuSitio.Para, E5-19c); vacío sin sesión.</summary>
+        public IReadOnlyList<GrupoMenu> Menu { get; private set; } = new GrupoMenu[0];
         /// <summary>Enlace "Mi seguridad" (segundo factor, E4-14): solo los roles de RolesHelper.ExigeSegundoFactor.</summary>
         public bool MuestraMiSeguridad { get; set; }
         /// <summary>Página de inicio del rol actual (logo y enlace "Inicio" del menú).</summary>
         public string UrlInicio { get; set; }
+
+        /// <summary>Página actual como ruta virtual ("~/Views/X.aspx"), para marcar la opción activa del menú.</summary>
+        public string RutaActual => Request.AppRelativeCurrentExecutionFilePath;
+
+        /// <summary>Clases del menú desplegable: "active" si contiene la página actual (M-076).</summary>
+        public string ClaseGrupo(GrupoMenu g) =>
+            (g.EsEnlaceDirecto ? "nav-item" : "nav-item dropdown") + (MenuSitio.EsActivo(g, RutaActual) ? " active" : "");
+
+        /// <summary>Clases de una opción: dropdown-item o nav-link, más "active" si es la página actual.</summary>
+        public string ClaseEntrada(GrupoMenu g, EntradaMenu e) =>
+            (g.EsEnlaceDirecto ? "nav-link" : "dropdown-item") + (MenuSitio.EsActiva(e, RutaActual) ? " active" : "");
+
+        /// <summary>aria-current="page" en la opción de la página actual; nada en las demás (texto fijo, sin datos).</summary>
+        public string AriaActual(EntradaMenu e) => MenuSitio.EsActiva(e, RutaActual) ? " aria-current=\"page\"" : "";
+
+        private bool EnMiSeguridad => MenuSitio.EsActiva(UrlMiSeguridad, RutaActual);
+
+        /// <summary>Menú Configuración: "active" cuando la página actual es Mi seguridad.</summary>
+        public string ClaseConfiguracion => "nav-item dropdown" + (EnMiSeguridad ? " active" : "");
+
+        /// <summary>Opción "Mi seguridad": "active" en su propia página.</summary>
+        public string ClaseMiSeguridad => "dropdown-item" + (EnMiSeguridad ? " active" : "");
+
+        /// <summary>aria-current="page" en "Mi seguridad" cuando es la página actual (texto fijo).</summary>
+        public string AriaMiSeguridad => EnMiSeguridad ? " aria-current=\"page\"" : "";
+
+        /// <summary>Opción "Mi seguridad" de Configuración (fuera de MenuSitio: depende del segundo factor).</summary>
+        public const string UrlMiSeguridad = "~/Views/MiSeguridad.aspx";
 
         /// <summary>
         /// Nombre de usuario con el que se inicia sesión (no el nombre para mostrar). Va en el campo
@@ -211,10 +238,7 @@ namespace WebSGV
         {
             RolUsuario = "";
             NombreUsuario = "";
-            EsAdmin = false;
-            EsConductor = false;
-            EsAdminSistema = false;
-            EsContabilidad = false;
+            Menu = new GrupoMenu[0];
             MuestraMiSeguridad = false;
             UrlInicio = "~/Views/Login.aspx";
         }
@@ -225,10 +249,8 @@ namespace WebSGV
             {
                 RolUsuario = RolesHelper.ObtenerRolActual() ?? "Sin rol";
                 NombreUsuario = RolesHelper.ObtenerNombreUsuario() ?? "Usuario";
-                EsAdmin = RolesHelper.EsAdmin();
-                EsConductor = RolesHelper.EsConductor();
-                EsAdminSistema = RolesHelper.EsAdminSistema();
-                EsContabilidad = RolesHelper.EsContabilidad();
+                Menu = MenuSitio.Para(RolesHelper.ObtenerRolActual(),
+                    WebSGV.Services.Liquidaciones.MovimientosViajeService.Habilitado);
                 MuestraMiSeguridad = RolesHelper.ExigeSegundoFactor(RolesHelper.ObtenerRolActual());
                 UrlInicio = RolesHelper.UrlInicioSegunRol(RolUsuario) ?? "~/Views/Login.aspx";
             }

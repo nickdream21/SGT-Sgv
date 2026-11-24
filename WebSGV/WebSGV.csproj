@@ -505,6 +505,7 @@
     <Compile Include="Helpers\ContrasenaNuevaHelper.cs" />
     <Compile Include="Helpers\ReautenticacionHelper.cs" />
     <Compile Include="Helpers\CompresionRespuesta.cs" />
+    <Compile Include="Helpers\MenuSitio.cs" />
     <Compile Include="Helpers\RecursoHelper.cs" />
     <Compile Include="Helpers\ValidacionHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

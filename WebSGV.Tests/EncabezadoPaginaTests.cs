@@ -197,16 +197,36 @@ namespace WebSGV.Tests
             SinCasos("Title con mayúscula en medio (va en estilo oración)", casos);
         }
 
+        /// <summary>
+        /// Textos del menú: los de MenuSitio (E5-19c, única fuente de los menús por rol) y los enlaces que siguen
+        /// escritos en Site.Master (Configuración).
+        /// </summary>
+        private static List<(string Donde, string Texto)> TextosDelMenu()
+        {
+            var textos = new List<(string, string)>();
+            foreach (var g in WebSGV.Helpers.MenuSitio.Completo)
+            {
+                textos.Add(("MenuSitio: menú", g.Texto));
+                foreach (var e in g.Entradas) textos.Add(("MenuSitio: " + g.Texto, e.Texto));
+            }
+            var m = Master();
+            foreach (Match e in EnlaceMenu.Matches(m.Texto))
+            {
+                string t = TextoDeEnlace(e.Groups["t"].Value);
+                if (t.Length > 0 && !t.Contains("<%")) textos.Add(("Site.Master:" + m.Linea(e.Index), t));
+            }
+            return textos;
+        }
+
         [Fact]
         public void Regla5_TextosDelMenu_EnEstiloOracion()
         {
-            var m = Master();
-            var enlaces = EnlaceMenu.Matches(m.Texto).Cast<Match>().ToList();
-            Assert.True(enlaces.Count > 20, "No encontré los enlaces del menú en Site.Master: revise EnlaceMenu.");
-            var casos = enlaces
-                .Select(e => new { L = m.Linea(e.Index), T = TextoDeEnlace(e.Groups["t"].Value) })
-                .Where(x => PalabrasConMayuscula(x.T).Any())
-                .Select(x => "Site.Master:" + x.L + " \"" + x.T + "\"")
+            var textos = TextosDelMenu();
+            Assert.True(textos.Count > 30, "No encontré los textos del menú (MenuSitio y Site.Master): " + textos.Count);
+            Assert.Contains(textos, t => t.Texto == "Cambiar contraseña");   // Configuración, en el marcado
+            var casos = textos
+                .Where(x => PalabrasConMayuscula(x.Texto).Any())
+                .Select(x => x.Donde + " \"" + x.Texto + "\"")
                 .ToList();
             SinCasos("Texto del menú con mayúscula en medio", casos);
         }
@@ -214,23 +234,22 @@ namespace WebSGV.Tests
         [Fact]
         public void Regla6_TitleDeCadaPagina_EsLaEtiquetaDelMenu()
         {
-            var m = Master();
             var paginas = Paginas();
             var casos = new List<string>();
-            int vistos = 0;
-            foreach (Match e in EnlaceMenu.Matches(m.Texto))
+            var opciones = WebSGV.Helpers.MenuSitio.Completo.SelectMany(g => g.Entradas).Select(e => (e.Texto, e.Url))
+                .Concat(new[] { ("Mi seguridad", WebSGV.SiteMaster.UrlMiSeguridad) })
+                .ToList();
+            foreach (var (texto, url) in opciones)
             {
-                var u = UrlMenu.Match(e.Value);
-                if (!u.Success) continue;
-                vistos++;
-                string etiqueta = SinParentesisFinal(TextoDeEnlace(e.Groups["t"].Value));
-                var p = paginas.SingleOrDefault(x => string.Equals(x.Ruta, u.Groups["u"].Value, StringComparison.OrdinalIgnoreCase));
-                if (p == null) { casos.Add("Site.Master:" + m.Linea(e.Index) + " enlaza a " + u.Groups["u"].Value + ", que no existe"); continue; }
+                string ruta = url.Substring(2);   // "~/Views/X.aspx" → "Views/X.aspx"
+                string etiqueta = SinParentesisFinal(texto);
+                var p = paginas.SingleOrDefault(x => string.Equals(x.Ruta, ruta, StringComparison.OrdinalIgnoreCase));
+                if (p == null) { casos.Add("El menú enlaza a " + ruta + ", que no existe"); continue; }
                 string titulo = TituloDe(p.Texto);
                 if (!string.Equals(titulo, etiqueta, StringComparison.Ordinal))
                     casos.Add(p.Ruta + ": Title \"" + titulo + "\" y el menú dice \"" + etiqueta + "\"");
             }
-            Assert.True(vistos > 20, "No encontré los enlaces del menú con ResolveUrl: revise UrlMenu.");
+            Assert.True(opciones.Count > 20, "No encontré las opciones del menú en MenuSitio.");
             SinCasos("Title distinto de la etiqueta del menú", casos);
         }
 
