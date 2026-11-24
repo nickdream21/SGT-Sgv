@@ -16,7 +16,7 @@ namespace WebSGV.Services
 
         /// <summary>
         /// Usuarios activos con correo cuyo rol está en <see cref="RolesHelper.RolesAvisosOperacion"/>
-        /// (administradores según <see cref="RolesHelper.EsRolAdmin"/> + SUPERVISOR). Los roles van
+        /// (los administradores según <see cref="RolesHelper.EsRolAdmin"/>). Los roles van
         /// como parámetros: una sola fuente de verdad, sin copiar la lista en SQL.
         /// </summary>
         private static DataTable ConsultarCorreosAvisosOperacion(string columnas)
@@ -103,7 +103,7 @@ namespace WebSGV.Services
         }
 
         /// <summary>
-        /// Avisa a todos los admins/supervisores activos que hay una nueva liquidación
+        /// Avisa a todos los administradores activos que hay una nueva liquidación
         /// pendiente de revisión.
         /// Se llama después de que el conductor firma y envía la liquidación a revisión.
         /// </summary>

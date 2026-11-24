@@ -19,12 +19,6 @@ namespace WebSGV
         public bool EsContabilidad { get; set; }
         /// <summary>Enlace "Mi seguridad" (segundo factor, E4-14): solo los roles de RolesHelper.ExigeSegundoFactor.</summary>
         public bool MuestraMiSeguridad { get; set; }
-        /// <summary>
-        /// Rol SUPERVISOR. Calculada desde <see cref="RolUsuario"/> (igual que la comparación que
-        /// había en el markup), así queda en sintonía con InicializarPropiedadesVacias y
-        /// CargarInformacionUsuario sin tener que asignarla en cada uno.
-        /// </summary>
-        public bool EsSupervisor => RolUsuario == RolesHelper.ROL_SUPERVISOR;
         /// <summary>Página de inicio del rol actual (logo y enlace "Inicio" del menú).</summary>
         public string UrlInicio { get; set; }
 

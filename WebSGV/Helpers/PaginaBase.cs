@@ -38,9 +38,6 @@ namespace WebSGV.Helpers
         /// <summary>Exige rol ADMIN (o ADMINISTRADOR); redirige si no cumple.</summary>
         protected void ExigirRolAdmin() => SecurityHelper.ExigirRolAdmin();
 
-        /// <summary>Exige rol ADMIN o SUPERVISOR; redirige si no cumple.</summary>
-        protected void ExigirRolAdminOSupervisor() => SecurityHelper.ExigirRolAdminOSupervisor();
-
         /// <summary>Agrega los headers HTTP de seguridad estándar a la respuesta.</summary>
         protected void AgregarHeadersSeguridad() => SecurityHelper.AgregarHeadersSeguridad();
     }

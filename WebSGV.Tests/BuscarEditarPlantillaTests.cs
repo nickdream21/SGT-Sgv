@@ -556,11 +556,11 @@ namespace WebSGV.Tests
             Assert.Empty(Regex.Matches(cs, @"\bddlPers\w+\.(?:SelectedValue|SelectedItem|SelectedIndex|Text)\b(?!\s*=[^=])")
                 .Cast<Match>().Select(m => m.Value));
 
-            // Se llenan en OnInit (antes de leer el envío) con sesión de admin o supervisor, y no en las exportaciones.
+            // Se llenan en OnInit (antes de leer el envío) con sesión de administración, y no en las exportaciones.
             int init = cs.IndexOf("protected override void OnInit(", StringComparison.Ordinal);
             Assert.True(init > 0);
             string cuerpo = cs.Substring(init, cs.IndexOf("\n        }", init, StringComparison.Ordinal) - init);
-            Assert.Contains("SecurityHelper.TieneSesionActiva() && SecurityHelper.EsAdminOSupervisor()", cuerpo);
+            Assert.Contains("SecurityHelper.TieneSesionActiva() && SecurityHelper.EsAdmin()", cuerpo);
             Assert.Contains("string.IsNullOrEmpty(Request.QueryString[\"action\"])", cuerpo);
             foreach (string metodo in new[] { "CargarEstadosPersonalizado();", "CargarConductoresPersonalizado();", "CargarClientesPersonalizado();" })
             {
@@ -799,7 +799,7 @@ namespace WebSGV.Tests
             Assert.Contains("rel=\"noopener\"", enlace.Value);
             Assert.Contains("title=\"PDF de la liquidación aprobada\"", enlace.Value);
 
-            foreach (string rol in new[] { "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE", "SUPERVISOR" })
+            foreach (string rol in new[] { "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE" })
                 Assert.True(WebSGV.Services.Liquidaciones.AccesoLiquidacion.Permite(rol, WebSGV.Services.Liquidaciones.EstadosOrden.Aprobado, false), rol);
             // La descarga sirve el archivo guardado verificado, nunca uno regenerado.
             string descarga = File.ReadAllText(Path.Combine(RaizWeb(), "Views", "DescargarPdfOrdenViaje.aspx.cs"));

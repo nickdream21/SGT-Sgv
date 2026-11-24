@@ -92,7 +92,7 @@ namespace WebSGV.Tests.Integracion
                 Guid sello = Sello(a);
 
                 var ex = Assert.Throws<ErrorNegocioException>(() =>
-                    UsuarioEstadoService.ActualizarDatos(a, "Prueba E4-12 editada", RolesHelper.ROL_SUPERVISOR, null));
+                    UsuarioEstadoService.ActualizarDatos(a, "Prueba E4-12 editada", RolesHelper.ROL_CONTABILIDAD, null));
                 Assert.Equal(UsuarioEstadoService.MensajeUltimoAdminSistema, ex.Message);
                 Assert.Equal(RolesHelper.ROL_ADMIN_SISTEMA, Rol(a));
                 Assert.Equal(sello, Sello(a));
@@ -110,8 +110,8 @@ namespace WebSGV.Tests.Integracion
                 int b = CrearAdminSistema();
                 Guid selloB = Sello(b);
 
-                Assert.Equal(1, UsuarioEstadoService.ActualizarDatos(b, "Prueba E4-12", RolesHelper.ROL_SUPERVISOR, null));
-                Assert.Equal(RolesHelper.ROL_SUPERVISOR, Rol(b));
+                Assert.Equal(1, UsuarioEstadoService.ActualizarDatos(b, "Prueba E4-12", RolesHelper.ROL_CONTABILIDAD, null));
+                Assert.Equal(RolesHelper.ROL_CONTABILIDAD, Rol(b));
                 Assert.NotEqual(selloB, Sello(b));               // cambiar el rol cierra sus sesiones
 
                 // Un inactivo se puede desactivar "otra vez" o cambiar de rol: no quita a ningún activo.

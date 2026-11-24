@@ -201,6 +201,60 @@ namespace WebSGV.Tests
             return hallazgos;
         }
 
+        /// <summary>
+        /// E5-19b (U-090, 2026-11-24): el rol SUPERVISOR se retiró. Fuera de esta lista cerrada (archivo → motivo y
+        /// si solo puede aparecer en comentarios) no queda "supervisor" en ningún archivo de texto de WebSGV.
+        /// </summary>
+        private static readonly Dictionary<string, (string Motivo, bool SoloComentarios)> PermitidosSupervisor =
+            new Dictionary<string, (string, bool)>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Database/Schema/54_RestriccionesDominio.sql", ("migración aplicada: el CHECK original, no se edita", false) },
+                { "Database/Schema/63_RolSupervisorRetirado.sql", ("la migración que lo retira: SUPERVISOR solo en cuentas inactivas", false) },
+                { "Views/RolesHelper.cs", ("comentarios que explican el retiro", true) },
+            };
+
+        private static readonly string[] ExtensionesTexto =
+            { ".cs", ".aspx", ".ascx", ".master", ".ashx", ".asax", ".config", ".js", ".css", ".sql", ".ps1", ".html", ".json", ".xml", ".txt", ".md" };
+
+        [Fact]
+        public void RolSupervisor_NoQuedaFueraDeLaListaCerrada()
+        {
+            string raiz = RaizWeb();
+            var hallazgos = new List<string>();
+            foreach (string archivo in Directory.GetFiles(raiz, "*", SearchOption.AllDirectories))
+            {
+                string relativo = archivo.Substring(raiz.Length).TrimStart('\\', '/').Replace('\\', '/');
+                string primera = relativo.Split('/')[0];
+                // bin/obj: compilados; App_Data y Uploads: datos y registros (no son código fuente).
+                if (new[] { "bin", "obj", "App_Data", "Uploads" }.Contains(primera, StringComparer.OrdinalIgnoreCase))
+                    continue;
+                if (!ExtensionesTexto.Contains(Path.GetExtension(archivo), StringComparer.OrdinalIgnoreCase))
+                    continue;
+
+                PermitidosSupervisor.TryGetValue(relativo, out var permitido);
+                string[] lineas = File.ReadAllLines(archivo);
+                for (int i = 0; i < lineas.Length; i++)
+                {
+                    if (lineas[i].IndexOf("supervisor", StringComparison.OrdinalIgnoreCase) < 0) continue;
+                    if (permitido.Motivo != null &&
+                        (!permitido.SoloComentarios || lineas[i].TrimStart().StartsWith("//", StringComparison.Ordinal)))
+                        continue;
+                    hallazgos.Add($"{relativo}:{i + 1}: {lineas[i].Trim()}");
+                }
+            }
+            Assert.True(hallazgos.Count == 0,
+                "El rol SUPERVISOR se retiró (E5-19b); quedan menciones fuera de la lista cerrada:" +
+                Environment.NewLine + string.Join(Environment.NewLine, hallazgos));
+
+            // La lista no guarda archivos que ya no existen o que ya no lo nombran.
+            foreach (var par in PermitidosSupervisor)
+            {
+                string ruta = Path.Combine(raiz, par.Key.Replace('/', Path.DirectorySeparatorChar));
+                Assert.True(File.Exists(ruta), "No existe " + par.Key);
+                Assert.Contains("SUPERVISOR", File.ReadAllText(ruta), StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
         [Fact]
         public void LiteralesDeRol_SoloEnRolesHelper()
         {

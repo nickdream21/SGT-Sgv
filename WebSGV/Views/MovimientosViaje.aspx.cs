@@ -38,7 +38,7 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            SecurityHelper.ExigirRolAdminOSupervisor();
+            SecurityHelper.ExigirRolAdmin();
             if (!MovimientosViajeService.Habilitado)
                 Response.Redirect(RolesHelper.UrlInicioSegunRol(RolesHelper.ObtenerRolActual()) ?? "~/Views/Login.aspx", true);
             SecurityHelper.AgregarHeadersSeguridad();

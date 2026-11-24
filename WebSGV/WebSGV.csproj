@@ -202,6 +202,7 @@
     <Content Include="Database\Schema\60_BorrarTablasGrifoYGuias.sql" />
     <Content Include="Database\Schema\61_IntentoAcceso.sql" />
     <Content Include="Database\Schema\62_SegundoFactor.sql" />
+    <Content Include="Database\Schema\63_RolSupervisorRetirado.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\quitar-segundo-factor.ps1" />

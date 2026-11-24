@@ -82,7 +82,7 @@ namespace WebSGV.Views
                     return;
                 }
 
-                // Solo ADMIN y SUPERVISOR pueden gestionar liquidaciones (whitelist)
+                // Solo la administración puede gestionar liquidaciones (whitelist)
                 if (!RolesHelper.TienePermiso("ORDEN_VIAJE"))
                 {
                     RolesHelper.RedirigirSegunRol();

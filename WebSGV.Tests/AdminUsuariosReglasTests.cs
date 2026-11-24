@@ -61,7 +61,7 @@ namespace WebSGV.Tests
         [InlineData(" administrador de sistema ", true)]
         [InlineData("CONDUCTOR", false)]
         [InlineData("CHOFER", false)]
-        [InlineData("SUPERVISOR", false)]
+        [InlineData("SUPERVISOR", false)]       // retirado (E5-19b): tampoco se puede activar
         [InlineData("CONTABILIDAD", false)]
         [InlineData("ADMINISTRADOR DE GRIFO", false)]   // retirado: tampoco se puede activar (MensajeRolNoVigente)
         [InlineData(null, false)]

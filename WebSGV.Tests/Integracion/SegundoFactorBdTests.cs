@@ -25,7 +25,7 @@ namespace WebSGV.Tests.Integracion
                   OUTPUT INSERTED.idUsuario
                   VALUES (@user, 'Prueba E4-14', 'x', @rol, 1, NULL)",
                 DbHelper.Param("@user", "zz_e414_" + Guid.NewGuid().ToString("N").Substring(0, 12)),
-                DbHelper.Param("@rol", RolesHelper.ROL_SUPERVISOR)));
+                DbHelper.Param("@rol", RolesHelper.ROL_CONTABILIDAD)));
 
         private static Guid Sello(int id) =>
             (Guid)DbHelper.EjecutarEscalar("SELECT selloSesion FROM Usuarios WHERE idUsuario = @id", DbHelper.Param("@id", id));

@@ -49,6 +49,7 @@ Correr cada uno con `.\WebSGV\Database\sql.ps1 -Entorno produccion -ConfirmoProd
 | 49 (CPIC y factura únicas) | `SELECT LTRIM(RTRIM(numeroCPIC)), COUNT(*) FROM dbo.CPIC GROUP BY LTRIM(RTRIM(numeroCPIC)) HAVING COUNT(*) > 1` y `SELECT LTRIM(RTRIM(numeroFactura)), idCliente, COUNT(*) FROM dbo.Factura GROUP BY LTRIM(RTRIM(numeroFactura)), idCliente HAVING COUNT(*) > 1` | Ninguna fila. Si hay, depurar a mano (en pruebas, las facturas anuladas se renombraron con `-ANULADA`). |
 | 50 (placa de semirremolque única) | `SELECT REPLACE(REPLACE(UPPER(placaCarreta),'-',''),' ','') AS clave, COUNT(*) FROM dbo.Carreta WHERE placaCarreta IS NOT NULL GROUP BY REPLACE(REPLACE(UPPER(placaCarreta),'-',''),' ','') HAVING COUNT(*) > 1` y lo mismo con `placaTracto` en `dbo.Tracto` | Ninguna fila (`ABC-123` = `ABC123`). Si hay, unificar los vehículos repetidos antes. |
 | 51 (montos FLOAT → DECIMAL(12,2)) | La consulta de abajo | Por columna: filas, mínimo, máximo, cuántos valores tienen más de 2 decimales y en cuántas órdenes `POR_CONFORMAR`. Si alguna orden `POR_CONFORMAR` tiene valores con más de 2 decimales, la administración vuelve a firmar su revisión después de migrar. |
+| 63 (rol SUPERVISOR retirado, E5-19b) | `SELECT activo, COUNT(*) AS n FROM dbo.Usuarios WHERE UPPER(LTRIM(RTRIM(rol))) = 'SUPERVISOR' GROUP BY activo;` | Ninguna fila con `activo = 1` (la 63 se detiene con THROW 50063 si hay alguna). Si hay activos, desactivarlos o cambiarles el rol desde Gestión de usuarios **con permiso del usuario**, y volver a correr la consulta. |
 
 Consulta de control de la 51 (solo lectura; si ya no hay columnas FLOAT/REAL, lo dice):
 
@@ -288,6 +289,18 @@ SELECT archivo, fechaAplicacion FROM dbo.SchemaVersion WHERE archivo = '62_Segun
 
 Emergencia (alguien perdió el celular y sus códigos, y no hay otro ADMINISTRADOR DE SISTEMA): `.\WebSGV\Database\Scripts\quitar-segundo-factor.ps1 -IdUsuario N -Entorno produccion -ConfirmoProduccion` (pide escribir el nombre de usuario, cierra sus sesiones y audita).
 
+
+**Migración 63** (`63_RolSupervisorRetirado.sql`, E5-19b, U-090): retira el rol SUPERVISOR. Vuelve a crear `CK_Usuarios_Rol` igual que la 54, salvo que `SUPERVISOR` pasa a los roles retirados (solo en cuentas con `activo = 0`). **Antes**, el control de la 63 del paso 3: si hay cuentas SUPERVISOR activas, la migración se detiene (THROW 50063) sin cambiar nada. **Orden: migración 63 → publicar el código de E5-19b** (el código ya no reconoce el rol: una cuenta SUPERVISOR activa que quedara entraría y volvería al login; la 63 impide que exista). No necesita SP. Control posterior (solo SELECT):
+
+```sql
+-- La definición nueva: SUPERVISOR solo dentro de (activo = 0 AND rol IN (...)).
+SELECT definition, is_not_trusted FROM sys.check_constraints WHERE name = 'CK_Usuarios_Rol';
+-- Ninguna fila.
+SELECT idUsuario, rol, activo FROM dbo.Usuarios WHERE UPPER(LTRIM(RTRIM(rol))) = 'SUPERVISOR' AND activo = 1;
+-- Registrada: 1 fila.
+SELECT archivo, fechaAplicacion FROM dbo.SchemaVersion WHERE archivo = '63_RolSupervisorRetirado.sql';
+```
+
 ## 5. Procedimientos almacenados
 
 **Obligatorio antes de este paso y del 4:** ensayar el mismo commit sobre el `.bacpac` más reciente con `.\herramientas\respaldo\ensayar-migracion.ps1` (migraciones, SP, ejecución de humo y `[FactBD]` en una copia local) y tener `RESULTADO: OK`. `aplicar-procedimientos.ps1` vuelve a hacer el humo al terminar, pero en producción eso llega tarde: el SP ya quedó aplicado.
@@ -352,7 +365,7 @@ Ninguno los llama el código publicado. Los 8 `sp_SE_*` sin uso que borraba `bor
    ```
 
 3. Cuenta de administrador de sistema: `privado/cambiar_password_nickdream_PROD.sql` (fuera de git; su paso 1 lista la cuenta, porque el nombre exacto en producción no se pudo confirmar). Correrlo en SSMS o con `sql.ps1 -Entorno produccion -ConfirmoProduccion -Archivo`.
-4. Usuarios que no deben quedar activos en producción: los de roles retirados (`admin.maquinaria`, `operador`, `admin.grifo`: al entrar verían "Tu sesión ha expirado o no es válida") y los de prueba con contraseña conocida (`privado/CREDENCIALES_USUARIOS.txt`). Desactivarlos o cambiarles la contraseña desde Gestión de usuarios, según decida el usuario.
+4. Usuarios que no deben quedar activos en producción: los de roles retirados (`admin.maquinaria`, `operador`, `admin.grifo` y los SUPERVISOR, que la migración 63 ya exige inactivos: al entrar verían "Tu sesión ha expirado o no es válida") y los de prueba con contraseña conocida (`privado/CREDENCIALES_USUARIOS.txt`). Desactivarlos o cambiarles la contraseña desde Gestión de usuarios, según decida el usuario.
 
 ## 8. Datos cargados solo en pruebas (solo opción A)
 

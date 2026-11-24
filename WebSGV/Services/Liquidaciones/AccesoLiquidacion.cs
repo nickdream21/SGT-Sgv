@@ -7,7 +7,7 @@ namespace WebSGV.Services.Liquidaciones
     /// Regla única de quién puede ver el detalle y el PDF de una liquidación pedida por su id
     /// (PageMethods de LiquidacionesPendientes y DescargarPdfOrdenViaje):
     /// <list type="bullet">
-    ///   <item>Administración (<see cref="RolesHelper.EsRolAdmin"/>) y SUPERVISOR: cualquier orden.</item>
+    ///   <item>Administración (<see cref="RolesHelper.EsRolAdmin"/>): cualquier orden.</item>
     ///   <item>CONTABILIDAD: solo órdenes <see cref="EstadosOrden.Aprobado"/> (decisión D3, B6-6), lo mismo que lista su pantalla.</item>
     ///   <item>CONDUCTOR / CHOFER: solo las suyas.</item>
     ///   <item>Cualquier otro rol: ninguna.</item>
@@ -20,7 +20,7 @@ namespace WebSGV.Services.Liquidaciones
         public static bool VeTodasLasOrdenes(string rol)
         {
             string r = Normalizar(rol);
-            return RolesHelper.EsRolAdmin(r) || r == RolesHelper.ROL_SUPERVISOR;
+            return RolesHelper.EsRolAdmin(r);
         }
 
         /// <summary>

@@ -79,7 +79,7 @@ namespace WebSGV.Services.Usuarios
         /// <summary>
         /// Activar una cuenta pide la contraseña del administrador si su rol es de administración (ADMIN,
         /// ADMINISTRADOR, ADMINISTRADOR DE TRANSPORTE o ADMINISTRADOR DE SISTEMA): reactivar una cuenta así da
-        /// acceso a usuarios, liquidaciones y aprobaciones, igual que crearla. Conductores, supervisores y
+        /// acceso a usuarios, liquidaciones y aprobaciones, igual que crearla. Conductores y
         /// contabilidad se activan sin pedirla (se hace a menudo y su alcance es limitado).
         /// </summary>
         public static bool RequiereReautenticacionAlActivar(string rol)

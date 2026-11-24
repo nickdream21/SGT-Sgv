@@ -138,7 +138,7 @@ namespace WebSGV.Tests.Integracion
             Convert.ToInt32(DbHelper.EjecutarEscalar(
                 @"INSERT INTO Usuarios (nombreUsuario, nombre, contrasena, rol, activo)
                   OUTPUT INSERTED.idUsuario
-                  VALUES (@user, 'Prueba B5-8', 'x', 'SUPERVISOR', 1)",   // rol vigente: CK_Usuarios_Rol (migración 54)
+                  VALUES (@user, 'Prueba B5-8', 'x', 'CONTABILIDAD', 1)",   // rol vigente: CK_Usuarios_Rol (migraciones 54 y 63)
                 DbHelper.Param("@user", nombreUsuario)));
 
         private static Guid Sello(int idUsuario) =>

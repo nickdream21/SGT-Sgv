@@ -96,7 +96,7 @@ namespace WebSGV.Tests.Integracion
                 Guid s1 = Sello(id);
                 Assert.NotEqual(s0, s1);
 
-                EditarComoGestionUsuarios(id, "Otro nombre", "SUPERVISOR", idConductor);  // cambia rol
+                EditarComoGestionUsuarios(id, "Otro nombre", "CONTABILIDAD", idConductor);  // cambia rol
                 Assert.NotEqual(s1, Sello(id));
             }
         }

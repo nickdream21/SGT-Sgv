@@ -13,7 +13,7 @@ namespace WebSGV.Tests
         private static readonly string[] Roles =
         {
             RolesHelper.ROL_ADMIN, "ADMINISTRADOR", RolesHelper.ROL_ADMIN_TRANSPORTE, RolesHelper.ROL_ADMIN_SISTEMA,
-            RolesHelper.ROL_CONDUCTOR, "CHOFER", RolesHelper.ROL_SUPERVISOR, RolesHelper.ROL_CONTABILIDAD, "", null
+            RolesHelper.ROL_CONDUCTOR, "CHOFER", "SUPERVISOR", RolesHelper.ROL_CONTABILIDAD, "", null
         };
 
         /// <summary>Con el interruptor apagado y nadie enrolado, el login de cualquier rol es exactamente el de antes.</summary>

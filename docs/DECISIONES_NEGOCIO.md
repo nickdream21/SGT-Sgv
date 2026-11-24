@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-33 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-34 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -53,6 +53,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-31 | Pantallas de buscar y editar (E5-17): saldo por moneda, PDF firmado, filtros plegados en el celular (opción recomendada, a confirmar) |
 | DN-32 | Factura y CPIC registradas a mano: número y fecha obligatorios, valor opcional |
 | DN-33 | Páginas sin enlace retiradas: productos y rutas solo desde el Catálogo del cliente |
+| DN-34 | Rol SUPERVISOR retirado |
 
 ---
 
@@ -201,10 +202,10 @@ panel del conductor: la matriz de permisos se ajustó a lo que ya hacían las p�
 - Desde: 2026-11-22, E4-3. El usuario pidió terminar la Etapa 4 sin decidir U-081; se aplicó la opción que el pendiente
   recomendaba. Si decide otra cosa, se cambia la matriz y `GuardasAccesoTests.AccesoEsperado` a propósito (U-090).
 - En el código: `WebSGV/Views/RolesHelper.cs` (`Matriz`), guarda de `FacturasFlete` (RegistroProductos y RegistroRutas se retiraron en E5-19a, U-094).
-- Estado: vigente (observada, a confirmar).
+- Estado: reemplazada por DN-34 (el SUPERVISOR se retiró; sigue que el administrador no tiene el panel del conductor).
 
 ### DN-27 — Segundo factor: quién lo lleva, apagado por interruptor y cómo se recupera (opción recomendada, a confirmar)
-Lo llevan administración, SUPERVISOR, CONTABILIDAD y ADMINISTRADOR DE SISTEMA, nunca el conductor (ya reescribe su
+Lo llevan administración, CONTABILIDAD y ADMINISTRADOR DE SISTEMA (el SUPERVISOR también, hasta su retiro: DN-34), nunca el conductor (ya reescribe su
 contraseña para firmar). Mientras el interruptor `Seguridad.ExigirSegundoFactor` esté apagado es voluntario (se activa en
 "Mi seguridad"), pero quien lo activó da el código siempre; encendido, quien no lo tiene lo activa antes de entrar. Hay 10
 códigos de recuperación de un solo uso; si también se pierden, otro ADMINISTRADOR DE SISTEMA lo quita (o el script de
@@ -299,6 +300,16 @@ Decisión del usuario (2026-11-24, U-094; cierra también U-017).
 - Desde: 2026-11-24, E5-19a.
 - En el código: las tres páginas ya no existen en `WebSGV/Views/`
   (`ConfiguracionSeguridadTests.PaginaRetirada_NoExisteNiEstaEnElProyecto`); `WebSGV/Services/Clientes/CatalogoClienteService.cs`.
+- Estado: vigente.
+
+### DN-34 — Rol SUPERVISOR retirado
+El rol SUPERVISOR no debe existir: se retiró del código y de la matriz de permisos, y lo que compartía con administración
+(despachos, registros, seguimiento, liquidaciones y reportes) queda solo para administración. En la BD las cuentas
+SUPERVISOR se conservan inactivas por el historial; `CK_Usuarios_Rol` ya no admite una activa. Sigue la regla de DN-26 de
+que el administrador no tiene el panel del conductor. Decisión del usuario (2026-11-24, U-090).
+- Desde: 2026-11-24, E5-19b.
+- En el código: `WebSGV/Database/Schema/63_RolSupervisorRetirado.sql`; `WebSGV/Views/RolesHelper.cs` (rol retirado);
+  `WebSGV/Helpers/SecurityHelper.cs` (`ExigirRolAdmin` en las páginas que antes admitían al supervisor).
 - Estado: vigente.
 
 ## 4. Seguimiento de exportación

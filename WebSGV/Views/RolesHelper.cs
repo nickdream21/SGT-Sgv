@@ -20,7 +20,6 @@ namespace WebSGV.Helpers
         // Definición de roles
         public const string ROL_ADMIN = "ADMIN";
         public const string ROL_CONDUCTOR = "CONDUCTOR";
-        public const string ROL_SUPERVISOR = "SUPERVISOR";
         public const string ROL_ADMIN_SISTEMA = "ADMINISTRADOR DE SISTEMA";
         public const string ROL_ADMIN_TRANSPORTE = "ADMINISTRADOR DE TRANSPORTE";
         public const string ROL_CONTABILIDAD = "CONTABILIDAD";
@@ -29,7 +28,6 @@ namespace WebSGV.Helpers
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { ROL_ADMIN, "Administrador" },
-                { ROL_SUPERVISOR, "Supervisor" },
                 { ROL_CONDUCTOR, "Conductor" },
                 { ROL_CONTABILIDAD, "Contabilidad" },
                 { ROL_ADMIN_SISTEMA, "Administrador de Sistema" },
@@ -70,16 +68,16 @@ namespace WebSGV.Helpers
 
         /// <summary>
         /// Roles que reciben los avisos por correo de la operación: los administradores
-        /// (<see cref="RolesAdmin"/>) más SUPERVISOR.
+        /// (<see cref="RolesAdmin"/>). SUPERVISOR se retiró (E5-19b, U-090).
         /// </summary>
         public static IReadOnlyList<string> RolesAvisosOperacion()
         {
-            return RolesAdmin.Concat(new[] { ROL_SUPERVISOR }).ToList();
+            return RolesAdmin.ToList();
         }
 
         /// <summary>
         /// Roles que llevan segundo factor (código del celular al entrar, E4-14, U-079): administración
-        /// (<see cref="EsRolAdmin"/>), SUPERVISOR, CONTABILIDAD y ADMINISTRADOR DE SISTEMA. Nunca el
+        /// (<see cref="EsRolAdmin"/>), CONTABILIDAD y ADMINISTRADOR DE SISTEMA. Nunca el
         /// conductor (ya vuelve a escribir su contraseña para firmar). Sin el interruptor
         /// <c>Seguridad.ExigirSegundoFactor</c> el alta es voluntaria para estos roles; con él, obligatoria.
         /// Pura (no lee la sesión); fijada por <c>RolesHelperTests</c>.
@@ -88,7 +86,7 @@ namespace WebSGV.Helpers
         {
             string r = (rol ?? "").Trim().ToUpper();
             if (EsRolConductor(r)) return false;
-            return EsRolAdmin(r) || r == ROL_SUPERVISOR || r == ROL_CONTABILIDAD || r == ROL_ADMIN_SISTEMA;
+            return EsRolAdmin(r) || r == ROL_CONTABILIDAD || r == ROL_ADMIN_SISTEMA;
         }
 
         public static bool EsAdminTransporte()
@@ -139,8 +137,7 @@ namespace WebSGV.Helpers
                 case ROL_CONTABILIDAD:     return "~/Views/LiquidacionesAprobadasContabilidad.aspx";
                 case ROL_ADMIN:
                 case "ADMINISTRADOR":
-                case ROL_ADMIN_TRANSPORTE:
-                case ROL_SUPERVISOR:       return "~/Views/Inicio.aspx";
+                case ROL_ADMIN_TRANSPORTE: return "~/Views/Inicio.aspx";
                 default:                   return null;
             }
         }
@@ -181,23 +178,19 @@ namespace WebSGV.Helpers
         /// <summary>Secciones de la matriz (<see cref="TienePermiso(string, string)"/>).</summary>
         public static IReadOnlyCollection<string> Secciones => Matriz.Keys;
 
-        private static bool AdminOSupervisor(string r) => EsRolAdmin(r) || r == ROL_SUPERVISOR;
-
         /// <summary>Sección → roles que entran (el rol llega ya en mayúsculas y sin espacios).</summary>
         private static readonly Dictionary<string, Func<string, bool>> Matriz =
             new Dictionary<string, Func<string, bool>>(StringComparer.OrdinalIgnoreCase)
             {
-                // Operación del transporte: administración y supervisión
-                { "ORDEN_VIAJE",             AdminOSupervisor },   // LiquidacionesPendientes
-                { "REGISTRO",                AdminOSupervisor },   // Tractos, Semirremolques, Clientes, Catálogo del cliente, Plantas, Peajes
-                { "REGISTRO_CONDUCTORES",    AdminOSupervisor },   // RegistroChoferes
-                { "SEGUIMIENTO_EXPORTACION", AdminOSupervisor },   // Exportacion/* y GpsAutomatico.ashx
-
-                // Solo administración (U-081, 2026-11-22: SUPERVISOR no entra, como el menú)
-                { "FACTURAS_FLETE",          EsRolAdmin },         // FacturasFlete
+                // Operación del transporte: solo administración (el rol SUPERVISOR se retiró, E5-19b, U-090)
+                { "ORDEN_VIAJE",             EsRolAdmin },   // LiquidacionesPendientes
+                { "REGISTRO",                EsRolAdmin },   // Tractos, Semirremolques, Clientes, Catálogo del cliente, Plantas, Peajes
+                { "REGISTRO_CONDUCTORES",    EsRolAdmin },   // RegistroChoferes
+                { "SEGUIMIENTO_EXPORTACION", EsRolAdmin },   // Exportacion/* y GpsAutomatico.ashx
+                { "FACTURAS_FLETE",          EsRolAdmin },   // FacturasFlete
 
                 // Consulta para Contabilidad (solo lectura)
-                { "LIQUIDACIONES_CONTABILIDAD", r => r == ROL_CONTABILIDAD || AdminOSupervisor(r) },
+                { "LIQUIDACIONES_CONTABILIDAD", r => r == ROL_CONTABILIDAD || EsRolAdmin(r) },
             };
 
         /// <summary>

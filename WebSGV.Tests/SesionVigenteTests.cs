@@ -120,7 +120,7 @@ namespace WebSGV.Tests
         [Fact]
         public void RolDistinto_SeCierra()
         {
-            Assert.Equal(ResultadoSesion.Cerrada, SesionVigenteHelper.EvaluarSesion(Sello, "ADMIN", null, Bd("SUPERVISOR")));
+            Assert.Equal(ResultadoSesion.Cerrada, SesionVigenteHelper.EvaluarSesion(Sello, "ADMIN", null, Bd("CONTABILIDAD")));
         }
 
         [Fact]

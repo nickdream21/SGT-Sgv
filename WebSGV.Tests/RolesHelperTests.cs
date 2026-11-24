@@ -15,7 +15,7 @@ namespace WebSGV.Tests
         private static readonly string[] TodosLosRolesConocidos =
         {
             RolesHelper.ROL_ADMIN, "ADMINISTRADOR", RolesHelper.ROL_ADMIN_TRANSPORTE, RolesHelper.ROL_ADMIN_SISTEMA,
-            RolesHelper.ROL_CONDUCTOR, "CHOFER", RolesHelper.ROL_SUPERVISOR, RolesHelper.ROL_CONTABILIDAD
+            RolesHelper.ROL_CONDUCTOR, "CHOFER", RolesHelper.ROL_CONTABILIDAD
         };
 
         [Fact]
@@ -27,7 +27,7 @@ namespace WebSGV.Tests
         }
 
         /// <summary>
-        /// E4-14 (U-079, opción recomendada): llevan segundo factor administración, supervisor, contabilidad y
+        /// E4-14 (U-079, opción recomendada): llevan segundo factor administración, contabilidad y
         /// administrador de sistema; nunca el conductor. Cambiar esta lista es una decisión a propósito.
         /// </summary>
         [Fact]
@@ -37,12 +37,12 @@ namespace WebSGV.Tests
             Assert.Equal(new[]
             {
                 RolesHelper.ROL_ADMIN, "ADMINISTRADOR", RolesHelper.ROL_ADMIN_SISTEMA, RolesHelper.ROL_ADMIN_TRANSPORTE,
-                RolesHelper.ROL_CONTABILIDAD, RolesHelper.ROL_SUPERVISOR
+                RolesHelper.ROL_CONTABILIDAD
             }.OrderBy(r => r), conFactor);
 
             Assert.False(RolesHelper.ExigeSegundoFactor(RolesHelper.ROL_CONDUCTOR));
             Assert.False(RolesHelper.ExigeSegundoFactor(" chofer "));
-            Assert.True(RolesHelper.ExigeSegundoFactor(" supervisor "));
+            Assert.False(RolesHelper.ExigeSegundoFactor(" supervisor "));   // retirado (E5-19b, U-090)
             Assert.True(RolesHelper.ExigeSegundoFactor("administrador de sistema"));
             Assert.False(RolesHelper.ExigeSegundoFactor(null));
             Assert.False(RolesHelper.ExigeSegundoFactor(""));
@@ -50,13 +50,12 @@ namespace WebSGV.Tests
         }
 
         [Fact]
-        public void RolesAvisosOperacion_SonAdminsMasSupervisor()
+        public void RolesAvisosOperacion_SonLosAdmins()
         {
-            var esperado = TodosLosRolesConocidos
-                .Where(r => RolesHelper.EsRolAdmin(r) || r == RolesHelper.ROL_SUPERVISOR)
-                .OrderBy(r => r);
+            var esperado = TodosLosRolesConocidos.Where(RolesHelper.EsRolAdmin).OrderBy(r => r);
             Assert.Equal(esperado, RolesHelper.RolesAvisosOperacion().OrderBy(r => r));
             Assert.DoesNotContain(RolesHelper.ROL_ADMIN_SISTEMA, RolesHelper.RolesAvisosOperacion());
+            Assert.DoesNotContain("SUPERVISOR", RolesHelper.RolesAvisosOperacion());
         }
 
         [Fact]
@@ -126,6 +125,7 @@ namespace WebSGV.Tests
         [InlineData("ADMINISTRADOR DE GRIFO")]                     // roles retirados (2026-11): usuarios viejos van al login
         [InlineData("OPERADOR")]
         [InlineData("ADMINISTRADOR DE MAQUINARIA")]
+        [InlineData("SUPERVISOR")]                                 // retirado (E5-19b, U-090)
         [InlineData("")]
         [InlineData(null)]
         public void UrlInicioSegunRol_RolDesconocido_Null(string rol)
@@ -139,10 +139,9 @@ namespace WebSGV.Tests
         [InlineData("ADMIN")]
         [InlineData("ADMINISTRADOR DE TRANSPORTE")]
         [InlineData("ADMINISTRADOR DE SISTEMA")]
-        [InlineData("SUPERVISOR")]
         [InlineData("CONDUCTOR")]
         [InlineData("CONTABILIDAD")]
-        [InlineData(" supervisor ")]
+        [InlineData(" contabilidad ")]
         [InlineData("ADMINISTRADOR")]                              // alias vigentes
         [InlineData("CHOFER")]
         public void PuedeAsignarseRol_AltaConRolVigente_Si(string rol)
@@ -154,6 +153,8 @@ namespace WebSGV.Tests
         [InlineData("OPERADOR")]
         [InlineData("ADMINISTRADOR DE GRIFO")]
         [InlineData("ADMINISTRADOR DE MAQUINARIA")]
+        [InlineData("SUPERVISOR")]                                 // retirado (E5-19b, U-090)
+        [InlineData(" supervisor ")]
         [InlineData(" operador ")]
         [InlineData("INVITADO")]
         [InlineData("")]
@@ -169,6 +170,7 @@ namespace WebSGV.Tests
         [InlineData("OPERADOR", " operador ")]                     // el guardado normaliza; la BD puede tenerlo distinto
         [InlineData("ADMINISTRADOR DE GRIFO", "Administrador de Grifo")]
         [InlineData(" administrador de maquinaria", "ADMINISTRADOR DE MAQUINARIA ")]
+        [InlineData("SUPERVISOR", "Supervisor")]                   // cuenta inactiva antigua: se edita sin cambiarle el rol
         public void PuedeAsignarseRol_EdicionQueConservaSuRolRetirado_Si(string rolNuevo, string rolAnterior)
         {
             Assert.True(RolesHelper.PuedeAsignarseRol(rolNuevo, rolAnterior));
@@ -177,7 +179,9 @@ namespace WebSGV.Tests
         [Theory]
         [InlineData("OPERADOR", "ADMINISTRADOR DE GRIFO")]          // de un retirado a otro retirado
         [InlineData("ADMINISTRADOR DE MAQUINARIA", "OPERADOR")]
-        [InlineData("OPERADOR", "SUPERVISOR")]                      // de un vigente a un retirado
+        [InlineData("OPERADOR", "CONTABILIDAD")]                    // de un vigente a un retirado
+        [InlineData("SUPERVISOR", "ADMIN")]
+        [InlineData("SUPERVISOR", "OPERADOR")]
         [InlineData("ADMINISTRADOR DE GRIFO", "ADMIN")]
         [InlineData("", "OPERADOR")]
         [InlineData(null, "OPERADOR")]
@@ -188,7 +192,7 @@ namespace WebSGV.Tests
         }
 
         [Theory]
-        [InlineData("SUPERVISOR", "OPERADOR")]                      // sacar a un usuario de un rol retirado
+        [InlineData("CONTABILIDAD", "OPERADOR")]                    // sacar a un usuario de un rol retirado
         [InlineData("ADMINISTRADOR", "ADMINISTRADOR DE GRIFO")]
         [InlineData("CHOFER", "ADMINISTRADOR DE MAQUINARIA")]
         [InlineData("CONDUCTOR", "SUPERVISOR")]
@@ -205,6 +209,8 @@ namespace WebSGV.Tests
         [InlineData("OPERADOR")]
         [InlineData(" operador ")]
         [InlineData("ADMINISTRADOR DE MAQUINARIA")]
+        [InlineData("SUPERVISOR")]                                 // retirado (E5-19b, U-090)
+        [InlineData(" supervisor ")]
         [InlineData("INVITADO")]
         public void CombinarRolesDisponibles_RolRetiradoDeLaBd_NoSeOfrece(string rolBd)
         {
@@ -227,12 +233,12 @@ namespace WebSGV.Tests
             var esperados = new[]
             {
                 RolesHelper.ROL_ADMIN, RolesHelper.ROL_ADMIN_SISTEMA, RolesHelper.ROL_ADMIN_TRANSPORTE,
-                RolesHelper.ROL_CONDUCTOR, RolesHelper.ROL_CONTABILIDAD, RolesHelper.ROL_SUPERVISOR
+                RolesHelper.ROL_CONDUCTOR, RolesHelper.ROL_CONTABILIDAD
             }.OrderBy(r => r, StringComparer.OrdinalIgnoreCase);
 
             Assert.Equal(esperados, RolesHelper.CombinarRolesDisponibles(null).Select(r => r.Valor));
             // Un rol del catálogo que también está en la BD (con otro formato) no se repite.
-            Assert.Equal(esperados, RolesHelper.CombinarRolesDisponibles(new[] { " supervisor ", "CONDUCTOR" }).Select(r => r.Valor));
+            Assert.Equal(esperados, RolesHelper.CombinarRolesDisponibles(new[] { " contabilidad ", "CONDUCTOR" }).Select(r => r.Valor));
             Assert.Equal("Contabilidad",
                 RolesHelper.CombinarRolesDisponibles(null).Single(r => r.Valor == RolesHelper.ROL_CONTABILIDAD).Texto);
         }
@@ -278,20 +284,21 @@ namespace WebSGV.Tests
         // no tiene DASHBOARD_CONDUCTOR (la página la rebotaba). Se quitaron DESPACHO, FACTURA, CPIC,
         // CONSULTAS, INDICADORES, AUDITORIA, DASHBOARD_EXPORTACION, DASHBOARD_CONDUCTOR, MIS_VIAJES y
         // MI_PERFIL: ninguna página las consultaba (M-064). E5-19a (U-094, 2026-11-24): fuera
-        // REGISTRO_PRODUCTOS y REGISTRO_RUTAS con sus páginas (productos y rutas en CatalogoCliente).
+        // REGISTRO_PRODUCTOS y REGISTRO_RUTAS con sus páginas (productos y rutas en CatalogoCliente). E5-19b (U-090, 2026-11-24):
+        // el rol SUPERVISOR se retiró; sigue en RolesProbados para fijar que ya no entra a nada.
         // Quién entra a cada página: GuardasAccesoTests.
         private static readonly Dictionary<string, string[]> MatrizEsperada = new Dictionary<string, string[]>
         {
-            { "ORDEN_VIAJE",                Con("SUPERVISOR") },
-            { "REGISTRO",                   Con("SUPERVISOR") },
-            { "REGISTRO_CONDUCTORES",       Con("SUPERVISOR") },
-            { "SEGUIMIENTO_EXPORTACION",    Con("SUPERVISOR") },
+            { "ORDEN_VIAJE",                AdminOperacion },
+            { "REGISTRO",                   AdminOperacion },
+            { "REGISTRO_CONDUCTORES",       AdminOperacion },
+            { "SEGUIMIENTO_EXPORTACION",    AdminOperacion },
             { "FACTURAS_FLETE",             AdminOperacion },
-            { "LIQUIDACIONES_CONTABILIDAD", Con("CONTABILIDAD", "SUPERVISOR") },
+            { "LIQUIDACIONES_CONTABILIDAD", Con("CONTABILIDAD") },
         };
 
-        // "ADMINISTRADOR DE GRIFO", "ADMINISTRADOR DE MAQUINARIA" y "OPERADOR" ya no son roles (retirados
-        // 2026-11), pero pueden quedar en Usuarios.rol: se prueban para fijar que no tienen ningún permiso.
+        // "ADMINISTRADOR DE GRIFO", "ADMINISTRADOR DE MAQUINARIA", "OPERADOR" y "SUPERVISOR" ya no son roles
+        // (retirados 2026-11), pero pueden quedar en Usuarios.rol: se prueban para fijar que no tienen ningún permiso.
         private static readonly string[] RolesProbados =
         {
             "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE", "ADMINISTRADOR DE SISTEMA", "SUPERVISOR",
@@ -334,7 +341,7 @@ namespace WebSGV.Tests
         public void ConstantesDeRol_EstanEnRolesProbados()
         {
             var constantes = ConstantesDeRol();
-            Assert.True(constantes.Count >= 6, "Se esperaban al menos 6 constantes ROL_*; hay " + constantes.Count);
+            Assert.True(constantes.Count >= 5, "Se esperaban al menos 5 constantes ROL_* (SUPERVISOR se retiró en E5-19b); hay " + constantes.Count);
             var faltan = constantes.Where(c => !RolesProbados.Contains(c)).ToList();
             Assert.Empty(faltan);
         }
@@ -358,7 +365,7 @@ namespace WebSGV.Tests
         [Fact]
         public void TienePermiso_SeccionSinDistinguirMayusculasNiEspacios()
         {
-            Assert.True(RolesHelper.TienePermiso(" seguimiento_exportacion ", "Supervisor"));
+            Assert.True(RolesHelper.TienePermiso(" seguimiento_exportacion ", "Administrador de Transporte"));
         }
 
         /// <summary>Toda sección usada en el código existe en la matriz (una sección mal escrita negaría el acceso a todos).</summary>
@@ -389,7 +396,7 @@ namespace WebSGV.Tests
         [Theory]
         [InlineData(true, "ADMIN", true)]
         [InlineData(true, "ADMINISTRADOR DE TRANSPORTE", true)]
-        [InlineData(true, "SUPERVISOR", true)]
+        [InlineData(true, "SUPERVISOR", false)]                     // retirado (E5-19b)
         [InlineData(true, "CONDUCTOR", false)]
         [InlineData(true, "CONTABILIDAD", false)]
         [InlineData(true, "ADMINISTRADOR DE SISTEMA", false)]

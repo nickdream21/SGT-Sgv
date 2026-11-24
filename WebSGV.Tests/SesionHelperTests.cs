@@ -110,11 +110,11 @@ namespace WebSGV.Tests
         {
             using (var c = new ContextoFalso())
             {
-                SesionHelper.Iniciar(c.Sesion, 42, "SUPERVISOR", "Ana Pérez");
+                SesionHelper.Iniciar(c.Sesion, 42, "CONTABILIDAD", "Ana Pérez");
 
                 Assert.IsType<int>(c.Sesion[SesionHelper.ClaveUsuarioId]);
                 Assert.Equal(42, (int)c.Sesion[SesionHelper.ClaveUsuarioId]);
-                Assert.Equal("SUPERVISOR", c.Sesion[SesionHelper.ClaveRol]);
+                Assert.Equal("CONTABILIDAD", c.Sesion[SesionHelper.ClaveRol]);
                 Assert.Equal("Ana Pérez", c.Sesion[SesionHelper.ClaveNombre]);
                 Assert.Equal("Ana Pérez", SesionHelper.NombreActual);
                 Assert.Null(c.Sesion["IdUsuario"]); // la clave duplicada ya no existe

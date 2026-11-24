@@ -75,8 +75,8 @@ SELECT @bloqueado AS bloqueado, (SELECT COUNT(*) FROM @cambiadas) AS filas;";
             if (!nuevoActivo && idUsuarioActual.HasValue && idUsuario == idUsuarioActual.Value)
                 throw new ErrorNegocioException(MensajeAutodesactivacion);
 
-            // Un rol retirado (Grifo, Maquinaria, Operador) solo puede quedar en una cuenta inactiva
-            // (CK_Usuarios_Rol, migración 54): sin esto la BD rechazaría el UPDATE con un error técnico.
+            // Un rol retirado (no vigente, RolesHelper.EsRolVigente) solo puede quedar en una cuenta inactiva
+            // (CK_Usuarios_Rol, migraciones 54 y 63): sin esto la BD rechazaría el UPDATE con un error técnico.
             if (nuevoActivo)
                 ValidarRolParaActivar(DbHelper.EjecutarEscalar("SELECT rol FROM Usuarios WHERE idUsuario = @id",
                     DbHelper.Param("@id", idUsuario)) as string);

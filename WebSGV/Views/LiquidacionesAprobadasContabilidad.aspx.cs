@@ -138,7 +138,7 @@ namespace WebSGV.Views
         /// <summary>
         /// Autocompletado del filtro "Conductor": solo conductores con liquidaciones aprobadas.
         /// Antes el JS llamaba a LiquidacionesPendientes.BuscarConductores, que espera otro parámetro
-        /// (term), devuelve otro formato y exige admin/supervisor: a contabilidad nunca le sugería nada.
+        /// (term), devuelve otro formato y exige administración: a contabilidad nunca le sugería nada.
         /// </summary>
         [WebMethod(EnableSession = true)]
         public static List<ConductorItem> BuscarConductores(string termino)

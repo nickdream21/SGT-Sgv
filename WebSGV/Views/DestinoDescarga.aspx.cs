@@ -22,7 +22,7 @@ namespace WebSGV.Views
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            SecurityHelper.ExigirRolAdminOSupervisor();
+            SecurityHelper.ExigirRolAdmin();
             SecurityHelper.AgregarHeadersSeguridad();
 
             // La grilla no guarda ViewState (E5-16): se enlaza en cada petición, en el manejador que cambia

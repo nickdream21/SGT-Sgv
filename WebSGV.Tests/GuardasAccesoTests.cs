@@ -32,7 +32,7 @@ namespace WebSGV.Tests
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { "Views/Auditoria.aspx",                         "SecurityHelper.ExigirRolAdminSistema()" },
-                { "Views/BandejaDocumentos.aspx",                 "SecurityHelper.ExigirRolAdminOSupervisor()" },
+                { "Views/BandejaDocumentos.aspx",                 "SecurityHelper.ExigirRolAdmin()" },
                 { "Views/CatalogoCliente.aspx",                   "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
                 // Conductor (su conformidad) o quien consulta la orden: el rol se decide después, en el GET.
                 { "Views/ConformarLiquidacion.aspx",              "SecurityHelper.ExigirSesion()" },
@@ -42,7 +42,7 @@ namespace WebSGV.Tests
                 { "Views/DescargarDocumento.aspx",                "SecurityHelper.ExigirSesion()" },
                 // El permiso por orden lo decide AccesoLiquidacion.PuedeConsultar (403 si no).
                 { "Views/DescargarPdfOrdenViaje.aspx",            "SecurityHelper.ExigirSesion()" },
-                { "Views/DestinoDescarga.aspx",                   "SecurityHelper.ExigirRolAdminOSupervisor()" },
+                { "Views/DestinoDescarga.aspx",                   "SecurityHelper.ExigirRolAdmin()" },
                 // Conductor (la suya) o quien consulta la orden: el rol se decide después, en el GET.
                 { "Views/DetalleOrdenViaje.aspx",                 "SecurityHelper.ExigirSesion()" },
                 { "Views/Exportacion/DashboardExportacion.aspx",  "RolesHelper.ValidarAccesoSeccion(\"SEGUIMIENTO_EXPORTACION\")" },
@@ -52,24 +52,24 @@ namespace WebSGV.Tests
                 { "Views/FacturasFlete.aspx",                     "RolesHelper.ValidarAccesoSeccion(\"FACTURAS_FLETE\")" },
                 { "Views/FirmarLiquidacion.aspx",                 "SecurityHelper.ExigirRolConductor()" },
                 { "Views/GestionUsuarios.aspx",                   "SecurityHelper.ExigirRolAdminSistema()" },
-                { "Views/Inicio.aspx",                            "SecurityHelper.ExigirRolAdminOSupervisor()" },
+                { "Views/Inicio.aspx",                            "SecurityHelper.ExigirRolAdmin()" },
                 { "Views/LiquidacionesAprobadasContabilidad.aspx","RolesHelper.ValidarAccesoSeccion(\"LIQUIDACIONES_CONTABILIDAD\")" },
                 { "Views/LiquidacionesPendientes.aspx",           "RolesHelper.ValidarAccesoSeccion(\"ORDEN_VIAJE\")" },
-                { "Views/ListaDespachos.aspx",                    "SecurityHelper.ExigirRolAdminOSupervisor()" },
+                { "Views/ListaDespachos.aspx",                    "SecurityHelper.ExigirRolAdmin()" },
                 // Los roles de RolesHelper.ExigeSegundoFactor; otro rol (conductor) vuelve a su inicio después (E4-14).
                 { "Views/MiSeguridad.aspx",                       "SecurityHelper.ExigirSesion()" },
-                { "Views/MovimientosViaje.aspx",                  "SecurityHelper.ExigirRolAdminOSupervisor()" },
+                { "Views/MovimientosViaje.aspx",                  "SecurityHelper.ExigirRolAdmin()" },
                 { "Views/RegistroChoferes.aspx",                  "RolesHelper.ValidarAccesoSeccion(\"REGISTRO_CONDUCTORES\")" },
                 { "Views/RegistroClientes.aspx",                  "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
-                { "Views/RegistroDespacho.aspx",                  "SecurityHelper.ExigirRolAdminOSupervisor()" },
+                { "Views/RegistroDespacho.aspx",                  "SecurityHelper.ExigirRolAdmin()" },
                 { "Views/RegistroPeajes.aspx",                    "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
                 { "Views/RegistroPlantas.aspx",                   "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
                 { "Views/RegistroSemiremolques.aspx",             "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
                 { "Views/RegistroTractos.aspx",                   "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
-                { "Views/ReporteCargas.aspx",                     "SecurityHelper.ExigirRolAdminOSupervisor()" },
-                { "Views/ReporteGps.aspx",                        "SecurityHelper.ExigirRolAdminOSupervisor()" },
-                { "Views/ReportesOrdenesViaje.aspx",              "SecurityHelper.ExigirRolAdminOSupervisor()" },
-                { "Views/SaldosConductores.aspx",                 "SecurityHelper.ExigirRolAdminOSupervisor()" },
+                { "Views/ReporteCargas.aspx",                     "SecurityHelper.ExigirRolAdmin()" },
+                { "Views/ReporteGps.aspx",                        "SecurityHelper.ExigirRolAdmin()" },
+                { "Views/ReportesOrdenesViaje.aspx",              "SecurityHelper.ExigirRolAdmin()" },
+                { "Views/SaldosConductores.aspx",                 "SecurityHelper.ExigirRolAdmin()" },
             };
 
         /// <summary>Puntos de entrada sin sesión, a propósito, y por qué.</summary>
@@ -103,7 +103,7 @@ namespace WebSGV.Tests
 
         /// <summary>Lista cerrada de primeras sentencias válidas (terminan la respuesta si no pasa).</summary>
         private static readonly Regex GuardaEstandar = new Regex(
-            @"^(SecurityHelper\.Exigir(Sesion|RolAdmin|RolAdminOSupervisor|RolAdminSistema|RolConductor)\(\)" +
+            @"^(SecurityHelper\.Exigir(Sesion|RolAdmin|RolAdminSistema|RolConductor)\(\)" +
             @"|RolesHelper\.ValidarAccesoSeccion\(""[A-Z_]+""\))$");
 
         /// <summary>
@@ -127,7 +127,7 @@ namespace WebSGV.Tests
                 { "RolesHelper.TienePermiso(",               null },
                 { "RolesHelper.EsConductor()",               null },
                 { "SecurityHelper.EsConductor()",            null },
-                { "SecurityHelper.EsAdminOSupervisor()",     null },
+                { "SecurityHelper.EsAdmin()",                null },
                 { "SecurityHelper.EsAdminSistema()",         null },
                 { "SecurityHelper.PuedeConsultarLiquidacionesGlobales()", null },
                 { "AccesoLiquidacion.VeTodasLasOrdenes(",    null },
@@ -183,7 +183,7 @@ namespace WebSGV.Tests
                 { "Views/Auditoria.aspx.cs:ObtenerDetalle",
                     new[] { "SecurityHelper.TieneSesionActiva()", "SecurityHelper.EsAdminSistema()" } },
                 { "Views/ReportesOrdenesViaje.aspx.cs:ObtenerDetalleOrden",
-                    new[] { "SecurityHelper.TieneSesionActiva()", "SecurityHelper.EsAdminOSupervisor()" } },
+                    new[] { "SecurityHelper.TieneSesionActiva()", "SecurityHelper.EsAdmin()" } },
             };
 
         /// <summary>Páginas sin master que no llaman a AgregarHeadersSeguridad, y por qué.</summary>
@@ -263,64 +263,65 @@ namespace WebSGV.Tests
         // (en la guarda o en la matriz) debe cambiarla a propósito. U-081, opción recomendada
         // (2026-11-22): SUPERVISOR no entra a FacturasFlete, y la administración no tiene
         // DashboardConductor (como hoy y como el menú). RegistroProductos, RegistroRutas y CargarExcel
-        // se retiraron en E5-19a (U-094): productos y rutas se gestionan en CatalogoCliente.
+        // se retiraron en E5-19a (U-094): productos y rutas se gestionan en CatalogoCliente. E5-19b (U-090,
+        // 2026-11-24): el rol SUPERVISOR se retiró; las páginas que compartía con la administración quedan
+        // solo para ella, y SUPERVISOR pasa a RolesRetirados (no entra a ninguna página con guarda de rol).
 
-        private const string A = "ADMIN", S = "SUPERVISOR", C = "CONDUCTOR", K = "CONTABILIDAD", Y = "SISTEMA";
-        private static readonly string[] Todos = { A, S, C, K, Y };
+        private const string A = "ADMIN", C = "CONDUCTOR", K = "CONTABILIDAD", Y = "SISTEMA";
+        private static readonly string[] Todos = { A, C, K, Y };
 
         private static readonly Dictionary<string, string[]> AccesoEsperado =
             new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
             {
                 { "Views/Auditoria.aspx",                         new[] { Y } },
-                { "Views/BandejaDocumentos.aspx",                 new[] { A, S } },
-                { "Views/CatalogoCliente.aspx",                   new[] { A, S } },
+                { "Views/BandejaDocumentos.aspx",                 new[] { A } },
+                { "Views/CatalogoCliente.aspx",                   new[] { A } },
                 // Solo la sesión: el permiso por orden y rol se decide después (ver GuardaEsperada).
                 { "Views/ConformarLiquidacion.aspx",              Todos },
                 { "Views/DashboardAdminSistema.aspx",             new[] { Y } },
                 { "Views/DashboardConductor.aspx",                new[] { C } },
                 { "Views/DescargarDocumento.aspx",                Todos },
                 { "Views/DescargarPdfOrdenViaje.aspx",            Todos },
-                { "Views/DestinoDescarga.aspx",                   new[] { A, S } },
+                { "Views/DestinoDescarga.aspx",                   new[] { A } },
                 { "Views/DetalleOrdenViaje.aspx",                 Todos },
-                { "Views/Exportacion/DashboardExportacion.aspx",  new[] { A, S } },
-                { "Views/Exportacion/ImportarSeguimiento.aspx",   new[] { A, S } },
-                { "Views/Exportacion/RegistroSeguimiento.aspx",   new[] { A, S } },
-                { "Views/Exportacion/SeguimientoViaje.aspx",      new[] { A, S } },
+                { "Views/Exportacion/DashboardExportacion.aspx",  new[] { A } },
+                { "Views/Exportacion/ImportarSeguimiento.aspx",   new[] { A } },
+                { "Views/Exportacion/RegistroSeguimiento.aspx",   new[] { A } },
+                { "Views/Exportacion/SeguimientoViaje.aspx",      new[] { A } },
                 { "Views/FacturasFlete.aspx",                     new[] { A } },
                 { "Views/FirmarLiquidacion.aspx",                 new[] { C } },
                 { "Views/GestionUsuarios.aspx",                   new[] { Y } },
-                { "Views/Inicio.aspx",                            new[] { A, S } },
-                { "Views/LiquidacionesAprobadasContabilidad.aspx",new[] { A, S, K } },
-                { "Views/LiquidacionesPendientes.aspx",           new[] { A, S } },
-                { "Views/ListaDespachos.aspx",                    new[] { A, S } },
+                { "Views/Inicio.aspx",                            new[] { A } },
+                { "Views/LiquidacionesAprobadasContabilidad.aspx",new[] { A, K } },
+                { "Views/LiquidacionesPendientes.aspx",           new[] { A } },
+                { "Views/ListaDespachos.aspx",                    new[] { A } },
                 // Solo la sesión: el conductor vuelve a su inicio después (RolesHelper.ExigeSegundoFactor, E4-14).
                 { "Views/MiSeguridad.aspx",                       Todos },
-                { "Views/MovimientosViaje.aspx",                  new[] { A, S } },
-                { "Views/RegistroChoferes.aspx",                  new[] { A, S } },
-                { "Views/RegistroClientes.aspx",                  new[] { A, S } },
-                { "Views/RegistroDespacho.aspx",                  new[] { A, S } },
-                { "Views/RegistroPeajes.aspx",                    new[] { A, S } },
-                { "Views/RegistroPlantas.aspx",                   new[] { A, S } },
-                { "Views/RegistroSemiremolques.aspx",             new[] { A, S } },
-                { "Views/RegistroTractos.aspx",                   new[] { A, S } },
-                { "Views/ReporteCargas.aspx",                     new[] { A, S } },
-                { "Views/ReporteGps.aspx",                        new[] { A, S } },
-                { "Views/ReportesOrdenesViaje.aspx",              new[] { A, S } },
-                { "Views/SaldosConductores.aspx",                 new[] { A, S } },
+                { "Views/MovimientosViaje.aspx",                  new[] { A } },
+                { "Views/RegistroChoferes.aspx",                  new[] { A } },
+                { "Views/RegistroClientes.aspx",                  new[] { A } },
+                { "Views/RegistroDespacho.aspx",                  new[] { A } },
+                { "Views/RegistroPeajes.aspx",                    new[] { A } },
+                { "Views/RegistroPlantas.aspx",                   new[] { A } },
+                { "Views/RegistroSemiremolques.aspx",             new[] { A } },
+                { "Views/RegistroTractos.aspx",                   new[] { A } },
+                { "Views/ReporteCargas.aspx",                     new[] { A } },
+                { "Views/ReporteGps.aspx",                        new[] { A } },
+                { "Views/ReportesOrdenesViaje.aspx",              new[] { A } },
+                { "Views/SaldosConductores.aspx",                 new[] { A } },
             };
 
         /// <summary>Valores reales de Usuarios.rol de cada grupo de la tabla (con sus alias).</summary>
         private static readonly Dictionary<string, string[]> RolesDelGrupo = new Dictionary<string, string[]>
         {
             { A, new[] { "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE" } },
-            { S, new[] { "SUPERVISOR" } },
             { C, new[] { "CONDUCTOR", "CHOFER" } },
             { K, new[] { "CONTABILIDAD" } },
             { Y, new[] { "ADMINISTRADOR DE SISTEMA" } },
         };
 
         // Retirados (2026-11): ninguna página con guarda de rol los deja pasar.
-        private static readonly string[] RolesRetirados = { "ADMINISTRADOR DE GRIFO", "ADMINISTRADOR DE MAQUINARIA", "OPERADOR" };
+        private static readonly string[] RolesRetirados = { "ADMINISTRADOR DE GRIFO", "ADMINISTRADOR DE MAQUINARIA", "OPERADOR", "SUPERVISOR" };
 
         /// <summary>
         /// Lo que deja pasar la guarda con sesión del rol indicado (en mayúsculas). Repite las reglas de
@@ -334,7 +335,6 @@ namespace WebSGV.Tests
             {
                 case "SecurityHelper.ExigirSesion()":              return true;
                 case "SecurityHelper.ExigirRolAdmin()":            return WebSGV.Helpers.RolesHelper.EsRolAdmin(rol);
-                case "SecurityHelper.ExigirRolAdminOSupervisor()": return WebSGV.Helpers.RolesHelper.EsRolAdmin(rol) || rol == "SUPERVISOR";
                 case "SecurityHelper.ExigirRolAdminSistema()":     return rol == "ADMINISTRADOR DE SISTEMA";
                 case "SecurityHelper.ExigirRolConductor()":        return WebSGV.Helpers.RolesHelper.EsRolConductor(rol);
                 default: throw new InvalidOperationException("Guarda sin regla en GuardaDejaPasar: " + guarda);

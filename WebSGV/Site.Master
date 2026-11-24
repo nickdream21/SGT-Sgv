@@ -77,8 +77,8 @@
                     </li>
                     <% } %>
 
-                    <!-- ==================== SEGUIMIENTO (ADMIN, SUPERVISOR) ==================== -->
-                    <% if (EsAdmin || EsSupervisor)
+                    <!-- ==================== SEGUIMIENTO (ADMIN) ==================== -->
+                    <% if (EsAdmin)
                         { %>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownExportacion" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -95,7 +95,7 @@
                     </li>
                     <% } %>
 
-                    <% if (EsAdmin || EsSupervisor)
+                    <% if (EsAdmin)
                         { %>
                     <!-- Liquidaciones -->
                     <li class="nav-item dropdown">
@@ -119,8 +119,8 @@
                     </li>
                     <% } %>
 
-                    <!-- ==================== REPORTES (ADMIN, SUPERVISOR) ==================== -->
-                    <% if (EsAdmin || EsSupervisor)
+                    <!-- ==================== REPORTES (ADMIN) ==================== -->
+                    <% if (EsAdmin)
                         { %>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownReportes" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">

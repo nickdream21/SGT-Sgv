@@ -66,7 +66,7 @@ namespace WebSGV.Services.Liquidaciones
         public static bool Habilitado =>
             bool.TryParse(System.Configuration.ConfigurationManager.AppSettings["MovimientosViaje.Habilitado"], out bool h) && h;
 
-        public static bool PuedeRegistrar() => SecurityHelper.TieneSesionActiva() && SecurityHelper.EsAdminOSupervisor();
+        public static bool PuedeRegistrar() => SecurityHelper.TieneSesionActiva() && SecurityHelper.EsAdmin();
 
         public static string NombreConcepto(string tipo, string concepto)
         {

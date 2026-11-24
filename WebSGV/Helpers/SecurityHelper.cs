@@ -31,22 +31,20 @@ namespace WebSGV.Helpers
         /// </summary>
         public static bool EsAdmin() => RolesHelper.EsRolAdmin(ObtenerRol());
 
-        public static bool EsAdminOSupervisor() => EsAdmin() || ObtenerRol() == RolesHelper.ROL_SUPERVISOR;
-
         public static bool EsAdminSistema()    => ObtenerRol() == RolesHelper.ROL_ADMIN_SISTEMA;
         /// <summary>CONDUCTOR o CHOFER (<see cref="RolesHelper.EsRolConductor"/>).</summary>
         public static bool EsConductor()       => RolesHelper.EsRolConductor(ObtenerRol());
         public static bool EsContabilidad()    => ObtenerRol() == RolesHelper.ROL_CONTABILIDAD;
 
         /// <summary>Roles autorizados para aprobar, rechazar o corregir liquidaciones.</summary>
-        public static bool PuedeGestionarLiquidaciones() => EsAdminOSupervisor();
+        public static bool PuedeGestionarLiquidaciones() => EsAdmin();
 
         /// <summary>
         /// Roles que pueden listar liquidaciones APROBADO de todos los conductores. CONTABILIDAD
         /// solo ve APROBADO: para una orden por id usar <c>AccesoLiquidacion.PuedeConsultar</c>.
         /// </summary>
         public static bool PuedeConsultarLiquidacionesGlobales() =>
-            EsAdminOSupervisor() || EsContabilidad();
+            EsAdmin() || EsContabilidad();
 
         // ── Guardias de acceso (redirigen si no pasan) ─────────────────────
 
@@ -69,16 +67,6 @@ namespace WebSGV.Helpers
         {
             ExigirSesion();
             if (!EsAdmin())
-                RedirigirSinPermiso();
-        }
-
-        /// <summary>
-        /// Exige un administrador de la operación o SUPERVISOR.
-        /// </summary>
-        public static void ExigirRolAdminOSupervisor()
-        {
-            ExigirSesion();
-            if (!EsAdminOSupervisor())
                 RedirigirSinPermiso();
         }
 

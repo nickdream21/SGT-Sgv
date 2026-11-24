@@ -63,7 +63,7 @@ namespace WebSGV.Views
         protected void Page_Load(object sender, EventArgs e)
         {
             // Verificar acceso antes de cualquier operación (incluidas exportaciones)
-            SecurityHelper.ExigirRolAdminOSupervisor();
+            SecurityHelper.ExigirRolAdmin();
             SecurityHelper.AgregarHeadersSeguridad();
 
             // PROCESAR EXPORTACIONES ANTES DE CUALQUIER COSA
@@ -113,12 +113,12 @@ namespace WebSGV.Views
         /// Los combos del reporte personalizado no guardan ViewState (M-136): se llenan en cada pedido, antes de que
         /// ASP.NET lea el envío, así un Buscar de otra pestaña conserva lo elegido. El servidor no los lee en ningún
         /// postback (los manda ReportesOrdenesViaje.js por GET ?action=reportePersonalizado). Se llenan solo con
-        /// sesión de administración o supervisión (Page_Load corta lo demás) y no en las exportaciones GET.
+        /// sesión de administración (Page_Load corta lo demás) y no en las exportaciones GET.
         /// </summary>
         protected override void OnInit(EventArgs e)
         {
             base.OnInit(e);
-            if (SecurityHelper.TieneSesionActiva() && SecurityHelper.EsAdminOSupervisor()
+            if (SecurityHelper.TieneSesionActiva() && SecurityHelper.EsAdmin()
                 && string.IsNullOrEmpty(Request.QueryString["action"]))
             {
                 CargarEstadosPersonalizado();
@@ -607,7 +607,7 @@ namespace WebSGV.Views
         public static string ObtenerDetalleOrden(int idOrden)
         {
             // Los WebMethods no pasan por Page_Load: validar sesión y rol aquí.
-            if (!SecurityHelper.TieneSesionActiva() || !SecurityHelper.EsAdminOSupervisor())
+            if (!SecurityHelper.TieneSesionActiva() || !SecurityHelper.EsAdmin())
             {
                 LogSGV.Advertencia("ObtenerDetalleOrden sin sesión o sin permiso (orden {IdOrden})", idOrden);
                 return "<div class='alert alert-warning'>La sesión ya no está activa o no tiene permiso. Vuelva a ingresar.</div>";

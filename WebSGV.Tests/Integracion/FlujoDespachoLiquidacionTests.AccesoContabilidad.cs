@@ -38,7 +38,7 @@ namespace WebSGV.Tests.Integracion
                     Fila("SELECT estadoAprobacion FROM OrdenViaje WHERE idOrdenViaje = @id", idOrden)["estadoAprobacion"]);
                 Assert.False(AccesoLiquidacion.PuedeConsultar(idOrden, datos.IdUsuarioAdmin, Contabilidad));
                 Assert.True(AccesoLiquidacion.PuedeConsultar(idOrden, datos.IdUsuarioAdmin, Admin));
-                Assert.True(AccesoLiquidacion.PuedeConsultar(idOrden, datos.IdUsuarioAdmin, RolesHelper.ROL_SUPERVISOR));
+                Assert.False(AccesoLiquidacion.PuedeConsultar(idOrden, datos.IdUsuarioAdmin, "SUPERVISOR"));   // retirado (E5-19b)
 
                 // APROBADO
                 string huella = HuellaLiquidacion.Calcular(LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrden));

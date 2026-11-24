@@ -8,7 +8,7 @@ namespace WebSGV.Tests
 {
     /// <summary>
     /// B6-6 (H7, D3): quién ve el detalle y el PDF de una liquidación pedida por id.
-    /// CONTABILIDAD solo APROBADO; administración y supervisor todo; el conductor, las suyas.
+    /// CONTABILIDAD solo APROBADO; administración todo; el conductor, las suyas (SUPERVISOR, retirado en E5-19b, ninguna).
     /// </summary>
     public class AccesoLiquidacionTests
     {
@@ -33,9 +33,8 @@ namespace WebSGV.Tests
         [InlineData("ADMIN")]
         [InlineData("ADMINISTRADOR")]
         [InlineData("ADMINISTRADOR DE TRANSPORTE")]
-        [InlineData("SUPERVISOR")]
-        [InlineData("supervisor")]
-        public void AdministracionYSupervisor_VenCualquierEstado(string rol)
+        [InlineData(" administrador de transporte ")]
+        public void Administracion_VeCualquierEstado(string rol)
         {
             Assert.True(AccesoLiquidacion.VeTodasLasOrdenes(rol));
             foreach (string estado in Estados)
@@ -60,6 +59,8 @@ namespace WebSGV.Tests
         [InlineData("ADMINISTRADOR DE GRIFO")]
         [InlineData("ADMINISTRADOR DE MAQUINARIA")]
         [InlineData("OPERADOR")]
+        [InlineData("SUPERVISOR")]                 // retirado (E5-19b, U-090)
+        [InlineData("supervisor")]
         [InlineData("")]
         [InlineData(null)]
         public void OtrosRoles_NoVenNinguna(string rol)

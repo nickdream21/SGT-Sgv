@@ -15,7 +15,7 @@ namespace WebSGV.Views
     ///       firma = una versión anterior de la misma orden (p. ej. la declaración del conductor).
     ///
     /// Permisos:
-    ///   - Administración y SUPERVISOR: cualquier orden.
+    ///   - Administración: cualquier orden.
     ///   - CONTABILIDAD: solo las APROBADO.
     ///   - CONDUCTOR: sólo las suyas.
     ///   (ver <see cref="AccesoLiquidacion"/>)
