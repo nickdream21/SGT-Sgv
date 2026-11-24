@@ -57,7 +57,7 @@ namespace WebSGV.Views
 
                     AuditoriaHelper.Registrar("INSERT", "Indicadores", descripcion:
                         $"Carga de indicadores desde Excel - Archivo: {Path.GetFileName(fileUpload.FileName)}, Periodo: {selectedMonth:00}/{selectedYear}, Registros: {rowsProcessed}");
-                    ShowAlert($"Proceso completado exitosamente. Se procesaron {rowsProcessed} registros.", "success", enPagina: true);
+                    ShowAlert($"Carga terminada: se procesaron {rowsProcessed} registros.", "success", enPagina: true);
 
                     // Refrescar la grilla
                     LoadUploadHistory();
@@ -542,7 +542,7 @@ namespace WebSGV.Views
                     });
                     AuditoriaHelper.Registrar("DELETE", "Indicadores", uploadId,
                         "Carga de indicadores eliminada junto con sus registros");
-                    ShowAlert("La carga y sus registros asociados han sido eliminados exitosamente.", "success");
+                    ShowAlert("Carga eliminada junto con sus registros.", "success");
                 }
                 catch (Exception ex)
                 {

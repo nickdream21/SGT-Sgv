@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-078 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-081 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -90,6 +90,9 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-076** Encabezado de DetalleOrdenViaje con una orden real (E5-15) — como un conductor con al menos una liquidación (POR_CONFORMAR o APROBADO), a 390 y 1366 px: el `<h1>` "Liquidación N" no rompe la cabecera junto a la píldora de estado; el conductor de prueba no tiene órdenes en `sgvActualizada` (solo se vio el panel de error). · C
 - [ ] **P-077** Sello del lote de RegistroDespacho con conductores (E5-15) — con un lote de prueba en sesión, agregar un conductor (postback asíncrono) y ver que el sello del encabezado pase a "LOTE ACTIVO - 1 conductores" sin recargar, a 1366 y 390 px; luego cancelar el lote (se probó iniciar → cancelar, no agregar). · C
 - [ ] **P-078** Catálogos de la plantilla con escritura real (E5-16) — contra un `sgvEnsayo_*` (no en `sgvActualizada`), a 1366 y 390 px en RegistroTractos y RegistroSemiremolques (y en Peajes, Plantas, Clientes y Choferes de E5-16b, y CatalogoCliente y DestinoDescarga de E5-16c): alta, edición con un error que reabre el modal, Activar/Desactivar aceptando la confirmación, con un filtro aplicado y en la página 2: aviso correcto, la fila cambia y se conservan la página y el filtro; en RegistroChoferes, registrar un DNI ya existente muestra el aviso de duplicado con el nombre sin espacios de más (M-078), y un SUPERVISOR (P-028) entra a los 4 de E5-16b; con más de 25 ítems en un cliente de CatalogoCliente y más de 25 destinos, la página 2 vuelve a la 1 al cambiar de cliente o de pestaña, y en DestinoDescarga el filtro por pedido se conserva al paginar y tras "Quitar". · B
+- [ ] **P-079** Avisos de LiquidacionesPendientes con una orden real (E5-24a) — en un `sgvEnsayo_*` con una orden PENDIENTE de prueba, a 1366 y 390 px: ajuste −5 y entregado −3 dan aviso amarillo sin emoji; aprobar, retirar o revertir con éxito dan aviso verde tras recargar (`trasRecargar`); un error del servidor da aviso rojo. En `sgvActualizada` no había órdenes pendientes ni aprobadas (2026-11-24). · B
+- [ ] **P-080** Chip "Completo" del manifiesto con un lote internacional real (E5-24a) — en RegistroDespacho, un lote con manifiestos completos muestra "Completo" (verde) sin ✓ y uno parcial "Parcial". · C
+- [ ] **P-081** Página 404 propia en el sitio publicado — en Release (`customErrors RemoteOnly` + `httpErrors Custom`) una URL inexistente muestra Error404.aspx con "Ir al inicio" (en local, Debug muestra la página de ASP.NET). · C
 - [ ] **P-074** Anchos que cambiaron con los puntos de corte de E5-13 — las reglas de celular pasaron de `max-width: 768px/576px/992px` a `767.98/575.98/991.98px` (cambia solo exactamente a 768, 576 y 992 px, donde ahora coinciden con la rejilla de Bootstrap) y las de 480, 520 y 560 px a 575.98 px (cambia entre 481 y 575 px): con el ancho exacto, mirar Login, Inicio, Auditoría, ReportesOrdenesViaje, ListaDespachos, RegistroDespacho y LiquidacionesPendientes a 768 px (tablet vertical), y MiSeguridad, SegundoFactor, FirmarLiquidacion, DashboardExportacion y SeguimientoExportacion a 540 px: sin desbordes ni cortes. Además, en RegistroDespacho los 8 desplegables con `custom-select-sm` (Sección del Word, Cliente y Planta de programar e importar, Completa el despacho, Planta de descarga) quedan de 31 px como los campos de su fila. · C
 
 ## Reglas

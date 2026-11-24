@@ -8,7 +8,7 @@
     <style>
         body { font-family: "Segoe UI", Roboto, sans-serif; background: #eceef1; margin: 0; padding: 0; color: #1a2230; }
         .error-container { max-width: 900px; margin: 40px auto; padding: 24px; background: #fff; border: 1px solid #d5dae2; border-radius: 3px; }
-        .error-icon { font-size: 4rem; color: #9a1c1c; text-align: center; margin-bottom: 12px; }
+        @media (max-width: 575.98px) { .error-container { margin: 24px 16px; } }
         .error-title { font-size: 1.5rem; font-weight: 700; text-align: center; margin: 0 0 8px; }
         .error-message { font-size: 1rem; color: #566173; text-align: center; margin-bottom: 18px; }
         .error-debug { background: #f8eed8; border: 1px solid #dcc48a; border-radius: 3px; padding: 14px; margin: 14px 0; word-break: break-word; }
@@ -25,7 +25,6 @@
 <body>
     <form id="form1" runat="server">
         <div class="error-container">
-            <div class="error-icon">&#9888;</div>
             <h1 class="error-title">Ocurri&oacute; un error inesperado</h1>
             <p class="error-message">Algo sali&oacute; mal al procesar tu solicitud.</p>
 

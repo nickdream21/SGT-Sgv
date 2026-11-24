@@ -185,10 +185,10 @@ namespace WebSGV.Views
                     CargarDespachosViajesActivos(idsViajes);
                     HabilitarLiquidacion(viajesActivos, totalDespachos);
 
-                    // ✅ VERIFICAR SI HAY OBSERVACIONES DE RECHAZO
+                    // VERIFICAR SI HAY OBSERVACIONES DE RECHAZO
                     VerificarObservacionesRechazo(idsViajes);
 
-                    // ✅ PRE-CARGAR DATOS DE ORDEN RECHAZADA SI EXISTE
+                    // PRE-CARGAR DATOS DE ORDEN RECHAZADA SI EXISTE
                     CargarDatosOrdenRechazada(idsViajes);
                 }
                 else
@@ -279,7 +279,7 @@ namespace WebSGV.Views
 
         private void MostrarAlertaRechazo(string numeroOrden, string observaciones, DateTime fechaRechazo, string rechazadoPor)
         {
-            // ✅ Codificar todas las variables para prevenir XSS
+            // Codificar todas las variables para prevenir XSS
             string numeroOrdenSafe = System.Web.HttpUtility.HtmlEncode(numeroOrden);
             string observacionesSafe = System.Web.HttpUtility.HtmlEncode(observaciones);
             string rechazadoPorSafe = System.Web.HttpUtility.HtmlEncode(rechazadoPor);
@@ -587,7 +587,7 @@ namespace WebSGV.Views
                     return;
                 }
 
-                // ✅ Detectar si es una re-liquidación de orden rechazada
+                // Detectar si es una re-liquidación de orden rechazada
                 bool esReliquidacion = !string.IsNullOrEmpty(hfNumeroOrdenExistente.Value);
                 // Orden nueva: el número lo genera LiquidacionConductorService dentro de su transacción
                 // (con los viajes ya bloqueados) y lo deja en input.NumeroOrdenViaje al confirmar.
@@ -705,7 +705,7 @@ namespace WebSGV.Views
                     AuditoriaHelper.Registrar("GUARDAR_LIQUIDACION", "OrdenViaje", numeroOrdenViaje,
                         $"Conductor guardó la liquidación pendiente de firma - Orden: {numeroOrdenViaje}, Viajes: {string.Join(", ", idsViajesActivos)}");
 
-                    // ✅ Fase 3.A: redirigir al conductor a la vista de firma digital
+                    // Fase 3.A: redirigir al conductor a la vista de firma digital
                     if (idOrdenGuardada > 0)
                     {
                         Response.Redirect(
@@ -1139,12 +1139,10 @@ namespace WebSGV.Views
             try
             {
                 string mensajeCompleto = $@"
-                    ¡Liquidación enviada exitosamente!<br/>
-                    <strong>Número de orden:</strong> {System.Web.HttpUtility.HtmlEncode(numeroOrdenViaje)}<br/>
+                    La liquidación {System.Web.HttpUtility.HtmlEncode(numeroOrdenViaje)} quedó enviada a la administración para su revisión.
                     <div class='alert alert-info mt-3'>
                         <i class='fas fa-info-circle mr-2'></i>
-                        <strong>Estado:</strong> Pendiente de aprobación<br/>
-                        Tu liquidación ha sido enviada a la administración para su revisión.
+                        <strong>Estado:</strong> Pendiente de aprobación
                     </div>";
 
                 MostrarMensajeHtml(mensajeCompleto, "success");
@@ -1272,6 +1270,10 @@ namespace WebSGV.Views
                     AuditoriaHelper.Registrar("RETIRAR", "OrdenViaje", idOrdenViaje,
                         $"Conductor retiró liquidación - OrdenViaje ID: {idOrdenViaje}, Número: {numeroOrdenViaje}, Viaje reabierto: {idViajeProgreso}");
                 }
+
+                // El texto de éxito se arma aquí (el del SP no sigue el tono de la página).
+                if (resultado == 1)
+                    mensaje = $"Liquidación {numeroOrdenViaje} retirada. El viaje quedó abierto para que la vuelvas a liquidar.";
 
                 return new { success = resultado == 1, message = mensaje };
             }

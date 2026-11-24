@@ -523,7 +523,7 @@ namespace WebSGV.Services.Liquidaciones
         {
             using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
             {
-                // ✅ CONSULTA CORREGIDA: Incluye todas las tablas
+                // CONSULTA CORREGIDA: Incluye todas las tablas
                 string query = @"
                 SELECT
                     -- Orden
@@ -609,7 +609,7 @@ namespace WebSGV.Services.Liquidaciones
                     {
                         if (reader.Read())
                         {
-                            // ✅ Calcular ingresos (principales + adicionales)
+                            // Calcular ingresos (principales + adicionales)
                             decimal ingresosPrincipalesSoles =
                                 Convert.ToDecimal(reader["despachoSoles"]) +
                                 Convert.ToDecimal(reader["prestamoSoles"]) +
@@ -709,7 +709,7 @@ namespace WebSGV.Services.Liquidaciones
                                 DetallesGastosAdicionales = new List<ItemAdicional>()
                             };
 
-                            reader.Close(); // ✅ Cerrar reader antes de nuevas consultas
+                            reader.Close(); // Cerrar reader antes de nuevas consultas
 
                             // Un solo viaje a la BD para todos los detalles (varios SELECT, un resultado
                             // por cada uno): antes eran 6 consultas seguidas y, con la BD remota, cada
@@ -824,7 +824,7 @@ namespace WebSGV.Services.Liquidaciones
                             }
 
 
-                            // ✅ CALCULAR TOTAL DE GASTOS
+                            // CALCULAR TOTAL DE GASTOS
                             detalle.TotalGastosSoles =
                                 detalle.GastosPeajesSoles +
                                 detalle.GastosAlimentacionSoles +

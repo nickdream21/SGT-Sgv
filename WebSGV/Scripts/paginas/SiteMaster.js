@@ -299,19 +299,16 @@
 // Reemplazo de alert(): un alert() detiene la página hasta que se cierra (y bloquea la
 // automatización de pruebas). SGV.avisar(mensaje) muestra el aviso arriba a la derecha; se
 // cierra solo a los 10 s (pausa con el cursor o el foco encima), salvo los errores (danger), que
-// esperan a que el usuario los cierre. Desde el servidor: AvisoHelper.Avisar. El tipo sale del emoji inicial (✅ éxito, ❌ error, ⚠️ advertencia; sin emoji:
-// "Error..." es error y lo demás advertencia) o de opciones.tipo. Con { trasRecargar: true } el aviso se guarda y aparece después de un
-// location.reload().
+// esperan a que el usuario los cierre. Desde el servidor: AvisoHelper.Avisar. El tipo sale de opciones.tipo
+// (success, danger, warning, info); sin él, un mensaje que empieza con "Error" es error y lo demás advertencia.
+// Con { trasRecargar: true } el aviso se guarda y aparece después de un location.reload().
 (function () {
     var SGV = window.SGV = window.SGV || {};
     var CLAVE = 'sgvAvisoPendiente';
 
     function tipoDe(mensaje) {
-        if (/^\s*✅/.test(mensaje)) return 'success';
-        if (/^\s*❌/.test(mensaje)) return 'danger';
-        if (/^\s*⚠/.test(mensaje)) return 'warning';
         if (/^\s*Error/i.test(mensaje)) return 'danger';
-        return 'warning';   // sin emoji: validaciones de formulario
+        return 'warning';   // validaciones de formulario
     }
 
     function contenedor() {

@@ -145,7 +145,7 @@ function consultarHoraLlegadaGps() {
                 var textoActual = $('#detalleHoraLlegada').text();
                 $('#detalleHoraLlegada').text(textoActual + ' · ' + result.horaLlegadaGps + ' h (verificada por GPS)');
             } else {
-                SGV.avisar('❌ ' + result.message);
+                SGV.avisar(result.message, { tipo: 'danger' });
             }
         },
         error: function (xhr) {
@@ -518,10 +518,10 @@ function enviarCorreccionSalida(fecha, hora, motivo) {
             var result = response.d;
             if (result.success) {
                 $('#modalDetalleLiquidacion').modal('hide');
-                SGV.avisar('✅ ' + result.message, { trasRecargar: true });
+                SGV.avisar(result.message, { tipo: 'success', trasRecargar: true });
                 location.reload();
             } else {
-                SGV.avisar('❌ ' + result.message);
+                SGV.avisar(result.message, { tipo: 'danger' });
                 $btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i>Guardar corrección');
             }
         },
@@ -662,7 +662,7 @@ function aprobarDesdeModal() {
     var nota = $('#notaAprobacion').val().trim();
 
     if (ajustes.DescuentoSoles < 0 || ajustes.DescuentoDolares < 0 || ajustes.ReintegroSoles < 0 || ajustes.ReintegroDolares < 0) {
-        SGV.avisar('⚠️ Los montos de ajuste no pueden ser negativos.');
+        SGV.avisar('Los montos de ajuste no pueden ser negativos.', { tipo: 'warning' });
         return;
     }
 
@@ -677,7 +677,7 @@ function aprobarDesdeModal() {
 
     var ent = leerIngresosEntregados();
     if (ent.negativo) {
-        SGV.avisar('⚠️ Los montos entregados al conductor no pueden ser negativos.');
+        SGV.avisar('Los montos entregados al conductor no pueden ser negativos.', { tipo: 'warning' });
         return;
     }
 
@@ -728,10 +728,10 @@ function enviarAprobacion(ajustes, nota, ingresos) {
             var result = response.d;
             if (result.success) {
                 $('#modalDetalleLiquidacion').modal('hide');
-                SGV.avisar('✅ ' + result.message, { trasRecargar: true });
+                SGV.avisar(result.message, { tipo: 'success', trasRecargar: true });
                 location.reload();
             } else {
-                SGV.avisar('❌ ' + result.message);
+                SGV.avisar(result.message, { tipo: 'danger' });
                 $btn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i>Aprobar y enviar al conductor');
             }
         },
@@ -899,10 +899,10 @@ function confirmarRetiroEnvio() {
             $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Retirar envío');
             if (r.success) {
                 $('#modalRetirarEnvio').modal('hide');
-                SGV.avisar('✅ ' + r.message, { trasRecargar: true });
+                SGV.avisar(r.message, { tipo: 'success', trasRecargar: true });
                 location.reload();
             } else {
-                SGV.avisar('❌ ' + r.message);
+                SGV.avisar(r.message, { tipo: 'danger' });
             }
         },
         error: function (xhr) {
@@ -1050,7 +1050,7 @@ function descargarPdfOrdenViaje(idOrden) {
                 // Abrir en pestaña nueva (vista previa). Para forzar descarga: &download=1
                 window.open(r.url, '_blank');
             } else {
-                SGV.avisar('\u274c ' + (r && r.message ? r.message : 'No se pudo obtener el PDF.'));
+                SGV.avisar((r && r.message ? r.message : 'No se pudo obtener el PDF.'), { tipo: 'danger' });
             }
         },
         error: function (xhr) {
@@ -1111,20 +1111,20 @@ function enviarReversion(idOrden, motivo) {
             var result = response.d;
             if (result.success) {
                 $('#modalRevertir').modal('hide');
-                SGV.avisar('\u2705 ' + result.message, { trasRecargar: true });
+                SGV.avisar(result.message, { tipo: 'success', trasRecargar: true });
                 // La orden vuelve a pendientes: recargar para refrescar esa lista (se genera en el
                 // servidor) y los contadores, regresando a la pestaña de aprobadas.
                 try { sessionStorage.setItem('sgvLiqTab', 'aprobadas'); } catch (e) { }
                 location.reload();
             } else {
-                SGV.avisar('\u274c ' + result.message);
+                SGV.avisar(result.message, { tipo: 'danger' });
             }
-            $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Confirmar Reversi\u00f3n');
+            $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Confirmar reversi\u00f3n');
         },
         error: function (xhr) {
             console.error('Error:', xhr.responseText);
             SGV.avisar('Error al revertir la aprobaci\u00f3n.');
-            $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Confirmar Reversi\u00f3n');
+            $btn.prop('disabled', false).html('<i class="fas fa-undo mr-1"></i>Confirmar reversi\u00f3n');
         }
     });
 }

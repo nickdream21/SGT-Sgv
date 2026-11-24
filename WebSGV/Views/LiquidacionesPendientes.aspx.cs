@@ -242,7 +242,7 @@ namespace WebSGV.Views
                 Services.NotificacionService.NotificarLiquidacionRechazada(idOrdenViaje, numeroOrdenViaje, observaciones);
 
                 MostrarMensaje(
-                    $"Liquidación {numeroOrdenViaje} rechazada exitosamente. El viaje ha sido reabierto para correcciones del conductor.",
+                    $"Liquidación {numeroOrdenViaje} rechazada. El viaje quedó abierto para que el conductor la corrija.",
                     "success"
                 );
 
@@ -250,7 +250,7 @@ namespace WebSGV.Views
                 ScriptManager.RegisterStartupScript(this, GetType(), "CloseModal",
                     "$('#modalRechazar').modal('hide');", true);
 
-                // ✅ Recargar directamente sin bloquear el hilo
+                // Recargar directamente sin bloquear el hilo
                 CargarLiquidacionesPendientes();
             }
             catch (Exception ex)

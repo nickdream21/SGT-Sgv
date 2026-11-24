@@ -27,9 +27,9 @@
                     return ('0' + b.toString(16)).slice(-2);
                 }).join('');
                 if (hex === (hidden.value || '').toLowerCase()) {
-                    mostrar('vd-estado-ok', '✔ El archivo coincide: es exactamente el documento firmado (huella ' + hex + ').');
+                    mostrar('vd-estado-ok', 'El archivo coincide: es exactamente el documento firmado (huella ' + hex + ').');
                 } else {
-                    mostrar('vd-estado-alerta', '✖ El archivo NO coincide con el documento firmado: fue modificado o es otro documento (huella ' + hex + ').');
+                    mostrar('vd-estado-alerta', 'El archivo no coincide con el documento firmado: fue modificado o es otro documento (huella ' + hex + ').');
                 }
             });
         };

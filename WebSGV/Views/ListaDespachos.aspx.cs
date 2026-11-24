@@ -847,7 +847,7 @@ namespace WebSGV.Views
                     MostrarListaLotes();
                     CargarLotesRegistrados();
                     if (huboCambios)
-                        MostrarMensaje("Cambios guardados exitosamente en el lote.", "success");
+                        MostrarMensaje("Cambios del lote guardados.", "success");
                     else
                         MostrarMensaje("No había cambios que guardar.", "info");
                 }

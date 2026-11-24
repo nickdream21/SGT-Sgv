@@ -47,7 +47,7 @@ function verificarRUC() {
             var direccion = document.getElementById(SGV.txtDireccion);
             if (direccion && !direccion.value.trim() && r.direccion)
                 direccion.value = r.direccion.substring(0, direccion.maxLength > 0 ? direccion.maxLength : r.direccion.length);
-            SGV.avisar('✅ Datos del RUC cargados; revíselos antes de registrar.');
+            SGV.avisar('Datos del RUC cargados; revíselos antes de registrar.', { tipo: 'success' });
         } else {
             SGV.avisar((r && r.mensaje) || 'No se pudo consultar el RUC; complete los datos a mano.');
         }

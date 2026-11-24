@@ -111,7 +111,7 @@
 
             <!-- Botón enviar -->
             <button type="button" class="fl-submit" id="btnFirmar" disabled>
-                <i class="fas fa-check-circle"></i>Firmar y Enviar
+                <i class="fas fa-check-circle"></i>Firmar y enviar
             </button>
 
             <p class="fl-legal">

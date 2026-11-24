@@ -60,7 +60,7 @@ namespace WebSGV.Views
             SecurityHelper.ExigirRolAdminOSupervisor();
             SecurityHelper.AgregarHeadersSeguridad();
 
-            // ✅ PROCESAR EXPORTACIONES ANTES DE CUALQUIER COSA
+            // PROCESAR EXPORTACIONES ANTES DE CUALQUIER COSA
             string action = Request.QueryString["action"];
 
             if (!string.IsNullOrEmpty(action))
@@ -69,16 +69,16 @@ namespace WebSGV.Views
                 {
                     case "exportarLiquidaciones":
                         ExportarLiquidacionesExcel();
-                        return; // ✅ Salir inmediatamente
+                        return; // Salir inmediatamente
                     case "exportarViajesActivos":
                         ExportarViajesActivosExcel();
-                        return; // ✅ Salir inmediatamente
+                        return; // Salir inmediatamente
                     case "generarPDF":
                         GenerarPDFLiquidaciones();
-                        return; // ✅ Salir inmediatamente
+                        return; // Salir inmediatamente
                     case "reportePersonalizado":
                         GenerarReportePersonalizado();
-                        return; // ✅ Salir inmediatamente
+                        return; // Salir inmediatamente
                 }
             }
 
@@ -215,7 +215,7 @@ namespace WebSGV.Views
         {
             DataTable dt = ReportesOrdenesViajeService.ObtenerLiquidaciones(fechaDesde, fechaHasta);
 
-            // ✅ CALCULAR MONTOS FINALES (Reintegros - Descuentos)
+            // CALCULAR MONTOS FINALES (Reintegros - Descuentos)
             dt.Columns.Add("MontoSoles", typeof(decimal));
             dt.Columns.Add("MontoDolares", typeof(decimal));
 
@@ -639,13 +639,13 @@ namespace WebSGV.Views
                     html.Append("</div>");
                     html.Append("</div>");
 
-                    // ✅ INGRESOS
+                    // INGRESOS
                     html.Append(ObtenerSeccionIngresos(numeroOrden));
 
-                    // ✅ GASTOS
+                    // GASTOS
                     html.Append(ObtenerSeccionGastos(numeroOrden));
 
-                    // ✅ BALANCE FINAL
+                    // BALANCE FINAL
                     html.Append(ObtenerBalanceFinal(numeroOrden));
 
                     html.Append("</div>");

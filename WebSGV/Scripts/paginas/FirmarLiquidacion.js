@@ -89,7 +89,7 @@
     // =================== Enviar firma ===================
     function restaurarBoton() {
         btnFirmar.classList.remove('loading');
-        btnFirmar.innerHTML = '<i class="fas fa-check-circle"></i>Firmar y Enviar';
+        btnFirmar.innerHTML = '<i class="fas fa-check-circle"></i>Firmar y enviar';
         actualizarEstadoBotones();
     }
 

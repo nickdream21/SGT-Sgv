@@ -69,7 +69,7 @@ namespace WebSGV
                 return;
             }
 
-            // ✅ NO establecer ViewStateUserKey en páginas públicas
+            // NO establecer ViewStateUserKey en páginas públicas
             // porque si el SessionID cambia (expiración, regeneración, cookie corrupta),
             // el ViewState firmado con el ID anterior será inválido → HttpException
             if (Page.Session != null && !EsPaginaPublica())
@@ -387,7 +387,7 @@ namespace WebSGV
                 Session.Clear();
                 Session.Abandon();
 
-                // ✅ Invalidar la cookie de sesión (expirarla, NO vaciarla)
+                // Invalidar la cookie de sesión (expirarla, NO vaciarla)
                 HttpCookie sessionCookie = new HttpCookie("SGV_SessionId")
                 {
                     Expires = DateTime.Now.AddDays(-1)

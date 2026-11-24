@@ -579,7 +579,7 @@ namespace WebSGV.Views
 
                     AuditoriaHelper.Registrar("INSERT", "Usuarios", idNuevo, $"Nuevo usuario creado: {nombreUsuario}, rol: {rol}",
                         null, JsonUsuarioNuevo(nombreUsuario, nombre, rol, tieneConductor ? (int?)idConductor : null));
-                    MostrarMensaje($"Usuario '{nombreUsuario}' creado exitosamente.", "success");
+                    MostrarMensaje($"Usuario '{nombreUsuario}' creado.", "success");
                 }
                 else
                 {
@@ -626,7 +626,7 @@ namespace WebSGV.Views
                             : $"Usuario actualizado: nombre={nombre}, rol {rolAnterior} -> {rol}",
                         Json(Convert.ToString(anterior["nombre"]), rolAnterior, anterior["idConductor"]),
                         Json(nombre, rol, tieneConductor ? (object)idConductor : null));
-                    MostrarMensaje("Usuario actualizado exitosamente.", "success");
+                    MostrarMensaje("Usuario actualizado.", "success");
                 }
 
                 CargarUsuarios();
@@ -686,7 +686,7 @@ namespace WebSGV.Views
                 SesionVigenteHelper.InvalidarCache(idUsuario);
 
                 AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, "Contraseña restablecida por Admin Sistema");
-                MostrarMensaje("Contraseña restablecida exitosamente.", "success");
+                MostrarMensaje("Contraseña restablecida.", "success");
                 CargarUsuarios();
             }
             catch (Exception ex)

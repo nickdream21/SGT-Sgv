@@ -117,7 +117,7 @@ namespace WebSGV.Views
                 SesionVigenteHelper.InvalidarCache(idUsuario.Value);
                 AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario.Value,
                     "Contraseña restablecida mediante enlace de recuperación");
-                MostrarMensaje("¡Contraseña restablecida exitosamente! Ahora puede iniciar sesión.", true);
+                MostrarMensaje("Contraseña restablecida. Ahora puede iniciar sesión.", true);
                 pnlFormulario.Visible = false;
                 HashTokenActual = "";
             }

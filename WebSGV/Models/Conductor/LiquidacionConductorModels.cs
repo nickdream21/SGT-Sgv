@@ -126,7 +126,7 @@ namespace WebSGV.Models.Conductor
         public int IdTracto { get; set; }
         public int IdCarreta { get; set; }
         public int IdViajeProgreso { get; set; }
-        /// <summary>Usuario que registra. 0 ⇒ se envía DBNull (igual que IdUsuarioActual &gt; 0 ? ... : DBNull).</summary>
+        /// <summary>Usuario que registra; con 0 se envía DBNull (igual que IdUsuarioActual &gt; 0 ? ... : DBNull).</summary>
         public int IdUsuarioRegistro { get; set; }
         /// <summary>Conductor de sesión, usado como guard IDOR en sp_DC_CerrarViajesProgreso.</summary>
         public int IdConductorActual { get; set; }

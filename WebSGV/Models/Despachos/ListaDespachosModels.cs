@@ -40,13 +40,13 @@ namespace WebSGV.Models.Despachos
         public string GuiaTransportista { get; set; }
         public string NumeroViaje { get; set; }
 
-        // ✅ NUEVOS: IDs necesarios para la Orden de Viaje
+        // NUEVOS: IDs necesarios para la Orden de Viaje
         public int IdConductor { get; set; }
         public int IdTracto { get; set; }
         public int IdCarreta { get; set; }
         public int IdCliente { get; set; }
 
-        // ✅ NUEVOS: Datos para operaciones internacionales
+        // NUEVOS: Datos para operaciones internacionales
         public bool EsInternacional { get; set; }
         public string NumeroCPIC { get; set; }
         public int? IdCPIC { get; set; }

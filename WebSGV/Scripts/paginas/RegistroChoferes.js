@@ -39,7 +39,7 @@ function buscarPorDNI() {
             document.getElementById(SGV.txtNombres).value = r.nombres || '';
             document.getElementById(SGV.txtApellidoPaterno).value = r.apellidoPaterno || '';
             document.getElementById(SGV.txtApellidoMaterno).value = r.apellidoMaterno || '';
-            SGV.avisar('✅ Datos del DNI cargados; revíselos antes de registrar.');
+            SGV.avisar('Datos del DNI cargados; revíselos antes de registrar.', { tipo: 'success' });
         } else {
             SGV.avisar((r && r.mensaje) || 'No se pudo consultar el DNI; complete los datos a mano.');
         }

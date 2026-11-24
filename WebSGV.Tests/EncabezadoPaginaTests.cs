@@ -34,6 +34,9 @@ namespace WebSGV.Tests
         internal static readonly HashSet<string> NombresPropios = new HashSet<string>(StringComparer.Ordinal)
         {
             "Excel", "SGV", "Vitapro", "Onway", "SUNAT", "Perú", "Ecuador",
+            // Siglas y formatos que aparecen en los botones (InterfazFormalTests).
+            "PDF", "GPS", "RUC", "CPIC", "DNI", "OV", "ZIP", "Word",
+            "Santa", "Rosa",   // grifo Santa Rosa (Seguimiento de exportación)
         };
 
         internal static readonly string[] ClasesRetiradas =

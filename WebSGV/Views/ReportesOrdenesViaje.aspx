@@ -155,9 +155,9 @@
                     <div class="alert alert-info-light mt-3 mb-0">
                         <i class="fas fa-info-circle mr-2"></i>
                         <strong>Leyenda:</strong>
-                        <span class="ml-3 monto-descuento">● Rojo = Descuento Neto</span>
-                        <span class="ml-3 monto-reintegro">● Azul = Reintegro Neto</span>
-                        <span class="ml-3 text-dark">● Negro = Cero</span>
+                        <span class="d-block d-sm-inline ml-sm-3 monto-descuento">En rojo: descuento neto.</span>
+                        <span class="d-block d-sm-inline ml-sm-3 monto-reintegro">En azul: reintegro neto.</span>
+                        <span class="d-block d-sm-inline ml-sm-3 text-dark">En negro: cero.</span>
                     </div>
                 </div>
             </div>

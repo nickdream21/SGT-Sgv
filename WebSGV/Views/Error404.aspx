@@ -64,7 +64,7 @@
                 <i class="fas fa-arrow-left mr-2"></i>Volver
             </a>
             <a href="/Views/Login.aspx" class="btn btn-primary">
-                <i class="fas fa-home mr-2"></i>Ir al Inicio
+                <i class="fas fa-home mr-2"></i>Ir al inicio
             </a>
         </div>
         <p class="error-code">

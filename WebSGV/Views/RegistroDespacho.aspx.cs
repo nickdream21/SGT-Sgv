@@ -387,7 +387,7 @@ namespace WebSGV.Views
                 Carga = ResumenCarga(c.Carga),
                 LotesCarga = LotesDeCarga(c.Carga),
                 EstadoViaje = c.EstadoViaje ?? "Por asignar",
-                Manifiesto = !esInternacional ? "N/A" : (c.TieneManifiestos ? "✓ Completo" : (c.TieneAlgunManifiesto ? "Parcial" : "Pendiente"))
+                Manifiesto = !esInternacional ? "N/A" : (c.TieneManifiestos ? "Completo" : (c.TieneAlgunManifiesto ? "Parcial" : "Pendiente"))
             }).ToList();
 
             gvConductoresLote.DataSource = conductores;
@@ -544,7 +544,7 @@ namespace WebSGV.Views
                         MostrarMensaje($"Lote iniciado con {LoteActual.CantidadConductores} tracto(s) importados. Revíselos y pulse \"Finalizar lote\" para guardar.", "success", enPagina: true);
                     }
                     else
-                        MostrarMensaje("Lote iniciado exitosamente. Ahora puede agregar conductores.", "success", enPagina: true);
+                        MostrarMensaje("Lote iniciado. Ahora puede agregar conductores.", "success", enPagina: true);
 
                     // Scroll a la sección de conductores
                     LlamarFuncionJsAlCargar("scrollToConductores", "scrollToConductores");
@@ -1187,8 +1187,8 @@ namespace WebSGV.Views
                 EstablecerFechaPorDefecto();
 
                 MostrarMensaje(completados == 0
-                    ? $"Lote finalizado exitosamente. Se crearon {creados} despachos."
-                    : $"Lote finalizado exitosamente. Se completaron {completados} despacho(s) programado(s) con sus documentos" +
+                    ? $"Lote finalizado: se crearon {creados} despachos."
+                    : $"Lote finalizado: se completaron {completados} despacho(s) programado(s) con sus documentos" +
                       (creados > 0 ? $" y se crearon {creados} nuevo(s)." : "."), "success");
             }
             catch (Exception ex)
@@ -3178,7 +3178,7 @@ namespace WebSGV.Views
                     AuditoriaHelper.Registrar("INSERT", "ViajesEnProgreso", nuevoViajeId.ToString(),
                         $"Viaje creado manualmente para {nombreConductor.Split('-')[0].Trim()} (idConductor {idConductor})");
 
-                    MostrarMensaje($"Nuevo viaje creado exitosamente para {nombreConductor.Split('-')[0].Trim()}", "success");
+                    MostrarMensaje($"Viaje nuevo creado para {nombreConductor.Split('-')[0].Trim()}.", "success");
 
                     // Recargar información de viajes
                     CargarViajesEnProgreso(idConductor);
@@ -3259,7 +3259,7 @@ namespace WebSGV.Views
                         CargarHistorialViajes(idConductor);
                     }
 
-                    MostrarMensaje("Viaje reabierto exitosamente.", "success");
+                    MostrarMensaje("Viaje reabierto.", "success");
                 }
             }
             catch (SqlException ex) when (ex.Number == 50000)
@@ -3355,7 +3355,7 @@ namespace WebSGV.Views
             string estado = Convert.ToString(valor);
             switch (estado)
             {
-                case "✓ Completo": return "<span class=\"rd-chip rd-chip-ok\">Completo</span>";
+                case "Completo": return "<span class=\"rd-chip rd-chip-ok\">Completo</span>";
                 case "Parcial": return "<span class=\"rd-chip rd-chip-warn\">Parcial</span>";
                 case "Pendiente": return "<span class=\"rd-chip rd-chip-wait\">Pendiente</span>";
                 default: return "<span class=\"rd-sin-datos\">—</span>";
