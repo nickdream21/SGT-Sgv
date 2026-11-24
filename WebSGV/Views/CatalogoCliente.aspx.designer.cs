@@ -20,6 +20,16 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.HiddenField hfIdItem;
 
         /// <summary>
+        /// Control hfArgumentoFila.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.HiddenField hfArgumentoFila;
+
+        /// <summary>
+        /// Control btnAccionFila.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.Button btnAccionFila;
+
+        /// <summary>
         /// Control pnlMensaje.
         /// </summary>
         protected global::System.Web.UI.WebControls.Panel pnlMensaje;
@@ -105,6 +115,11 @@ namespace WebSGV.Views
         /// Control btnAgregar.
         /// </summary>
         protected global::System.Web.UI.WebControls.Button btnAgregar;
+
+        /// <summary>
+        /// Control litResumen.
+        /// </summary>
+        protected global::System.Web.UI.WebControls.Literal litResumen;
 
         /// <summary>
         /// Control gvCatalogo.

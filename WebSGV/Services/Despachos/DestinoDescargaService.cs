@@ -265,13 +265,16 @@ namespace WebSGV.Services.Despachos
         public static Dictionary<string, DestinoVigente> ObtenerVigentesDelPedido(string pedido) =>
             ObtenerVigentes(new[] { pedido }).Values.ToDictionary(d => d.PlacaCarreta);
 
+        /// <summary>Destinos vigentes que trae <see cref="Listar"/> sin filtro de pedido (los más recientes).</summary>
+        public const int MaxSinFiltro = 200;
+
         /// <summary>Destinos vigentes para la grilla, del pedido indicado (o los más recientes).</summary>
         public static DataTable Listar(string pedido)
         {
             if (!string.IsNullOrWhiteSpace(pedido))
                 return DbHelper.ConsultarTabla($"{SelectVigentes} AND d.numeroPedido = @pedido ORDER BY d.placaCarreta",
                     DbHelper.Param("@pedido", pedido.Trim()));
-            return DbHelper.ConsultarTabla($"SELECT TOP 200 * FROM ({SelectVigentes}) x ORDER BY fechaRegistro DESC, placaCarreta");
+            return DbHelper.ConsultarTabla($"SELECT TOP {MaxSinFiltro} * FROM ({SelectVigentes}) x ORDER BY fechaRegistro DESC, placaCarreta");
         }
 
         public static ISet<string> PlacasTractosActivos() =>

@@ -153,15 +153,13 @@ namespace WebSGV.Tests
             Assert.DoesNotContain("THEN 0 ELSE 1 END", cs);
             Assert.Contains("EstadoActivoService.TryLeerArgumento(", cs);
             // E5-16: los catálogos con la plantilla común (sin ViewState en la grilla) llevan el argumento en
-            // data-argumento y lo envían por hfArgumentoFila; CatalogoCliente sigue con CommandArgument hasta E5-16c.
-            if (CatalogosPlantillaTests.Paginas.Contains(pagina))
-            {
-                Assert.Contains("data-argumento='<%#: ArgumentoEstado(", aspx);
-                Assert.DoesNotContain("CommandArgument=", aspx);
-                Assert.Contains("EstadoActivoService.TryLeerArgumento(hfArgumentoFila.Value", cs);
-            }
-            else
-                Assert.Contains("CommandArgument='<%# ArgumentoEstado(", aspx);
+            // data-argumento y lo envían por hfArgumentoFila. Las pestañas de CatalogoCliente conservan su
+            // CommandArgument fijo (B5-9); ninguno va enlazado a la fila.
+            Assert.Contains(pagina, CatalogosPlantillaTests.PaginasConEstado);
+            Assert.Contains("data-argumento='<%#: ArgumentoEstado(", aspx);
+            Assert.DoesNotMatch(@"CommandArgument\s*=\s*['""]<%#", aspx);
+            Assert.DoesNotContain("ToggleActivo", aspx + cs);
+            Assert.Contains("EstadoActivoService.TryLeerArgumento(hfArgumentoFila.Value", cs);
 
             // B5-7: el error de la edición va dentro del modal, sin ViewState, y se limpia al abrir otra edición
             Assert.Contains("ID=\"pnlErrorModal\"", aspx);

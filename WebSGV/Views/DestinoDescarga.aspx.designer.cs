@@ -14,6 +14,12 @@ namespace WebSGV.Views
     public partial class DestinoDescarga
     {
 
+        protected global::System.Web.UI.WebControls.HiddenField hfArgumentoFila;
+
+        protected global::System.Web.UI.WebControls.HiddenField hfFiltroAplicado;
+
+        protected global::System.Web.UI.WebControls.Button btnAccionFila;
+
         protected global::System.Web.UI.WebControls.Panel pnlMensaje;
 
         protected global::System.Web.UI.WebControls.Label lblMensaje;
@@ -42,7 +48,9 @@ namespace WebSGV.Views
 
         protected global::System.Web.UI.WebControls.Button btnGuardarManual;
 
-        protected global::System.Web.UI.WebControls.TextBox txtBuscarPedido;
+        protected global::System.Web.UI.WebControls.Literal litResumen;
+
+        protected global::System.Web.UI.WebControls.TextBox txtBuscar;
 
         protected global::System.Web.UI.WebControls.Button btnBuscar;
 

@@ -29,7 +29,7 @@ namespace WebSGV.Views
             set => ViewState["TabActual"] = value.ToString();
         }
 
-        private int IdClienteSeleccionado =>
+        protected int IdClienteSeleccionado =>
             int.TryParse(ddlCliente.SelectedValue, out int id) ? id : 0;
 
         protected void Page_Load(object sender, EventArgs e)
@@ -37,11 +37,35 @@ namespace WebSGV.Views
             RolesHelper.ValidarAccesoSeccion("REGISTRO");
             SecurityHelper.AgregarHeadersSeguridad();
 
+            // La grilla no guarda ViewState (E5-16): se enlaza en cada petición, en el manejador que cambia
+            // algo o, si ninguno lo hizo, en OnPreRender. La página va en el ControlState del GridView; las
+            // pestañas (LinkButton.Text, B5-9), TabActual y el cliente elegido siguen en el ViewState.
             if (!IsPostBack)
             {
                 CargarClientes();
                 RefrescarPantalla();
             }
+        }
+
+        /// <summary>true cuando CargarGrilla ya enlazó la grilla en esta petición.</summary>
+        private bool _grillaEnlazada;
+
+        protected override void OnPreRender(EventArgs e)
+        {
+            int idCliente = IdClienteSeleccionado;
+            if (!_grillaEnlazada && !Response.IsRequestBeingRedirected && idCliente > 0)
+            {
+                try
+                {
+                    CargarGrilla(idCliente);
+                }
+                catch (Exception ex)
+                {
+                    LogSGV.Error(ex, "Error al cargar la grilla del catálogo del cliente");
+                    MostrarMensaje("Error al cargar el catálogo: " + MensajeErrorHelper.ParaUsuario(ex));
+                }
+            }
+            base.OnPreRender(e);
         }
 
         #region Carga
@@ -143,8 +167,12 @@ namespace WebSGV.Views
 
         private void CargarGrilla(int idCliente)
         {
-            gvCatalogo.DataSource = CatalogoClienteService.Obtener(TabActual, idCliente);
+            _grillaEnlazada = true;
+            DataTable dt = CatalogoClienteService.Obtener(TabActual, idCliente);
+            gvCatalogo.PageIndex = ListaCatalogo.IndiceValido(gvCatalogo.PageIndex, dt.Rows.Count);
+            gvCatalogo.DataSource = dt;
             gvCatalogo.DataBind();
+            litResumen.Text = ListaCatalogo.Resumen(gvCatalogo.PageIndex, dt.Rows.Count, dt.Rows.Count, null);
         }
 
         #endregion
@@ -153,6 +181,7 @@ namespace WebSGV.Views
 
         protected void ddlCliente_SelectedIndexChanged(object sender, EventArgs e)
         {
+            gvCatalogo.PageIndex = 0;
             LimpiarFormulario();
             RefrescarPantalla();
         }
@@ -162,6 +191,7 @@ namespace WebSGV.Views
             if (Enum.TryParse(e.CommandArgument?.ToString(), out TipoCatalogo tipo))
                 TabActual = tipo;
 
+            gvCatalogo.PageIndex = 0;
             LimpiarFormulario();
             RefrescarPantalla();
         }
@@ -244,12 +274,33 @@ namespace WebSGV.Views
             }
         }
 
-        protected void gvCatalogo_RowCommand(object sender, GridViewCommandEventArgs e)
+        protected void gvCatalogo_PageIndexChanging(object sender, GridViewPageEventArgs e)
         {
-            if (e.CommandName != "ToggleActivo") return;
+            gvCatalogo.PageIndex = e.NewPageIndex;
+            int idCliente = IdClienteSeleccionado;
+            if (idCliente <= 0) return;
+            try
+            {
+                CargarGrilla(idCliente);
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Error al cambiar de página en el catálogo del cliente");
+                MostrarMensaje("Error al cargar el catálogo: " + MensajeErrorHelper.ParaUsuario(ex));
+            }
+        }
 
+        /// <summary>
+        /// Activar/Desactivar de una fila (E5-16): el botón de la fila deja "id|estadoDestino" en hfArgumentoFila
+        /// y pulsa este botón oculto. El campo lo puede cambiar el usuario: se revalida el formato y
+        /// CambiarActivo solo toca la tabla de la pestaña activa y exige que la fila exista.
+        /// </summary>
+        protected void btnAccionFila_Click(object sender, EventArgs e)
+        {
             // Estado destino explícito "id|0" / "id|1" (B5-3): un F5 o una segunda pestaña ya no invierte el estado.
-            if (!EstadoActivoService.TryLeerArgumento(e.CommandArgument, out int id, out bool nuevoActivo))
+            bool leido = EstadoActivoService.TryLeerArgumento(hfArgumentoFila.Value, out int id, out bool nuevoActivo);
+            hfArgumentoFila.Value = "";
+            if (!leido || IdClienteSeleccionado <= 0)
             {
                 MostrarMensaje("No se pudo leer la fila; recargue la página.");
                 return;
@@ -278,6 +329,18 @@ namespace WebSGV.Views
 
         protected string ObtenerClaseBoton(object activo) => EstadoUiHelper.ObtenerClaseBoton(activo);
 
+        /// <summary>Etiqueta del catálogo de la pestaña activa ("producto", "planta de carga"...).</summary>
+        protected string EtiquetaTab => CatalogoClienteService.Etiqueta(TabActual);
+
+        /// <summary>Pregunta de data-confirmar: "¿Desactivar la planta de carga X?".</summary>
+        protected string PreguntaEstado(object activo, object nombre) =>
+            EstadoUiHelper.PreguntaCambioEstado(activo,
+                (CatalogoClienteService.EsFemenino(TabActual) ? "la " : "el ") + EtiquetaTab, nombre);
+
+        /// <summary>true en una ruta sin cliente (B5-5): lleva el sello "General" tras el nombre.</summary>
+        protected bool EsGeneral(object esGeneral) =>
+            esGeneral != null && esGeneral != DBNull.Value && Convert.ToInt32(esGeneral) == 1;
+
         protected string AttrEncode(object val) =>
             System.Web.HttpUtility.HtmlAttributeEncode(val?.ToString() ?? "");
 
@@ -293,7 +356,7 @@ namespace WebSGV.Views
             AvisoHelper.Mostrar(Page, pnlMensaje, lblMensaje, mensaje, esExito ? AvisoHelper.Exito : AvisoHelper.Peligro);
         }
 
-        /// <summary>CommandArgument del botón Activar/Desactivar: "id|estadoDestino" (B5-3).</summary>
+        /// <summary>data-argumento del botón Activar/Desactivar: "id|estadoDestino" (B5-3).</summary>
         protected string ArgumentoEstado(object id, object activo) => EstadoActivoService.ArgumentoComando(id, activo);
 
         /// <summary>Verde si cambió; amarillo si ya tenía ese estado (otra pestaña o F5).</summary>

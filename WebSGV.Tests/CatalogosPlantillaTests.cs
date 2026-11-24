@@ -18,15 +18,32 @@ namespace WebSGV.Tests
     {
         /// <summary>
         /// Páginas con la plantilla. E5-16a: Tractos y Semirremolques; E5-16b: Choferes, Clientes, Plantas y Peajes;
-        /// E5-16c sumará CatalogoCliente y DestinoDescarga.
+        /// E5-16c: CatalogoCliente y DestinoDescarga.
         /// </summary>
         public static readonly string[] Paginas =
         {
             "RegistroTractos", "RegistroSemiremolques", "RegistroChoferes", "RegistroClientes",
-            "RegistroPlantas", "RegistroPeajes"
+            "RegistroPlantas", "RegistroPeajes", "CatalogoCliente", "DestinoDescarga"
         };
 
+        /// <summary>Con Activar/Desactivar y modal de edición (DestinoDescarga solo quita destinos).</summary>
+        public static readonly string[] PaginasConEstado = Paginas.Where(p => p != "DestinoDescarga").ToArray();
+
+        /// <summary>
+        /// Con buscador que filtra en el servidor con <c>ListaCatalogo.Filtrar</c> (las seis Registro*).
+        /// CatalogoCliente no tiene buscador (pocas filas por pestaña) y DestinoDescarga busca por pedido exacto en SQL.
+        /// </summary>
+        public static readonly string[] PaginasConBuscador = Paginas.Where(p => p.StartsWith("Registro", StringComparison.Ordinal)).ToArray();
+
         public static IEnumerable<object[]> Casos() => Paginas.Select(p => new object[] { p });
+
+        public static IEnumerable<object[]> CasosConEstado() => PaginasConEstado.Select(p => new object[] { p });
+
+        public static IEnumerable<object[]> CasosConBuscador() => PaginasConBuscador.Select(p => new object[] { p });
+
+        /// <summary>Páginas cuyo buscador va en un &lt;div data-enter&gt; (prueba D): las Registro* y DestinoDescarga.</summary>
+        public static IEnumerable<object[]> CasosConCajaDeBusqueda() =>
+            PaginasConBuscador.Concat(new[] { "DestinoDescarga" }).Select(p => new object[] { p });
 
         private static string RaizWeb()
         {
@@ -42,6 +59,13 @@ namespace WebSGV.Tests
         private static string Cs(string pagina) => File.ReadAllText(Path.Combine(RaizWeb(), "Views", pagina + ".aspx.cs"));
 
         private static string Js(string pagina) => File.ReadAllText(Path.Combine(RaizWeb(), "Scripts", "paginas", pagina + ".js"));
+
+        /// <summary>Script de la página, o vacío si no tiene (DestinoDescarga usa solo SiteMaster.js).</summary>
+        private static string JsSiHay(string pagina)
+        {
+            string ruta = Path.Combine(RaizWeb(), "Scripts", "paginas", pagina + ".js");
+            return File.Exists(ruta) ? File.ReadAllText(ruta) : string.Empty;
+        }
 
         private static readonly Regex Grilla = new Regex(@"<asp:GridView\b(?<a>[^>]*)>(?<c>.*?)</asp:GridView\s*>",
             RegexOptions.Singleline | RegexOptions.IgnoreCase);
@@ -77,6 +101,18 @@ namespace WebSGV.Tests
             Assert.Contains("sgv-tabla", LaGrilla(aspx).Groups["a"].Value);
             Assert.DoesNotContain("class=\"card", aspx);
             Assert.DoesNotContain("card-header", aspx);
+            Assert.DoesNotContain("thead-light", aspx);
+
+            // Las pestañas de CatalogoCliente siguen siendo LinkButton (B5-9: su Text guarda el contenido en el
+            // ViewState, CatalogoClientePestanasTests); fuera de ellas, ningún LinkButton.
+            var linkButtons = Regex.Matches(aspx, @"<asp:LinkButton\b[^>]*\bID=""(?<id>\w+)""").Cast<Match>()
+                .Select(m => m.Groups["id"].Value).ToList();
+            var pestanas = new[] { "lnkProductos", "lnkPlantasCarga", "lnkPlantasDescarga", "lnkRutas" };
+            Assert.Empty(pagina == "CatalogoCliente" ? linkButtons.Except(pestanas) : linkButtons);
+            Assert.DoesNotMatch(new Regex(@"<asp:LinkButton\b", RegexOptions.IgnoreCase),
+                Regex.Replace(aspx, @"<asp:LinkButton\b[^>]*\bID=""(lnkProductos|lnkPlantasCarga|lnkPlantasDescarga|lnkRutas)""", ""));
+
+            if (!PaginasConEstado.Contains(pagina)) return;
 
             var editar = Regex.Matches(aspx, @"<button\b[^>]*\bbtn-editar\b[^>]*>", RegexOptions.Singleline).Cast<Match>().ToList();
             Assert.NotEmpty(editar);
@@ -111,8 +147,10 @@ namespace WebSGV.Tests
             string cs = Cs(pagina);
             Assert.Contains("override void OnPreRender(", cs);
             Assert.Contains("IsRequestBeingRedirected", cs);
-            Assert.Contains("TryLeerArgumento(hfArgumentoFila.Value", cs);
-            Assert.Contains("ListaCatalogo.Filtrar(", cs);
+            if (PaginasConEstado.Contains(pagina))
+                Assert.Contains("TryLeerArgumento(hfArgumentoFila.Value", cs);
+            if (PaginasConBuscador.Contains(pagina))
+                Assert.Contains("ListaCatalogo.Filtrar(", cs);
             Assert.Contains("ListaCatalogo.IndiceValido(", cs);
             Assert.DoesNotContain("_RowCommand", cs);
         }
@@ -120,7 +158,7 @@ namespace WebSGV.Tests
         // ── (c2) Activar/Desactivar por el botón oculto ──────────────────────────────────────
 
         [Theory]
-        [MemberData(nameof(Casos))]
+        [MemberData(nameof(CasosConEstado))]
         public void C2_ActivarDesactivarPorBotonOcultoConConfirmacion(string pagina)
         {
             string aspx = Aspx(pagina);
@@ -148,7 +186,7 @@ namespace WebSGV.Tests
         // ── (c3) El filtro es el de la última búsqueda ───────────────────────────────────────
 
         [Theory]
-        [MemberData(nameof(Casos))]
+        [MemberData(nameof(CasosConBuscador))]
         public void C3_FiltraConLaUltimaBusquedaNoConLaCaja(string pagina)
         {
             Assert.Contains("ID=\"hfFiltroAplicado\"", Aspx(pagina));
@@ -168,7 +206,7 @@ namespace WebSGV.Tests
         // ── (d) Buscador en el servidor ──────────────────────────────────────────────────────
 
         [Theory]
-        [MemberData(nameof(Casos))]
+        [MemberData(nameof(CasosConCajaDeBusqueda))]
         public void D_BuscadorConEnterYSinFiltroEnElNavegador(string pagina)
         {
             string aspx = Aspx(pagina);
@@ -176,7 +214,7 @@ namespace WebSGV.Tests
             Assert.True(m.Success, "Falta el <div data-enter> del buscador");
             Assert.Contains("ID=\"txtBuscar\"", m.Groups["c"].Value);
             Assert.Contains("ID=\"btnBuscar\"", m.Groups["c"].Value);
-            Assert.DoesNotContain("filtrarTabla", Js(pagina));
+            Assert.DoesNotContain("filtrarTabla", JsSiHay(pagina));
             Assert.DoesNotContain("filtrarTabla", aspx);
         }
 
@@ -219,7 +257,8 @@ namespace WebSGV.Tests
             Assert.Single(columnas);
             Assert.True(columnas[0].Index > alta && columnas[0].Index < grilla,
                 "La columna de la lista (con order-first) debe ir después del alta y contener la grilla");
-            Assert.Contains("order-md-0", columnas[0].Value);
+            // Las Registro* parten en md; CatalogoCliente y DestinoDescarga (alta más ancha), en lg.
+            Assert.Matches(@"\border-(md|lg)-0\b", columnas[0].Value);
         }
 
         // ── (g) Propias de cada página (E5-16b) ──────────────────────────────────────────────
@@ -273,6 +312,79 @@ namespace WebSGV.Tests
             Assert.Contains("<div class=\"small text-muted\"><%#: Eval(\"telefono\") %></div>", c);
             Assert.DoesNotContain("<asp:PlaceHolder", c);
             Assert.DoesNotMatch(new Regex(@"<br\s*/?>", RegexOptions.IgnoreCase), c);
+        }
+
+        // ── (h) Propias de cada página (E5-16c) ──────────────────────────────────────────────
+
+        [Fact]
+        public void H_CatalogoCliente_sinBuscadorYVuelveALaPrimeraPagina()
+        {
+            string aspx = Aspx("CatalogoCliente");
+            string cs = Cs("CatalogoCliente");
+
+            // Sin buscador: pocas filas por pestaña.
+            Assert.DoesNotContain("txtBuscar", aspx);
+            Assert.DoesNotContain("hfFiltroAplicado", aspx);
+
+            // Cambiar de cliente o de pestaña vuelve a la primera página.
+            foreach (string manejador in new[] { "void ddlCliente_SelectedIndexChanged(", "void CambiarTab_Command(" })
+            {
+                int i = cs.IndexOf(manejador, StringComparison.Ordinal);
+                Assert.True(i > 0, "Falta " + manejador);
+                int fin = cs.IndexOf("\n        }", i, StringComparison.Ordinal);
+                Assert.Contains("gvCatalogo.PageIndex = 0;", cs.Substring(i, fin - i));
+            }
+
+            // La grilla solo se enlaza con un cliente elegido; el sello General sale sin un Literal por fila.
+            Assert.Matches(@"!_grillaEnlazada && !Response\.IsRequestBeingRedirected && idCliente > 0", cs);
+            Assert.DoesNotContain("litGeneral", aspx);
+            Assert.Contains("<%# EsGeneral(Eval(\"esGeneral\")) ? ", aspx);
+            // El aviso de las rutas generales sigue (B5-5) y el modal se reabre con su error (B5-7).
+            Assert.Contains("ID=\"pnlNotaRutas\"", aspx);
+            Assert.Contains("$('#modalEditar').modal('show')", Js("CatalogoCliente"));
+        }
+
+        [Fact]
+        public void H_DestinoDescarga_quitarConConfirmacionYFiltroPorPedido()
+        {
+            string aspx = Aspx("DestinoDescarga");
+            string cs = Cs("DestinoDescarga");
+            string c = LaGrilla(aspx).Groups["c"].Value;
+
+            var filas = Regex.Matches(c, @"<button\b(?:(?><%.*?%>)|[^<>])*?\bdata-accion=""enviarFila""(?:(?><%.*?%>)|[^<>])*>", RegexOptions.Singleline).Cast<Match>().ToList();
+            Assert.Single(filas);
+            Assert.Contains("data-argumento='<%#: Eval(\"idDestinoDescarga\") %>'", filas[0].Value);
+            Assert.Contains("data-confirmar='<%#: PreguntaQuitar(", filas[0].Value);
+            Assert.Contains("data-confirmar-peligro=\"true\"", filas[0].Value);
+            Assert.Contains("aria-label='<%#: EtiquetaQuitar(", filas[0].Value);
+            Assert.Contains("int.TryParse(hfArgumentoFila.Value, out int id) && id > 0", cs);
+            Assert.Contains("hfArgumentoFila: '<%= hfArgumentoFila.ClientID %>'", aspx);
+            Assert.Contains("btnAccionFila: '<%= btnAccionFila.ClientID %>'", aspx);
+            Assert.DoesNotContain("DataKeyNames", aspx);
+            Assert.DoesNotContain("txtBuscarPedido", aspx + cs);
+
+            // Búsqueda exacta por pedido en SQL (no ListaCatalogo.Filtrar) con el filtro aplicado, que solo escriben
+            // Buscar y, para mostrar lo recién guardado, Guardar.
+            Assert.Contains("DestinoDescargaService.Listar(pedido)", cs);
+            Assert.Contains("ListaCatalogo.RecortarBusqueda(hfFiltroAplicado.Value)", cs);
+            Assert.DoesNotContain("ListaCatalogo.Filtrar(", cs);
+            var escrituras = Regex.Matches(cs, @"hfFiltroAplicado\.Value\s*=(?!=)").Cast<Match>().ToList();
+            Assert.Equal(2, escrituras.Count);
+            foreach (Match m in escrituras)
+            {
+                bool dentro = new[] { "void btnBuscar_Click(", "void btnGuardarManual_Click(" }.Any(n =>
+                {
+                    int inicio = cs.IndexOf(n, StringComparison.Ordinal);
+                    int siguiente = cs.IndexOf("protected void", inicio + 1, StringComparison.Ordinal);
+                    return inicio > 0 && m.Index > inicio && (siguiente < 0 || m.Index < siguiente);
+                });
+                Assert.True(dentro, "hfFiltroAplicado se escribe fuera de btnBuscar_Click y btnGuardarManual_Click");
+            }
+
+            // La carga de la lista va plegada salvo con una vista previa o un error (CargaAbierta).
+            Assert.Contains("<details class=\"sgv-plegable\"<%= CargaAbierta ? \" open\" : \"\" %>>", aspx);
+            Assert.Contains("protected bool CargaAbierta", cs);
+            Assert.True(aspx.IndexOf("ID=\"btnLeer\"", StringComparison.Ordinal) > aspx.IndexOf("<details", StringComparison.Ordinal));
         }
     }
 }
