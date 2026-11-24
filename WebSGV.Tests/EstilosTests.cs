@@ -596,6 +596,86 @@ namespace WebSGV.Tests
             Assert.True(fallas.Count == 0, "badge con fondo oscuro sin texto blanco:\n" + Lista(fallas));
         }
 
+        // ------------------------------------------------------------------ letra mínima y style= (E5-18c)
+
+        /// <summary>Letra mínima del sitio: 12 px = 0,75 rem (E5-4). Sin excepciones.</summary>
+        private const double LetraMinimaPx = 12;
+
+        // Tamaños con unidad de font-size y de font: (no los de line-height, que van tras la barra en font:).
+        private static readonly Regex TamanoLetra = new Regex(@"(?<![\w./-])(?<n>\d*\.?\d+)(?<u>px|rem|em)\b", RegexOptions.IgnoreCase);
+
+        internal static IEnumerable<string> LetrasChicas(string hoja, string texto) =>
+            Declaraciones(hoja, texto)
+                .Where(d => d.Propiedad.Equals("font-size", StringComparison.OrdinalIgnoreCase)
+                         || d.Propiedad.Equals("font", StringComparison.OrdinalIgnoreCase))
+                .SelectMany(d => TamanoLetra.Matches(d.Valor).Cast<Match>()
+                    .Where(m => double.Parse(m.Groups["n"].Value, System.Globalization.CultureInfo.InvariantCulture)
+                                * (m.Groups["u"].Value.Equals("px", StringComparison.OrdinalIgnoreCase) ? 1 : 16) < LetraMinimaPx)
+                    .Select(m => $"{d.Hoja}:{d.Linea} {d.Selector} {{ {d.Propiedad}: {d.Valor} }}"));
+
+        /// <summary>(n) Ninguna hoja propia escribe letra de menos de 12 px / 0,75 rem (font-size ni font:).</summary>
+        [Fact]
+        public void N_SinLetraMenorDeDoceEnLasHojas()
+        {
+            var fallas = Hojas().SelectMany(h => LetrasChicas(h, Leer(h))).ToList();
+            Assert.True(fallas.Count == 0, "Letra menor de 12 px (0,75 rem):\n" + Lista(fallas));
+        }
+
+        [Fact]
+        public void N_LectorDeLetraDistingueTamanoDeInterlineado()
+        {
+            const string css = ".a { font-size: .72rem; } .b { font: 600 11px/1.4 var(--sgv-fuente); } .c { font: 12px/10px sans-serif; }\n"
+                             + ".d { font-size: 0.75rem; line-height: 8px; } .e { font-size: 12px; } .f { font-size: .7em; } .g { width: 2px; }";
+            var chicas = LetrasChicas("x.css", css).ToList();
+            Assert.Equal(3, chicas.Count);
+            Assert.Contains(chicas, c => c.Contains(".a {"));
+            Assert.Contains(chicas, c => c.Contains(".b {"));
+            Assert.Contains(chicas, c => c.Contains(".f {"));
+        }
+
+        /// <summary>
+        /// style= que quedan en el marcado (lista cerrada, en igualdad exacta; el total solo baja). Fuera de
+        /// Error.aspx (se pinta sin hojas) son los display:none de partida que el script alterna con
+        /// style.display o .show(): un d-none (con !important) no se dejaría mostrar.
+        /// </summary>
+        private static readonly Dictionary<string, int> StyleEnMarcado = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Views/LiquidacionesPendientes.aspx"] = 16,   // .show()/.hide() de secciones, paneles y avisos
+            ["Views/ConformarLiquidacion.aspx"] = 6,       // ConformarLiquidacion.js: style.display
+            ["Views/MovimientosViaje.aspx"] = 3,           // MovimientosViaje.js mostrar(): style.display
+            ["Views/FirmarLiquidacion.aspx"] = 1,          // vGastosDolaresFila
+            ["Views/VerificarDocumento.aspx"] = 1,         // resultadoArchivo
+            ["Views/Error.aspx"] = 3,                      // debe verse aunque fallen los archivos estáticos
+        };
+
+        private const int StyleEnMarcadoTotal = 30;
+
+        private static readonly Regex AtributoStyle = new Regex(@"\bstyle\s*=", RegexOptions.IgnoreCase);
+        private static readonly Regex StyleOcultoFijo = new Regex(@"\bstyle\s*=\s*""display:none;?""", RegexOptions.IgnoreCase);
+
+        /// <summary>(o) style= del marcado solo en la lista cerrada, con total exacto, y fuera de Error.aspx solo style="display:none".</summary>
+        [Fact]
+        public void O_StyleEnElMarcadoSoloLaListaCerrada()
+        {
+            var raiz = RaizWeb();
+            var fallas = new List<string>();
+            int total = 0;
+            foreach (var f in PaginasYMaster())
+            {
+                string rel = Relativo(raiz, f), texto = File.ReadAllText(f, Encoding.UTF8);
+                int n = AtributoStyle.Matches(texto).Count;
+                total += n;
+                int esperado = StyleEnMarcado.TryGetValue(rel, out int e) ? e : 0;
+                if (n != esperado) fallas.Add($"{rel}: {n} style= (se esperaban {esperado})");
+                if (rel.Equals("Views/Error.aspx", StringComparison.OrdinalIgnoreCase)) continue;
+                int fijos = StyleOcultoFijo.Matches(texto).Count;
+                if (fijos != n) fallas.Add($"{rel}: {n - fijos} style= que no son literalmente style=\"display:none\" (use una clase en la hoja de la página)");
+            }
+            Assert.True(fallas.Count == 0, "style= en el marcado fuera de la lista cerrada:\n" + Lista(fallas));
+            Assert.Equal(StyleEnMarcadoTotal, StyleEnMarcado.Values.Sum());
+            Assert.Equal(StyleEnMarcadoTotal, total);
+        }
+
         // ------------------------------------------------------------------ el lector mismo
 
         [Fact]

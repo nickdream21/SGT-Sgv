@@ -486,7 +486,7 @@
 .tabla-movimientos { font-size: 0.8rem; }
 .tabla-movimientos td { vertical-align: middle; }
 .tabla-movimientos .mov-pago td { color: var(--sgv-texto-suave); }
-.tabla-movimientos .mov-sub { display: block; font-size: 0.72rem; color: var(--sgv-texto-suave); }
+.tabla-movimientos .mov-sub { display: block; font-size: 0.75rem; color: var(--sgv-texto-suave); }
 
 .campo-con-error {
     border-color: var(--sgv-peligro) !important;
@@ -710,3 +710,16 @@
 /* Revertir desactivado en una liquidación ya pagada: el span muestra el aviso (title). */
 .lp-revertir-bloqueado { display: inline-block; cursor: not-allowed; }
 .lp-revertir-bloqueado .sgv-btn-icono:disabled { opacity: .45; pointer-events: none; }
+
+/* Antes style= en línea (E5-18c). */
+.sgv-suave.lp-nota { font-size: 0.85rem; }
+.sgv-suave.lp-nota-chica { font-size: 0.8rem; }
+.lp-cab-titulo { flex: 1; min-width: 0; }
+.spinner-border.lp-cargando-grande { width: 3rem; height: 3rem; }
+.lp-nota-ajustes {
+    font-size: 0.85rem;
+    padding: 0.75rem;
+    border: 1px solid var(--sgv-alerta-borde);
+    border-radius: var(--sgv-radio);
+    background: var(--sgv-alerta-fondo);
+}

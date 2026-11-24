@@ -214,7 +214,7 @@
                     </button>
                 </div>
                 <div class="sgv-panel-cuerpo py-2">
-                    <p class="sgv-suave mb-0" style="font-size:0.85rem;">
+                    <p class="sgv-suave lp-nota mb-0">
                         La administración ya revisó estas liquidaciones. El viaje se completa cuando el conductor firma su
                         conformidad; si no está de acuerdo, la liquidación vuelve a <em>Pendientes</em> con su observación.
                         Para corregir un monto antes de que firme, use <strong>Retirar envío</strong>.
@@ -333,7 +333,7 @@
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header modal-header-info" id="modalDetalleLiquidacionHeader">
-                    <div class="d-flex align-items-center" style="flex:1;min-width:0;">
+                    <div class="d-flex align-items-center lp-cab-titulo">
                         <h5 class="modal-title mb-0" id="modalDetalleLiquidacionTitulo">
                             <span id="modalModeLabel">Detalle de liquidación</span>
                             <span class="modal-orden-ref ml-2" id="modalNumeroOrden"></span>
@@ -349,7 +349,7 @@
                 <div class="modal-body">
 
                     <div id="detalleLoading" class="text-center py-5" style="display:none;">
-                        <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+                        <div class="spinner-border text-primary lp-cargando-grande" role="status">
                             <span class="sr-only">Cargando...</span>
                         </div>
                         <p class="text-muted mt-3 mb-0">Cargando detalle de la liquidación...</p>
@@ -605,11 +605,11 @@
                                 </div>
                                 <small class="text-danger d-none" id="avisoMovimientos"></small>
                             </div>
-                            <div class="mt-2 sgv-suave" style="font-size:0.8rem;">
+                            <div class="mt-2 sgv-suave lp-nota-chica">
                                 <a href='<%= ResolveUrl("~/Views/MovimientosViaje.aspx") %>' target="_blank" rel="noopener">Registrar una entrega o un pago directo</a>
                             </div>
                         </div>
-                        <div class="alert-warning-light mb-3" style="font-size:0.85rem;padding:0.75rem;border:1px solid #fde68a;border-radius:0.375rem;background:#fffbeb;">
+                        <div class="lp-nota-ajustes mb-3">
                             Registra descuentos o reintegros a aplicar al balance del conductor. Deja en cero si no aplica.
                             Cada ajuste necesita su <strong>motivo</strong>: el conductor lo verá en la liquidación final y
                             firmará su conformidad (o la observará) antes de que el viaje se complete.

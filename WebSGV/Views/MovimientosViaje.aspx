@@ -136,8 +136,8 @@
                                     <td class="text-right text-nowrap">
                                         <asp:HyperLink runat="server" CssClass="sgv-btn-icono" Target="_blank" rel="noopener" ToolTip="Ver adjunto" aria-label="Ver adjunto"
                                             NavigateUrl='<%# UrlAdjunto(Eval("RutaAdjunto")) %>' Visible='<%# Eval("RutaAdjunto") != null %>'><i class="fas fa-paperclip"></i></asp:HyperLink>
-                                        <button type="button" class="sgv-btn-icono peligro" title="Anular" aria-label="Anular"
-                                            data-accion="abrirAnular" data-id='<%#: Eval("IdMovimiento") %>' style='<%#: (bool)Eval("Activo") ? "" : "display:none" %>'><i class="fas fa-ban"></i></button>
+                                        <button type="button" class='sgv-btn-icono peligro<%#: (bool)Eval("Activo") ? "" : " d-none" %>' title="Anular" aria-label="Anular"
+                                            data-accion="abrirAnular" data-id='<%#: Eval("IdMovimiento") %>'><i class="fas fa-ban"></i></button>
                                     </td>
                                 </tr>
                             </ItemTemplate>

@@ -291,11 +291,11 @@
         <div class="modal fade" id="modalCambiarContrasena" tabindex="-1" role="dialog" aria-labelledby="modalCambiarContrasenaLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" role="document">
                 <div class="modal-content" data-enter="<%= btnCambiarContrasena.ClientID %>">
-                    <div class="modal-header" style="background:#1e40af;color:white;">
+                    <div class="modal-header">
                         <h5 class="modal-title" id="modalCambiarContrasenaLabel">
                             Cambiar contraseña
                         </h5>
-                        <button type="button" class="close js-cerrar-contrasena" data-dismiss="modal" aria-label="Cerrar" style="color:white;">
+                        <button type="button" class="close js-cerrar-contrasena" data-dismiss="modal" aria-label="Cerrar">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>

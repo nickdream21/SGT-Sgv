@@ -242,6 +242,21 @@ a.fl-btn { display: inline-flex; align-items: center; justify-content: center; }
 .fl-success-screen p { color: var(--gris-600); font-size: 0.9rem; margin-bottom: 20px; }
 /* Etiquetas del código y del hash tras firmar (antes 11 px en línea; mínimo 12 px, E5-4). */
 .fl-ok-etiqueta { font-size: 12px; color: var(--gris-600); text-transform: uppercase; margin-bottom: 6px; }
+/* Bloques y botones de la pantalla de éxito de firmar y de dar conformidad (antes style= en línea, E5-18c). */
+.fl-ok-bloque { margin: 18px 0; }
+.fl-ok-bloque-codigo { margin: 18px 0 8px; }
+.fl-ok-bloque-hash { margin: 8px 0 18px; }
+.fl-ok-bloque-pdf { margin-top: 18px; }
+.fl-ok-bloque-volver { margin-top: 12px; }
+.fl-success-screen .hash.fl-ok-codigo { font-size: 16px; letter-spacing: 1px; }
+.fl-btn.fl-btn-ancho { display: inline-flex; width: 100%; max-width: 240px; }
+.fl-btn.fl-btn-ancho, .fl-btn.fl-btn-ancho:hover, .fl-btn.fl-btn-ancho:focus { text-decoration: none; }
+.fl-btn.fl-btn-primario, .fl-btn.fl-btn-primario:hover, .fl-btn.fl-btn-primario:focus {
+    background: var(--azul);
+    color: var(--sgv-blanco);
+    border-color: var(--azul);
+}
+.fl-btn.fl-btn-primario:hover:not(:disabled) { background: var(--azul-osc); border-color: var(--azul-osc); }
 .fl-success-screen .hash {
     display: inline-block;
     font-family: 'Courier New', monospace;

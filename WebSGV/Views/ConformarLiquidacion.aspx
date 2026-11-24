@@ -140,19 +140,19 @@
         <div id="pantallaExito" class="fl-success-screen">
             <h3 id="okTitulo">Conformidad registrada</h3>
             <p id="okTexto">Tu liquidación quedó aprobada y el viaje, completado.</p>
-            <div id="okCodigoBloque" style="margin: 18px 0;">
+            <div id="okCodigoBloque" class="fl-ok-bloque">
                 <div class="fl-ok-etiqueta">
                     Código de verificación del documento
                 </div>
-                <div class="hash" id="okCodigo" style="font-size: 16px; letter-spacing: 1px;">-</div>
+                <div class="hash fl-ok-codigo" id="okCodigo">-</div>
             </div>
-            <div style="margin-top: 18px;" id="okPdfBloque">
-                <a href="#" id="okVerPdf" class="fl-btn" style="text-decoration:none; display:inline-flex; width:100%; max-width:240px;">
+            <div class="fl-ok-bloque-pdf" id="okPdfBloque">
+                <a href="#" id="okVerPdf" class="fl-btn fl-btn-ancho">
                     Ver PDF firmado
                 </a>
             </div>
-            <div style="margin-top: 12px;">
-                <a href="<%= ResolveUrl("~/Views/DashboardConductor.aspx") %>" class="fl-btn" style="text-decoration:none; display:inline-flex; width:100%; max-width:240px; background: var(--azul); color:#fff; border-color: var(--azul);">
+            <div class="fl-ok-bloque-volver">
+                <a href="<%= ResolveUrl("~/Views/DashboardConductor.aspx") %>" class="fl-btn fl-btn-ancho fl-btn-primario">
                     Volver al inicio
                 </a>
             </div>

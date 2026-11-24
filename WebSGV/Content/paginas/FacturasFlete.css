@@ -21,7 +21,7 @@
 .ff-pestanas .nav-link { color: var(--sgv-texto-suave); font-weight: 500; }
 .ff-pestanas .nav-link.active { color: var(--sgv-primario); font-weight: 600; }
 .ff-cuenta:not(:empty) { display: inline-block; min-width: 1.6em; padding: 0 .4em; margin-left: .25rem; border-radius: var(--sgv-radio);
-                         background: var(--sgv-borde); color: var(--sgv-texto-medio); font-size: .72rem; font-weight: 600; text-align: center; line-height: 1.6; }
+                         background: var(--sgv-borde); color: var(--sgv-texto-medio); font-size: .75rem; font-weight: 600; text-align: center; line-height: 1.6; }
 .ff-pestanas .nav-link.active .ff-cuenta { background: var(--sgv-info-fondo); color: var(--sgv-primario); }
 
 /* Barra: filtro por estado y búsqueda (sobre la pestaña abierta). */
