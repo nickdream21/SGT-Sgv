@@ -215,6 +215,7 @@
     <Content Include="Database\StoredProcedures\sp_US_ObtenerEstadoSesion.sql" />
     <Content Include="Database\StoredProcedures\sp_US_QuitarIntentoAcceso.sql" />
     <Content Include="Database\StoredProcedures\sp_US_ReservarIntentoAcceso.sql" />
+    <Content Include="Database\StoredProcedures\sp_OP_ConsultasCostosas.sql" />
     <Content Include="Database\StoredProcedures\sp_US_DevolverIntentoAcceso.sql" />
     <Content Include="Database\StoredProcedures\sp_US_ObtenerSegundoFactor.sql" />
     <Content Include="Database\StoredProcedures\sp_US_GuardarSecretoPendiente.sql" />
@@ -359,6 +360,7 @@
     <Content Include="Site.Master" />
     <Content Include="Content\App.css" />
     <Content Include="Content\paginas\Auditoria.css" />
+    <Content Include="Content\paginas\EstadoSistema.css" />
     <Content Include="Content\paginas\ReporteCargas.css" />
     <Content Include="Content\paginas\FacturasFlete.css" />
     <Content Include="Content\paginas\BandejaDocumentos.css" />
@@ -420,6 +422,7 @@
     <Content Include="Scripts\paginas\SiteMaster.js" />
     <Content Include="Views\Auditoria.aspx" />
     <Content Include="Views\DashboardAdminSistema.aspx" />
+    <Content Include="Views\EstadoSistema.aspx" />
     <Content Include="Views\GestionUsuarios.aspx" />
     <Content Include="Views\DashboardConductor.aspx" />
     <Content Include="Views\Ayuda.aspx" />
@@ -469,6 +472,7 @@
     <Content Include="ContenidoAyuda\panel-sistema.html" />
     <Content Include="ContenidoAyuda\gestion-usuarios.html" />
     <Content Include="ContenidoAyuda\auditoria.html" />
+    <Content Include="ContenidoAyuda\estado-sistema.html" />
     <Content Include="ContenidoAyuda\usuarios-contrasenas.html" />
     <Content Include="ContenidoAyuda\liquidaciones-aprobadas.html" />
     <Content Include="ContenidoAyuda\flujo-del-viaje.html" />
@@ -651,6 +655,7 @@
     <Compile Include="Services\Exportacion\ExportacionLlegadas.cs" />
     <Compile Include="Services\Exportacion\ActualizacionGpsAutomatica.cs" />
     <Compile Include="Services\Operacion\EstadoSalud.cs" />
+    <Compile Include="Services\Operacion\EstadoSistemaService.cs" />
     <Compile Include="Services\Operacion\AvisoErrores.cs" />
     <Compile Include="Services\Operacion\InformeCsp.cs" />
     <Compile Include="CspInforme.ashx.cs">
@@ -660,6 +665,7 @@
       <DependentUpon>Salud.ashx</DependentUpon>
     </Compile>
     <EmbeddedResource Include="Services\Exportacion\PerfilesLlegada.json" />
+    <EmbeddedResource Include="Services\Operacion\VocabularioLog.txt" />
     <Compile Include="Services\Exportacion\RutaTercero.cs" />
     <Compile Include="Services\Exportacion\ExportacionStatusExtra.cs" />
     <Compile Include="Services\Exportacion\ExportacionStatusUnidades.cs" />
@@ -742,6 +748,13 @@
     </Compile>
     <Compile Include="Views\DashboardAdminSistema.aspx.designer.cs">
       <DependentUpon>DashboardAdminSistema.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\EstadoSistema.aspx.cs">
+      <DependentUpon>EstadoSistema.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\EstadoSistema.aspx.designer.cs">
+      <DependentUpon>EstadoSistema.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\GestionUsuarios.aspx.cs">
       <DependentUpon>GestionUsuarios.aspx</DependentUpon>

@@ -338,6 +338,14 @@ SELECT DATABASEPROPERTYEX(DB_NAME(), 'Collation') AS bd,
 
 Control después: FacturasFlete del mes y "Lotes registrados" de ListaDespachos muestran los mismos conteos que antes de aplicar.
 
+**E6-12 — `sp_OP_ConsultasCostosas` (nuevo, solo lectura)**: las 10 consultas más costosas del Query Store para "Estado del sistema" (`Views/EstadoSistema.aspx`, administrador de sistema). El `-SoloListar` de arriba lo muestra como FALTA y se aplica con el resto; sin migración, y puede ir antes o después de publicar el código (sin el SP, ese bloque de la pantalla dice "no disponible"). Necesita el permiso `VIEW DATABASE STATE` y el Query Store encendido en `sgvTransporte`; si falta alguno, el SP devuelve vacío sin error. La página lo llama con 8 s de tiempo límite (si el Query Store tarda más, también dice "no disponible") y quita al texto los comentarios y los literales antes de mostrarlo. Control (solo SELECT; en `sgvActualizada` dio 1, 1 y READ_WRITE):
+
+```sql
+SELECT HAS_PERMS_BY_NAME(NULL, 'DATABASE', 'VIEW DATABASE STATE') AS verEstado,
+       (SELECT COUNT(*) FROM sys.procedures WHERE name = 'sp_OP_ConsultasCostosas') AS sp,
+       (SELECT actual_state_desc FROM sys.database_query_store_options) AS queryStore;
+```
+
 ## 6. SP retirados
 
 Ninguno los llama el código publicado. Los 8 `sp_SE_*` sin uso que borraba `borrar-sp-se-sin-uso.sql` los borra ahora la migración 57 (paso 4); el script se quitó del repo.

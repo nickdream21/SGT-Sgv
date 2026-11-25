@@ -70,6 +70,7 @@ namespace WebSGV.Tests
             ["ADMINISTRADOR DE SISTEMA"] = new[]
             {
                 "Administración > Panel del sistema",
+                "Administración > Estado del sistema",  // E6-12
                 "Administración > Gestión de usuarios",
                 "Administración > --- Auditoría del sistema",
             },

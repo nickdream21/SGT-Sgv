@@ -640,6 +640,21 @@
       "capturas": []
     },
     {
+      "clave": "estado-sistema",
+      "titulo": "Estado del sistema",
+      "seccion": "Administración del sistema",
+      "orden": 5,
+      "roles": [
+        "Y"
+      ],
+      "paginas": [
+        "Views/EstadoSistema.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "capturas": []
+    },
+    {
       "clave": "liquidaciones-aprobadas",
       "titulo": "Liquidaciones aprobadas",
       "seccion": "Contabilidad",

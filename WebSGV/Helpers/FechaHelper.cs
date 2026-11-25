@@ -11,6 +11,9 @@ namespace WebSGV.Helpers
         private static readonly TimeZoneInfo ZonaPeruana =
             TimeZoneInfo.FindSystemTimeZoneById("SA Pacific Standard Time");
 
+        /// <summary>La zona de Perú (para convertir horas de otra zona, p. ej. las del log, que van con la del servidor).</summary>
+        internal static TimeZoneInfo ZonaPeru => ZonaPeruana;
+
         /// <summary>
         /// Retorna la fecha y hora actual en la zona horaria de Perú (UTC-5, sin horario de verano).
         /// Usar este método en lugar de DateTime.Now para timestamps guardados en la base de datos.

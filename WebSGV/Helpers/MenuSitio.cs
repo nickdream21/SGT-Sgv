@@ -159,6 +159,7 @@ namespace WebSGV.Helpers
             // La Auditoría va solo aquí: hasta E5-19c salía también en Configuración (M-164).
             Desplegable("Administración", "navbarDropdownAdminSistema",
                 PorRol("Panel del sistema", "~/Views/DashboardAdminSistema.aspx", CondAdminSistema),
+                PorRol("Estado del sistema", "~/Views/EstadoSistema.aspx", CondAdminSistema),
                 PorRol("Gestión de usuarios", "~/Views/GestionUsuarios.aspx", CondAdminSistema),
                 PorRol("Auditoría del sistema", "~/Views/Auditoria.aspx", CondAdminSistema, separadorAntes: true)),
 

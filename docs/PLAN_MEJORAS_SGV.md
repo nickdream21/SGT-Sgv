@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-25**, commit anterior `852b13b` — **Etapa 6 en ejecución**: E6-11 (medición de peticiones: "Petición lenta", "Resumen del día"; un 500 de un `[WebMethod]` deja ERR; clave `Medicion.UmbralMs` en Web.config). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-25**, commit anterior `fd557c1` — **Etapa 6 en ejecución**: E6-12 (pantalla "Estado del sistema" del administrador de sistema y SP nuevo `sp_OP_ConsultasCostosas`, aplicado solo en `sgvActualizada`). No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-191 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

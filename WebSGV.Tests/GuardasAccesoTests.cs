@@ -46,6 +46,8 @@ namespace WebSGV.Tests
                 // El permiso por orden lo decide AccesoLiquidacion.PuedeConsultar (403 si no).
                 { "Views/DescargarPdfOrdenViaje.aspx",            "SecurityHelper.ExigirSesion()" },
                 { "Views/DestinoDescarga.aspx",                   "SecurityHelper.ExigirRolAdmin()" },
+                // E6-12: conteos y plantillas del log, GPS, BD y Query Store (DN-35).
+                { "Views/EstadoSistema.aspx",                     "SecurityHelper.ExigirRolAdminSistema()" },
                 // Conductor (la suya) o quien consulta la orden: el rol se decide después, en el GET.
                 { "Views/DetalleOrdenViaje.aspx",                 "SecurityHelper.ExigirSesion()" },
                 { "Views/Exportacion/DashboardExportacion.aspx",  "RolesHelper.ValidarAccesoSeccion(\"SEGUIMIENTO_EXPORTACION\")" },
@@ -291,6 +293,7 @@ namespace WebSGV.Tests
                 { "Views/DescargarDocumento.aspx",                Todos },
                 { "Views/DescargarPdfOrdenViaje.aspx",            Todos },
                 { "Views/DestinoDescarga.aspx",                   new[] { A } },
+                { "Views/EstadoSistema.aspx",                     new[] { Y } },
                 { "Views/DetalleOrdenViaje.aspx",                 Todos },
                 { "Views/Exportacion/DashboardExportacion.aspx",  new[] { A } },
                 { "Views/Exportacion/ImportarSeguimiento.aspx",   new[] { A } },
