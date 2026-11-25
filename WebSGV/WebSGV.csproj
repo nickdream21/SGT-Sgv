@@ -727,6 +727,8 @@
     <Compile Include="Models\Despachos\RegistroDespachoModels.cs" />
     <Compile Include="Models\Facturas\FacturaFleteModels.cs" />
     <Compile Include="Models\Despachos\BandejaDocumentosModels.cs" />
+    <Compile Include="Services\Despachos\ArmadoDescarga.cs" />
+    <Compile Include="Services\Despachos\ArmadoLoteImportado.cs" />
     <Compile Include="Services\Despachos\BandejaDocumentosService.cs" />
     <Compile Include="Services\Despachos\CatalogoNuevoDespacho.cs" />
     <Compile Include="Services\Despachos\Importacion\LectorDocumentosAduana.cs" />

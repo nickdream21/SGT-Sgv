@@ -25,7 +25,7 @@ namespace WebSGV.Tests
         /// <summary>Archivos de más de 800 líneas (ruta relativa a WebSGV/).</summary>
         private static readonly Dictionary<string, int> TopesArchivo = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Views/RegistroDespacho.aspx.cs"] = 3424,
+            ["Views/RegistroDespacho.aspx.cs"] = 2963,
             ["Views/ListaDespachos.aspx.cs"] = 2120,
             ["Services/Despachos/BandejaDocumentosService.cs"] = 1549,
             ["Views/ReportesOrdenesViaje.aspx.cs"] = 1479,
@@ -60,7 +60,6 @@ namespace WebSGV.Tests
             ["Views/ReportesOrdenesViaje.aspx.cs::ObtenerSeccionGastos"] = 122,
             ["Services/Despachos/BandejaDocumentosService.cs::Registrar"] = 120,
             ["Services/Facturas/FacturaFleteService.cs::Conciliar"] = 114,
-            ["Views/RegistroDespacho.aspx.cs::btnAplicarDescarga_Click"] = 113,
             ["Views/LiquidacionesPendientes.aspx.cs::EnviarAConformidad"] = 108,
             ["Views/Exportacion/SeguimientoViaje.aspx.cs::Cargar"] = 107,
             ["Services/Despachos/ExpedienteDocumentosService.cs::Obtener"] = 103,
@@ -78,7 +77,6 @@ namespace WebSGV.Tests
             ["Services/Conductor/DashboardConductorService.cs::CargarFinancieros"] = 93,
             ["Views/Login.aspx.cs::ValidarUsuario"] = 85,
             ["Services/GpsIntegracion/ReporteHistorialGpsService.cs::Generar"] = 92,
-            ["Views/RegistroDespacho.aspx.cs::btnLeerProgramacionDescarga_Click"] = 91,
             ["Services/Despachos/Importacion/ImportacionPedidoService.cs::PdfsDelZip"] = 91,
             ["Global.asax.cs::Application_AcquireRequestState"] = 90,
             ["Services/Despachos/BandejaDocumentosService.cs::ResolverCpic"] = 89,

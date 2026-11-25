@@ -1259,7 +1259,7 @@ namespace WebSGV.Views
             set { Session["ImportacionConductores"] = value; }
         }
 
-        private const string VALOR_CONDUCTOR_NUEVO = "NUEVO";
+        private const string VALOR_CONDUCTOR_NUEVO = ArmadoLoteImportado.ValorConductorNuevo;
 
         protected void btnLeerDocumentos_Click(object sender, EventArgs e)
         {
@@ -1370,14 +1370,7 @@ namespace WebSGV.Views
             litImpTractos.Text = imp.Tractos.Count.ToString();
             litImpCarga.Text = Html($"{imp.CantidadTotal:N0} bolsas · {imp.PesoBrutoTotalKg:N1} kg");
 
-            var advertencias = imp.Advertencias.ToList();
-            if (!imp.IdCliente.HasValue)
-                advertencias.Insert(0, "El RUC del remitente no corresponde a ningún cliente activo. Elija el cliente en la configuración base antes de usar estos datos.");
-            if (imp.Tractos.Any(t => t.YaRegistrado))
-                advertencias.Add("Los tractos marcados como \"ya registrado\" tienen un despacho con ese N° de transporte y no se volverán a cargar.");
-            if (!imp.IdPlantaSugerida.HasValue)
-                advertencias.Add($"No se reconoció la planta de carga ({imp.Origen ?? "sin origen en los documentos"}): elíjala en la configuración base.");
-
+            var advertencias = ArmadoLoteImportado.Advertencias(imp);
             pnlAdvertenciasImportacion.Visible = advertencias.Count > 0;
             litAdvertenciasImportacion.Text = "<ul class=\"mb-0 mt-1\">" +
                 string.Concat(advertencias.Select(a => $"<li>{Html(a)}</li>")) + "</ul>";
@@ -1419,51 +1412,8 @@ namespace WebSGV.Views
         /// </summary>
         private void MostrarResumenProgramacionCarga(ImportacionPedido imp)
         {
-            var prog = imp.Programacion;
-            if (prog == null)
-            {
-                pnlProgramacionCarga.CssClass = "rd-notice mb-3";
-                litProgramacionCarga.Text = Html(
-                    "Sin la programación del día ni despachos programados: el chofer, el tracto y la carreta salen de las guías (la carreta, de la última con que salió el tracto). " +
-                    "Si hubo ajustes de chofer, vuelva a leer los documentos junto con el Word de la programación.");
-                return;
-            }
-
-            var pendientes = imp.Tractos.Where(t => !t.YaRegistrado).ToList();
-            if (pendientes.Count == 0)
-            {
-                pnlProgramacionCarga.CssClass = "rd-notice mb-3";
-                litProgramacionCarga.Text = Html(
-                    $"Programación · {prog.Titulo}: los {imp.Tractos.Count} tracto(s) de este pedido ya están registrados; no hay nada que tomar de ella.");
-                return;
-            }
-            int cambios = pendientes.Count(t => t.Programacion?.Cambio != null);
-            int conAvisos = pendientes.Count(t => t.Programacion != null && t.Programacion.Avisos.Count > 0);
-
-            int completan = pendientes.Count(t => t.Programacion?.IdDespachoProgramado != null);
-            var sb = new StringBuilder();
-            if (prog.DesdeDespachos)
-            {
-                sb.Append(Html($"Despachos programados con el Word: {completan} de {pendientes.Count} guía(s) completan su despacho programado " +
-                               "(no se crea otro). Chofer, tracto y carreta quedan los del despacho; la guía aporta pedido, factura y carga."));
-            }
-            else
-            {
-                sb.Append(Html($"Programación{(prog.Fecha.HasValue ? " del " + prog.Fecha.Value.ToString("dd/MM/yyyy") : "")} · {prog.Titulo}: " +
-                               $"{prog.Encontrados} de {pendientes.Count} tracto(s) unidos con su guía. Chofer, tracto y carreta salen de la programación."));
-                if (completan > 0)
-                    sb.Append(Html($" {completan} completan un despacho ya programado (no se crea otro)."));
-            }
-            if (cambios > 0)
-                sb.Append(Html($" {cambios} con cambio respecto de la guía (normal: la guía no se reemite)."));
-            sb.Append(conAvisos > 0
-                ? Html($" {conAvisos} con avisos en ámbar: revíselos antes de continuar.")
-                : Html(" Sin nada que revisar."));
-            if (prog.AvisosGenerales.Count > 0)
-                sb.Append("<ul class=\"mb-0 mt-1\">" + string.Concat(prog.AvisosGenerales.Select(a => $"<li>{Html(a)}</li>")) + "</ul>");
-
-            pnlProgramacionCarga.CssClass = "rd-notice mb-3 " + (conAvisos > 0 || prog.AvisosGenerales.Count > 0 ? "rd-notice-warn" : "rd-notice-ok");
-            litProgramacionCarga.Text = sb.ToString();
+            litProgramacionCarga.Text = ArmadoLoteImportado.ResumenProgramacionHtml(imp, out string tono);
+            pnlProgramacionCarga.CssClass = "rd-notice mb-3" + (tono.Length > 0 ? " " + tono : "");
         }
 
         private DataTable _conductoresImp, _tractosImp, _carretasImp;
@@ -1624,32 +1574,12 @@ namespace WebSGV.Views
 
                 // Todo lo del lote se valida ANTES de registrar altas: si algo falla no
                 // debe quedar un producto o conductor creado a medias.
-                var errores = ValidarDatosLoteImportado(imp, out DateTime fecha, out int idPlanta);
+                var errores = ArmadoLoteImportado.ValidarDatosLote(imp, txtFechaProgramacionImp.Text, ddlPlantaImp.SelectedValue,
+                    out DateTime fecha, out int idPlanta);
                 if (!PrepararImportacion(imp, errores, out List<ConductorLote> conductores))
                     return;
 
-                var lote = new LoteDespachos
-                {
-                    FechaProgramacion = fecha.ToString("yyyy-MM-dd"),
-                    IdCliente = imp.IdCliente.Value,
-                    NombreCliente = imp.NombreCliente,
-                    NumeroPedido = DespachoValidaciones.ValidarNumeroPedido(imp.NumeroPedido) ? imp.NumeroPedido : string.Empty,
-                    TipoOperacion = "CARGA",
-                    EsInternacional = false,
-                    IdPlanta = idPlanta,
-                    PlantaOperacion = ddlPlantaImp.SelectedItem.Text,
-                    DestinoCarga = imp.Destino,
-                    EsExportacion = imp.EsExportacion,
-                    UsuarioCreacion = ObtenerUsuarioActual()
-                };
-                lote.Documentacion.NumeroFactura = imp.Factura.NumeroFactura;
-                lote.Documentacion.FechaEmisionFactura = imp.Factura.FechaEmision;
-                lote.Documentacion.ValorTotalFactura = imp.Factura.ValorTotal;
-                lote.Documentacion.MonedaFactura = imp.Factura.Moneda ?? "PEN";
-                lote.Documentacion.FacturaArchivoRutaTemp = imp.FacturaArchivoRutaTemp;
-                lote.Documentacion.FacturaArchivoNombreOriginal = imp.FacturaArchivoNombreOriginal;
-                imp.FacturaArchivoRutaTemp = null;   // ahora es del lote: no borrarlo al limpiar
-                lote.Conductores.AddRange(conductores);
+                var lote = ArmadoLoteImportado.ArmarLote(imp, fecha, idPlanta, ddlPlantaImp.SelectedItem.Text, conductores, ObtenerUsuarioActual());
 
                 LoteActual = lote;
                 LimpiarImportacion(borrarArchivos: false);
@@ -1740,300 +1670,75 @@ namespace WebSGV.Views
             return true;
         }
 
-        /// <summary>Lo que el lote necesita y no se elige en la tabla: fecha, planta y factura.</summary>
-        private List<string> ValidarDatosLoteImportado(ImportacionPedido imp, out DateTime fecha, out int idPlanta)
-        {
-            var errores = new List<string>();
-            DateTime hoy = FechaHelper.Hoy();
-
-            if (!DespachoValidaciones.FechaDespachoEsValida(txtFechaProgramacionImp.Text, hoy))
-                errores.Add("La fecha de programación no es válida.");
-            DespachoValidaciones.TryParseFechaIso(txtFechaProgramacionImp.Text, out fecha);
-
-            if (!int.TryParse(ddlPlantaImp.SelectedValue, out idPlanta) || idPlanta <= 0)
-                errores.Add("Elija la planta de carga.");
-
-            var f = imp.Factura;
-            if (f == null || string.IsNullOrEmpty(f.NumeroFactura))
-                errores.Add("No se leyó la factura (la carga nacional la requiere): súbala junto con los demás documentos o use \"Corregir datos a mano\".");
-            else
-            {
-                if (!f.FechaEmision.HasValue || f.FechaEmision.Value.Date > hoy)
-                    errores.Add($"La fecha de emisión de la factura {f.NumeroFactura} no es válida.");
-                if (!f.ValorTotal.HasValue || f.ValorTotal.Value <= 0)
-                    errores.Add($"No se leyó el importe total de la factura {f.NumeroFactura}.");
-                if (RegistroDespachoService.ValidarDocumentosDuplicados(f.NumeroFactura, null, imp.IdCliente).FacturaExiste)
-                    errores.Add($"La factura {f.NumeroFactura} ya está registrada. Si es otra parte del mismo pedido, use \"Corregir datos a mano\".");
-            }
-            return errores;
-        }
-
         /// <summary>
-        /// Común a los dos botones: valida las filas y las altas, registra los productos y
-        /// conductores aprobados y arma los conductores del lote. Devuelve false (con el
-        /// mensaje ya mostrado) si hay algo que corregir.
+        /// Común a los dos botones: valida las filas y las altas, registra los productos y conductores aprobados y
+        /// arma los conductores del lote (<see cref="ArmadoLoteImportado"/>). Devuelve false (con el mensaje ya
+        /// mostrado) si hay algo que corregir.
         /// </summary>
         private bool PrepararImportacion(ImportacionPedido imp, List<string> errores, out List<ConductorLote> conductores)
         {
             conductores = null;
-
-            var filas = LeerFilasImportacion(imp, out List<string> erroresFilas);
-            errores.AddRange(erroresFilas);
-            if (filas.Count == 0 && erroresFilas.Count == 0)
-                errores.Add("No hay tractos marcados para incluir.");
-
-            var productosNuevos = LeerProductosNuevos();
-            var conductoresNuevos = LeerConductoresNuevos(filas, errores);
-
-            bool hayAltas = conductoresNuevos.Count > 0 ||
-                productosNuevos.Any(p => filas.Any(f => f.Tracto.Lineas.Any(l => !l.IdProducto.HasValue && EsMismoProducto(l, p.Producto))));
-            if (hayAltas && !chkAprobarAltas.Checked)
-                errores.Add("Marque la aprobación de los productos y conductores nuevos.");
-
-            if (errores.Count > 0)
+            var preparada = ArmadoLoteImportado.Validar(imp, LeerEleccionImportacion(), errores);
+            if (preparada == null)
             {
                 MostrarMensajeImportacion("Revise estos datos: " + string.Join(" ", errores), "warning");
                 return false;
             }
 
-            RegistrarAltasAprobadas(imp, filas, productosNuevos, conductoresNuevos);
-            conductores = filas.Select(f => CrearConductorImportado(imp, f)).ToList();
+            conductores = ArmadoLoteImportado.Aplicar(imp, preparada, ObtenerUsuarioActual());
             ConductoresImportados = conductores;
-
-            // Constancia de por qué una guía no coincide con lo registrado (la guía no se reemite)
-            var cambios = filas.Where(f => f.Tracto.Programacion?.Cambio != null)
-                .Select(f => $"{f.Tracto.NumeroGuia ?? f.Tracto.NumeroTransporte}: {f.Tracto.NombreChofer}/{f.Tracto.Placa} → {f.NombreConductor}/{f.PlacaTracto}")
-                .ToList();
-            AuditoriaHelper.Registrar("IMPORT", "Despachos", null,
-                $"Documentos del pedido {imp.NumeroPedido} importados: {conductores.Count} tracto(s), factura {imp.Factura?.NumeroFactura}" +
-                (imp.Programacion == null ? ", sin programación" : $", programación {imp.Programacion.NombreArchivo}") +
-                (cambios.Count == 0 ? string.Empty : $". Cambios según la programación: {string.Join("; ", cambios)}"));
             return true;
         }
 
-        /// <summary>Una fila incluida de la vista previa con lo que el usuario eligió.</summary>
-        private class FilaImportacion
+        /// <summary>Lo elegido en la vista previa del ZIP, tal como está en los controles.</summary>
+        private ArmadoLoteImportado.EleccionImportacion LeerEleccionImportacion()
         {
-            public TractoImportado Tracto;
-            public string ValorConductor;     // id, o VALOR_CONDUCTOR_NUEVO
-            public string NombreConductor;
-            public int IdTracto;
-            public string PlacaTracto;
-            public int IdCarreta;
-            public string PlacaCarreta;
-            public int? IdDespachoProgramado;
-        }
-
-        private List<FilaImportacion> LeerFilasImportacion(ImportacionPedido imp, out List<string> errores)
-        {
-            errores = new List<string>();
-            var filas = new List<FilaImportacion>();
-
+            var eleccion = new ArmadoLoteImportado.EleccionImportacion { AltasAprobadas = chkAprobarAltas.Checked };
             foreach (RepeaterItem item in rptTractosImportados.Items)
-            {
-                if (item.ItemIndex >= imp.Tractos.Count) break;
-                var t = imp.Tractos[item.ItemIndex];
-                if (t.YaRegistrado || !((CheckBox)item.FindControl("chkIncluir")).Checked) continue;
-
-                var ddlConductor = (DropDownList)item.FindControl("ddlConductorImp");
-                var ddlTracto = (DropDownList)item.FindControl("ddlTractoImp");
-                var ddlCarreta = (DropDownList)item.FindControl("ddlCarretaImp");
-                string etiqueta = $"Transporte {t.NumeroTransporte}";
-
-                // Completa un despacho programado: chofer, tracto y carreta son los del despacho
-                var ddlProgramado = (DropDownList)item.FindControl("ddlProgramadoImp");
-                bool conProgramados = ((Panel)item.FindControl("pnlProgramadoImp")).Visible;
-                string eleccion = ProgramacionCarga.ErrorEleccionProgramado(conProgramados, ddlProgramado.SelectedValue, t);
-                if (eleccion != null)
+                eleccion.Filas.Add(new ArmadoLoteImportado.FilaVistaPrevia
                 {
-                    errores.Add(eleccion);
-                    continue;
-                }
-                var programado = conProgramados && int.TryParse(ddlProgramado.SelectedValue, out int idProg) && idProg > 0
-                    ? imp.Programados?.FirstOrDefault(p => p.IdDespacho == idProg) : null;
-                if (programado != null)
-                {
-                    if (t.Lineas.Count == 0) errores.Add($"{etiqueta}: no tiene carga leída.");
-                    filas.Add(new FilaImportacion
-                    {
-                        Tracto = t,
-                        ValorConductor = programado.IdConductor.ToString(),
-                        NombreConductor = programado.NombreConductor,
-                        IdTracto = programado.IdTracto,
-                        PlacaTracto = programado.PlacaTracto,
-                        IdCarreta = programado.IdCarreta,
-                        PlacaCarreta = programado.PlacaCarreta,
-                        IdDespachoProgramado = programado.IdDespacho
-                    });
-                    continue;
-                }
-
-                if (ddlConductor.SelectedValue == "0") errores.Add($"{etiqueta}: elija el conductor.");
-                if (ddlTracto.SelectedValue == "0") errores.Add($"{etiqueta}: elija el tracto.");
-                if (ddlCarreta.SelectedValue == "0") errores.Add($"{etiqueta}: elija la carreta.");
-                if (t.Lineas.Count == 0) errores.Add($"{etiqueta}: no tiene carga leída.");
-
-                filas.Add(new FilaImportacion
-                {
-                    Tracto = t,
-                    ValorConductor = ddlConductor.SelectedValue,
-                    NombreConductor = ddlConductor.SelectedItem?.Text.Split('-')[0].Trim(),
-                    IdTracto = int.TryParse(ddlTracto.SelectedValue, out int idT) ? idT : 0,
-                    PlacaTracto = ddlTracto.SelectedItem?.Text,
-                    IdCarreta = int.TryParse(ddlCarreta.SelectedValue, out int idC) ? idC : 0,
-                    PlacaCarreta = ddlCarreta.SelectedItem?.Text
+                    Incluida = ((CheckBox)item.FindControl("chkIncluir")).Checked,
+                    ConProgramados = ((Panel)item.FindControl("pnlProgramadoImp")).Visible,
+                    ValorProgramado = ((DropDownList)item.FindControl("ddlProgramadoImp")).SelectedValue,
+                    Conductor = Opcion((DropDownList)item.FindControl("ddlConductorImp")),
+                    Tracto = Opcion((DropDownList)item.FindControl("ddlTractoImp")),
+                    Carreta = Opcion((DropDownList)item.FindControl("ddlCarretaImp"))
                 });
-            }
 
-            // Lo mismo que valida "Agregar conductor": nada repetido dentro del lote
-            if (HayRepetidos(filas.Select(f => f.ValorConductor))) errores.Add("Hay un conductor repetido en más de un tracto.");
-            if (HayRepetidos(filas.Select(f => f.IdTracto.ToString()))) errores.Add("Hay un tracto repetido en más de una fila.");
-            if (HayRepetidos(filas.Select(f => f.IdCarreta.ToString()))) errores.Add("Hay una carreta repetida en más de un tracto.");
-            if (HayRepetidos(filas.Where(f => f.IdDespachoProgramado.HasValue).Select(f => f.IdDespachoProgramado.ToString())))
-                errores.Add("Hay un despacho programado elegido en más de una guía.");
-
-            return filas;
-        }
-
-        private static bool HayRepetidos(IEnumerable<string> valores) =>
-            valores.Where(v => v != "0" && v != VALOR_CONDUCTOR_NUEVO).GroupBy(v => v).Any(g => g.Count() > 1);
-
-        private class ProductoAprobado
-        {
-            public ImportacionPedidoService.ProductoNuevo Producto;
-            public string Nombre;
-        }
-
-        private List<ProductoAprobado> LeerProductosNuevos()
-        {
-            var lista = new List<ProductoAprobado>();
-            if (!pnlProductosNuevos.Visible) return lista;
-
-            foreach (RepeaterItem item in rptProductosNuevos.Items)
-            {
-                string codigo = ((HiddenField)item.FindControl("hfCodigoProducto")).Value;
-                lista.Add(new ProductoAprobado
+            if (pnlProductosNuevos.Visible)
+                eleccion.Productos = rptProductosNuevos.Items.Cast<RepeaterItem>().Select(item =>
                 {
-                    Producto = new ImportacionPedidoService.ProductoNuevo
+                    string codigo = ((HiddenField)item.FindControl("hfCodigoProducto")).Value;
+                    return new ArmadoLoteImportado.ProductoAprobado
                     {
-                        Codigo = string.IsNullOrEmpty(codigo) ? null : codigo,
-                        Descripcion = ((HiddenField)item.FindControl("hfDescripcionProducto")).Value
-                    },
-                    Nombre = ((TextBox)item.FindControl("txtNombreProducto")).Text.Trim()
-                });
-            }
-            return lista;
-        }
+                        Producto = new ImportacionPedidoService.ProductoNuevo
+                        {
+                            Codigo = string.IsNullOrEmpty(codigo) ? null : codigo,
+                            Descripcion = ((HiddenField)item.FindControl("hfDescripcionProducto")).Value
+                        },
+                        Nombre = ((TextBox)item.FindControl("txtNombreProducto")).Text.Trim()
+                    };
+                }).ToList();
 
-        private class ConductorAprobado
-        {
-            public TractoImportado Tracto;
-            public string ApPaterno, ApMaterno, Nombres;
-        }
-
-        /// <summary>Conductores nuevos de las filas incluidas que quedaron en "Registrar nuevo".</summary>
-        private List<ConductorAprobado> LeerConductoresNuevos(List<FilaImportacion> filas, List<string> errores)
-        {
-            var lista = new List<ConductorAprobado>();
-            if (!pnlConductoresNuevos.Visible) return lista;
-
-            foreach (RepeaterItem item in rptConductoresNuevos.Items)
-            {
-                string transporte = ((HiddenField)item.FindControl("hfTransporteConductor")).Value;
-                var fila = filas.FirstOrDefault(f => f.Tracto.NumeroTransporte == transporte && f.ValorConductor == VALOR_CONDUCTOR_NUEVO);
-                if (fila == null) continue;
-
-                var nuevo = new ConductorAprobado
+            if (pnlConductoresNuevos.Visible)
+                eleccion.ConductoresNuevos = rptConductoresNuevos.Items.Cast<RepeaterItem>().Select(item => new ArmadoLoteImportado.ConductorNuevoLeido
                 {
-                    Tracto = fila.Tracto,
-                    ApPaterno = ((TextBox)item.FindControl("txtApPaterno")).Text.Trim(),
-                    ApMaterno = ((TextBox)item.FindControl("txtApMaterno")).Text.Trim(),
-                    Nombres = ((TextBox)item.FindControl("txtNombres")).Text.Trim()
-                };
-                if (nuevo.ApPaterno.Length == 0 || nuevo.Nombres.Length == 0)
-                    errores.Add($"Conductor DNI {fila.Tracto.DniSegunLicencia}: complete apellido paterno y nombres.");
-                lista.Add(nuevo);
-            }
-
-            foreach (var f in filas.Where(f => f.ValorConductor == VALOR_CONDUCTOR_NUEVO && lista.All(c => c.Tracto != f.Tracto)))
-                errores.Add($"Transporte {f.Tracto.NumeroTransporte}: no hay datos para registrar al conductor; elíjalo de la lista.");
-
-            return lista;
+                    Transporte = ((HiddenField)item.FindControl("hfTransporteConductor")).Value,
+                    ApPaterno = ((TextBox)item.FindControl("txtApPaterno")).Text,
+                    ApMaterno = ((TextBox)item.FindControl("txtApMaterno")).Text,
+                    Nombres = ((TextBox)item.FindControl("txtNombres")).Text
+                }).ToList();
+            return eleccion;
         }
 
-        private static bool EsMismoProducto(LineaCarga linea, ImportacionPedidoService.ProductoNuevo producto) =>
-            producto.Codigo != null
-                ? linea.CodigoProducto == producto.Codigo
-                : LectorDocumentosPedido.Normalizar(linea.Descripcion) == LectorDocumentosPedido.Normalizar(producto.Descripcion);
+        /// <summary>Lo elegido en un selector: su valor y su texto (null si no hay nada elegido).</summary>
+        private static OpcionElegida Opcion(DropDownList ddl) => new OpcionElegida { Valor = ddl.SelectedValue, Texto = ddl.SelectedItem?.Text };
 
-        /// <summary>
-        /// Registra los productos y conductores aprobados (solo los que usan las filas
-        /// incluidas) y completa la licencia de los conductores existentes.
-        /// </summary>
-        private void RegistrarAltasAprobadas(ImportacionPedido imp, List<FilaImportacion> filas,
-            List<ProductoAprobado> productos, List<ConductorAprobado> conductores)
-        {
-            foreach (var p in productos)
-            {
-                if (!filas.Any(f => f.Tracto.Lineas.Any(l => !l.IdProducto.HasValue && EsMismoProducto(l, p.Producto))))
-                    continue;
+        /// <summary>Todas las opciones de un selector (valor y texto).</summary>
+        private static List<OpcionElegida> Opciones(DropDownList ddl) =>
+            ddl.Items.Cast<ListItem>().Select(i => new OpcionElegida { Valor = i.Value, Texto = i.Text }).ToList();
 
-                string nombre = string.IsNullOrWhiteSpace(p.Nombre) ? p.Producto.Descripcion : p.Nombre;
-                int id = ImportacionPedidoService.RegistrarProducto(imp, p.Producto, nombre);
-                AuditoriaHelper.Registrar("INSERT", "Producto", id,
-                    $"Producto {nombre} (código {p.Producto.Codigo}) registrado desde la importación del pedido {imp.NumeroPedido}, aprobado por {ObtenerUsuarioActual()}");
-            }
-
-            foreach (var c in conductores)
-            {
-                int id = ImportacionPedidoService.RegistrarConductor(c.Tracto.DniSegunLicencia, c.Nombres, c.ApPaterno, c.ApMaterno, c.Tracto.Licencia);
-                c.Tracto.IdConductor = id;
-                AuditoriaHelper.Registrar("INSERT", "Conductor", id,
-                    $"Conductor {c.Nombres} {c.ApPaterno} {c.ApMaterno} (DNI {c.Tracto.DniSegunLicencia}) registrado desde la importación del pedido {imp.NumeroPedido}, aprobado por {ObtenerUsuarioActual()}");
-
-                var fila = filas.First(f => f.Tracto == c.Tracto);
-                fila.ValorConductor = id.ToString();
-                fila.NombreConductor = $"{c.Nombres} {c.ApPaterno} {c.ApMaterno}".Trim().ToUpperInvariant();
-            }
-
-            // Licencia de la guía en conductores existentes que no la tenían: solo si es el mismo
-            // chofer de la guía (con un cambio de la programación, la licencia es de otro)
-            foreach (var f in filas.Where(f => !string.IsNullOrEmpty(f.Tracto.Licencia)
-                                               && f.Tracto.IdConductorGuia.HasValue && f.ValorConductor == f.Tracto.IdConductorGuia.Value.ToString()))
-            {
-                try { ImportacionPedidoService.CompletarLicencia(int.Parse(f.ValorConductor), f.Tracto.Licencia); }
-                catch (Exception ex) { RegistrarError("CompletarLicencia", ex); }   // dato accesorio: no frena la importación
-            }
-        }
-
-        private ConductorLote CrearConductorImportado(ImportacionPedido imp, FilaImportacion f)
-        {
-            int idConductor = int.Parse(f.ValorConductor);
-
-            // Misma regla que DeterminarViajeProgreso sin elección manual: se filtra por
-            // ámbito solo si el filtro deja algún viaje, y se usa el más reciente. La carga
-            // del packing list es siempre nacional (planta de origen). Un despacho programado
-            // ya tiene su viaje: no se toca.
-            var viaje = f.IdDespachoProgramado.HasValue ? null : RegistroDespachoService.ViajeAbiertoParaCarga(idConductor);
-
-            return new ConductorLote
-            {
-                IdConductor = idConductor,
-                NombreConductor = f.NombreConductor,
-                IdTracto = f.IdTracto,
-                PlacaTracto = f.PlacaTracto,
-                IdCarreta = f.IdCarreta,
-                PlacaCarreta = f.PlacaCarreta,
-                GuiaRemitente = f.Tracto.GuiasParaDespacho,
-                NumeroEntrega = f.Tracto.NumeroEntrega,
-                NumeroTransporte = f.Tracto.NumeroTransporte,
-                Carga = f.Tracto.Lineas,
-                IdDespachoProgramado = f.IdDespachoProgramado,
-                IdViajeProgreso = viaje?.IdViajeProgreso,
-                NumeroViajeProgreso = viaje?.NumeroViajeProgreso,
-                EstadoViaje = f.IdDespachoProgramado.HasValue ? "Despacho programado" : viaje?.EstadoViaje ?? "Por asignar"
-            };
-        }
+        private static bool HayRepetidos(IEnumerable<string> valores) => ArmadoLoteImportado.HayRepetidos(valores);
 
         /// <summary>
         /// Rellena la configuración base con lo leído. El packing list es la operación de
@@ -2081,23 +1786,7 @@ namespace WebSGV.Views
             var imp = ImportacionActual;
             if (conductores == null || imp == null) return;
 
-            lote.Conductores.AddRange(conductores);
-
-            if (string.IsNullOrEmpty(lote.NumeroPedido) && DespachoValidaciones.ValidarNumeroPedido(imp.NumeroPedido))
-                lote.NumeroPedido = imp.NumeroPedido;
-
-            lote.DestinoCarga = imp.Destino;
-            lote.EsExportacion = imp.EsExportacion;
-
-            bool mismaFactura = imp.Factura != null &&
-                string.Equals(lote.Documentacion.NumeroFactura, imp.Factura.NumeroFactura, StringComparison.OrdinalIgnoreCase);
-            if (mismaFactura && string.IsNullOrEmpty(lote.Documentacion.FacturaArchivoRutaTemp)
-                && !string.IsNullOrEmpty(imp.FacturaArchivoRutaTemp))
-            {
-                lote.Documentacion.FacturaArchivoRutaTemp = imp.FacturaArchivoRutaTemp;
-                lote.Documentacion.FacturaArchivoNombreOriginal = imp.FacturaArchivoNombreOriginal;
-                imp.FacturaArchivoRutaTemp = null;   // ahora es del lote: no borrarlo al limpiar
-            }
+            ArmadoLoteImportado.IncorporarAlLote(lote, imp, conductores);
 
             LimpiarImportacion(borrarArchivos: true);
         }
@@ -2630,30 +2319,13 @@ namespace WebSGV.Views
 
             txtFechaDescarga.Text = FechaHelper.Hoy().ToString("yyyy-MM-dd");
 
-            // Planta de descarga: del ámbito del destino; se sugiere la que aparezca en el texto del destino
+            // Planta de descarga: del ámbito del destino; la propuesta, por el destino o por la lista del cliente
             ddlPlantaDescarga.Items.Clear();
             ddlPlantaDescarga.Items.Add(new ListItem("-- Seleccione planta --", "0"));
-            string destino = LectorDocumentosPedido.Normalizar(primera.DestinoCarga);
-            var coincidencias = new List<string>();
             foreach (DataRow r in RegistroDespachoService.ObtenerPlantasPorAmbito(internacional).Rows)
-            {
                 ddlPlantaDescarga.Items.Add(new ListItem(r["nombre"].ToString(), r["idPlanta"].ToString()));
-                if (destino.Length > 0 && destino.Contains(LectorDocumentosPedido.Normalizar(r["nombre"].ToString())))
-                    coincidencias.Add(r["idPlanta"].ToString());
-            }
-            if (coincidencias.Count == 1) RestaurarSeleccion(ddlPlantaDescarga, coincidencias[0]);
-
-            // Sin planta clara por el destino, la de por defecto es la que comparten todos los
-            // tractos según la lista del cliente (si van a una sola).
-            if (ddlPlantaDescarga.SelectedValue == "0")
-            {
-                var destinos = DestinosDelPedido(primera.NumeroPedido);
-                var plantas = cargas
-                    .Select(c => destinos.TryGetValue(LectorDocumentosPedido.NormalizarPlaca(c.PlacaCarreta) ?? "", out var d) ? d.IdPlanta : (int?)null)
-                    .Distinct().ToList();
-                if (plantas.Count == 1 && plantas[0].HasValue)
-                    RestaurarSeleccion(ddlPlantaDescarga, plantas[0].Value.ToString());
-            }
+            RestaurarSeleccion(ddlPlantaDescarga, ArmadoDescarga.PlantaPropuesta(cargas, Opciones(ddlPlantaDescarga),
+                () => DestinosDelPedido(primera.NumeroPedido)));
             litAmbitoDescarga.Text = internacional
                 ? "Descarga internacional: el CPIC es opcional al iniciar el lote; si llega después, se agrega en Lista de despachos."
                 : "Descarga nacional.";
@@ -2715,19 +2387,9 @@ namespace WebSGV.Views
             foreach (DataRow r in _plantasDesc.Rows)
                 ddlPlanta.Items.Add(new ListItem(r["nombre"].ToString(), r["idPlanta"].ToString()));
 
-            var litDestino = (Literal)e.Item.FindControl("litDestinoDesc");
-            if (_destinosDesc.TryGetValue(LectorDocumentosPedido.NormalizarPlaca(c.PlacaCarreta) ?? "", out var destino))
-            {
-                if (ddlPlanta.Items.FindByValue(destino.IdPlanta.ToString()) != null)
-                {
-                    RestaurarSeleccion(ddlPlanta, destino.IdPlanta.ToString());
-                    litDestino.Text = Html("Lista del cliente: " + destino.Planta);
-                }
-                else
-                    litDestino.Text = Html($"Lista del cliente: {destino.Planta} (no es una planta de este ámbito)");
-            }
-            else
-                litDestino.Text = Html("Sin destino en la lista del cliente");
+            ((Literal)e.Item.FindControl("litDestinoDesc")).Text = Html(ArmadoDescarga.DestinoDeLaUnidad(c, _destinosDesc,
+                ddlPlanta.Items.Cast<ListItem>().Select(i => i.Value).ToList(), out string idPlantaLista));
+            RestaurarSeleccion(ddlPlanta, idPlantaLista);
 
             ((Literal)e.Item.FindControl("litCargaDesc")).Text = DetalleCargaHtml(c.Carga);
             // Lo que dice la programación leída y sus avisos, en su columna (M-081; antes, una fila extra sin la celda de Carga).
@@ -2772,53 +2434,18 @@ namespace WebSGV.Views
                     return;
                 }
 
-                var conductores = RegistroDespachoService.ObtenerConductoresActivos().Rows.Cast<DataRow>()
-                    .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idConductor"]), r["NombreCompleto"].ToString())).ToList();
-                var tractos = RegistroDespachoService.ObtenerTractosActivos().Rows.Cast<DataRow>()
-                    .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["idTracto"]), r["placaTracto"].ToString())).ToList();
-
-                var placasDelWord = new HashSet<string>(seccion.Filas
-                    .Select(f => LectorDocumentosPedido.NormalizarPlaca(f.Tracto)).Where(p => p != null));
-                var habituales = ImportacionPedidoService.ChoferHabitualPorTracto(tractos
-                    .Where(t => placasDelWord.Contains(LectorDocumentosPedido.NormalizarPlaca(t.Value) ?? ""))
-                    .Select(t => t.Key).ToList());
-
-                var propuestas = ProgramacionDescarga.Proponer(cargas, seccion, conductores, tractos, out var avisosGenerales, habituales);
+                var propuestas = ArmadoDescarga.Proponer(cargas, seccion, out var avisosGenerales);
                 PropuestasDescarga = propuestas;
                 EnlazarDescargas(cargas);
 
-                // Planta de descarga: la guía trae el destino del cliente ("Milagro") y la
-                // programación el nombre con que la conoce la empresa ("GUAYAQUIL-VITAPRO").
-                // Si el destino no la propuso, se toma la que aparezca en el título.
-                string plantaDelWord = null;
-                if (ddlPlantaDescarga.SelectedValue == "0")
-                {
-                    string titulo = LectorDocumentosPedido.Normalizar(seccion.Titulo);
-                    var enTitulo = ddlPlantaDescarga.Items.Cast<ListItem>()
-                        .Where(i => i.Value != "0" && titulo.Length > 0 && titulo.Contains(LectorDocumentosPedido.Normalizar(i.Text)))
-                        .ToList();
-                    if (enTitulo.Count == 1)
-                    {
-                        RestaurarSeleccion(ddlPlantaDescarga, enTitulo[0].Value);
-                        plantaDelWord = enTitulo[0].Text;
-                    }
-                }
+                // Si el destino no propuso la planta de descarga, se toma la que aparezca en el título
+                var plantaDelWord = ddlPlantaDescarga.SelectedValue == "0"
+                    ? ArmadoDescarga.PlantaEnTitulo(seccion.Titulo, Opciones(ddlPlantaDescarga)) : null;
+                if (plantaDelWord != null) RestaurarSeleccion(ddlPlantaDescarga, plantaDelWord.Valor);
 
-                int encontradas = propuestas.Values.Count(p => p.EnProgramacion);
-                int conAvisos = propuestas.Values.Count(p => p.Avisos.Count > 0);
-                var sb = new StringBuilder();
-                sb.Append(Html($"Programación{(programacion.Fecha.HasValue ? " del " + programacion.Fecha.Value.ToString("dd/MM/yyyy") : "")}" +
-                               $" · {seccion.Titulo ?? "sin título"}" +
-                               (string.IsNullOrEmpty(seccion.NumeroPedido) ? " (sin N° de pedido: se reconoció por las carretas)" : $" · pedido {seccion.NumeroPedido}") +
-                               $": {encontradas} de {cargas.Count} tracto(s) encontrados por su carreta."));
-                sb.Append(conAvisos > 0
-                    ? Html($" {conAvisos} con avisos: revíselos en ámbar antes de continuar.")
-                    : Html(" Sin diferencias con la carga."));
-                if (plantaDelWord != null)
-                    sb.Append(Html($" Planta de descarga: {plantaDelWord} (según el título de la programación)."));
-                if (avisosGenerales.Count > 0)
-                    sb.Append("<ul class=\"mb-0 mt-1\">" + string.Concat(avisosGenerales.Select(a => $"<li>{Html(a)}</li>")) + "</ul>");
-                MostrarAvisoProgramacion(sb.ToString(), conAvisos > 0 || avisosGenerales.Count > 0 ? "rd-notice-warn" : "rd-notice-ok", esHtml: true);
+                string resumen = ArmadoDescarga.ResumenProgramacionHtml(programacion, seccion, cargas.Count, propuestas,
+                    avisosGenerales, plantaDelWord?.Texto, out bool enAmbar);
+                MostrarAvisoProgramacion(resumen, enAmbar ? "rd-notice-warn" : "rd-notice-ok", esHtml: true);
             }
             catch (Exception ex)
             {
@@ -2857,104 +2484,59 @@ namespace WebSGV.Views
                     return;
                 }
 
-                var errores = new List<string>();
-                if (!DespachoValidaciones.FechaDespachoEsValida(txtFechaDescarga.Text, FechaHelper.Hoy()))
-                    errores.Add("La fecha de programación no es válida.");
-
-                var filas = new List<(DescargaPedidoService.CargaPendiente carga, DropDownList cond, DropDownList tracto, DropDownList carreta, DropDownList planta)>();
-                foreach (RepeaterItem item in rptDescargas.Items)
-                {
-                    if (item.ItemIndex >= cargas.Count) break;
-                    if (!((CheckBox)item.FindControl("chkIncluirDesc")).Checked) continue;
-
-                    var fila = (cargas[item.ItemIndex],
-                        (DropDownList)item.FindControl("ddlConductorDesc"),
-                        (DropDownList)item.FindControl("ddlTractoDesc"),
-                        (DropDownList)item.FindControl("ddlCarretaDesc"),
-                        (DropDownList)item.FindControl("ddlPlantaDesc"));
-                    string etiqueta = $"Transporte {fila.Item1.NumeroTransporte ?? fila.Item1.IdDespacho.ToString()}";
-                    if (fila.Item2.SelectedValue == "0") errores.Add($"{etiqueta}: elija el conductor.");
-                    if (fila.Item3.SelectedValue == "0") errores.Add($"{etiqueta}: elija el tracto.");
-                    if (fila.Item4.SelectedValue == "0") errores.Add($"{etiqueta}: elija la carreta.");
-                    if (fila.Item5.SelectedValue == "0" && ddlPlantaDescarga.SelectedValue == "0")
-                        errores.Add($"{etiqueta}: elija la planta de descarga (o la de por defecto).");
-                    filas.Add(fila);
-                }
-
-                if (filas.Count == 0) errores.Add("Marque al menos un tracto.");
-                if (HayRepetidos(filas.Select(f => f.cond.SelectedValue))) errores.Add("Hay un conductor repetido en más de un tracto.");
-                if (HayRepetidos(filas.Select(f => f.tracto.SelectedValue))) errores.Add("Hay un tracto repetido en más de una fila.");
-                if (HayRepetidos(filas.Select(f => f.carreta.SelectedValue))) errores.Add("Hay una carreta repetida en más de un tracto.");
-
+                var eleccion = LeerEleccionDescarga();
+                var errores = ArmadoDescarga.Validar(cargas, eleccion, out var filas);
                 if (errores.Count > 0)
                 {
                     MostrarMensajeDescarga("Revise estos datos: " + string.Join(" ", errores), "warning");
                     return;
                 }
 
-                var primera = cargas[0];
-                bool internacional = cargas.Any(c => c.EsExportacion);
-
-                var conductores = filas.Select(f =>
-                {
-                    int idConductor = int.Parse(f.cond.SelectedValue);
-
-                    // Si el conductor tiene un viaje abierto (por ejemplo, el mismo que cargó y
-                    // aún no liquida), la descarga se suma a ese viaje: una sola liquidación.
-                    var viaje = ObtenerViajesAbiertosConductor(idConductor).FirstOrDefault();
-
-                    // Planta de la unidad: la suya (lista del cliente o elegida) o la de por defecto.
-                    var ddlPlantaFila = f.planta.SelectedValue != "0" ? f.planta : ddlPlantaDescarga;
-
-                    return new ConductorLote
-                    {
-                        IdPlanta = int.Parse(ddlPlantaFila.SelectedValue),
-                        PlantaOperacion = ddlPlantaFila.SelectedItem.Text,
-                        IdConductor = idConductor,
-                        NombreConductor = f.cond.SelectedItem.Text.Split('-')[0].Trim(),
-                        IdTracto = int.Parse(f.tracto.SelectedValue),
-                        PlacaTracto = f.tracto.SelectedItem.Text,
-                        IdCarreta = int.Parse(f.carreta.SelectedValue),
-                        PlacaCarreta = f.carreta.SelectedItem.Text,
-                        GuiaRemitente = f.carga.GuiaRemitente,
-                        NumeroEntrega = f.carga.NumeroEntrega,
-                        NumeroTransporte = f.carga.NumeroTransporte,
-                        IdDespachoCarga = f.carga.IdDespacho,
-                        Carga = f.carga.Carga,
-                        IdViajeProgreso = viaje?.IdViajeProgreso,
-                        NumeroViajeProgreso = viaje?.NumeroViajeProgreso,
-                        EstadoViaje = viaje?.EstadoViaje ?? "Por asignar"
-                    };
-                }).ToList();
+                var conductores = ArmadoDescarga.Armar(filas, eleccion.PlantaPorDefecto);
                 ConductoresDescarga = conductores;
-
-                // Configuración base: DESCARGA del cliente del pedido, en la planta elegida
-                RestaurarSeleccion(ddlClienteBase, primera.IdCliente.ToString());
-                ddlTipoOperacionBase.SelectedValue = "DESCARGA";
-                rblAmbitoOperacionBase.SelectedValue = internacional ? "1" : "0";
-                MostrarOcultarPanelesBase();
-                ActualizarVisibilidadNumeroPedido();
-                ActualizarPlantasPorAmbito();
-                // La planta del lote es la de por defecto; sin ella, la de la primera unidad (cada
-                // unidad conserva la suya en ConductorLote.IdPlanta).
-                RestaurarSeleccion(ddlLugarOperacionBase, ddlPlantaDescarga.SelectedValue != "0"
-                    ? ddlPlantaDescarga.SelectedValue
-                    : conductores[0].IdPlanta.ToString());
-                txtFechaDespachoBase.Text = txtFechaDescarga.Text;
-
-                pnlVistaDescarga.Visible = false;
-                pnlElegirPedidoDescarga.Visible = false;
-                pnlMensajeDescarga.Visible = false;
-                pnlConfiguracionBase.Visible = true;
-                pnlDescargaAplicada.Visible = true;
-                litDescargaAplicada.Text = Html(
-                    $"Pedido {primera.NumeroPedido}: {conductores.Count} descarga(s) con su carga se agregarán al pulsar \"Iniciar lote\"." +
-                    (internacional ? " El CPIC es opcional: complételo en la configuración base o agréguelo después en Lista de despachos." : ""));
+                AplicarDescargaAConfiguracionBase(cargas, conductores);
             }
             catch (Exception ex)
             {
                 MostrarMensajeDescarga("No se pudo preparar la descarga. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "btnAplicarDescarga_Click"), "danger");
             }
+        }
+
+        /// <summary>Lo elegido en la vista previa de la descarga, tal como está en los controles.</summary>
+        private ArmadoDescarga.Eleccion LeerEleccionDescarga() => new ArmadoDescarga.Eleccion
+        {
+            Fecha = txtFechaDescarga.Text,
+            PlantaPorDefecto = Opcion(ddlPlantaDescarga),
+            Filas = rptDescargas.Items.Cast<RepeaterItem>().Select(item => new ArmadoDescarga.FilaElegida
+            {
+                Incluida = ((CheckBox)item.FindControl("chkIncluirDesc")).Checked,
+                Conductor = Opcion((DropDownList)item.FindControl("ddlConductorDesc")),
+                Tracto = Opcion((DropDownList)item.FindControl("ddlTractoDesc")),
+                Carreta = Opcion((DropDownList)item.FindControl("ddlCarretaDesc")),
+                Planta = Opcion((DropDownList)item.FindControl("ddlPlantaDesc"))
+            }).ToList()
+        };
+
+        /// <summary>Configuración base: DESCARGA del cliente del pedido, en la planta elegida, lista para "Iniciar lote".</summary>
+        private void AplicarDescargaAConfiguracionBase(List<DescargaPedidoService.CargaPendiente> cargas, List<ConductorLote> conductores)
+        {
+            var primera = cargas[0];
+
+            RestaurarSeleccion(ddlClienteBase, primera.IdCliente.ToString());
+            ddlTipoOperacionBase.SelectedValue = "DESCARGA";
+            rblAmbitoOperacionBase.SelectedValue = ArmadoDescarga.EsInternacional(cargas) ? "1" : "0";
+            MostrarOcultarPanelesBase();
+            ActualizarVisibilidadNumeroPedido();
+            ActualizarPlantasPorAmbito();
+            RestaurarSeleccion(ddlLugarOperacionBase, ArmadoDescarga.PlantaDelLote(ddlPlantaDescarga.SelectedValue, conductores));
+            txtFechaDespachoBase.Text = txtFechaDescarga.Text;
+
+            pnlVistaDescarga.Visible = false;
+            pnlElegirPedidoDescarga.Visible = false;
+            pnlMensajeDescarga.Visible = false;
+            pnlConfiguracionBase.Visible = true;
+            pnlDescargaAplicada.Visible = true;
+            litDescargaAplicada.Text = Html(ArmadoDescarga.TextoAplicada(cargas, conductores.Count));
         }
 
         /// <summary>Al iniciar el lote: agrega las descargas preparadas, con el pedido y el destino de su carga.</summary>
@@ -2964,11 +2546,7 @@ namespace WebSGV.Views
             var cargas = CargasPendientesActuales;
             if (conductores == null || cargas == null) return;
 
-            lote.Conductores.AddRange(conductores);
-            if (string.IsNullOrEmpty(lote.NumeroPedido))
-                lote.NumeroPedido = cargas[0].NumeroPedido;
-            lote.DestinoCarga = cargas[0].DestinoCarga;
-            lote.EsExportacion = cargas.Any(c => c.EsExportacion);
+            ArmadoDescarga.IncorporarAlLote(lote, conductores, cargas);
 
             LimpiarDescarga();
         }
@@ -3014,48 +2592,9 @@ namespace WebSGV.Views
             return RegistroDespachoService.CrearNuevoViajeProgreso(idConductor, descripcion, ObtenerUsuarioActual());
         }
 
-        private int? DeterminarViajeProgreso(int idConductor, bool esInternacional, string tipoOperacion)
-        {
-            var viajesAbiertos = ObtenerViajesAbiertosConductor(idConductor);
-
-            // MAJ-003: TODO — El SP sp_ObtenerViajesAbiertosConductor no acepta parámetros
-            // @esInternacional ni @tipoOperacion en su versión actual. Cuando el SP sea actualizado,
-            // agregar: cmd.Parameters.AddWithValue("@esInternacional", esInternacional);
-            //          cmd.Parameters.AddWithValue("@tipoOperacion", tipoOperacion);
-            // Por ahora se filtra en C# sobre la lista ya cargada.
-            if (esInternacional || !string.IsNullOrEmpty(tipoOperacion))
-            {
-                // Filtro en C#: si el viaje tiene EsInternacional definido, aplicar el filtro
-                var viajeFiltrado = viajesAbiertos
-                    .Where(v => !v.EsInternacional.HasValue || v.EsInternacional.Value == esInternacional)
-                    .ToList();
-                // Solo reemplazamos la lista si el filtro reduce (evitamos quedarnos sin viajes por datos incompletos)
-                if (viajeFiltrado.Count > 0)
-                    viajesAbiertos = viajeFiltrado;
-            }
-
-            if (viajesAbiertos.Count == 0)
-            {
-                // Sin viajes abiertos: se creará dentro de la transacción al finalizar el lote.
-                // No se crea aquí para evitar viajes huérfanos si el usuario cancela.
-                return null;
-            }
-            else if (viajesAbiertos.Count == 1)
-            {
-                // Hay exactamente un viaje abierto, usarlo
-                return viajesAbiertos[0].IdViajeProgreso;
-            }
-            else
-            {
-                // Múltiples viajes abiertos - verificar si hay uno seleccionado
-                if (ddlViajesActivos.SelectedValue != "0")
-                {
-                    return Convert.ToInt32(ddlViajesActivos.SelectedValue);
-                }
-                // Si no hay selección, usar el más reciente
-                return viajesAbiertos[0].IdViajeProgreso;
-            }
-        }
+        private int? DeterminarViajeProgreso(int idConductor, bool esInternacional, string tipoOperacion) =>
+            RegistroDespachoReglas.ElegirViajeProgreso(ObtenerViajesAbiertosConductor(idConductor), esInternacional, tipoOperacion,
+                ddlViajesActivos.SelectedValue);
 
         private void CargarViajesEnProgreso(int idConductor)
         {

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Web;
 using WebSGV.Helpers;
@@ -143,6 +144,29 @@ namespace WebSGV.Services.Despachos
             if (string.IsNullOrWhiteSpace(estado)) return SinDato;
             return EstadoUiHelper.Sello(estado,
                 estado.Trim().Equals("Por asignar", StringComparison.OrdinalIgnoreCase) ? TonoEstado.Neutro : TonoEstado.Ok);
+        }
+
+        // ── Viaje del conductor agregado a mano ─────────────────────────────────────────────
+
+        /// <summary>
+        /// Viaje en progreso al que se suma el despacho del conductor agregado a mano. Sin viajes abiertos, null: se crea
+        /// dentro de la transacción al finalizar el lote (aquí no, para no dejar viajes huérfanos si el usuario cancela).
+        /// Con uno, ese; con varios, el elegido en la lista (<paramref name="viajeElegido"/> distinto de "0") o el más
+        /// reciente. Con ámbito internacional o tipo de operación se filtra por ámbito (los viajes sin ámbito pasan),
+        /// solo si el filtro deja algún viaje: no se queda sin viajes por datos incompletos (MAJ-003: el SP no filtra).
+        /// </summary>
+        internal static int? ElegirViajeProgreso(IList<ViajeEnProgreso> viajesAbiertos, bool esInternacional, string tipoOperacion, string viajeElegido)
+        {
+            var viajes = viajesAbiertos;
+            if (esInternacional || !string.IsNullOrEmpty(tipoOperacion))
+            {
+                var delAmbito = viajes.Where(v => !v.EsInternacional.HasValue || v.EsInternacional.Value == esInternacional).ToList();
+                if (delAmbito.Count > 0) viajes = delAmbito;
+            }
+
+            if (viajes.Count == 0) return null;
+            if (viajes.Count == 1) return viajes[0].IdViajeProgreso;
+            return viajeElegido != "0" ? Convert.ToInt32(viajeElegido) : viajes[0].IdViajeProgreso;
         }
 
         /// <summary>Fila de descargas y entregas del Word: sin viaje ámbar, ya registrada verde, por registrar azul.</summary>
