@@ -188,10 +188,85 @@ namespace WebSGV.Services.Despachos
         public static string MarcaDescarga(IEnumerable<DescargaPedidoService.CargaPendiente> cargas)
         {
             if (cargas == null) return null;
-            string ids = string.Join(",", cargas.Select(c => c.IdDespacho));
-            using (var sha = SHA256.Create())
-                return string.Concat(sha.ComputeHash(Encoding.UTF8.GetBytes(ids)).Take(16).Select(b => b.ToString("x2")));
+            return Huella(string.Join(",", cargas.Select(c => c.IdDespacho)));
         }
+
+        /// <summary>Primeros 16 bytes del SHA-256 del texto, en hexadecimal (32 letras minúsculas).</summary>
+        private static string Huella(string texto)
+        {
+            using (var sha = SHA256.Create())
+                return string.Concat(sha.ComputeHash(Encoding.UTF8.GetBytes(texto)).Take(16).Select(b => b.ToString("x2")));
+        }
+
+        /// <summary>
+        /// Marca de la vista previa del ZIP (E6-25): sale de la importación de la sesión (cliente, pedido, PDF temporal de
+        /// la factura, cada tracto con lo asociado, los programados y los productos nuevos) y de si ya se aplicó, así que no
+        /// ocupa otra clave de sesión. Dos lecturas del mismo ZIP con el mismo cliente dan las mismas filas y las mismas
+        /// altas (con factura, ni eso: cada lectura guarda su PDF aparte); si otra pestaña cambió el cliente, registró un
+        /// producto o aplicó la importación, cambia y las altas de un formulario no se cruzan con las de otro. Null sin importación.
+        /// </summary>
+        public static string MarcaImportacion(ImportacionPedido imp, bool aplicada)
+        {
+            if (imp == null) return null;
+            var partes = new List<string> { "cli:" + imp.IdCliente, "ped:" + imp.NumeroPedido, "fac:" + imp.FacturaArchivoRutaTemp, aplicada ? "aplicada" : "vista" };
+            partes.AddRange(imp.Tractos.Select(t => string.Join("|", "t", t.NumeroTransporte, t.NumeroGuia, t.YaRegistrado, t.IdConductor,
+                t.IdTracto, t.IdCarreta, t.PuedeRegistrarChoferDeGuia, t.Programacion?.IdDespachoProgramado)));
+            partes.AddRange((imp.Programados ?? new List<DespachoProgramado>()).Select(p => "prog:" + p.IdDespacho));
+            if (imp.IdCliente.HasValue)
+                partes.AddRange(Importacion.ImportacionPedidoService.ProductosNuevos(imp).Select(p => "prod:" + p.Codigo + "|" + p.Descripcion));
+            return Huella(string.Join("\n", partes));
+        }
+
+        /// <summary>El formulario enviado es de la vista previa del ZIP que está en la sesión (misma marca, E6-25).</summary>
+        public static bool ImportacionVigente(string marcaEnviada, ImportacionPedido enSesion, bool aplicada) =>
+            enSesion != null && !string.IsNullOrEmpty(marcaEnviada)
+            && string.Equals(marcaEnviada, MarcaImportacion(enSesion, aplicada), StringComparison.Ordinal);
+
+        /// <summary>
+        /// Marca de lo ya aplicado al lote (recuadro "se agregarán al pulsar Iniciar lote", M-206): la de la vista previa
+        /// (<paramref name="marcaVista"/>) más cada conductor preparado, con el momento en que se armó. Otra pestaña que
+        /// vuelva a aplicar, aunque sea el mismo pedido, deja otra. Null si falta alguna de las dos.
+        /// </summary>
+        public static string MarcaAplicada(string marcaVista, IEnumerable<ConductorLote> conductores)
+        {
+            if (string.IsNullOrEmpty(marcaVista) || conductores == null) return null;
+            return Huella(marcaVista + "\n" + string.Join("\n", conductores.Select(c => string.Join("|", c.IdConductor, c.IdTracto,
+                c.IdCarreta, c.IdPlanta, c.IdDespachoCarga, c.IdDespachoProgramado, c.NumeroTransporte, c.FechaAgregado.Ticks))));
+        }
+
+        /// <summary>
+        /// Al pulsar "Iniciar lote" (M-206): el aviso si el recuadro de lo aplicado que se envió no es lo que hay en la
+        /// sesión (otra pestaña lo cambió o lo quitó); null si coincide o si esa pestaña no tenía el recuadro a la vista
+        /// (<paramref name="marcaEnviada"/> null: entonces no se incorpora nada de la sesión).
+        /// </summary>
+        public static string AvisoAplicadaAlIniciar(string marcaEnviada, string marcaEnSesion, string aviso) =>
+            marcaEnviada == null || (marcaEnviada.Length > 0 && string.Equals(marcaEnviada, marcaEnSesion, StringComparison.Ordinal))
+                ? null : aviso;
+
+        /// <summary>
+        /// Aviso de la importación aplicada en otra pestaña (M-206): esta pestaña pierde el recuadro y no la toma (su
+        /// configuración base es de otro pedido); al recargar, el GET la restaura con la configuración base reiniciada.
+        /// </summary>
+        public const string AvisoImportacionEnOtraPestana =
+            "La importación cambió en otra pestaña: continúe en esa pestaña, o recargue esta página para retomarla (la configuración base se reiniciará).";
+
+        /// <summary>Aviso de la descarga aplicada en otra pestaña (M-206); al recargar no vuelve: un GET la quita de la sesión.</summary>
+        public const string AvisoDescargaEnOtraPestana = "La descarga cambió en otra pestaña: continúe en esa pestaña.";
+
+        /// <summary>
+        /// El ZIP o los PDF no traían guías ni packing list legibles: el aviso con los primeros 5 archivos no usados (y
+        /// cuántos más hubo).
+        /// </summary>
+        public static string AvisoSinGuias(IList<string> ignorados)
+        {
+            string lista = ignorados.Count == 0 ? string.Empty
+                : " " + string.Join(" · ", ignorados.Take(5)) + (ignorados.Count > 5 ? $" … y {ignorados.Count - 5} más." : string.Empty);
+            return "No se encontraron guías de remisión ni packing list legibles." + lista;
+        }
+
+        /// <summary>Lo aplicado se incorpora al lote solo si la pestaña tenía a la vista el recuadro con la marca de la sesión (M-206).</summary>
+        public static bool AplicadaVigente(string marcaEnviada, string marcaEnSesion) =>
+            !string.IsNullOrEmpty(marcaEnviada) && string.Equals(marcaEnviada, marcaEnSesion, StringComparison.Ordinal);
 
         /// <summary>
         /// El formulario enviado es de las cargas por descargar que están en la sesión: misma marca. Con dos pestañas, la

@@ -43,6 +43,29 @@ namespace WebSGV.Views.Controles.Despachos
         /// <summary>Al log, con el contexto (el nombre del método) como dato.</summary>
         public static void RegistrarError(string contexto, Exception ex) => LogSGV.Error(ex, "Error en {Contexto}", contexto);
 
+        /// <summary>Quién registra (auditoría y lote): el nombre de la sesión; sin él, el usuario autenticado o "Sistema".</summary>
+        public static string UsuarioActual(Page pagina)
+        {
+            // MAJ-004: nombre de sesión (SesionHelper) consistente con el resto del proyecto
+            string nombre = SesionHelper.Nombre(pagina.Session);
+            if (nombre.Length > 0) return nombre;
+            return pagina.User.Identity.IsAuthenticated ? pagina.User.Identity.Name : "Sistema";
+        }
+
+        /// <summary>Borra un archivo temporal (manifiesto, factura o CPIC) si existe (sin lanzar si falla).</summary>
+        public static void EliminarArchivoTemporal(string rutaTemp)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(rutaTemp) && File.Exists(rutaTemp))
+                    File.Delete(rutaTemp);
+            }
+            catch (Exception ex)
+            {
+                RegistrarError("EliminarArchivoTemporal", ex);
+            }
+        }
+
         /// <summary>Por qué no sirve el Word de la programación elegido (sin archivo, no .docx, pesado o falso); null si está bien.</summary>
         public static string ErrorWordProgramacion(FileUpload word)
         {

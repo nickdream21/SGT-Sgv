@@ -150,6 +150,8 @@
         <asp:Panel ID="pnlDescargaAplicada" runat="server" Visible="false" CssClass="rd-notice rd-notice-ok mt-3">
             <div class="d-flex justify-content-between align-items-center flex-wrap rd-grupo">
                 <span><asp:Literal ID="litDescargaAplicada" runat="server" /></span>
+                <%-- Marca de lo aplicado (M-206): "Iniciar lote" la compara con la de la sesión; sin el recuadro a la vista no llega. --%>
+                <asp:HiddenField ID="hfMarcaDescAplicada" runat="server" EnableViewState="false" />
                 <asp:Button ID="btnQuitarDescarga" runat="server"
                     Text="Quitar"
                     CssClass="btn btn-outline-secondary btn-sm"

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -93,12 +93,7 @@ namespace WebSGV.Views.Controles.Despachos
         }
 
         /// <summary>Quita de la sesión las cargas, los conductores y las propuestas de la descarga.</summary>
-        public void Limpiar()
-        {
-            Cargas = null;
-            Estado.ConductoresDescarga = null;
-            Estado.PropuestasDescarga = null;
-        }
+        public void Limpiar() { Cargas = null; Estado.ConductoresDescarga = null; Estado.PropuestasDescarga = null; }
 
         /// <summary>Fase de configuración base: la tarjeta a la vista y, sin descarga en preparación, en la elección del pedido.</summary>
         public void MostrarEnConfiguracionBase()
@@ -114,12 +109,30 @@ namespace WebSGV.Views.Controles.Despachos
         /// <summary>Con un lote en curso la tarjeta no se muestra.</summary>
         public void Ocultar() => pnlDescargaPedido.Visible = false;
 
-        /// <summary>Al iniciar el lote: agrega las descargas preparadas, con el pedido y el destino de su carga.</summary>
+        /// <summary>"Iniciar lote" y "Quitar" (M-206): si el recuadro no es lo de la sesión, el aviso y el recuadro oculto (nunca la marca vigente); null si coincide o no estaba a la vista.</summary>
+        public string AvisoAlIniciarLote()
+        {
+            string aviso = RegistroDespachoReglas.AvisoAplicadaAlIniciar(Request.Form[hfMarcaDescAplicada.UniqueID], MarcaAplicadaEnSesion(),
+                RegistroDespachoReglas.AvisoDescargaEnOtraPestana);
+            if (aviso != null)
+            {
+                // Sin el recuadro (la sesión no se toca): vuelve la elección del pedido.
+                pnlDescargaAplicada.Visible = false;
+                pnlElegirPedidoDescarga.Visible = true;
+                Cerrada?.Invoke(this, EventArgs.Empty);
+            }
+            return aviso;
+        }
+
+        private string MarcaAplicadaEnSesion() => RegistroDespachoReglas.MarcaAplicada(RegistroDespachoReglas.MarcaDescarga(Cargas), Estado.ConductoresDescarga);
+
+        /// <summary>Al iniciar el lote: agrega las descargas preparadas, con el pedido y el destino de su carga (solo las que esta pestaña tenía a la vista, M-206).</summary>
         public void IncorporarAlLote(LoteDespachos lote)
         {
             var conductores = Estado.ConductoresDescarga;
             var cargas = Cargas;
             if (conductores == null || cargas == null) return;
+            if (!RegistroDespachoReglas.AplicadaVigente(Request.Form[hfMarcaDescAplicada.UniqueID], MarcaAplicadaEnSesion())) return;
 
             ArmadoDescarga.IncorporarAlLote(lote, conductores, cargas);
             Limpiar();
@@ -219,11 +232,7 @@ namespace WebSGV.Views.Controles.Despachos
             try
             {
                 string pedido = ddlPedidosPendientes.SelectedValue;
-                if (string.IsNullOrEmpty(pedido))
-                {
-                    MostrarMensajeDescarga("Elija un pedido de la lista.", "warning");
-                    return;
-                }
+                if (string.IsNullOrEmpty(pedido)) { MostrarMensajeDescarga("Elija un pedido de la lista.", "warning"); return; }
 
                 var cargas = DescargaPedidoService.ObtenerCargasPendientes(pedido);
                 if (cargas.Count == 0)
@@ -250,20 +259,12 @@ namespace WebSGV.Views.Controles.Despachos
                 var cargas = Cargas;
                 if (!Disponible(cargas)) return;
                 string errorWord = ErrorWordProgramacion(fileProgramacionDescarga);
-                if (errorWord != null)
-                {
-                    MostrarAvisoProgramacion(errorWord, "rd-notice-warn");
-                    return;
-                }
+                if (errorWord != null) { MostrarAvisoProgramacion(errorWord, "rd-notice-warn"); return; }
 
                 var programacion = LectorProgramacionWord.Leer(fileProgramacionDescarga.FileBytes);
                 string pedido = cargas[0].NumeroPedido;
                 var seccion = ProgramacionDescarga.SeccionDelPedido(programacion, pedido, cargas.Select(c => c.PlacaCarreta));
-                if (seccion == null)
-                {
-                    MostrarAvisoProgramacion($"El Word no tiene la sección del pedido {pedido} ni ninguna de sus carretas. Revise que sea la programación de la descarga.", "rd-notice-warn");
-                    return;
-                }
+                if (seccion == null) { MostrarAvisoProgramacion($"El Word no tiene la sección del pedido {pedido} ni ninguna de sus carretas. Revise que sea la programación de la descarga.", "rd-notice-warn"); return; }
 
                 var propuestas = ArmadoDescarga.Proponer(cargas, seccion, out var avisosGenerales);
                 Estado.PropuestasDescarga = propuestas;
@@ -317,6 +318,7 @@ namespace WebSGV.Views.Controles.Despachos
                 pnlMensajeDescarga.Visible = false;
                 pnlDescargaAplicada.Visible = true;
                 litDescargaAplicada.Text = Html(ArmadoDescarga.TextoAplicada(cargas, conductores.Count));
+                hfMarcaDescAplicada.Value = MarcaAplicadaEnSesion();
             }
             catch (Exception ex)
             {
@@ -350,6 +352,8 @@ namespace WebSGV.Views.Controles.Despachos
         /// <summary>"Descartar" y "Quitar": la descarga sale de la sesión y la tarjeta vuelve a la elección del pedido.</summary>
         protected void btnDescartarDescarga_Click(object sender, EventArgs e)
         {
+            // "Quitar" desde un recuadro que ya no es lo de la sesión: no se borra lo que aplicó la otra pestaña (M-206).
+            if (sender == btnQuitarDescarga && AvisoAlIniciarLote() is string aviso) { MostrarMensajeDescarga(aviso, "warning"); return; }
             Limpiar();
             pnlVistaDescarga.Visible = false;
             pnlDescargaAplicada.Visible = false;

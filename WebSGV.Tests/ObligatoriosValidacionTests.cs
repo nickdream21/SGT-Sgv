@@ -490,7 +490,7 @@ namespace WebSGV.Tests
         [InlineData("Views/ListaDespachos.aspx", "btnRegistrarFactura", "vgFacturaLote", true)]
         [InlineData("Views/ListaDespachos.aspx", "btnRegistrarCpic", "vgCpicLote", true)]
         [InlineData("Views/Controles/Despachos/ProgramacionWord.ascx", "btnProgramarDespachos", "vgProgramar", true)]
-        [InlineData("Views/RegistroDespacho.aspx", "btnAplicarImportacion", "vgImportar", true)]
+        [InlineData("Views/Controles/Despachos/ImportacionDocumentos.ascx", "btnAplicarImportacion", "vgImportar", true)]
         [InlineData("Views/Controles/Despachos/DescargaPedido.ascx", "btnAplicarDescarga", "vgDescarga", true)]
         public void H_BotonesConSuGrupo_YPageIsValidEnElServidor(string ruta, string id, string grupo, bool revisaIsValid)
         {

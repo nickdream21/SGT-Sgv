@@ -25,7 +25,7 @@ namespace WebSGV.Tests
         /// <summary>Archivos de más de 800 líneas (ruta relativa a WebSGV/).</summary>
         private static readonly Dictionary<string, int> TopesArchivo = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Views/RegistroDespacho.aspx.cs"] = 2349,
+            ["Views/RegistroDespacho.aspx.cs"] = 1839,
             ["Views/ListaDespachos.aspx.cs"] = 2120,
             ["Services/Despachos/BandejaDocumentosService.cs"] = 1549,
             ["Views/ReportesOrdenesViaje.aspx.cs"] = 1479,
@@ -81,7 +81,6 @@ namespace WebSGV.Tests
             ["Services/Despachos/BandejaDocumentosService.cs::ResolverCpic"] = 89,
             ["Services/Despachos/Importacion/ImportacionPedidoService.cs::Leer(IEnumerable<ArchivoSubido>, ArchivoSubido, Dictionary<string, ArchivoSubido>, PresupuestoLectura)"] = 89,
             ["Views/ConformarLiquidacion.aspx.cs::ObtenerLiquidacion"] = 85,
-            ["Views/RegistroDespacho.aspx.cs::btnLeerDocumentos_Click"] = 84,
             ["Global.asax.cs::Application_Error"] = 85,
             ["Views/BandejaDocumentos.aspx.cs::MostrarVistaPrevia"] = 84,
             ["Services/Despachos/BandejaDocumentosService.cs::AplicarEleccion"] = 83,

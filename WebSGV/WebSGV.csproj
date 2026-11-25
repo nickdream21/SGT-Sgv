@@ -543,6 +543,7 @@
     <Content Include="Views\CatalogoCliente.aspx" />
     <Content Include="Views\RegistroClientes.aspx" />
     <Content Include="Views\Controles\Despachos\DescargaPedido.ascx" />
+    <Content Include="Views\Controles\Despachos\ImportacionDocumentos.ascx" />
     <Content Include="Views\Controles\Despachos\ProgramacionWord.ascx" />
     <Content Include="Views\RegistroDespacho.aspx" />
     <Content Include="Views\RegistroPeajes.aspx" />
@@ -1015,6 +1016,13 @@
     </Compile>
     <Compile Include="Views\Controles\Despachos\ProgramacionWord.ascx.designer.cs">
       <DependentUpon>ProgramacionWord.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Controles\Despachos\ImportacionDocumentos.ascx.cs">
+      <DependentUpon>ImportacionDocumentos.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Controles\Despachos\ImportacionDocumentos.ascx.designer.cs">
+      <DependentUpon>ImportacionDocumentos.ascx</DependentUpon>
     </Compile>
     <Compile Include="Views\Controles\Despachos\PropuestaConfiguracionBase.cs" />
     <Compile Include="Views\RegistroDespacho.aspx.cs">

@@ -257,8 +257,8 @@ namespace WebSGV.Tests
             Assert.Contains("A&lt;b&gt; · lote L1 · ", html);
             Assert.Contains("Nuevo · lote — · ", html);
             Assert.Single(Regex.Matches(html, ">nuevo<"));
-            // La página (vista previa del ZIP) y el control usan la misma.
-            Assert.Contains("RegistroDespachoReglas.DetalleCargaHtml(t.Lineas)", PaginaCs());
+            // La vista previa del ZIP (ImportacionDocumentos.ascx, E6-25) y el control usan la misma.
+            Assert.Contains("RegistroDespachoReglas.DetalleCargaHtml(t.Lineas)", Leer("Views", "Controles", "Despachos", "ImportacionDocumentos.ascx.cs"));
             Assert.Contains("RegistroDespachoReglas.DetalleCargaHtml(c.Carga)", ControlCs());
             Assert.DoesNotContain("private static string DetalleCargaHtml", PaginaCs());
         }
