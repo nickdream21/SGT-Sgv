@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-25**, commit anterior `e21e291` — **Etapa 6 en ejecución**: E6-20 (SQL fuera de lo que quedaba en las páginas: Auditoría y el panel del administrador de sistema a `ConsultaAuditoriaService` y `GestionUsuariosService`, con un solo "registros de hoy" por rango de la hora de Perú; combos de la Bandeja a `CatalogoNuevoDespacho`, años del Dashboard de exportación, `ImportacionSeguimientoService` y `VerificacionDocumentoService`; páginas 17 → 4, solo `Salud.ashx`; `DbHelper.FijarConexionParaPruebas` interno; 23 métodos públicos sin uso borrados con su prueba; los 23 SP registrados en el csproj con su prueba; sin SP ni migración). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-25**, commit anterior `f20daa6` — **Etapa 6 en ejecución**: E6-21 (caracterización de RegistroDespacho: `herramientas/sitio-local/caracterizar-registro-despacho.ps1` lee 5 juegos fijos de `docs/DOCUMENTACION/` en el sitio local con "Leer documentos", "Ver tractos por descargar" y "Leer programación" y nada más (lista blanca comprobada en el único punto de envío), guarda la vista previa normalizada en `privado/caracterizacion/` y con `-Comparar` da las diferencias; dos corridas seguidas con 0 diferencias; `CaracterizacionRegistroDespachoTests`; sin SP ni migración). No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-200 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

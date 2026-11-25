@@ -11,6 +11,20 @@ Para probar cambios en la app real (no solo con tests), en cualquiera de las dos
      conectada (ver abajo). Usuarios de prueba por rol: `privado/CREDENCIALES_USUARIOS.txt`.
    - **Sin navegador:** `probar-importacion.ps1 -Archivos <zip/pdf>, <docx>` hace lo mismo que
      "Leer documentos" en RegistroDespacho y resume la vista previa. Solo lee: no crea el lote.
+   - **Caracterización de RegistroDespacho (E6-21):** `caracterizar-registro-despacho.ps1` corre 5 juegos
+     fijos de `docs/DOCUMENTACION/` (dos de ZIP + Word, solo PDF, solo Word y descarga
+     por pedido con su Word) y guarda lo que el usuario ve, normalizado, en `privado/caracterizacion/<juego>.txt`
+     (fuera de git). Con `-Comparar` vuelve a correr y muestra las diferencias (exit 0 sin diferencias, 1 con
+     ellas; la corrida nueva queda en `<juego>.nuevo.txt`; por consola los números de 8 dígitos salen como
+     `########`); `-Juegos solo-word, descarga-word` corre algunos (con `powershell -File ...` escríbalos
+     juntos y separados por comas: `-Juegos solo-word,descarga-word`). Solo envía "Leer documentos", "Ver
+     tractos por descargar" y "Leer programación" (lista blanca: cualquier otro POST aborta); la contraseña
+     va a curl por la entrada estándar, no en la línea de órdenes. Un juego que falla (falta un documento,
+     el pedido ya no está pendiente, error) no se guarda y sale con 1; al comparar cuenta como diferencia.
+     Caracteriza el HTML que devuelve el servidor, no lo que el JavaScript de la página cambia después en el
+     navegador (select2, plegados, avisos). Uso al partir la página: guardar antes de cambiarla y
+     `-Comparar` al terminar. Los pedidos de descarga salen de la BD de pruebas: si alguien los descarga,
+     el juego falla y hay que elegir otro pedido.
    - **Recalcular viajes del seguimiento:** `actualizar-gps.ps1 -Ids 7250, 7273` pulsa "Actualizar GPS"
      en el detalle de cada viaje (escribe en la BD de pruebas, como el botón) y muestra el mensaje.
 

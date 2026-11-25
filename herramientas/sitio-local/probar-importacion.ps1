@@ -36,11 +36,29 @@ function Campos($html) {
 }
 function NombreDe($html, $id) { [regex]::Match($html, ('name="((?:[^"]*\$)?' + $id + ')"')).Groups[1].Value }
 function Texto($html) { [System.Net.WebUtility]::HtmlDecode(($html -replace '<[^>]+>', ' ' -replace '\s+', ' ')).Trim() }
+function Citar($v) { '"' + ([string]$v).Replace('\', '\\').Replace('"', '\"').Replace("`r", '\r').Replace("`n", '\n').Replace("`t", '\t') + '"' }
+# Los campos (la contraseña del ingreso, el ViewState) van por la entrada estándar como configuración de
+# curl (-K -), no en la línea de órdenes. En bytes UTF-8 sin BOM: "texto | curl.exe" antepondría el BOM
+# de la consola y curl rechazaría esa línea.
 function Pedir($url, $campos, $archivos, $campoArchivo) {
-    $a = @('-sk', '-L', '-b', $jar, '-c', $jar)
-    if ($campos) { foreach ($k in $campos.Keys) { $a += @('--form-string', "$k=$($campos[$k])") } }
-    foreach ($f in $archivos) { $a += @('-F', "$campoArchivo=@`"$f`"") }
-    & curl.exe @a $url | Out-String
+    $config = New-Object System.Text.StringBuilder
+    if ($campos) { foreach ($k in $campos.Keys) { [void]$config.AppendLine('form-string = ' + (Citar "$k=$($campos[$k])")) } }
+    foreach ($f in $archivos) { [void]$config.AppendLine('form = ' + (Citar "$campoArchivo=@`"$f`"")) }
+    $psi = New-Object System.Diagnostics.ProcessStartInfo 'curl.exe'
+    $psi.Arguments = (@('-sk', '-L', '-b', $jar, '-c', $jar, '-K', '-', $url) | ForEach-Object { if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ } }) -join ' '
+    $psi.UseShellExecute = $false
+    $psi.RedirectStandardInput = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.StandardOutputEncoding = New-Object System.Text.UTF8Encoding($false)
+    $entradaConsola = [Console]::InputEncoding
+    try { [Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false); $p = [System.Diagnostics.Process]::Start($psi) }
+    finally { [Console]::InputEncoding = $entradaConsola }
+    $bytes = (New-Object System.Text.UTF8Encoding($false)).GetBytes($config.ToString())
+    $p.StandardInput.BaseStream.Write($bytes, 0, $bytes.Length)
+    $p.StandardInput.BaseStream.Close()
+    $r = $p.StandardOutput.ReadToEnd()
+    $p.WaitForExit()
+    $r
 }
 
 # Inicio de sesión
