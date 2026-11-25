@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-25**, commit anterior `169fb73` — **plan detallado de la Etapa 6 escrito** (E6-1 a E6-30 en `docs/HOJA_DE_RUTA_CALIDAD.md`; 4 analistas, solo lectura; no se ejecuta hasta la orden del usuario); nuevos M-178 a M-186, U-098 a U-103 y P-096 a P-098; M-127 reescrito. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-25**, commit anterior `97a1a20` — **Etapa 6 en ejecución**: E6-1 (cobertura en CI con mínimo: `herramientas/calidad/`). No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-186 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

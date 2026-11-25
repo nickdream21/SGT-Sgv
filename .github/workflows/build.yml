@@ -51,5 +51,21 @@ jobs:
       - name: Compilar
         run: msbuild WebSGV.sln /t:Build /p:Configuration=Release /nologo /verbosity:minimal
 
+      # Con cobertura de lineas de WebSGV.dll (E6-1). Sin BD: las [FactBD] se saltan.
       - name: Ejecutar tests
-        run: dotnet test WebSGV.Tests/WebSGV.Tests.csproj -c Release --logger "console;verbosity=minimal"
+        run: dotnet test WebSGV.Tests/WebSGV.Tests.csproj -c Release --logger "console;verbosity=minimal" --settings WebSGV.Tests/cobertura.runsettings --collect "Code Coverage;Format=cobertura" --results-directory TestResults/cobertura
+
+      # Falla si el total, Services o Helpers bajan de herramientas/calidad/cobertura-minima.json.
+      - name: Comparar cobertura con el minimo
+        shell: pwsh
+        run: ./herramientas/calidad/medir-cobertura.ps1 -Directorio TestResults/cobertura -Comparar
+
+      # Se sube aunque falle el tope, para ver que bajo.
+      - name: Subir cobertura
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cobertura
+          path: TestResults/cobertura/**/*.cobertura.xml
+          if-no-files-found: warn
+          retention-days: 30

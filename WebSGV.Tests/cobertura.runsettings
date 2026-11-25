@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cobertura de líneas de WebSGV.dll (E6-1). Recolector "Code Coverage" de Microsoft.NET.Test.Sdk;
+  no hace falta instalar nada. Cómo se usa (dotnet test con este archivo y el recolector en formato
+  cobertura, como el paso "Ejecutar tests" de .github/workflows/build.yml) y cómo leer el resultado
+  con herramientas/calidad/medir-cobertura.ps1: ver herramientas/calidad/README.md.
+-->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="Code Coverage">
+        <Configuration>
+          <Format>Cobertura</Format>
+          <CodeCoverage>
+            <!-- Solo el sitio: ni las pruebas ni QuestPDF, ClosedXML, xUnit, etc. -->
+            <ModulePaths>
+              <Include>
+                <ModulePath>.*[\\/]WebSGV\.dll$</ModulePath>
+              </Include>
+            </ModulePaths>
+            <!-- Controles declarados por el diseñador de Web Forms -->
+            <Sources>
+              <Exclude>
+                <Source>.*\.designer\.cs$</Source>
+                <Source>.*[\\/]obj[\\/].*</Source>
+              </Exclude>
+            </Sources>
+            <!-- Código generado por herramientas. CompilerGenerated no se excluye: esconde el cuerpo
+                 de las lambdas y de los métodos async, que sí son código nuestro. -->
+            <Attributes>
+              <Exclude>
+                <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
+                <Attribute>^System\.Diagnostics\.CodeAnalysis\.ExcludeFromCodeCoverageAttribute$</Attribute>
+                <Attribute>^System\.Diagnostics\.DebuggerNonUserCodeAttribute$</Attribute>
+              </Exclude>
+            </Attributes>
+            <UseVerifiableInstrumentation>True</UseVerifiableInstrumentation>
+            <AllowLowIntegrityProcesses>True</AllowLowIntegrityProcesses>
+            <CollectFromChildProcesses>True</CollectFromChildProcesses>
+            <CollectAspDotNet>False</CollectAspDotNet>
+          </CodeCoverage>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

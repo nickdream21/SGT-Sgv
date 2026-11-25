@@ -8,7 +8,8 @@ namespace WebSGV.Tests
 {
     /// <summary>
     /// Fija lo esencial del CI (E4-9): token de solo lectura, acciones fijadas por SHA,
-    /// auditoría de NuGet y de JS de terceros, corrida semanal y Dependabot.
+    /// auditoría de NuGet y de JS de terceros, corrida semanal y Dependabot; y la cobertura con
+    /// su tope (E6-1).
     /// Lee los YAML como texto para no añadir dependencias.
     /// </summary>
     public class ConfiguracionCiTests
@@ -72,6 +73,36 @@ namespace WebSGV.Tests
             string w = Workflow();
             Assert.Matches(new Regex(@"^\s+schedule:\s*\r?\n\s+-\s*cron:\s*'[^']+'", RegexOptions.Multiline), w);
             Assert.Matches(new Regex(@"^\s+workflow_dispatch:", RegexOptions.Multiline), w);
+        }
+
+        [Fact]
+        public void Workflow_CoberturaConTopeYArtefacto()
+        {
+            string w = Workflow();
+
+            // Las pruebas recolectan cobertura con el runsettings y dejan el XML en una carpeta fija.
+            var pruebas = Regex.Match(w, @"dotnet test WebSGV\.Tests/WebSGV\.Tests\.csproj[^\r\n]*");
+            Assert.True(pruebas.Success, "Falta el paso dotnet test");
+            Assert.Contains("--settings WebSGV.Tests/cobertura.runsettings", pruebas.Value);
+            Assert.Contains("--collect \"Code Coverage;Format=cobertura\"", pruebas.Value);
+            Assert.Contains("--results-directory TestResults/cobertura", pruebas.Value);
+
+            // Comparación con el mínimo (falla el CI si baja).
+            Assert.Matches(new Regex(@"medir-cobertura\.ps1 -Directorio TestResults/cobertura -Comparar"), w);
+
+            // Artefacto con la acción fijada por SHA, subido aunque falle el tope.
+            Assert.Matches(new Regex(
+                @"-\s*name:\s*Subir cobertura\s*\r?\n\s+if:\s*always\(\)\s*\r?\n\s+uses:\s*actions/upload-artifact@[0-9a-f]{40}\s+#\s*v\d+\.\d+\.\d+\s*\r?\n\s+with:\s*\r?\n(\s+\S[^\r\n]*\r?\n)*?\s+path:\s*TestResults/cobertura/"), w);
+
+            // Los archivos que usa existen y el runsettings mide solo WebSGV.dll.
+            string runsettings = Leer("WebSGV.Tests", "cobertura.runsettings");
+            Assert.Contains("friendlyName=\"Code Coverage\"", runsettings);
+            Assert.Contains(@"WebSGV\.dll$", runsettings);
+            Assert.Contains(@".*\.designer\.cs$", runsettings);
+            Leer("herramientas", "calidad", "medir-cobertura.ps1");
+            string minimos = Leer("herramientas", "calidad", "cobertura-minima.json");
+            foreach (string clave in new[] { "\"total\"", "\"Services\"", "\"Helpers\"" })
+                Assert.Contains(clave, minimos);
         }
 
         [Fact]
