@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-25**, commit anterior `67eb92c` — **Etapa 6 en ejecución**: E6-13 (los `catch` que tapaban errores: mensajes de negocio a la vista, advertencias en el log y lista cerrada de `catch` sin registro; sin cambios en la BD). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-25**, commit anterior `42ef06e` — **Etapa 6 en ejecución**: E6-14 (alarmas que avisan de verdad: `verificar-pdf-firmados` sin los 31 faltantes falsos de órdenes retiradas y aviso por correo `SGV_SCRIPT_AVISO` con `herramientas/comun/enviar-aviso.ps1` en el sello y la tarea de respaldo; sin cambios en la BD). No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-192 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
@@ -134,7 +134,6 @@ Propuesto por Claude en E2-4: primero las de prioridad A (riesgo de datos, diner
 - [ ] **M-059** FacturasFlete: PDF anterior huérfano al corregir — al corregir una factura (ACTUALIZADA) el PDF anterior queda en `Uploads/FacturasFlete` sin fila que lo apunte; limpieza de huérfanos. · C
 - [ ] **M-060** Tabla `PuntoControlGps` de exportación casi sin uso — "Verificar GPS" ya no usa sus 20 puntos, pero `HoraLlegadaGpsService.cs:52` usa el punto `BASE`: no borrar la tabla entera. · C
 
-- [ ] **M-101** `verificar-pdf-firmados` da 31 faltantes falsos — son las firmas de las órdenes de prueba retiradas el 2026-11-16; por eso la tarea "SGV - Respaldo diario" termina con resultado 2 y la alarma pierde valor. Excluir las firmas anuladas de órdenes retiradas (`herramientas/respaldo/verificar-pdf-firmados.ps1`). · B
 - [ ] **M-102** 23 archivos de `Database/StoredProcedures/` sin registrar en `WebSGV.csproj` — entre ellos `sp_RechazarLiquidacion.sql`, `sp_LD_ReubicarDespachoEnViajeDelConductor.sql` y los `sp_SE_*`: registrarlos y una prueba de CI que lo exija, como la de las páginas. · C
 
 ### Etapa 4 — Seguridad
@@ -150,7 +149,6 @@ Las tareas de la etapa (E4-1 a E4-16) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-120** `/trace.axd` responde 500 y deja un ERR con traza en cada petición — quitar el handler de trace en `Web.config` (`system.webServer/handlers`) para que dé 404 sin entrada en el log (un escáner llena el log). · C
 - [ ] **M-121** Revisar a mano lo que Dependabot no ve del CI — antes del 2027-05-22: la versión fija de `retire` en `build.yml` (6.1.0; Dependabot no sigue lo que corre con `npx`) y la excepción de Bootstrap 4.6.2 en `.retireignore.json`; de paso, subir `actions/checkout` y `actions/setup-node` a la versión mayor que ya no use Node 20 si Dependabot no lo propuso. · C
 - [ ] **M-122** Validar el certificado de somee — hoy la conexión cifrada necesita `TrustServerCertificate=True` (y `-C` en sqlcmd) porque el certificado no coincide con el nombre del servidor: si somee lo corrige (preguntarlo con U-083), quitarlos de la plantilla, los scripts y `respaldar-bd.ps1`. · C
-- [ ] **M-123** Aviso por correo de una FALLA del sello (E4-11) y del respaldo — hoy solo existe el gancho `SGV_SCRIPT_AVISO`: escribir el `.ps1` que envíe el correo con el SMTP de `appSettings.Secrets.config` (o decidir otro canal) y probarlo con una FALLA de ensayo. · B
 - [ ] **M-125** Aplicar la CSP de scripts (resto de E4-15) — tras publicar E4-5 y 7 días de informes sin nada fuera de `eval`/`inline` (P-031): pasar a la política aplicada `script-src 'self' 'unsafe-inline' 'unsafe-eval'` y las demás directivas de la Report-Only (`Web.config`), y comprobar 0 bloqueos `CSP (aplicada)`; quitar `'unsafe-inline'` exige antes quitar los `__doPostBack`/`WebForm_DoPostBackWithOptions` que genera WebForms (17 `AutoPostBack`, 32 `LinkButton`; Etapa 6). · B
 - [ ] **M-068** Ajustar `Seguridad.IteracionesContrasena` — con los ms de "Hash de contraseña … convertido" en `App_Data/logs` del servidor (tarea 7); no volver a un DLL anterior. · C
 - [ ] **M-111** Tablas ledger de SQL Server 2022 para `FirmaDigital` y `AuditoriaLog` — darían prueba criptográfica de que nadie alteró las filas aunque la app sea `db_owner`; hay que reconstruir las tablas con datos reales y comprobar en un ensayo que `sqlpackage` exporta e importa un `.bacpac` con tablas ledger. Mientras tanto, el sello externo diario de E4-11. · C

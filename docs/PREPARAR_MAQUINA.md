@@ -44,13 +44,16 @@ Copiarlos a mano desde la otra PC (p. ej. con la transferencia de archivos de An
 |---|---|---|
 | `SGV_CARPETA_PUBLICACIONES` | `herramientas/publicar/publicar.ps1` (si no se pasa `-CarpetaPublicaciones`) | Carpeta **fuera del repo** donde se guarda un paquete por versión (en la PC de la oficina, `C:\PublicacionesSGV`) |
 | `SGV_CARPETA_RESPALDO` | `herramientas/respaldo/*.ps1` (si no se pasa `-Carpeta`) | Carpeta **fuera del repo** de los respaldos |
+| `SGV_SCRIPT_AVISO` | `sellar-registros.ps1` y la tarea `SGV - Respaldo diario` (`avisar-tarea.ps1`) | Ruta completa de `herramientas\comun\enviar-aviso.ps1` en esta PC: ante una FALLA manda **un** correo con el SMTP de `WebSGV/appSettings.Secrets.config` (sección 1) a `AvisoErroresPara` de `Web.config`. Sin ella, una FALLA no avisa por correo |
+| `SGV_AVISO_PARA` | `enviar-aviso.ps1` (opcional) | Otro destinatario para esos avisos (varios separados por comas) |
 
 ```powershell
 [Environment]::SetEnvironmentVariable('SGV_CARPETA_PUBLICACIONES', 'C:\PublicacionesSGV', 'User')
 [Environment]::SetEnvironmentVariable('SGV_CARPETA_RESPALDO', '<carpeta de respaldos>', 'User')
+[Environment]::SetEnvironmentVariable('SGV_SCRIPT_AVISO', (Resolve-Path .\herramientas\comun\enviar-aviso.ps1).Path, 'User')   # desde la raíz del repo
 ```
 
-Solo hacen falta en la PC que publica o respalda. Abrir una consola nueva después de fijarlas.
+Solo hacen falta en la PC que publica o respalda. Abrir una consola nueva después de fijarlas. Para probar el aviso sin mandar correos: `.\herramientas\comun\enviar-aviso.ps1 -Asunto 'SGV: prueba de aviso' -Cuerpo prueba -CarpetaSalida <carpeta temporal>` deja un `.eml` en esa carpeta; sin `-CarpetaSalida` lo envía. La tarea lee `SGV_SCRIPT_AVISO` al correr: fijarla o cambiarla no obliga a registrarla de nuevo (actualizar el repo a E6-14, sí).
 
 ## 5. Si esta PC hace el respaldo diario
 

@@ -103,6 +103,7 @@ $env:SGV_CARPETA_RESPALDO = 'D:\RespaldosSGV'
 - **Faltantes**: en la BD pero no en la carpeta.
 - **Distintos**: el hash no coincide. Si dos firmas usaron la misma ruta (PDF generados en máquinas distintas), indica con cuál coincide el archivo; si una versión `__anterior_` guardada por el espejo coincide, también lo dice.
 - **Sobrantes**: en la carpeta sin registro en la BD (no es error).
+- **Retiradas sin PDF** (E6-14, M-101): firma anulada de una orden que ya no existe en `OrdenViaje` (la retiró el conductor o se retiraron datos de prueba) cuyo PDF no está. No es error: el 2026-11-25 eran las 31 firmas con PDF de `sgvActualizada`, todas de órdenes de prueba retiradas, que hacían terminar la tarea con 2. Si el PDF está, se verifica como cualquier otro.
 
 Sale con código `1` si hay faltantes o distintos. Por defecto usa la BD de pruebas (`sgvActualizada`, la que usa hoy el sitio publicado); `-Entorno produccion -ConfirmoProduccion` para la otra.
 
@@ -202,9 +203,23 @@ Cómo elige la conexión `WebSGV.Tests/Integracion/BaseDePruebas.cs`: `SGV_TEST_
 - Mientras la app sea `db_owner`, los triggers de solo inserción de `FirmaDigital`, `AuditoriaLog` y `Auditoria` se pueden desactivar. El sello deja la prueba **fuera de la BD**: SHA-256 de cada fila (todas las columnas, descubiertas en `sys.columns` y ordenadas por nombre; fechas ISO con 7 decimales, números invariantes, binarios en hex, NULL distinto de `''`) y el estado y el SHA-256 de la definición de sus triggers. Solo `SELECT`, fila por fila.
 - Queda en `<Carpeta>\sellos\sello-<bd>_aaaaMMdd_HHmm.txt.gz` (texto con tabuladores comprimido; ~256 KB hoy), con una línea por ejecución en `<Carpeta>\sellos\sellos.log`. Carpeta hermana de `bd\` y no dentro: no tiene datos de las filas (solo ids y hashes), así que se puede copiar aparte, y no se mezcla con los `.bacpac` que buscan los ensayos. Cada sello lleva el nombre y el hash global del sello base (cadena) y su propio hash global en la última línea.
 - Compara con el sello **base**: el más reciente con estado OK. **FALLA** (código 1) si una fila que existía cambió o falta, si falta una columna, si un trigger falta, está desactivado o cambió su definición, o si una tabla no tiene un trigger activo para `UPDATE` y otro para `DELETE`. Filas y columnas nuevas son normales (con una columna nueva, las filas viejas se comparan con las columnas del base). Una FALLA sigue saliendo cada día hasta que alguien la revise y la acepte con `-AceptarCambios -Motivo`. Código 2: no se pudo sellar.
-- Aviso: no hay correo en las herramientas. `-ScriptAviso` (o `$env:SGV_SCRIPT_AVISO`) es un `.ps1` que recibe `-Asunto` y `-Cuerpo`; sin él, el aviso es la salida de la tarea y `sellos.log`.
+- Aviso: `-ScriptAviso` (o `$env:SGV_SCRIPT_AVISO`), normalmente `herramientas\comun\enviar-aviso.ps1`, recibe `-Asunto` y `-Cuerpo` (ver «Aviso por correo»); sin él, el aviso es la salida de la tarea y `sellos.log`.
 - Retención: la de los `.bacpac` (30 + el primero de cada mes de 12), sin borrar nunca el sello base.
 - La tarea diaria lo corre después de `respaldar-bd.ps1` (también si la exportación falló); su FALLA no afecta al respaldo. Resultado de la tarea: 11 = FALLA del sello, 12 = no se pudo sellar. **Tras actualizar el repo hay que volver a registrar la tarea** (`programar-respaldo.ps1 -Carpeta ...`).
+
+## Aviso por correo (E6-14)
+
+```powershell
+[Environment]::SetEnvironmentVariable('SGV_SCRIPT_AVISO', (Resolve-Path .\herramientas\comun\enviar-aviso.ps1).Path, 'User')   # una vez, desde la raíz del repo
+.\herramientas\comun\enviar-aviso.ps1 -Asunto 'SGV: prueba de aviso' -Cuerpo prueba -CarpetaSalida C:\temp\avisos   # deja un .eml, no envía
+.\herramientas\comun\enviar-aviso.ps1 -Asunto 'SGV: prueba de aviso' -Cuerpo prueba                                 # envío real
+```
+
+- `enviar-aviso.ps1` lee `SmtpHost`, `SmtpPort`, `SmtpSSL`, `SmtpUser`, `SmtpPass` y `SmtpFrom` de `WebSGV\appSettings.Secrets.config` (las reglas de `CorreoHelper`). **La clave solo sale de ese archivo**: el script no la recibe por parámetro ni la muestra (lo fija `AvisoCorreoTests`). Destinatario: `-Para`, si no `SGV_AVISO_PARA`, si no `AvisoErroresPara` de `Web.config`; en la salida va sin la parte local (`***@dominio`).
+- Modo de prueba: `-CarpetaSalida` (o la variable `SGV_AVISO_CARPETA_SALIDA`, que también respetan el sello y la tarea) escribe el correo como `.eml` en esa carpeta (`SpecifiedPickupDirectory`) en lugar de enviarlo.
+- Quién avisa: `sellar-registros.ps1` ante una FALLA de integridad (con el detalle) y, al final de la tarea diaria, `avisar-tarea.ps1` si falló el respaldo de la BD, el espejo de archivos, la verificación de los PDF firmados o no se pudo sellar. La FALLA del sello no se repite: **una FALLA = un correo**. Un aviso que no se pudo enviar se muestra en la salida y nunca cambia el resultado de la tarea.
+- La tarea lee `SGV_SCRIPT_AVISO` al correr (no hace falta registrarla otra vez para cambiarla); `programar-respaldo.ps1` dice si está definida. Tras actualizar el repo a E6-14 sí hay que volver a registrarla (la tarea llama a `avisar-tarea.ps1`).
+- Ensayo de una FALLA sin enviar ni tocar la BD: con `SGV_AVISO_CARPETA_SALIDA` apuntando a una carpeta temporal, sellar `sgvEnsayo_pruebas` en otra carpeta temporal (`sellar-registros.ps1 -Entorno ensayo -BaseDeDatos sgvEnsayo_pruebas -Servidor . -Carpeta <temporal>`: OK, 0 `.eml`), alterar una línea del sello que dejó (descomprimir el `.gz`, cambiar un hash, volver a comprimir) y sellar de nuevo: FALLA (el sello base no se puede leer), salida 1 y exactamente 1 `.eml`. Para el correo real, lo mismo sin `SGV_AVISO_CARPETA_SALIDA` (P-106).
 
 ## Qué NO cubre todavía
 

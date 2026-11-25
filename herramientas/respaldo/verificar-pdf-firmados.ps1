@@ -6,7 +6,10 @@
 .DESCRIPTION
     Lee de la BD (solo SELECT) cada PDF registrado:
       - FirmaDigital.rutaPdfFirmado + hashDocumento (todas las firmas con PDF, vigentes o anuladas:
-        un PDF anulado sigue siendo evidencia y también se conserva).
+        un PDF anulado sigue siendo evidencia y también se conserva). Excepción (E6-14, M-101): la
+        firma ANULADA de una orden RETIRADA (la orden ya no existe en OrdenViaje: la retiró el conductor
+        o se retiraron datos de prueba) se verifica si su PDF está, pero si falta no cuenta como
+        faltante: se informa aparte como RETIRADA SIN PDF.
       - OrdenViaje.rutaPdfFirmado + hashPdfFirmado (documento vigente de la orden; normalmente es el
         mismo archivo que la última firma y se cuenta una sola vez).
     Las rutas de la BD son virtuales (~/App_Data/OrdenesViaje/aaaa/mm/archivo.pdf); se buscan en
@@ -15,6 +18,7 @@
     Informa:
       OK         el archivo existe y su SHA-256 coincide.
       FALTANTE   está en la BD pero no en la carpeta.
+      RETIRADA SIN PDF  firma anulada de una orden retirada cuyo PDF no está (no cuenta como error).
       DISTINTO   existe, pero su SHA-256 no coincide (si dos firmas usaron la misma ruta, el archivo
                  solo puede coincidir con una; se indica con cuál).
       SOBRANTE   archivo de la carpeta sin registro en la BD (no cuenta como error).
@@ -75,12 +79,15 @@ $b['Encrypt'] = $true   # somee siempre cifrado (E4-10); TrustServerCertificate 
 $consulta = @"
 SELECT 'FirmaDigital' AS origen, f.idFirma AS id, f.idDocumento, ISNULL(f.etapa, '') AS etapa,
        f.rutaPdfFirmado AS ruta, LOWER(LTRIM(RTRIM(f.hashDocumento))) AS hash, f.fechaHoraFirma AS fecha,
-       CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.FirmaDigital a WHERE a.idFirmaAnulada = f.idFirma) THEN 1 ELSE 0 END AS bit) AS anulada
+       CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.FirmaDigital a WHERE a.idFirmaAnulada = f.idFirma) THEN 1 ELSE 0 END AS bit) AS anulada,
+       CAST(CASE WHEN f.tipoDocumento = 'ORDEN_VIAJE'
+                  AND NOT EXISTS (SELECT 1 FROM dbo.OrdenViaje o WHERE CAST(o.idOrdenViaje AS varchar(50)) = f.idDocumento)
+                 THEN 1 ELSE 0 END AS bit) AS ordenRetirada
 FROM dbo.FirmaDigital f
 WHERE f.rutaPdfFirmado IS NOT NULL AND f.hashDocumento IS NOT NULL
 UNION ALL
 SELECT 'OrdenViaje', o.idOrdenViaje, CAST(o.idOrdenViaje AS varchar(50)), '',
-       o.rutaPdfFirmado, LOWER(LTRIM(RTRIM(o.hashPdfFirmado))), NULL, CAST(0 AS bit)
+       o.rutaPdfFirmado, LOWER(LTRIM(RTRIM(o.hashPdfFirmado))), NULL, CAST(0 AS bit), CAST(0 AS bit)
 FROM dbo.OrdenViaje o
 WHERE o.rutaPdfFirmado IS NOT NULL AND o.hashPdfFirmado IS NOT NULL
 "@
@@ -114,12 +121,15 @@ foreach ($fila in ($tabla.Rows | Sort-Object { if ($_.origen -eq 'FirmaDigital')
     $clave = $rel.ToLowerInvariant() + '|' + [string]$fila.hash
     if ($esperados.Contains($clave)) { continue }
     $desc = if ($fila.origen -eq 'FirmaDigital') {
-        'firma {0} (orden {1}{2}{3})' -f $fila.id, $fila.idDocumento,
+        'firma {0} (orden {1}{2}{3}{4})' -f $fila.id, $fila.idDocumento,
             $(if ($fila.etapa) { ', ' + $fila.etapa } else { '' }),
-            $(if ($fila.anulada) { ', anulada' } else { '' })
+            $(if ($fila.anulada) { ', anulada' } else { '' }),
+            $(if ($fila.ordenRetirada) { ', orden retirada' } else { '' })
     } else { 'OrdenViaje {0}' -f $fila.id }
     $esperados[$clave] = New-Object PSObject -Property ([ordered]@{
-        Relativa = $rel; Hash = [string]$fila.hash; Descripcion = $desc })
+        Relativa = $rel; Hash = [string]$fila.hash; Descripcion = $desc
+        # Anulada y de una orden que ya no existe: si su PDF falta, no es un faltante (M-101).
+        Retirada = ($fila.origen -eq 'FirmaDigital' -and [bool]$fila.anulada -and [bool]$fila.ordenRetirada) })
 }
 
 # --- Archivos de la carpeta -----------------------------------------------------------------------
@@ -138,11 +148,14 @@ $patronAnterior = '__anterior_\d{8}_\d{6}'
 $archivos = @(Get-ChildItem -LiteralPath $carpetaCompleta -Recurse -File)
 $referenciados = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
 
-$ok = @(); $faltantes = @(); $distintos = @()
+$ok = @(); $faltantes = @(); $distintos = @(); $retiradasSinPdf = @()
 foreach ($e in $esperados.Values) {
     [void]$referenciados.Add($e.Relativa)
     $fisica = Join-Path $carpetaCompleta $e.Relativa
-    if (-not (Test-Path -LiteralPath $fisica -PathType Leaf)) { $faltantes += $e; continue }
+    if (-not (Test-Path -LiteralPath $fisica -PathType Leaf)) {
+        if ($e.Retirada) { $retiradasSinPdf += $e } else { $faltantes += $e }
+        continue
+    }
     $h = Get-Sha256 $fisica
     if ($h -eq $e.Hash) { $ok += $e; continue }
 
@@ -187,12 +200,17 @@ if ($distintos.Count) {
     }
     ""
 }
+if ($retiradasSinPdf.Count) {
+    "RETIRADAS SIN PDF (firmas anuladas de órdenes retiradas; no cuentan como error): $($retiradasSinPdf.Count)"
+    if ($Detalle) { $retiradasSinPdf | ForEach-Object { "  {0}  {1}" -f $_.Relativa, $_.Descripcion } }
+    ""
+}
 if ($sobrantes.Count) {
     "SOBRANTES (en la carpeta, sin registro en la BD):"
     $sobrantes | ForEach-Object { "  $_" }
     ""
 }
-"Resumen: verificados OK $($ok.Count)  faltantes $($faltantes.Count)  distintos $($distintos.Count)  sobrantes $($sobrantes.Count)" +
+"Resumen: verificados OK $($ok.Count)  faltantes $($faltantes.Count)  distintos $($distintos.Count)  sobrantes $($sobrantes.Count)  retiradas sin PDF $($retiradasSinPdf.Count)" +
     $(if ($versiones) { "  (versiones anteriores/temporales no contadas: $versiones)" } else { '' })
 
 if ($faltantes.Count -gt 0 -or $distintos.Count -gt 0) { exit 1 }

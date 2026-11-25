@@ -27,8 +27,9 @@
        una línea a <Carpeta>\sellos\sellos.log y aplica la misma retención que los .bacpac (30 más
        recientes + el primero de cada mes de los últimos 12), sin borrar nunca el sello base.
     5. Si hay FALLA: mensaje en rojo, código de salida 1 y aviso con -ScriptAviso (o la variable de
-       entorno SGV_SCRIPT_AVISO): un .ps1 que recibe -Asunto y -Cuerpo. No hay otro mecanismo de correo
-       en las herramientas; sin ese script, el aviso es la salida de la tarea y sellos.log.
+       entorno SGV_SCRIPT_AVISO): un .ps1 que recibe -Asunto y -Cuerpo, normalmente
+       herramientas\comun\enviar-aviso.ps1 (E6-14: correo con el SMTP de appSettings.Secrets.config); sin
+       ese script, el aviso es la salida de la tarea y sellos.log.
 
     El sello no contiene datos de las filas: solo ids, hashes, nombres de columnas y de triggers.
 

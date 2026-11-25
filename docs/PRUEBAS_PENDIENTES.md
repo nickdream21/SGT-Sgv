@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-105 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-106 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -19,6 +19,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-095** Doble clic e indicador de espera en el tablero de seguimiento y en DashboardExportacion — en E5-23 su POST de búsqueda quedó fuera de la lista permitida del arnés (ListaDespachos, ReportesOrdenesViaje y ReporteCargas sí: 1 POST y "Procesando…" a los ~350 ms): en local con ese POST permitido, o junto con P-054 en el sitio publicado, comprobar un solo POST, el velo y el tiempo real de respuesta. · C
 - [ ] **P-096** Tras E6-15 y E6-18: firmar, conformar, ver el detalle y el historial con un conductor real en su celular — los controles de pertenencia y las lecturas del panel pasan a servicios: comprobar que entra a lo suyo y que la orden de otro conductor responde "no disponible". · B
 - [ ] **P-097** Con E6-11 publicada, una semana de uso real — anotar del "Resumen del día" las rutas lentas, los 500 de WebMethod y los ms esperando la sesión: decide si entran la sesión de solo lectura (M-126, M-093) y la cookie testigo de las descargas (M-130). · B
+- [ ] **P-106** Tras E6-14: el aviso por correo real del respaldo en la PC de la oficina — fijar `SGV_SCRIPT_AVISO` (`docs/PREPARAR_MAQUINA.md`, sección 4), volver a registrar la tarea (`programar-respaldo.ps1 -Carpeta ...`: debe decir `Aviso : SGV_SCRIPT_AVISO = ...`), mandar uno de prueba (`enviar-aviso.ps1 -Asunto 'SGV: prueba de aviso' -Cuerpo prueba`, sin `-CarpetaSalida`) y forzar una FALLA en el ensayo (sello de `sgvEnsayo_pruebas` en una carpeta temporal con su sello base alterado, como en `herramientas/respaldo/README.md`, «Aviso por correo»): llega **exactamente 1** correo al buzón de `AvisoErroresPara`. Al día siguiente, `Get-ScheduledTaskInfo -TaskName 'SGV - Respaldo diario'` da `LastTaskResult` 0 (ya sin los 31 faltantes falsos) y no llegó ningún correo. · B
 - [ ] **P-102** Tras publicar E6-12: "Estado del sistema" como administrador de sistema en el sitio publicado (log real de somee: conteos por día y plantillas sin ningún dato personal; si la hora del servidor no es la de Perú, el corte del día se corre) y en un celular a 390 px. · B
 - [ ] **P-101** Tras publicar E6-11: en el log del sitio publicado (somee) un 500 de un `[WebMethod]` deja su ERR con la excepción (con `customErrors` remoto el JSON es genérico), salen "Petición lenta" y el "Resumen del día", y la espera de sesión de `ObtenerRuta` (mapa) queda medida para P-097. · B
 - [ ] **P-100** Tras E6-8 (al publicar): "Verificar GPS" en Liquidaciones pendientes y "Actualizar GPS" del seguimiento contra el Onway real — el estado compartido del cliente (ritmo de 2 por segundo, lista de dispositivos, flota) dejó de ser campos `static`; en el log, una sola lista de dispositivos por cada 30 min. · B

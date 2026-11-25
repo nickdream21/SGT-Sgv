@@ -15,6 +15,11 @@
     Para no perder respaldos si la PC estaba apagada o sin sesión a las 23:00, la tarea tiene
     "ejecutar lo antes posible si se perdió una ejecución": corre al iniciar sesión la próxima vez.
 
+    Aviso por correo (E6-14): si un paso falla, la tarea llama a avisar-tarea.ps1, que manda un correo
+    con el script de la variable de entorno de usuario SGV_SCRIPT_AVISO (herramientas\comun\enviar-aviso.ps1;
+    la FALLA del sello la avisa el propio sello, una sola vez). La variable se lee al correr la tarea:
+    cambiarla no obliga a registrarla de nuevo. Sin ella, el aviso es solo el resultado de la tarea.
+
     La salida de cada ejecución queda en <Carpeta>\tarea-ultima-ejecucion.log (se reemplaza cada vez);
     el historial está en <Carpeta>\bd\respaldos.log y <Carpeta>\archivos\respaldos.log.
 
@@ -64,7 +69,8 @@ if (-not [datetime]::TryParseExact($Hora, 'HH:mm', [Globalization.CultureInfo]::
 $scriptBd       = Join-Path $PSScriptRoot 'respaldar-bd.ps1'
 $scriptArchivos = Join-Path $PSScriptRoot 'respaldar-archivos.ps1'
 $scriptSello    = Join-Path $PSScriptRoot 'sellar-registros.ps1'
-foreach ($s in @($scriptBd, $scriptSello, $scriptArchivos)) { if (-not (Test-Path $s)) { throw "No se encontró $s." } }
+$scriptAvisar   = Join-Path $PSScriptRoot 'avisar-tarea.ps1'
+foreach ($s in @($scriptBd, $scriptSello, $scriptArchivos, $scriptAvisar)) { if (-not (Test-Path $s)) { throw "No se encontró $s." } }
 
 # sqlpackage es una herramienta global de dotnet: se asegura su carpeta en el PATH de la tarea.
 $sqlpackage = (Get-Command sqlpackage -ErrorAction SilentlyContinue).Source
@@ -83,6 +89,8 @@ $comando = @(
     "try { & $(ConvertTo-Literal $scriptSello) -Carpeta $(ConvertTo-Literal $carpetaCompleta); `$cSe = `$LASTEXITCODE } catch { `$_; `$cSe = 2 }"
     "try { & $(ConvertTo-Literal $scriptArchivos) -Carpeta $(ConvertTo-Literal $carpetaCompleta); `$cAr = `$LASTEXITCODE } catch { `$_; `$cAr = 1 }"
     "Stop-Transcript | Out-Null"
+    # E6-14: un correo si falló un paso (SGV_SCRIPT_AVISO); su salida se agrega al registro. Nunca cambia el resultado.
+    "try { `$sAv = & $(ConvertTo-Literal $scriptAvisar) -CodigoBd `$cBd -CodigoSello `$cSe -CodigoArchivos `$cAr -Log $(ConvertTo-Literal $log) *>&1 | Out-String; Add-Content -LiteralPath $(ConvertTo-Literal $log) -Value `$sAv -Encoding UTF8 } catch { }"
     # Resultado de la tarea: el primer paso que falló (sello: 11 = FALLA de integridad, 12 = no se pudo sellar).
     "if (`$cBd -ne 0) { exit `$cBd }; if (`$cSe -ne 0) { exit (10 + `$cSe) }; exit `$cAr"
 ) -join '; '
@@ -103,6 +111,8 @@ $tarea     = New-ScheduledTask -Action $accion -Trigger $disparo -Principal $pri
 "Límite     : 2 horas; si ya está corriendo, no se inicia otra"
 "Carpeta    : $carpetaCompleta"
 "Registro   : $log"
+$avisoUsuario = [Environment]::GetEnvironmentVariable('SGV_SCRIPT_AVISO', 'User')
+"Aviso      : $(if ($avisoUsuario) { "SGV_SCRIPT_AVISO = $avisoUsuario" } else { 'SGV_SCRIPT_AVISO sin definir: una FALLA no manda correo (ver herramientas\respaldo\README.md)' })"
 "Programa   : powershell.exe"
 "Argumentos : $argumentos"
 "Directorio : $PSScriptRoot"
