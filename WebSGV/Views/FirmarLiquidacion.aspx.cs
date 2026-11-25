@@ -1,7 +1,6 @@
 using System;
-using System.Data;
-using System.Web.UI;
 using WebSGV.Helpers;
+using WebSGV.Services.Liquidaciones;
 
 namespace WebSGV.Views
 {
@@ -48,17 +47,7 @@ namespace WebSGV.Views
         {
             try
             {
-                int count = Convert.ToInt32(DbHelper.EjecutarEscalar(@"
-                    SELECT COUNT(1)
-                    FROM   OrdenViaje
-                    WHERE  idOrdenViaje     = @idOrdenViaje
-                      AND  idConductor      = @idConductor
-                      AND  estadoAprobacion = 'PENDIENTE'
-                      AND  idFirmaConductor IS NULL
-                      AND  idFirmaAdmin     IS NULL",
-                    DbHelper.Param("@idOrdenViaje", idOrdenViaje),
-                    DbHelper.Param("@idConductor",  idConductor)));
-                return count > 0;
+                return AccesoLiquidacion.EsperaDeclaracionDelConductor(idOrdenViaje, idConductor);
             }
             catch (Exception ex)
             {

@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-25**, commit anterior `42ef06e` — **Etapa 6 en ejecución**: E6-14 (alarmas que avisan de verdad: `verificar-pdf-firmados` sin los 31 faltantes falsos de órdenes retiradas y aviso por correo `SGV_SCRIPT_AVISO` con `herramientas/comun/enviar-aviso.ps1` en el sello y la tarea de respaldo; sin cambios en la BD). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-25**, commit anterior `decc8bf` — **Etapa 6 en ejecución**: E6-15 (SQL fuera de las páginas de firmas y dinero: los tres controles de pertenencia del conductor en `AccesoLiquidacion`, fijados antes con `[FactBD]` en cada estado; las lecturas de MovimientosViaje y SaldosConductores en sus servicios; 14 ocurrencias → 0; sin cambios en la BD). No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-192 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

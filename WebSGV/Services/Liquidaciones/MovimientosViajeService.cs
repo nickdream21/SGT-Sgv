@@ -230,6 +230,34 @@ namespace WebSGV.Services.Liquidaciones
             INNER JOIN Conductor c ON c.idConductor = m.idConductor
             LEFT JOIN Usuarios u ON u.idUsuario = m.idUsuarioRegistro";
 
+        /// <summary>
+        /// Conductores a los que se puede registrar dinero (columnas idConductor, nombre y activo): los activos y,
+        /// aunque estén dados de baja, los que aún tienen un viaje abierto o una liquidación sin cerrar
+        /// (PENDIENTE, REABIERTO o POR_CONFORMAR). Ordenados por nombre.
+        /// </summary>
+        public static DataTable ConductoresParaRegistrar() =>
+            DbHelper.ConsultarTabla(@"
+                SELECT c.idConductor, LTRIM(RTRIM(c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, ''))) AS nombre,
+                       CAST(ISNULL(c.activo, 0) AS BIT) AS activo
+                FROM Conductor c
+                WHERE c.activo = 1
+                   OR EXISTS (SELECT 1 FROM ViajesEnProgreso v WHERE v.idConductor = c.idConductor AND v.estadoViaje = 'ABIERTO')
+                   OR EXISTS (SELECT 1 FROM OrdenViaje o WHERE o.idConductor = c.idConductor
+                              AND o.estadoAprobacion IN ('PENDIENTE', 'REABIERTO', 'POR_CONFORMAR'))
+                ORDER BY nombre");
+
+        /// <summary>
+        /// Viaje ABIERTO más reciente del conductor como "VP-2026-081 (desde 20/11/2026)", o null si no tiene ninguno.
+        /// </summary>
+        public static string DescripcionViajeAbierto(int idConductor)
+        {
+            object viaje = DbHelper.EjecutarEscalar(@"
+                SELECT TOP 1 numeroViajeProgreso + ' (desde ' + CONVERT(VARCHAR(10), fechaInicio, 103) + ')'
+                FROM ViajesEnProgreso WHERE idConductor = @id AND estadoViaje = 'ABIERTO' ORDER BY idViajeProgreso DESC",
+                DbHelper.Param("@id", idConductor));
+            return viaje == null || viaje == DBNull.Value ? null : viaje.ToString();
+        }
+
         /// <summary>Movimientos de un conductor: los aún no liquidados y (opcional) los anulados recientes.</summary>
         public static List<MovimientoViaje> ObtenerSinLiquidar(int idConductor, bool incluirAnulados = false) =>
             Leer(DbHelper.ConsultarTabla(SelectMovimientos + @"

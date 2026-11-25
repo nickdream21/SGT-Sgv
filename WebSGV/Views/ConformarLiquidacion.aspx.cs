@@ -41,18 +41,8 @@ namespace WebSGV.Views
         }
 
         /// <summary>La orden es del conductor autenticado y espera su conformidad (anti-IDOR).</summary>
-        private static bool EstaPorConformar(int idOrdenViaje, int idUsuario)
-        {
-            object n = DbHelper.EjecutarEscalar(@"
-                SELECT COUNT(1)
-                FROM OrdenViaje ov
-                INNER JOIN Usuarios u ON u.idConductor = ov.idConductor AND u.activo = 1
-                WHERE ov.idOrdenViaje = @id AND u.idUsuario = @idUsuario
-                  AND ov.estadoAprobacion = 'POR_CONFORMAR' AND ov.idFirmaAdmin IS NOT NULL",
-                DbHelper.Param("@id", idOrdenViaje),
-                DbHelper.Param("@idUsuario", idUsuario));
-            return n != null && n != DBNull.Value && Convert.ToInt32(n) > 0;
-        }
+        private static bool EstaPorConformar(int idOrdenViaje, int idUsuario) =>
+            AccesoLiquidacion.EsperaConformidadDelUsuario(idOrdenViaje, idUsuario);
 
         private static string ValidarConductor(int idOrdenViaje)
         {

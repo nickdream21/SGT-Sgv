@@ -40,6 +40,8 @@ namespace WebSGV.Tests
             { "Services/Clientes/CatalogoClienteService.cs::Obtener",              "catálogo de productos/rutas/lugares de UN cliente (el ?: solo elige si suma los de uso general)" },
             { "Services/Liquidaciones/LiquidacionesPendientesService.cs::ObtenerAprobadas", "pendiente M-137: Control de aprobadas abre con 30 días, pero sin fechas trae todas las aprobadas" },
             { "Services/Liquidaciones/LiquidacionesPendientesService.cs::ObtenerPorConformar", "solo las POR_CONFORMAR (salen al firmar el conductor; no crecen con el tiempo)" },
+            { "Services/Liquidaciones/MovimientosViajeService.cs::ConductoresParaRegistrar", "catálogo de conductores" },
+            { "Services/Liquidaciones/SaldosConductorService.cs::ConductoresConLiquidacionAprobada", "catálogo de conductores con liquidaciones" },
             { "Services/Auditoria/ConsultaAuditoriaService.cs::ObtenerAcciones",   "códigos de acción distintos (decenas)" },
             { "Services/Despachos/DestinoDescargaService.cs::ObtenerPlantas",       "catálogo de plantas" },
             { "Services/Despachos/DestinoDescargaService.cs::ObtenerPlantasDeDescarga", "catálogo de plantas internacionales" },
@@ -51,12 +53,10 @@ namespace WebSGV.Tests
             { "Views/DashboardAdminSistema.aspx.cs::CargarRoles",                  "una fila por rol (GROUP BY rol)" },
             { "Views/GestionUsuarios.aspx.cs::CargarConductores",                   "catálogo de conductores para vincular" },
             { "Views/GestionUsuarios.aspx.cs::EnlazarUsuarios",                     "usuarios del sistema (decenas)" },
-            { "Views/MovimientosViaje.aspx.cs::CargarListas",                      "catálogo de conductores" },
             { "Views/RegistroChoferes.aspx.cs::CargarConductores",                  "catálogo de conductores" },
             { "Views/RegistroClientes.aspx.cs::CargarClientes",                     "catálogo de clientes" },
             { "Views/RegistroPeajes.aspx.cs::CargarPeajes",                         "catálogo de estaciones de peaje" },
             { "Views/RegistroPlantas.aspx.cs::CargarPlantas",                       "catálogo de plantas" },
-            { "Views/SaldosConductores.aspx.cs::LlenarFiltros",                     "catálogo de conductores con liquidaciones" },
         };
 
         /// <summary>SP de listado sin límite permitidos → motivo.</summary>

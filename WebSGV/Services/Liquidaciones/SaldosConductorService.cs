@@ -85,6 +85,18 @@ namespace WebSGV.Services.Liquidaciones
         private static string SentidoDe(decimal saldo) => saldo > 0 ? "A descontar" : "A reintegrar";
 
         /// <summary>
+        /// Conductores con al menos una liquidación APROBADO, para el filtro de la pantalla (columnas idConductor y
+        /// Nombre = nombre y apellido paterno), ordenados por nombre.
+        /// </summary>
+        public static DataTable ConductoresConLiquidacionAprobada() =>
+            DbHelper.ConsultarTabla(@"
+                SELECT DISTINCT c.idConductor,
+                       LTRIM(RTRIM(c.nombre)) + ' ' + LTRIM(RTRIM(ISNULL(c.apPaterno, ''))) AS Nombre
+                FROM Conductor c JOIN OrdenViaje ov ON ov.idConductor = c.idConductor
+                WHERE ov.estadoAprobacion = @aprobado
+                ORDER BY Nombre", DbHelper.Param("@aprobado", EstadosOrden.Aprobado));
+
+        /// <summary>
         /// Liquidaciones aprobadas (con la conformidad firmada) cuya fecha de aprobación cae en el rango y, con
         /// <paramref name="conPendientesAnteriores"/>, también las de antes que siguen sin saldar.
         /// Columnas calculadas: EntregadoSoles/Dolares, GastosSoles/Dolares, SaldoSoles/Dolares y Sentido.

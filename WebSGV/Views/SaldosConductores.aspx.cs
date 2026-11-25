@@ -45,12 +45,7 @@ namespace WebSGV.Views
             }
 
             ddlConductor.Items.Add(new ListItem("Todos", "0"));
-            foreach (DataRow r in DbHelper.ConsultarTabla(@"
-                SELECT DISTINCT c.idConductor,
-                       LTRIM(RTRIM(c.nombre)) + ' ' + LTRIM(RTRIM(ISNULL(c.apPaterno, ''))) AS Nombre
-                FROM Conductor c JOIN OrdenViaje ov ON ov.idConductor = c.idConductor
-                WHERE ov.estadoAprobacion = @aprobado
-                ORDER BY Nombre", DbHelper.Param("@aprobado", EstadosOrden.Aprobado)).Rows)
+            foreach (DataRow r in SaldosConductorService.ConductoresConLiquidacionAprobada().Rows)
                 ddlConductor.Items.Add(new ListItem(Convert.ToString(r["Nombre"]), Convert.ToString(r["idConductor"])));
 
             foreach (var m in SaldosConductorService.Medios)

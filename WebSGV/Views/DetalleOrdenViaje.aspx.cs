@@ -64,16 +64,8 @@ namespace WebSGV.Views
         }
 
         /// <summary>La orden es del conductor de la sesión (anti-IDOR).</summary>
-        private bool EsDelConductor(int idOrdenViaje)
-        {
-            int idConductor = SesionHelper.IdConductor(Session) ?? 0;
-            if (idConductor <= 0) return false;
-            object n = DbHelper.EjecutarEscalar(
-                "SELECT COUNT(1) FROM OrdenViaje WHERE idOrdenViaje = @id AND idConductor = @idConductor",
-                DbHelper.Param("@id", idOrdenViaje),
-                DbHelper.Param("@idConductor", idConductor));
-            return n != null && n != DBNull.Value && Convert.ToInt32(n) > 0;
-        }
+        private bool EsDelConductor(int idOrdenViaje) =>
+            AccesoLiquidacion.EsDelConductor(idOrdenViaje, SesionHelper.IdConductor(Session) ?? 0);
 
         private void Mostrar(int idOrdenViaje, DetalleLiquidacion d)
         {

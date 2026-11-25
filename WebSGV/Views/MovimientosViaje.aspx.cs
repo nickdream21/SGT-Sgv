@@ -56,15 +56,7 @@ namespace WebSGV.Views
         {
             // Activos y, aunque estén dados de baja, los que aún tienen un viaje abierto o una
             // liquidación sin cerrar (puede haber dinero que registrarles).
-            DataTable dt = DbHelper.ConsultarTabla(@"
-                SELECT c.idConductor, LTRIM(RTRIM(c.nombre + ' ' + c.apPaterno + ' ' + ISNULL(c.apMaterno, ''))) AS nombre,
-                       CAST(ISNULL(c.activo, 0) AS BIT) AS activo
-                FROM Conductor c
-                WHERE c.activo = 1
-                   OR EXISTS (SELECT 1 FROM ViajesEnProgreso v WHERE v.idConductor = c.idConductor AND v.estadoViaje = 'ABIERTO')
-                   OR EXISTS (SELECT 1 FROM OrdenViaje o WHERE o.idConductor = c.idConductor
-                              AND o.estadoAprobacion IN ('PENDIENTE', 'REABIERTO', 'POR_CONFORMAR'))
-                ORDER BY nombre");
+            DataTable dt = MovimientosViajeService.ConductoresParaRegistrar();
             ddlConductor.Items.Clear();
             ddlConductor.Items.Add(new ListItem("Seleccione…", ""));
             foreach (DataRow r in dt.Rows)
@@ -99,11 +91,8 @@ namespace WebSGV.Views
                 return;
             }
 
-            object viaje = DbHelper.EjecutarEscalar(@"
-                SELECT TOP 1 numeroViajeProgreso + ' (desde ' + CONVERT(VARCHAR(10), fechaInicio, 103) + ')'
-                FROM ViajesEnProgreso WHERE idConductor = @id AND estadoViaje = 'ABIERTO' ORDER BY idViajeProgreso DESC",
-                DbHelper.Param("@id", idConductor));
-            litViajeEnCurso.Text = HttpUtility.HtmlEncode(viaje == null || viaje == DBNull.Value
+            string viaje = MovimientosViajeService.DescripcionViajeAbierto(idConductor);
+            litViajeEnCurso.Text = HttpUtility.HtmlEncode(viaje == null
                 ? "Sin viaje abierto: el registro queda pendiente y se une a su próxima liquidación."
                 : "Viaje en curso: " + viaje);
 
