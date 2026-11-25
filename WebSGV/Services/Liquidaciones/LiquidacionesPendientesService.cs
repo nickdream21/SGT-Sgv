@@ -492,14 +492,6 @@ namespace WebSGV.Services.Liquidaciones
             return c.Length > 0 ? "CE " + c : "";
         }
 
-        /// <summary>Ruta relativa del PDF archivado de la orden (o <c>null</c> si no hay).</summary>
-        public static string ObtenerRutaPdfArchivado(int idOrdenViaje)
-        {
-            object r = DbHelper.EjecutarEscalar(
-                "SELECT rutaPdfFirmado FROM OrdenViaje WHERE idOrdenViaje = @id",
-                DbHelper.Param("@id", idOrdenViaje));
-            return r == null || r == DBNull.Value ? null : r.ToString();
-        }
 
         /// <summary>Persiste la ruta relativa y el hash del PDF archivado en <c>OrdenViaje</c>.</summary>
         public static void GuardarRutaPdfArchivado(int idOrdenViaje, string rutaRelativa, string hash) =>

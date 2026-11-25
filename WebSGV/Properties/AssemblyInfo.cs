@@ -37,3 +37,10 @@ using System.Runtime.InteropServices;
 // Las pruebas usan las sobrecargas internas con dependencias inyectables (p. ej.
 // ReautenticacionHelper.Verificar con su propio control de intentos), que el sitio no debe exponer.
 [assembly: InternalsVisibleTo("WebSGV.Tests")]
+
+// Herramientas de consola que se compilan con csc contra WebSGV.dll (el nombre es el de su /out:) y fijan la
+// conexión con DbHelper.FijarConexionParaPruebas, que es interno (M-092): herramientas/cuadro-status-general
+// (Cuadro.exe) y herramientas/perfil-llegada (PerfilLlegada.exe y PerfilCrisar.exe).
+[assembly: InternalsVisibleTo("Cuadro")]
+[assembly: InternalsVisibleTo("PerfilLlegada")]
+[assembly: InternalsVisibleTo("PerfilCrisar")]

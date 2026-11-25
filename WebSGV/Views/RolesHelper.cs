@@ -38,13 +38,6 @@ namespace WebSGV.Helpers
         /// </summary>
         public static string ObtenerRolActual() => SesionHelper.RolActual;
 
-        /// <summary>
-        /// Verifica si el usuario actual es administrador de la operación (ver <see cref="EsRolAdmin"/>).
-        /// </summary>
-        public static bool EsAdmin()
-        {
-            return EsRolAdmin(ObtenerRolActual());
-        }
 
         /// <summary>
         /// True si el rol es de administrador de la operación: ADMIN, ADMINISTRADOR (legado) o
@@ -88,19 +81,6 @@ namespace WebSGV.Helpers
             return EsRolAdmin(r) || r == ROL_CONTABILIDAD || r == ROL_ADMIN_SISTEMA;
         }
 
-        public static bool EsAdminTransporte()
-        {
-            return ObtenerRolActual() == ROL_ADMIN_TRANSPORTE;
-        }
-
-        /// <summary>
-        /// Verifica si el usuario actual es Administrador de Sistema
-        /// </summary>
-        public static bool EsAdminSistema()
-        {
-            string rolActual = ObtenerRolActual();
-            return rolActual == ROL_ADMIN_SISTEMA;
-        }
 
         /// <summary>
         /// Verifica si el usuario actual es Conductor
@@ -141,14 +121,6 @@ namespace WebSGV.Helpers
             }
         }
 
-        /// <summary>
-        /// Verifica si el usuario actual es del área de Contabilidad
-        /// </summary>
-        public static bool EsContabilidad()
-        {
-            string rolActual = ObtenerRolActual();
-            return rolActual == ROL_CONTABILIDAD;
-        }
 
         /// <summary>
         /// Verifica si el usuario tiene sesión activa

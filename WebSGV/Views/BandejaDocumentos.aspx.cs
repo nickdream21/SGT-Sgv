@@ -307,7 +307,7 @@ namespace WebSGV.Views
             // Los selectores se numeran por GuiasEditables (como los lee btnRegistrar_Click), no por el orden en pantalla.
             var indices = GuiasEditables(l).Select((g, i) => new { g, i }).ToDictionary(x => x.g, x => x.i);
             var catalogos = l.Guias.Any(g => g.Estado == EstadoGuiaBandeja.Nueva || g.Estado == EstadoGuiaBandeja.SinProgramado)
-                ? new Catalogos() : null;
+                ? CatalogoNuevoDespacho.Leer() : null;
 
             // Primero lo que necesita al usuario; lo conforme queda plegado (sus selectores se envían igual).
             // Si hay errores, todo abierto: el que hay que corregir puede estar en un bloque sin observaciones.
@@ -356,22 +356,6 @@ namespace WebSGV.Views
         private static string Conteos(params (int cuantos, string texto, string tipo)[] items) =>
             "<div class='bd-conteos'>" + string.Concat(items.Where(x => x.cuantos > 0).Select(x => Chip($"{x.cuantos} {x.texto}", x.tipo))) + "</div>";
 
-        /// <summary>Choferes, tractos y carretas para los despachos nuevos (los inactivos al final, marcados).</summary>
-        private sealed class Catalogos
-        {
-            public readonly List<KeyValuePair<int, string>> Conductores, Tractos, Carretas;
-            public Catalogos()
-            {
-                Conductores = Lista(@"SELECT idConductor, LTRIM(RTRIM(CONCAT(nombre, ' ', apPaterno, ' ', apMaterno))) + CASE WHEN activo = 1 THEN '' ELSE ' (inactivo)' END
-                                      FROM Conductor ORDER BY activo DESC, nombre, apPaterno");
-                Tractos = Lista("SELECT idTracto, LTRIM(RTRIM(placaTracto)) + CASE WHEN activo = 1 THEN '' ELSE ' (inactivo)' END FROM Tracto ORDER BY activo DESC, placaTracto");
-                Carretas = Lista("SELECT idCarreta, LTRIM(RTRIM(placaCarreta)) + CASE WHEN activo = 1 THEN '' ELSE ' (inactiva)' END FROM Carreta ORDER BY activo DESC, placaCarreta");
-            }
-            private static List<KeyValuePair<int, string>> Lista(string sql) =>
-                DbHelper.ConsultarTabla(sql).Rows.Cast<DataRow>()
-                    .Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r[0]), System.Text.RegularExpressions.Regex.Replace(Convert.ToString(r[1]), @"\s+", " "))).ToList();
-        }
-
         private static string Opciones(List<KeyValuePair<int, string>> lista, int? elegido, string vacio)
         {
             var sb = new StringBuilder($"<option value=''>{H(vacio)}</option>");
@@ -381,7 +365,7 @@ namespace WebSGV.Views
         }
 
         /// <summary>Fila plegable con chofer, tracto, carreta y fecha del despacho nuevo (se muestra al elegir "Crear despacho nuevo").</summary>
-        private static string FilaNuevo(GuiaBandeja g, int indice, Catalogos c)
+        private static string FilaNuevo(GuiaBandeja g, int indice, CatalogoNuevoDespacho c)
         {
             bool visible = g.Estado == EstadoGuiaBandeja.Nueva;
             return $"<tr class='bd-fila-nuevo' data-indice='{indice}'{(visible ? "" : " hidden")}><td></td><td colspan='5'>" +
@@ -393,7 +377,7 @@ namespace WebSGV.Views
                    "</div></td></tr>";
         }
 
-        private string HtmlPedido(LecturaBandeja l, PedidoBandeja p, Dictionary<GuiaBandeja, int> indices, Catalogos catalogos, bool abierto)
+        private string HtmlPedido(LecturaBandeja l, PedidoBandeja p, Dictionary<GuiaBandeja, int> indices, CatalogoNuevoDespacho catalogos, bool abierto)
         {
             var imp = p.Pedido;
             var f = imp.Factura;

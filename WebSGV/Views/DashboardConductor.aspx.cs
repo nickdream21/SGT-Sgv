@@ -24,11 +24,6 @@ namespace WebSGV.Views
         // movieron a WebSGV.Models.Conductor (compartidos con LiquidacionConductorService);
         // ViajeActivoConductor, DespachoViajeActivo y el historial, a DashboardConductorService (E6-18).
 
-        public class EstacionPeaje
-        {
-            [JsonProperty("nombre")]
-            public string Nombre { get; set; }
-        }
 
         public class DatosViajeParaLiquidacion
         {
@@ -894,31 +889,6 @@ namespace WebSGV.Views
         #endregion
 
         #region Métodos Auxiliares
-
-        public string ObtenerEstacionesPeajeJSON()
-        {
-            try
-            {
-                List<EstacionPeaje> estaciones = new List<EstacionPeaje>();
-
-                DataTable dtEstaciones = DashboardConductorService.ObtenerEstacionesPeaje();
-                foreach (DataRow row in dtEstaciones.Rows)
-                {
-                    estaciones.Add(new EstacionPeaje
-                    {
-                        Nombre = row["nombre"].ToString()
-                    });
-                }
-
-                string json = JsonConvert.SerializeObject(estaciones);
-                return json;
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Error al obtener estaciones en DashboardConductor");
-                return "[]";
-            }
-        }
 
         private DatosViajeParaLiquidacion ObtenerDatosViajeParaLiquidacion(int idViajeProgreso)
         {

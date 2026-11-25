@@ -26,6 +26,15 @@ namespace WebSGV.Services.Auditoria
         public int IndicePagina { get; set; }
     }
 
+    /// <summary>Cifras de la pantalla Auditoría (<see cref="ConsultaAuditoriaService.ObtenerResumen"/>).</summary>
+    public sealed class ResumenAuditoria
+    {
+        public int Total { get; set; }
+        public int Hoy { get; set; }
+        public int Usuarios7Dias { get; set; }
+        public int Tablas { get; set; }
+    }
+
     /// <summary>Detalle de un registro, que la página pide al abrirlo ([WebMethod] ObtenerDetalle).</summary>
     public sealed class DetalleAuditoria
     {
@@ -187,6 +196,78 @@ namespace WebSGV.Services.Auditoria
                 default: return c;
             }
         }
+
+        /// <summary>Nombres distintos de tabla auditada, en orden alfabético, para el filtro Tabla (tal como están).</summary>
+        public static List<string> ObtenerTablas()
+        {
+            DataTable dt = DbHelper.ConsultarTabla(
+                "SELECT DISTINCT TablaAfectada FROM AuditoriaLog ORDER BY TablaAfectada");
+            var tablas = new List<string>(dt.Rows.Count);
+            foreach (DataRow fila in dt.Rows)
+                tablas.Add(fila["TablaAfectada"].ToString());
+            return tablas;
+        }
+
+        // ── Cifras (Auditoría y panel del administrador de sistema, E6-20) ────────────────────
+
+        /// <summary>
+        /// "Hoy" en AuditoriaLog (FechaHora va en hora de Perú): de las 00:00 de <paramref name="hoy"/> a las 00:00
+        /// del día siguiente, sin incluirlo. Por rango y no con <c>CAST(FechaHora AS DATE)</c>, para que use el índice.
+        /// </summary>
+        internal static (DateTime Desde, DateTime Hasta) RangoDelDia(DateTime hoy) => (hoy.Date, hoy.Date.AddDays(1));
+
+        /// <summary>El único "registros de hoy": lo usan <see cref="ObtenerResumen"/> y <see cref="ContarRegistrosDeHoy"/>.</summary>
+        internal const string SqlRegistrosDeHoy = "SELECT COUNT(*) FROM AuditoriaLog WHERE FechaHora >= @hoyDesde AND FechaHora < @hoyHasta";
+
+        private static SqlParameter[] ParametrosDeHoy()
+        {
+            var rango = RangoDelDia(FechaHelper.Hoy());
+            return new[] { DbHelper.Param("@hoyDesde", rango.Desde), DbHelper.Param("@hoyHasta", rango.Hasta) };
+        }
+
+        /// <summary>Registros de auditoría de hoy (hora de Perú), para el panel del administrador de sistema.</summary>
+        public static int ContarRegistrosDeHoy()
+        {
+            object resultado = DbHelper.EjecutarEscalar(SqlRegistrosDeHoy, ParametrosDeHoy());
+            return resultado == null || resultado == DBNull.Value ? 0 : Convert.ToInt32(resultado);
+        }
+
+        /// <summary>
+        /// Las cuatro cifras de la pantalla Auditoría en una consulta: total, de hoy, usuarios distintos de los
+        /// últimos 7 días (desde esta hora de hace 7 días, hora de Perú) y tablas distintas.
+        /// </summary>
+        public static ResumenAuditoria ObtenerResumen()
+        {
+            var parametros = new List<SqlParameter>(ParametrosDeHoy())
+            {
+                DbHelper.Param("@hace7Dias", FechaHelper.Ahora().AddDays(-7))
+            };
+            DataTable dt = DbHelper.ConsultarTabla(@"
+                    SELECT
+                        (SELECT COUNT(*) FROM AuditoriaLog) AS TotalRegistros,
+                        (" + SqlRegistrosDeHoy + @") AS RegistrosHoy,
+                        (SELECT COUNT(DISTINCT NombreUsuario) FROM AuditoriaLog WHERE FechaHora >= @hace7Dias) AS UsuariosActivos,
+                        (SELECT COUNT(DISTINCT TablaAfectada) FROM AuditoriaLog) AS TablasAfectadas",
+                parametros.ToArray());
+            if (dt.Rows.Count == 0) return null;
+            DataRow r = dt.Rows[0];
+            return new ResumenAuditoria
+            {
+                Total = Convert.ToInt32(r["TotalRegistros"]),
+                Hoy = Convert.ToInt32(r["RegistrosHoy"]),
+                Usuarios7Dias = Convert.ToInt32(r["UsuariosActivos"]),
+                Tablas = Convert.ToInt32(r["TablasAfectadas"]),
+            };
+        }
+
+        /// <summary>Cuántos eventos recientes muestra el panel del administrador de sistema.</summary>
+        public const int UltimosEventosPanel = 8;
+
+        /// <summary>Los <see cref="UltimosEventosPanel"/> eventos más recientes (usuario, acción, tabla y fecha) para el panel.</summary>
+        public static DataTable ObtenerUltimosEventos() =>
+            DbHelper.ConsultarTabla(
+                "SELECT TOP (@n) NombreUsuario, Accion, TablaAfectada, FechaHora FROM AuditoriaLog ORDER BY FechaHora DESC",
+                DbHelper.Param("@n", UltimosEventosPanel));
 
         /// <summary>Registros para el Excel (la consulta de siempre, con su tope).</summary>
         public static DataTable ObtenerParaExportar(FiltroAuditoria filtro, int maximo)

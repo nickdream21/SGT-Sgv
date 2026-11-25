@@ -32,10 +32,6 @@ namespace WebSGV.Services.Despachos
                 DbHelper.Param("@reemplazar", reemplazarAnteriores));
         }
 
-        /// <summary>Id del CPIC por número (para resolver a partir de <c>LoteRegistrado.NumeroCPIC</c>).</summary>
-        public static DataTable ObtenerPorNumero(string numeroCPIC) =>
-            DbHelper.ConsultarTabla("SELECT idCPIC FROM CPIC WHERE numeroCPIC = @numeroCPIC",
-                DbHelper.Param("@numeroCPIC", numeroCPIC));
 
         /// <summary>Documentos activos de un CPIC (más reciente primero).</summary>
         public static DataTable ObtenerDocumentos(int idCPIC) =>
@@ -45,10 +41,5 @@ namespace WebSGV.Services.Despachos
                   ORDER BY fechaSubida DESC",
                 DbHelper.Param("@idCPIC", idCPIC));
 
-        /// <summary>Datos básicos de un documento activo (para descarga).</summary>
-        public static DataTable ObtenerInfoDocumento(int idDocumento) =>
-            DbHelper.ConsultarTabla(
-                "SELECT nombreOriginal, rutaArchivo, tipoArchivo FROM DocumentosCPIC WHERE idDocumento = @idDocumento AND activo = 1",
-                DbHelper.Param("@idDocumento", idDocumento));
     }
 }

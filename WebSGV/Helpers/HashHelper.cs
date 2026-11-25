@@ -43,19 +43,6 @@ namespace WebSGV.Helpers
             }
         }
 
-        /// <summary>
-        /// Calcula el SHA-256 del contenido de un archivo en disco.
-        /// </summary>
-        public static string ComputeSha256FromFile(string rutaArchivo)
-        {
-            if (string.IsNullOrWhiteSpace(rutaArchivo)) throw new ArgumentNullException("rutaArchivo");
-            if (!File.Exists(rutaArchivo)) throw new FileNotFoundException("No se encontró el archivo.", rutaArchivo);
-
-            using (var fs = new FileStream(rutaArchivo, FileMode.Open, FileAccess.Read, FileShare.Read))
-            {
-                return ComputeSha256(fs);
-            }
-        }
 
         /// <summary>
         /// Calcula el SHA-256 de una cadena, codificada en UTF-8 sin BOM.

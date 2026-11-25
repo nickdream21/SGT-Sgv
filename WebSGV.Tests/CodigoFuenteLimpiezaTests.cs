@@ -160,7 +160,7 @@ namespace WebSGV.Tests
             new Dictionary<string, (string Motivo, Regex Permitido)>(StringComparer.OrdinalIgnoreCase)
             {
                 { "Views/RolesHelper.cs", ("única definición de los nombres de rol", null) },
-                { "Views/VerificarDocumento.aspx.cs", ("rolFirmante de FirmaDigital (ADMIN/CONDUCTOR), no el rol del usuario",
+                { "Services/Liquidaciones/VerificacionDocumentoService.cs", ("rolFirmante de FirmaDigital (ADMIN/CONDUCTOR), no el rol del usuario",
                     new Regex(@"\[""rolFirmante""\]\)\s*==\s*""ADMIN""")) },
                 { "Views/ReportesOrdenesViaje.aspx.cs", ("\"conductor\" es la clave de orden/columna del reporte, no un rol",
                     new Regex(@"(==\s*""conductor""|\bcase\s+""conductor""\s*:)")) },
@@ -292,7 +292,7 @@ namespace WebSGV.Tests
             Assert.DoesNotMatch(ComparacionLiteralRol, permitidoReporte.Replace(".Where(c => c.Item1 == \"conductor\" || c.Item1 == \"numero\")", ""));
             Assert.Matches(ComparacionLiteralRol, permitidoReporte.Replace("if (rol == \"ADMIN\")", ""));
             Assert.Matches(ComparacionLiteralRol, permitidoReporte.Replace("if (rol == \"CONDUCTOR\")", ""));
-            Regex permitidoFirma = ExcepcionesLiteralesRol["Views/VerificarDocumento.aspx.cs"].Permitido;
+            Regex permitidoFirma = ExcepcionesLiteralesRol["Services/Liquidaciones/VerificacionDocumentoService.cs"].Permitido;
             Assert.DoesNotMatch(ComparacionLiteralRol, permitidoFirma.Replace("(Convert.ToString(r[\"rolFirmante\"]) == \"ADMIN\" ? \" (administración)\" : \" (conductor)\"));", ""));
             Assert.Matches(ComparacionLiteralRol, permitidoFirma.Replace("if (rol == \"ADMIN\")", ""));
 

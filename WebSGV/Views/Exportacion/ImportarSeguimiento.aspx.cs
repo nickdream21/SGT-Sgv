@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using ClosedXML.Excel;
@@ -20,9 +18,6 @@ namespace WebSGV.Views.Exportacion
         Justification = "Usa Site.Master, que asigna ViewStateUserKey en Page_Init a toda página con sesión.")]
     public partial class ImportarSeguimiento : System.Web.UI.Page
     {
-        private static readonly string ConnStr =
-            ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
         // Contadores de la última importación masiva (se reinician en cada importación)
         private int _importInsertados   = 0;
         private int _importActualizados = 0;
@@ -360,28 +355,11 @@ namespace WebSGV.Views.Exportacion
 
             if (tabla.Rows.Count > 0)
             {
-                using (var conn = new SqlConnection(ConnStr))
-                using (var cmd = new SqlCommand("sp_SE_ImportarLote", conn))
-                {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.CommandTimeout = 300;
-                    var p = cmd.Parameters.Add("@filas", SqlDbType.Structured);
-                    p.TypeName = "dbo.TipoSeguimientoImportacion";
-                    p.Value = tabla;
-                    cmd.Parameters.Add("@idUsuario", SqlDbType.Int).Value = (object)ObtenerIdUsuarioSesion() ?? DBNull.Value;
-
-                    conn.Open();
-                    using (var rd = cmd.ExecuteReader())
-                    {
-                        if (rd.Read())
-                        {
-                            _importInsertados    = Convert.ToInt32(rd["insertados"]);
-                            _importActualizados  = Convert.ToInt32(rd["actualizados"]);
-                            _duplicadosEnArchivo = Convert.ToInt32(rd["duplicadosEnArchivo"]);
-                            _importOmitidos      = Convert.ToInt32(rd["omitidos"]);
-                        }
-                    }
-                }
+                ResultadoImportacionLote r = ImportacionSeguimientoService.ImportarLote(tabla, ObtenerIdUsuarioSesion());
+                _importInsertados    = r.Insertados;
+                _importActualizados  = r.Actualizados;
+                _duplicadosEnArchivo = r.DuplicadosEnArchivo;
+                _importOmitidos      = r.Omitidos;
             }
 
             // AuditoriaHelper.Registrar ya captura y registra sus propias fallas: no frena la importación.
@@ -502,7 +480,7 @@ namespace WebSGV.Views.Exportacion
                         ? $"{ws.Cell(headerRow, c).Address.ColumnLetter} ({ws.Cell(headerRow, c).GetString().Trim()})"
                         : key;
 
-                var tabla = CrearTablaImportacion();
+                var tabla = ImportacionSeguimientoService.CrearTablaImportacion();
 
                 for (int r = headerRow + 1; r <= rows; r++)
                 {
@@ -577,33 +555,6 @@ namespace WebSGV.Views.Exportacion
 
                 return tabla;
             }
-        }
-
-        /// <summary>Estructura idéntica a dbo.TipoSeguimientoImportacion (mismo orden de columnas).</summary>
-        private static DataTable CrearTablaImportacion()
-        {
-            var t = new DataTable();
-            t.Columns.Add("fila", typeof(int));
-            foreach (var c in new[] { "cliente", "conductorOrigen", "tracto1", "carreta", "conductorDestino", "tracto2" })
-                t.Columns.Add(c, typeof(string));
-            foreach (var c in new[] { "fhSalidaBase1", "fhLlegadaTrujillo", "fhRegistro", "fhProgramacion",
-                                      "fhIngresoPlanta", "fhInicioCarga", "fhTerminoCarga", "fhSalidaPlanta",
-                                      "fhLlegadaBase2", "fhSalidaBase2",
-                                      "fhLlegadaBodegaNacional", "fhIngresoBodegaNacional", "fhSalidaBodegaNacional" })
-                t.Columns.Add(c, typeof(DateTime));
-            t.Columns.Add("bodegaNacional", typeof(string));
-            foreach (var c in new[] { "fhLlegadaCEBAF", "fhCruceEcuador", "fhAutorizacionNacionalizacion" })
-                t.Columns.Add(c, typeof(DateTime));
-            t.Columns.Add("bodegaEcuatoriana", typeof(string));
-            foreach (var c in new[] { "fhLlegadaTCI", "fhSalidaTCI" })
-                t.Columns.Add(c, typeof(DateTime));
-            t.Columns.Add("bodegaDescarga", typeof(string));
-            foreach (var c in new[] { "fhLlegadaPlantaEcuador", "fhLlegadaAlmacen", "fhIngreso",
-                                      "fhInicioDescarga", "fhTerminoDescarga", "fhSalida", "fhLlegadaBaseFinal" })
-                t.Columns.Add(c, typeof(DateTime));
-            t.Columns.Add("motivoRetraso", typeof(string));
-            t.Columns.Add("estado", typeof(string));
-            return t;
         }
 
         /// <summary>Texto recortado al largo de la columna; vacío o "-" se guarda como NULL.</summary>

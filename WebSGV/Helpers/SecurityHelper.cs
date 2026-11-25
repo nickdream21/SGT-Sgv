@@ -111,22 +111,6 @@ namespace WebSGV.Helpers
             response.Cache.SetExpires(DateTime.UtcNow.AddMinutes(-1));
         }
 
-        // ── Validación de entradas ─────────────────────────────────────────
-
-        /// <summary>
-        /// Valida que un ID de QueryString sea un entero positivo.
-        /// Devuelve el valor o redirige a la URL destino si no es válido.
-        /// </summary>
-        public static int ValidarQueryStringId(string parametro, string urlRedireccion)
-        {
-            string valor = HttpContext.Current?.Request.QueryString[parametro];
-            if (!int.TryParse(valor, out int id) || id <= 0)
-            {
-                Redirigir(urlRedireccion);
-                return 0;
-            }
-            return id;
-        }
 
         // ── Utilidad interna ───────────────────────────────────────────────
 

@@ -224,9 +224,6 @@ ORDER BY ov.fechaRegistro DESC, ov.idOrdenViaje DESC;";
             return resultado;
         }
 
-        /// <summary>Estaciones de peaje (<c>sp_DC_ObtenerEstacionesPeaje</c>).</summary>
-        public static DataTable ObtenerEstacionesPeaje() =>
-            DbHelper.ConsultarTablaSp("sp_DC_ObtenerEstacionesPeaje");
 
         /// <summary>
         /// Genera el número de orden vía <c>sp_DC_GenerarNumeroOrden</c> (parámetro de

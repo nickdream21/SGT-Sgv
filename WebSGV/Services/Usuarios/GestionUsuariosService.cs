@@ -110,6 +110,27 @@ namespace WebSGV.Services.Usuarios
                     Convert.ToInt32(dt.Rows[0]["activos"], CultureInfo.InvariantCulture));
         }
 
+        /// <summary>Total de usuarios, activos e inactivos, para el panel del administrador de sistema (E6-20).</summary>
+        public static (int Total, int Activos, int Inactivos) ContarPorEstado()
+        {
+            DataTable dt = DbHelper.ConsultarTabla(@"
+                SELECT
+                    COUNT(*) AS total,
+                    ISNULL(SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END), 0) AS activos,
+                    ISNULL(SUM(CASE WHEN activo = 0 THEN 1 ELSE 0 END), 0) AS inactivos
+                FROM Usuarios");
+            if (dt.Rows.Count == 0)
+                return (0, 0, 0);
+            DataRow r = dt.Rows[0];
+            return (Convert.ToInt32(r["total"], CultureInfo.InvariantCulture),
+                    Convert.ToInt32(r["activos"], CultureInfo.InvariantCulture),
+                    Convert.ToInt32(r["inactivos"], CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>Usuarios por rol (columnas rol y total), de más a menos, para el panel del administrador de sistema.</summary>
+        public static DataTable ContarPorRol() =>
+            DbHelper.ConsultarTabla("SELECT rol, COUNT(*) AS total FROM Usuarios GROUP BY rol ORDER BY total DESC");
+
         /// <summary>
         /// Conductores activos para vincular a un usuario: idConductor, descripcion ("documento - nombre apellidos")
         /// y nombreUsuario del usuario que ya lo tiene (NULL si ninguno).

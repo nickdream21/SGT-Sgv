@@ -1,9 +1,9 @@
 {
   "descripcion": "Avisos por regla de los analizadores con trinquete (E6-3). La cifra no puede subir; si baja, se baja aquí con herramientas/calidad/contar-avisos.ps1 -Actualizar.",
   "reglas": {
-    "CA1031": 318,
+    "CA1031": 317,
     "CA1062": 197,
-    "CA2000": 198,
+    "CA2000": 196,
     "CA3002": 38,
     "CA3003": 11
   }

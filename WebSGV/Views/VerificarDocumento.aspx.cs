@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Web;
 using WebSGV.Helpers;
 using WebSGV.Services.Liquidaciones;
@@ -65,10 +64,10 @@ namespace WebSGV.Views
                 return;
             }
 
-            DataSet ds;
+            DocumentoVerificado d;
             try
             {
-                ds = ConsultarSp(codigo);
+                d = VerificacionDocumentoService.Consultar(codigo);
             }
             catch (Exception ex)
             {
@@ -77,16 +76,11 @@ namespace WebSGV.Views
                 return;
             }
 
-            if (ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+            if (d == null)
             {
                 MostrarNoEncontrado("No existe ningún documento con el código " + codigo + ". Revise que lo haya escrito tal como aparece en el documento.");
                 return;
             }
-
-            DataRow r = ds.Tables[0].Rows[0];
-            bool anulada = Convert.ToBoolean(r["anulada"]);
-            bool reemplazado = Convert.ToBoolean(r["reemplazado"]);
-            string etapa = r["etapa"] as string;
 
             lblCodigo.Text = HttpUtility.HtmlEncode(codigo);
             // Sin número: la orden ya no existe. Pasa cuando el conductor la retira
@@ -94,24 +88,24 @@ namespace WebSGV.Views
             // liquidaciones de prueba (script del 2026-11-16); en ambos casos su firma quedó
             // anulada antes y el motivo se ve en la lista de firmas. Las firmas huérfanas
             // anteriores (sin anulación ni código de verificación) no llegan a esta página.
-            string orden = r["numeroOrdenViaje"] == DBNull.Value
+            string orden = d.NumeroOrdenViaje == null
                 ? "Orden de viaje retirada (ver el motivo en las firmas)"
-                : "Orden de viaje N.° " + r["numeroOrdenViaje"];
-            lblDocumento.Text = HttpUtility.HtmlEncode(orden + " — " + EtapaFirma.Nombre(etapa));
-            lblFirmante.Text = HttpUtility.HtmlEncode(System.Text.RegularExpressions.Regex.Replace(Convert.ToString(r["nombreFirmante"]).Trim(), @"\s+", " ") +
-                (Convert.ToString(r["rolFirmante"]) == "ADMIN" ? " (administración)" : " (conductor)"));
-            lblFecha.Text = HttpUtility.HtmlEncode(FechaHelper.ConvertirDeUtc(Convert.ToDateTime(r["fechaHoraFirma"]))
+                : "Orden de viaje N.° " + d.NumeroOrdenViaje;
+            lblDocumento.Text = HttpUtility.HtmlEncode(orden + " — " + EtapaFirma.Nombre(d.Etapa));
+            lblFirmante.Text = HttpUtility.HtmlEncode(System.Text.RegularExpressions.Regex.Replace(d.NombreFirmante.Trim(), @"\s+", " ") +
+                (d.FirmoAdministracion ? " (administración)" : " (conductor)"));
+            lblFecha.Text = HttpUtility.HtmlEncode(FechaHelper.ConvertirDeUtc(d.FechaHoraFirmaUtc)
                 .ToString("dd/MM/yyyy HH:mm:ss") + " (hora de Perú)");
-            string hash = Convert.ToString(r["hashDocumento"]).Trim();
+            string hash = d.HashDocumento.Trim();
             lblHash.Text = HttpUtility.HtmlEncode(hash);
             hfHash.Value = hash;
 
-            if (anulada)
+            if (d.Anulada)
             {
                 lblEstado.Text = "Documento auténtico, pero ANULADO: la firma fue anulada (ver el motivo en las firmas de la orden) y este documento ya no tiene efecto.";
                 pnlEstado.CssClass = "vd-estado vd-estado-alerta";
             }
-            else if (reemplazado)
+            else if (d.Reemplazado)
             {
                 lblEstado.Text = "Documento auténtico. Es una versión anterior: la orden tiene un documento firmado posterior (ver las firmas de la orden).";
                 pnlEstado.CssClass = "vd-estado vd-estado-info";
@@ -123,40 +117,22 @@ namespace WebSGV.Views
             }
 
             var firmas = new List<object>();
-            if (ds.Tables.Count > 1)
+            foreach (FirmaVerificada f in d.Firmas)
             {
-                foreach (DataRow f in ds.Tables[1].Rows)
+                firmas.Add(new
                 {
-                    string etapaFirma = f["etapa"] as string;
-                    bool esAnulacion = Convert.ToString(f["estadoFirma"]) == "A";
-                    firmas.Add(new
-                    {
-                        Etapa = EtapaFirma.Nombre(esAnulacion ? EtapaFirma.Anulacion : etapaFirma),
-                        Firmante = System.Text.RegularExpressions.Regex.Replace(Convert.ToString(f["nombreFirmante"]).Trim(), @"\s+", " "),
-                        Fecha = FechaHelper.ConvertirDeUtc(Convert.ToDateTime(f["fechaHoraFirma"])).ToString("dd/MM/yyyy HH:mm"),
-                        Estado = esAnulacion ? "Motivo: " + Convert.ToString(f["motivoAnulacion"])
-                               : Convert.ToBoolean(f["anulada"]) ? "Anulada" : "Vigente",
-                        Codigo = f["codigoVerificacion"] == DBNull.Value ? "" : Convert.ToString(f["codigoVerificacion"])
-                    });
-                }
+                    Etapa = EtapaFirma.Nombre(f.EsAnulacion ? EtapaFirma.Anulacion : f.Etapa),
+                    Firmante = System.Text.RegularExpressions.Regex.Replace(f.NombreFirmante.Trim(), @"\s+", " "),
+                    Fecha = FechaHelper.ConvertirDeUtc(f.FechaHoraFirmaUtc).ToString("dd/MM/yyyy HH:mm"),
+                    Estado = f.EsAnulacion ? "Motivo: " + f.MotivoAnulacion
+                           : f.Anulada ? "Anulada" : "Vigente",
+                    Codigo = f.CodigoVerificacion
+                });
             }
             rptFirmas.DataSource = firmas;
             rptFirmas.DataBind();
 
             pnlResultado.Visible = true;
-        }
-
-        private static DataSet ConsultarSp(string codigo)
-        {
-            using (var conn = new System.Data.SqlClient.SqlConnection(DbHelper.ConnectionString))
-            using (var cmd = new System.Data.SqlClient.SqlCommand("sp_LD_VerificarDocumento", conn) { CommandType = CommandType.StoredProcedure })
-            using (var da = new System.Data.SqlClient.SqlDataAdapter(cmd))
-            {
-                cmd.Parameters.Add(DbHelper.Param("@codigoVerificacion", codigo));
-                var ds = new DataSet();
-                da.Fill(ds);
-                return ds;
-            }
         }
 
         private void MostrarNoEncontrado(string mensaje)

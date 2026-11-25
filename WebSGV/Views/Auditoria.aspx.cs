@@ -54,14 +54,13 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    "SELECT DISTINCT TablaAfectada FROM AuditoriaLog ORDER BY TablaAfectada");
+                List<string> tablas = ConsultaAuditoriaService.ObtenerTablas();
 
                 ddlTabla.Items.Clear();
                 ddlTabla.Items.Add(new ListItem("Todas", ""));
 
-                foreach (DataRow row in dt.Rows)
-                    ddlTabla.Items.Add(new ListItem(row["TablaAfectada"].ToString()));
+                foreach (string tabla in tablas)
+                    ddlTabla.Items.Add(new ListItem(tabla));
             }
             catch (Exception ex)
             {
@@ -73,19 +72,9 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(@"
-                    SELECT
-                        (SELECT COUNT(*) FROM AuditoriaLog) AS TotalRegistros,
-                        (SELECT COUNT(*) FROM AuditoriaLog WHERE CAST(FechaHora AS DATE) = CAST(dbo.fn_AhoraPeru() AS DATE)) AS RegistrosHoy,
-                        (SELECT COUNT(DISTINCT NombreUsuario) FROM AuditoriaLog WHERE FechaHora >= DATEADD(DAY, -7, dbo.fn_AhoraPeru())) AS UsuariosActivos,
-                        (SELECT COUNT(DISTINCT TablaAfectada) FROM AuditoriaLog) AS TablasAfectadas");
-
-                if (dt.Rows.Count > 0)
-                {
-                    DataRow r = dt.Rows[0];
-                    litCifras.Text = HtmlCifras(Convert.ToInt32(r["TotalRegistros"]), Convert.ToInt32(r["RegistrosHoy"]),
-                        Convert.ToInt32(r["UsuariosActivos"]), Convert.ToInt32(r["TablasAfectadas"]));
-                }
+                ResumenAuditoria r = ConsultaAuditoriaService.ObtenerResumen();
+                if (r != null)
+                    litCifras.Text = HtmlCifras(r.Total, r.Hoy, r.Usuarios7Dias, r.Tablas);
             }
             catch (Exception ex)
             {

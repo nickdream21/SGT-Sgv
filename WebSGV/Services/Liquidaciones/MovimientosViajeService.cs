@@ -18,7 +18,7 @@ namespace WebSGV.Services.Liquidaciones
     /// <item><b>PAGO_DIRECTO</b>: la empresa paga al proveedor (Yape al del parchado…). Es costo del
     /// viaje, se ve en el PDF, pero no toca el saldo del conductor.</item>
     /// </list>
-    /// Lo registran la administración y monitoreo (<see cref="PuedeRegistrar"/>).
+    /// Lo registran la administración y monitoreo.
     /// </summary>
     public static class MovimientosViajeService
     {
@@ -66,7 +66,6 @@ namespace WebSGV.Services.Liquidaciones
         public static bool Habilitado =>
             bool.TryParse(System.Configuration.ConfigurationManager.AppSettings["MovimientosViaje.Habilitado"], out bool h) && h;
 
-        public static bool PuedeRegistrar() => SecurityHelper.TieneSesionActiva() && SecurityHelper.EsAdmin();
 
         public static string NombreConcepto(string tipo, string concepto)
         {
@@ -269,12 +268,6 @@ namespace WebSGV.Services.Liquidaciones
         /// <summary>Consulta (con parámetro @n = número de orden) de los movimientos activos de una liquidación; el detalle la agrega a su lote.</summary>
         internal const string ConsultaDeOrden = SelectMovimientos + " WHERE m.numeroOrdenViaje = @n AND m.activo = 1 ORDER BY m.fecha, m.idMovimiento";
 
-        /// <summary>Movimientos activos unidos a una liquidación.</summary>
-        public static List<MovimientoViaje> ObtenerDeOrden(string numeroOrdenViaje) =>
-            Leer(DbHelper.ConsultarTabla(SelectMovimientos + @"
-                WHERE m.numeroOrdenViaje = @n AND m.activo = 1
-                ORDER BY m.fecha, m.idMovimiento",
-                DbHelper.Param("@n", numeroOrdenViaje)));
 
         /// <summary>
         /// Para revisar una liquidación: lo ya unido a ella más lo que el conductor tiene sin liquidar

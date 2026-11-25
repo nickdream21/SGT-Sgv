@@ -140,8 +140,6 @@ namespace WebSGV.Services.Usuarios
             };
         }
 
-        /// <summary>True si el usuario tiene el factor activo.</summary>
-        public static bool TieneActivo(int idUsuario) => Obtener(idUsuario)?.Activo == true;
 
         // ── Alta ───────────────────────────────────────────────────────────
 

@@ -204,7 +204,5 @@ namespace WebSGV.Helpers
         /// <summary>Nombre en sesión, o cadena vacía.</summary>
         public static string ObtenerNombre(HttpSessionState session) => Nombre(session);
 
-        /// <summary>Rol en sesión normalizado a mayúsculas, o cadena vacía.</summary>
-        public static string ObtenerRolNormalizado(HttpSessionState session) => Rol(session);
     }
 }

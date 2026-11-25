@@ -2,6 +2,8 @@ using System;
 using System.Data;
 using System.Globalization;
 using WebSGV.Helpers;
+using WebSGV.Services.Auditoria;
+using WebSGV.Services.Usuarios;
 
 namespace WebSGV.Views
 {
@@ -24,28 +26,12 @@ namespace WebSGV.Views
 
         private void CargarEstadisticas()
         {
-            DataTable dtStats = DbHelper.ConsultarTabla(@"
-                SELECT
-                    COUNT(*) AS total,
-                    ISNULL(SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END), 0) AS activos,
-                    ISNULL(SUM(CASE WHEN activo = 0 THEN 1 ELSE 0 END), 0) AS inactivos
-                FROM Usuarios");
-
-            int total = 0, activos = 0, inactivos = 0;
-            if (dtStats.Rows.Count > 0)
-            {
-                DataRow r = dtStats.Rows[0];
-                total = Convert.ToInt32(r["total"]);
-                activos = Convert.ToInt32(r["activos"]);
-                inactivos = Convert.ToInt32(r["inactivos"]);
-            }
+            var (total, activos, inactivos) = GestionUsuariosService.ContarPorEstado();
 
             int? eventosHoy;
             try
             {
-                object result = DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM AuditoriaLog WHERE CAST(FechaHora AS DATE) = CAST(dbo.fn_AhoraPeru() AS DATE)");
-                eventosHoy = result == null || result == DBNull.Value ? 0 : Convert.ToInt32(result);
+                eventosHoy = ConsultaAuditoriaService.ContarRegistrosDeHoy();
             }
             catch (Exception ex)
             {
@@ -75,12 +61,11 @@ namespace WebSGV.Views
 
         /// <summary>Sello de la acción, igual que en Auditoria.aspx (nombre en español y tono); el texto sale codificado.</summary>
         protected static string SelloAccion(object accion) =>
-            EstadoUiHelper.Sello(Services.Auditoria.ConsultaAuditoriaService.NombreAccion(accion), EstadoUiHelper.TonoAccionAuditoria(accion));
+            EstadoUiHelper.Sello(ConsultaAuditoriaService.NombreAccion(accion), EstadoUiHelper.TonoAccionAuditoria(accion));
 
         private void CargarRoles()
         {
-            DataTable dt = DbHelper.ConsultarTabla(
-                "SELECT rol, COUNT(*) AS total FROM Usuarios GROUP BY rol ORDER BY total DESC");
+            DataTable dt = GestionUsuariosService.ContarPorRol();
 
             if (dt.Rows.Count > 0)
             {
@@ -97,8 +82,7 @@ namespace WebSGV.Views
         {
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    "SELECT TOP 8 NombreUsuario, Accion, TablaAfectada, FechaHora FROM AuditoriaLog ORDER BY FechaHora DESC");
+                DataTable dt = ConsultaAuditoriaService.ObtenerUltimosEventos();
 
                 if (dt.Rows.Count > 0)
                 {

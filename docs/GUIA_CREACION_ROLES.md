@@ -171,7 +171,7 @@ VALUES ('login_usuario', 'Nombre Completo', '<hash_pbkdf2>', 'NOMBRE DEL ROL', 1
 
 ### Así se creó el rol "CONTABILIDAD"
 
-1. **`RolesHelper.cs`** → `ROL_CONTABILIDAD = "CONTABILIDAD"`, su etiqueta "Contabilidad" en `EtiquetasRol` y `EsContabilidad()`
+1. **`RolesHelper.cs`** → `ROL_CONTABILIDAD = "CONTABILIDAD"`, y su etiqueta "Contabilidad" en `EtiquetasRol` (la pregunta "¿es este rol?" de la sesión va en `SecurityHelper`, paso 3; `RolesHelper` ya no la repite desde E6-20)
 2. **`RolesHelper.TienePermiso`** → sección `LIQUIDACIONES_CONTABILIDAD` (`r == ROL_CONTABILIDAD || admin`); en `RolesHelperTests`, el rol en `RolesProbados` y la fila de `MatrizEsperada`
 3. **`SecurityHelper.cs`** → `EsContabilidad()` y `PuedeConsultarLiquidacionesGlobales()` (admin o contabilidad)
 4. **`Site.Master.cs`** → propiedad `EsContabilidad` (en `InicializarPropiedadesVacias` y `CargarInformacionUsuario`)

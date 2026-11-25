@@ -45,10 +45,11 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
-        /// Solo para tests de integración (WebSGV.Tests), que no tienen Web.config: fija la
-        /// cadena de conexión a usar. La aplicación web nunca lo llama.
+        /// Solo para tests de integración (WebSGV.Tests) y las herramientas de consola (Cuadro, PerfilLlegada,
+        /// PerfilCrisar), que no tienen Web.config: fija la cadena de conexión a usar. La aplicación web nunca
+        /// lo llama. Interno (M-092): esos ensamblados lo ven por InternalsVisibleTo (Properties/AssemblyInfo.cs).
         /// </summary>
-        public static void FijarConexionParaPruebas(string cadena) => _conexionFijada = cadena;
+        internal static void FijarConexionParaPruebas(string cadena) => _conexionFijada = cadena;
 
         /// <summary>true solo en los tests de integración (después de <see cref="FijarConexionParaPruebas"/>).</summary>
         internal static bool HayConexionDePruebas => _conexionFijada != null;

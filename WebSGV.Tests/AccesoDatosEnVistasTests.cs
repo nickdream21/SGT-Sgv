@@ -21,13 +21,9 @@ namespace WebSGV.Tests
         /// <summary>Tope por archivo (ruta relativa a WebSGV/). Al mover SQL a un servicio, baje el número; al llegar a 0, quite la fila.</summary>
         private static readonly Dictionary<string, int> Topes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Views/DashboardAdminSistema.aspx.cs"] = 4,
+            // Lo único que queda (E6-20, 2026-11-25: 161 → 4 en 1 archivo): el chequeo de salud abre su propia
+            // conexión con un tiempo límite corto (SELECT 1) a propósito, para responder rápido si la BD no contesta.
             ["Salud.ashx.cs"] = 4,
-            ["Views/Exportacion/ImportarSeguimiento.aspx.cs"] = 3,
-            ["Views/Auditoria.aspx.cs"] = 2,
-            ["Views/VerificarDocumento.aspx.cs"] = 2,
-            ["Views/BandejaDocumentos.aspx.cs"] = 1,
-            ["Views/Exportacion/DashboardExportacion.aspx.cs"] = 1,
         };
 
         internal static readonly Regex AccesoDatos = new Regex(@"\bDbHelper\.|\bnew\s+Sql\w*|\bConnectionStrings\b", RegexOptions.Compiled);

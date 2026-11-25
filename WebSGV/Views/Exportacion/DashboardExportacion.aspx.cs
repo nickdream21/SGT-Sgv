@@ -49,12 +49,7 @@ namespace WebSGV.Views.Exportacion
             var anios = new HashSet<int> { actual };
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(@"
-                    SELECT DISTINCT YEAR(fhProgramacion) AS anio
-                    FROM SeguimientoExportacion
-                    WHERE activo = 1 AND fhProgramacion IS NOT NULL");
-                foreach (DataRow r in dt.Rows)
-                    if (r["anio"] != DBNull.Value) anios.Add(Convert.ToInt32(r["anio"]));
+                anios.UnionWith(DashboardExportacionService.AniosConViajes());
             }
             catch (Exception ex)
             {

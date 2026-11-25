@@ -81,11 +81,6 @@ namespace WebSGV.Services.Exportacion
             return ("Error: " + texto, "No se pudo consultar el GPS. " + texto);
         }
 
-        /// <summary>Inicia una corrida en segundo plano. False si ya hay una en curso o la anterior fue hace poco.</summary>
-        /// <param name="aPedido">
-        /// La pide una persona desde el tablero: no espera el <see cref="Intervalo"/> (sí respeta que no corran dos a la vez).
-        /// </param>
-        public static bool Iniciar(bool aPedido = false) => Actual.Iniciar(aPedido);
 
         /// <summary>
         /// Los viajes del tablero entre los que cada corrida elige los que consulta (<see cref="SeguimientoViajesService.AbiertosParaGps"/>).

@@ -30,11 +30,11 @@ namespace WebSGV.Tests
             ["Services/Despachos/BandejaDocumentosService.cs"] = 1549,
             ["Views/ReportesOrdenesViaje.aspx.cs"] = 1479,
             ["Services/PdfOrdenViajeService.cs"] = 1307,
-            ["Views/DashboardConductor.aspx.cs"] = 1120,
+            ["Views/DashboardConductor.aspx.cs"] = 1090,
             ["Views/LiquidacionesPendientes.aspx.cs"] = 1077,
-            ["Views/BandejaDocumentos.aspx.cs"] = 912,
+            ["Views/BandejaDocumentos.aspx.cs"] = 896,
             ["Services/Despachos/Importacion/ImportacionPedidoService.cs"] = 901,
-            ["Services/Liquidaciones/LiquidacionesPendientesService.cs"] = 860,
+            ["Services/Liquidaciones/LiquidacionesPendientesService.cs"] = 852,
         };
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace WebSGV.Tests
             ["Views/RegistroDespacho.aspx.cs::btnProgramarDespachos_Click"] = 99,
             ["Views/DetalleOrdenViaje.aspx.cs::Mostrar"] = 99,
             ["Views/Login.aspx.cs::Page_Load"] = 98,
-            ["Views/VerificarDocumento.aspx.cs::Verificar"] = 98,
+            ["Views/VerificarDocumento.aspx.cs::Verificar"] = 88,
             ["Views/BandejaDocumentos.aspx.cs::btnRegistrar_Click"] = 97,
             ["Views/RegistroDespacho.aspx.cs::ValidarConfiguracionBase"] = 95,
             ["Services/Despachos/ListaDespachosService.cs::GuardarCambiosLote"] = 94,

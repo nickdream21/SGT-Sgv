@@ -2,7 +2,6 @@
 # LogSGV y MensajeErrorHelper.ParaUsuario del código. EstadoSistemaService.Plantilla solo deja a la vista
 # estas palabras, las siglas conocidas y las rutas de páginas. Generado por EstadoSistemaServiceTests
 # (Vocabulario_EstaAlDiaConElCodigo, con SGV_REGENERAR_VOCABULARIO=1): no editar a mano.
-#
 API
 ASP.NET
 Actualización
@@ -256,7 +255,6 @@ error=sesion
 es
 esquema
 establecer
-estaciones
 estado
 estadísticas
 estar

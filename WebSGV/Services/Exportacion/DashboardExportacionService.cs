@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using WebSGV.Helpers;
@@ -31,6 +32,16 @@ namespace WebSGV.Services.Exportacion
                 Hasta = porMes ? desde.AddMonths(1) : desde.AddYears(1),
                 DesdeAnterior = porMes ? desde.AddMonths(-1) : desde.AddYears(-1),
             };
+        }
+
+        /// <summary>Años con algún viaje activo con F.H. Programación (para el combo Año del dashboard; sin orden).</summary>
+        public static List<int> AniosConViajes()
+        {
+            DataTable dt = DbHelper.ConsultarTabla(@"
+                SELECT DISTINCT YEAR(fhProgramacion) AS anio
+                FROM SeguimientoExportacion
+                WHERE activo = 1 AND fhProgramacion IS NOT NULL");
+            return dt.Rows.Cast<DataRow>().Where(r => r["anio"] != DBNull.Value).Select(r => Convert.ToInt32(r["anio"])).ToList();
         }
 
         /// <summary>Viajes de Vitapro del período y del anterior en una consulta, con cuántas de sus horas puso el GPS.</summary>

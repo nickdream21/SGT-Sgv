@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-107 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-108 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -53,6 +53,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-103** E6-13, Liquidar con el detalle de peajes ilegible — con un conductor de pruebas con viaje activo, a 390 px, alterar `hfGastosFinancieros` con un JSON roto antes de enviar: aviso "No se pudo leer el detalle de los peajes…", sigue en la pestaña Liquidar con los montos, no crea la orden y el log deja INF (no ERR). · B
 - [ ] **P-104** E6-13, RegistroDespacho con un error de negocio del SP — Reabrir un viaje CERRADO preparado en `sgvEnsayo_pruebas` que el SP rechace: se ve el texto del SP (no "Error al reabrir viaje.") y el log deja INF. · C
 - [ ] **P-105** E6-13, LiquidacionesPendientes y Contabilidad con la red cortada desde la lista con liquidaciones reales (detalle, entregas de la revisión, buscadores de conductores: aviso o renglón de error), y Aprobar con `MovimientosViaje.Habilitado = false` (no queda bloqueado en "Todavía se están cargando…" y no suelta los movimientos ya unidos). · C
+- [ ] **P-108** VerificarDocumento con un documento vigente y uno reemplazado — tras E6-20 ni `sgvActualizada` ni la copia tienen un código vigente (las 11 firmas con código están anuladas por liquidaciones retiradas): cuando exista una orden firmada, comprobar sin sesión los textos de "vigente" y de "versión anterior" (hoy solo los fijan las `[FactBD]`). · C
 - [ ] **P-012** Seguimiento: lo que escribe — corregir una hora, guardar los datos que el GPS no sabe, editar datos del viaje, nuevo viaje, cerrar/reabrir, "Actualizar GPS", y los paneles de evidencia/corrección (JS). Por HTTP solo se probó lo que lee; las escrituras, con `SeguimientoViajesBdTests`. · B
 - [ ] **P-013** Interfaz de documentos y documentos pendientes — registrar una factura y un CPIC de prueba desde la tarjeta, el paginado (página 2 con un filtro; que el pie no quede tapado por la columna fija de acciones) y el ancho de página; el recuadro, el filtro y "Documentos" del lote (adjuntar un PDF de factura y guardar una guía de prueba). · B
 - [ ] **P-014** Reporte de cargas — pestañas, los dos gráficos (tooltip, ancho de celular) y que la pestaña se mantenga al buscar; solo se probó por HTTP. · C
