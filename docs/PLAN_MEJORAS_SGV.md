@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-25**, commit anterior `8082460` — **Etapa 6 en ejecución**: E6-7 (cierra M-087: pruebas de `FirmaService` con las tres firmas reales, 97,6 % con BD, y del dinero entregado que no cuadra). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-25**, commit anterior `318e9c3` — **Etapa 6 en ejecución**: E6-8 (pruebas del GPS: cliente Onway con HTTP, reloj y espera inyectados, y hora de llegada). No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-189 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

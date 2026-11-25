@@ -1,0 +1,7 @@
+{
+  "records": 2,
+  "content": [
+    { "messageKey": "m1", "imei": "000000000000001", "messageTime": "2026-11-20T20:00:00Z", "lat": -12.3, "lng": -77.0, "speed": 60 },
+    { "messageKey": "m2", "imei": "000000000000001", "messageTime": "2026-11-20T21:00:00Z", "lat": -12.2, "lng": -77.0, "speed": 0, "alertDescription": { "en": "Ignition Off, Vehicle ABC-123" } }
+  ]
+}

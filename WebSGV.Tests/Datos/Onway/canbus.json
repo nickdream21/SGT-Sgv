@@ -1,0 +1,7 @@
+{
+  "records": 2,
+  "content": [
+    { "messageTime": "2026-11-20T13:00:00Z", "totalEngineHours": 15230.5 },
+    { "messageTime": "2026-11-20T14:00:00Z", "totalEngineHours": 15231.4 }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "records": 3,
+  "content": [
+    { "id": "equipo-3", "imei": "000000000000003", "alias": "DEF-456", "deviceTypeDescription": "Equipo de prueba" }
+  ]
+}

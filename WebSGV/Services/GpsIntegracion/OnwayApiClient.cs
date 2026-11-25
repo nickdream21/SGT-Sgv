@@ -48,11 +48,24 @@ namespace WebSGV.Services.GpsIntegracion
         private const int PageSizeDispositivos = 200;
         private const int PageSizeHistorial = 5000; // un día completo (~1 500-2 000 puntos) en una sola llamada
 
-        // Rate limit del API: 2 requests/segundo. Throttle simple compartido entre instancias.
-        private static readonly object RateLock = new object();
-        private static DateTime _ultimaLlamadaUtc = DateTime.MinValue;
+        /// <summary>
+        /// Estado que comparten las instancias: el rate limit (2 requests/segundo) y las listas
+        /// guardadas por unos minutos. Las instancias de <c>new OnwayApiClient()</c> usan uno solo
+        /// (<see cref="EstadoCompartido"/>); las de prueba, el suyo propio.
+        /// </summary>
+        private sealed class Estado
+        {
+            public readonly object RateLock = new object();
+            public DateTime UltimaLlamadaUtc = DateTime.MinValue;
+            public List<OnwayDevice> Dispositivos;
+            public DateTime DispositivosHastaUtc;
+            public Dictionary<string, OnwayDevice> Foto;
+            public DateTime FotoHastaUtc;
+        }
 
-        private static readonly HttpClient Http = CrearHttpClient();
+        private static readonly Estado EstadoCompartido = new Estado();
+
+        private static readonly HttpClient Http = CrearHttpClient(null);
 
         /// <summary>
         /// Fuerza TLS 1.2 (el <c>SystemDefault</c> de .NET Framework 4.8 debería alcanzar en
@@ -61,18 +74,68 @@ namespace WebSGV.Services.GpsIntegracion
         /// silenciosamente (401 "access_denied") peticiones sin User-Agent o con una huella TLS
         /// atípica, tratándolas como tráfico sospechoso, mientras que un cliente como Postman
         /// (con TLS/User-Agent "normales") pasa sin problema con las mismas credenciales.
+        /// Con <paramref name="manejador"/> (solo pruebas) las peticiones no salen a la red.
         /// </summary>
-        private static HttpClient CrearHttpClient()
+        private static HttpClient CrearHttpClient(HttpMessageHandler manejador)
         {
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-            var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            var http = manejador == null ? new HttpClient() : new HttpClient(manejador);
+            http.Timeout = TimeSpan.FromSeconds(30);
             http.DefaultRequestHeaders.UserAgent.ParseAdd("SGV-WebSGV/1.0 (+https://sgv.serviciosgeneralesviviana.com)");
             http.DefaultRequestHeaders.Accept.ParseAdd("application/json");
             return http;
         }
 
+        private readonly HttpClient _http;
+        private readonly Func<DateTime> _relojUtc;
+        private readonly Action<TimeSpan> _esperar;
+        private readonly IAlmacenAccesoOnway _almacen;
+        private readonly Func<string, string> _leerConfig;
+        private readonly Estado _estado;
+
         private string _accessToken;
         private string _userId;
+
+        /// <summary>Cliente real: el HttpClient, el rate limit y las listas son los compartidos; el caché del token, la BD.</summary>
+        public OnwayApiClient()
+            : this(Http, () => DateTime.UtcNow, Thread.Sleep, AlmacenAccesoOnwayBd.Instancia,
+                   clave => ConfigurationManager.AppSettings[clave], EstadoCompartido)
+        {
+        }
+
+        /// <summary>
+        /// Solo pruebas: las peticiones van a <paramref name="manejador"/> (un HttpClient propio, con el
+        /// mismo tiempo límite y cabeceras; el compartido no se toca), la hora sale de
+        /// <paramref name="relojUtc"/> y las esperas (rate limit y reintentos) van a
+        /// <paramref name="esperar"/> en lugar de dormir (sin ella, no espera). El rate limit y las
+        /// listas guardadas son de esta instancia. <paramref name="almacen"/> y
+        /// <paramref name="leerConfig"/> son obligatorios a propósito: un valor por defecto a la BD
+        /// real dejaría a una prueba escribir un token falso en <c>OnwayAuthCache</c> y tumbar el GPS
+        /// del sitio, o leer las credenciales reales.
+        /// </summary>
+        internal OnwayApiClient(HttpMessageHandler manejador, Func<DateTime> relojUtc,
+            IAlmacenAccesoOnway almacen, Func<string, string> leerConfig, Action<TimeSpan> esperar = null)
+            : this(CrearHttpClient(manejador ?? throw new ArgumentNullException(nameof(manejador))),
+                   relojUtc ?? throw new ArgumentNullException(nameof(relojUtc)),
+                   esperar ?? (_ => { }),
+                   almacen ?? throw new ArgumentNullException(nameof(almacen)),
+                   leerConfig ?? throw new ArgumentNullException(nameof(leerConfig)), new Estado())
+        {
+        }
+
+        /// <summary>True si este cliente usa el rate limit y las listas que comparten los clientes reales.</summary>
+        internal bool UsaEstadoCompartido => ReferenceEquals(_estado, EstadoCompartido);
+
+        private OnwayApiClient(HttpClient http, Func<DateTime> relojUtc, Action<TimeSpan> esperar,
+            IAlmacenAccesoOnway almacen, Func<string, string> leerConfig, Estado estado)
+        {
+            _http = http;
+            _relojUtc = relojUtc;
+            _esperar = esperar;
+            _almacen = almacen;
+            _leerConfig = leerConfig;
+            _estado = estado;
+        }
 
         /// <summary>
         /// Asegura credenciales válidas en los campos de instancia, renovando lo que haga
@@ -123,7 +186,8 @@ namespace WebSGV.Services.GpsIntegracion
         /// <summary>
         /// Devuelve un token de acceso válido, reusando el cacheado en BD si no está por
         /// expirar (margen de 10 minutos). Solo pide uno nuevo a Auth0 si hace falta, o si
-        /// <paramref name="forzarRefresco"/> es true (tras un 401/403 inesperado).
+        /// <paramref name="forzarRefresco"/> es true. Hoy nadie lo fuerza: ante un 401/403,
+        /// <see cref="EjecutarConReintento{T}"/> renueva solo la sesión (ver su comentario).
         /// </summary>
         public string ObtenerTokenValido(bool forzarRefresco = false)
         {
@@ -134,7 +198,7 @@ namespace WebSGV.Services.GpsIntegracion
             }
 
             // Solo un request a la vez renueva (ver OnwayAuthCacheService.ConBloqueoDeRenovacion).
-            return OnwayAuthCacheService.ConBloqueoDeRenovacion(() =>
+            return _almacen.ConBloqueoDeRenovacion(() =>
             {
                 // Mientras esperábamos el bloqueo, otro request pudo haber renovado: reusar.
                 if (!forzarRefresco)
@@ -146,16 +210,16 @@ namespace WebSGV.Services.GpsIntegracion
             });
         }
 
-        private static string TokenVigenteEnCache()
+        private string TokenVigenteEnCache()
         {
-            var cache = OnwayAuthCacheService.Obtener();
-            return cache != null && cache.TokenExpiraEn > DateTime.UtcNow.AddMinutes(10) ? cache.AccessToken : null;
+            var cache = _almacen.Obtener();
+            return cache != null && cache.TokenExpiraEn > _relojUtc().AddMinutes(10) ? cache.AccessToken : null;
         }
 
-        private static string SolicitarTokenNuevo()
+        private string SolicitarTokenNuevo()
         {
-            string clientId = ConfigurationManager.AppSettings["OnwayAuth0ClientId"];
-            string clientSecret = ConfigurationManager.AppSettings["OnwayAuth0ClientSecret"];
+            string clientId = _leerConfig("OnwayAuth0ClientId");
+            string clientSecret = _leerConfig("OnwayAuth0ClientSecret");
             if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret))
                 throw new InvalidOperationException("Faltan OnwayAuth0ClientId/OnwayAuth0ClientSecret en appSettings.Secrets.config.");
 
@@ -168,8 +232,8 @@ namespace WebSGV.Services.GpsIntegracion
             };
 
             var respuesta = Post<OnwayTokenResponse>(AuthTokenUrl, payload, bearerToken: null);
-            DateTime expiraEn = DateTime.UtcNow.AddSeconds(respuesta.ExpiresIn);
-            OnwayAuthCacheService.GuardarToken(respuesta.AccessToken, expiraEn);
+            DateTime expiraEn = _relojUtc().AddSeconds(respuesta.ExpiresIn);
+            _almacen.GuardarToken(respuesta.AccessToken, expiraEn);
 
             LogSGV.Info("Onway: token Auth0 nuevo generado, expira {ExpiraEn}", expiraEn);
             return respuesta.AccessToken;
@@ -186,26 +250,26 @@ namespace WebSGV.Services.GpsIntegracion
         {
             if (!forzarRefresco)
             {
-                var cache = OnwayAuthCacheService.Obtener();
+                var cache = _almacen.Obtener();
                 if (cache != null && !string.IsNullOrEmpty(cache.OnwayUserId) && cache.AccessToken == accessToken)
                     return cache.OnwayUserId;
             }
 
-            string username = ConfigurationManager.AppSettings["OnwayUsername"];
-            string password = ConfigurationManager.AppSettings["OnwayPassword"];
+            string username = _leerConfig("OnwayUsername");
+            string password = _leerConfig("OnwayPassword");
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
                 throw new InvalidOperationException("Faltan OnwayUsername/OnwayPassword en appSettings.Secrets.config.");
 
             string url = $"{ApiBaseUrl}/v1/{Domain}/{Subdomain}/sessions";
             var respuesta = Post<OnwaySessionResponse>(url, new { username, password }, accessToken);
 
-            OnwayAuthCacheService.GuardarSesion(respuesta.ClientId, respuesta.UserId);
+            _almacen.GuardarSesion(respuesta.ClientId, respuesta.UserId);
             return respuesta.UserId;
         }
 
         /// <summary>
-        /// Lista todos los dispositivos GPS de la cuenta (pagina automáticamente). Renueva
-        /// sesión/token solo y reintenta automáticamente si el API rechaza la credencial vigente.
+        /// Lista todos los dispositivos GPS de la cuenta (pagina automáticamente). Si el API
+        /// rechaza la credencial vigente (401/403), renueva solo la sesión (mismo token) y reintenta una vez.
         /// </summary>
         public List<OnwayDevice> ListarDispositivos() => ListarDispositivos(false);
 
@@ -237,8 +301,6 @@ namespace WebSGV.Services.GpsIntegracion
         // Lista de dispositivos compartida entre instancias por unos minutos: "Actualizar GPS"
         // consulta varios viajes seguidos y cada uno la pedía completa otra vez.
         private static readonly TimeSpan VigenciaDispositivos = TimeSpan.FromMinutes(30);
-        private static List<OnwayDevice> _dispositivos;
-        private static DateTime _dispositivosHastaUtc;
 
         /// <summary>
         /// Busca un dispositivo por placa (campo <c>alias</c> del API) entre todos los de la cuenta.
@@ -248,9 +310,9 @@ namespace WebSGV.Services.GpsIntegracion
         public OnwayDevice BuscarDispositivoPorPlaca(string placa)
         {
             if (string.IsNullOrWhiteSpace(placa)) return null;
-            var lista = _dispositivos;
+            var lista = _estado.Dispositivos;
             bool recienPedida = false;
-            if (lista == null || DateTime.UtcNow > _dispositivosHastaUtc)
+            if (lista == null || _relojUtc() > _estado.DispositivosHastaUtc)
             {
                 lista = RenovarDispositivos();
                 recienPedida = true;
@@ -263,8 +325,6 @@ namespace WebSGV.Services.GpsIntegracion
 
         // Foto de la flota (última posición de cada equipo): la comparten los viajes de una misma actualización.
         private static readonly TimeSpan VigenciaFoto = TimeSpan.FromSeconds(60);
-        private static Dictionary<string, OnwayDevice> _foto;
-        private static DateTime _fotoHastaUtc;
 
         /// <summary>
         /// Última posición de todos los equipos, por placa (alias en mayúsculas), en una sola consulta. Sirve
@@ -272,24 +332,24 @@ namespace WebSGV.Services.GpsIntegracion
         /// </summary>
         public Dictionary<string, OnwayDevice> UltimasPosiciones()
         {
-            var foto = _foto;
-            if (foto != null && DateTime.UtcNow < _fotoHastaUtc) return foto;
+            var foto = _estado.Foto;
+            if (foto != null && _relojUtc() < _estado.FotoHastaUtc) return foto;
             var lista = ListarDispositivos(true);
             foto = lista.Where(d => !string.IsNullOrWhiteSpace(d.Alias))
                         .GroupBy(d => d.Alias.Trim().ToUpperInvariant())
                         .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
-            _foto = foto;
-            _fotoHastaUtc = DateTime.UtcNow.Add(VigenciaFoto);
-            _dispositivos = lista;
-            _dispositivosHastaUtc = DateTime.UtcNow.Add(VigenciaDispositivos);
+            _estado.Foto = foto;
+            _estado.FotoHastaUtc = _relojUtc().Add(VigenciaFoto);
+            _estado.Dispositivos = lista;
+            _estado.DispositivosHastaUtc = _relojUtc().Add(VigenciaDispositivos);
             return foto;
         }
 
         private List<OnwayDevice> RenovarDispositivos()
         {
             var lista = ListarDispositivos();
-            _dispositivos = lista;
-            _dispositivosHastaUtc = DateTime.UtcNow.Add(VigenciaDispositivos);
+            _estado.Dispositivos = lista;
+            _estado.DispositivosHastaUtc = _relojUtc().Add(VigenciaDispositivos);
             return lista;
         }
 
@@ -355,7 +415,7 @@ namespace WebSGV.Services.GpsIntegracion
         // HTTP de bajo nivel
         // ------------------------------------------------------------------
 
-        private static T Get<T>(string url, string bearerToken) =>
+        private T Get<T>(string url, string bearerToken) =>
             Ejecutar<T>(url, permiteReintento: true, crearRequest: () =>
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
@@ -364,7 +424,7 @@ namespace WebSGV.Services.GpsIntegracion
                 return request;
             });
 
-        private static T Post<T>(string url, object payload, string bearerToken)
+        private T Post<T>(string url, object payload, string bearerToken)
         {
             string json = JsonConvert.SerializeObject(payload);
             // El POST de token a Auth0 NO se reintenta: si el primer intento llegó a crear el token
@@ -389,13 +449,13 @@ namespace WebSGV.Services.GpsIntegracion
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2025:Do not pass 'IDisposable' instances into unawaited tasks",
             Justification = "SendAsync se espera en el acto con GetAwaiter().GetResult(): la tarea termina antes de que el using libere la petición.")]
-        private static T Ejecutar<T>(string url, bool permiteReintento, Func<HttpRequestMessage> crearRequest)
+        private T Ejecutar<T>(string url, bool permiteReintento, Func<HttpRequestMessage> crearRequest)
         {
             for (int intento = 1; ; intento++)
             {
                 RespetarRateLimit();
                 using (var request = crearRequest())
-                using (var response = Http.SendAsync(request).GetAwaiter().GetResult())
+                using (var response = _http.SendAsync(request).GetAwaiter().GetResult())
                 {
                     string body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                     if (response.IsSuccessStatusCode)
@@ -409,7 +469,7 @@ namespace WebSGV.Services.GpsIntegracion
                         if (espera > TimeSpan.FromSeconds(5)) espera = TimeSpan.FromSeconds(5);
                         LogSGV.Advertencia("Onway API respondió {StatusCode} en {Url}; reintento {Intento} en {Espera} s",
                             estado, url, intento + 1, espera.TotalSeconds);
-                        Thread.Sleep(espera);
+                        _esperar(espera);
                         continue;
                     }
 
@@ -420,14 +480,14 @@ namespace WebSGV.Services.GpsIntegracion
         }
 
         /// <summary>Throttle simple para respetar el límite de 2 requests/segundo del API.</summary>
-        private static void RespetarRateLimit()
+        private void RespetarRateLimit()
         {
-            lock (RateLock)
+            lock (_estado.RateLock)
             {
-                TimeSpan espera = _ultimaLlamadaUtc.AddMilliseconds(550) - DateTime.UtcNow;
+                TimeSpan espera = _estado.UltimaLlamadaUtc.AddMilliseconds(550) - _relojUtc();
                 if (espera > TimeSpan.Zero)
-                    Thread.Sleep(espera);
-                _ultimaLlamadaUtc = DateTime.UtcNow;
+                    _esperar(espera);
+                _estado.UltimaLlamadaUtc = _relojUtc();
             }
         }
     }

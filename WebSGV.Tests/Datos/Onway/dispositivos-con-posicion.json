@@ -1,0 +1,21 @@
+{
+  "records": 4,
+  "content": [
+    {
+      "id": "equipo-1", "imei": "000000000000001", "alias": "ABC-123",
+      "expand": { "currentOdometer": 120500.5, "lastLocation": { "speed": 0, "latitude": -12.0, "longitude": -77.0, "messageTime": "2026-11-20T15:00:00Z", "generatedTime": "2026-11-20T15:00:02Z" } }
+    },
+    {
+      "id": "equipo-1-repetido", "imei": "000000000000009", "alias": "abc-123 ",
+      "expand": { "currentOdometer": 1.0, "lastLocation": { "speed": 10, "latitude": -12.5, "longitude": -77.5, "messageTime": "2026-11-20T14:00:00Z" } }
+    },
+    {
+      "id": "equipo-sin-placa", "imei": "000000000000010", "alias": "  ",
+      "expand": null
+    },
+    {
+      "id": "equipo-2", "imei": "000000000000002", "alias": " xyz-987 ",
+      "expand": { "currentOdometer": 98000, "lastLocation": { "speed": 55.5, "latitude": -11.9, "longitude": -77.1, "messageTime": "2026-11-20T15:01:00Z" } }
+    }
+  ]
+}

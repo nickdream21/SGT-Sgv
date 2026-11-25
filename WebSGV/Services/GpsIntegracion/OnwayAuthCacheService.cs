@@ -15,6 +15,31 @@ namespace WebSGV.Services.GpsIntegracion
     }
 
     /// <summary>
+    /// Dónde guarda <see cref="OnwayApiClient"/> el token y la sesión. En el sitio, la BD
+    /// (<see cref="AlmacenAccesoOnwayBd"/>); en las pruebas, uno en memoria.
+    /// </summary>
+    internal interface IAlmacenAccesoOnway
+    {
+        OnwayAuthCache Obtener();
+        void GuardarToken(string accessToken, DateTime expiraEnUtc);
+        void GuardarSesion(string clientId, string userId);
+        T ConBloqueoDeRenovacion<T>(Func<T> trabajo);
+    }
+
+    /// <summary>El almacén real: delega en <see cref="OnwayAuthCacheService"/>.</summary>
+    internal sealed class AlmacenAccesoOnwayBd : IAlmacenAccesoOnway
+    {
+        public static readonly AlmacenAccesoOnwayBd Instancia = new AlmacenAccesoOnwayBd();
+
+        private AlmacenAccesoOnwayBd() { }
+
+        public OnwayAuthCache Obtener() => OnwayAuthCacheService.Obtener();
+        public void GuardarToken(string accessToken, DateTime expiraEnUtc) => OnwayAuthCacheService.GuardarToken(accessToken, expiraEnUtc);
+        public void GuardarSesion(string clientId, string userId) => OnwayAuthCacheService.GuardarSesion(clientId, userId);
+        public T ConBloqueoDeRenovacion<T>(Func<T> trabajo) => OnwayAuthCacheService.ConBloqueoDeRenovacion(trabajo);
+    }
+
+    /// <summary>
     /// Persistencia del token Auth0 de Onway/CarSync en BD (fila única, id=1). El API exige
     /// no generar más de un token cada 24h, y el app pool de Somee puede reiniciarse varias
     /// veces al día — por eso no basta con cachear en memoria del proceso.

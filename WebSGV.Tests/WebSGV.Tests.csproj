@@ -37,13 +37,16 @@
     <Reference Include="System.Web" />
     <!-- Para armar un .docx de prueba en memoria (LectorProgramacionWord) -->
     <Reference Include="System.IO.Compression" />
+    <!-- API de Onway falsa (HttpMessageHandler) para OnwayApiClientTests: nunca sale a la red -->
+    <Reference Include="System.Net.Http" />
     <Reference Include="WebSGV">
       <HintPath>..\WebSGV\bin\WebSGV.dll</HintPath>
     </Reference>
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Historiales GPS reales y horas que marcó la administradora (TrazabilidadCargaTests) -->
+    <!-- Historiales GPS reales y horas que marcó la administradora (TrazabilidadCargaTests);
+         respuestas de ejemplo de Onway con placas ficticias (Datos/Onway, OnwayApiClientTests) -->
     <None Include="Datos\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

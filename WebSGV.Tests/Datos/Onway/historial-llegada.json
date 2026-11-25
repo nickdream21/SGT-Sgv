@@ -1,0 +1,10 @@
+{
+  "records": 5,
+  "content": [
+    { "messageKey": "m1", "imei": "000000000000001", "messageTime": "2026-11-20T20:00:00Z", "generateTime": "2026-11-20T20:00:02Z", "lat": -12.3, "lng": -77.0, "speed": 60, "mileage": 120400.0 },
+    { "messageKey": "m2", "imei": "000000000000001", "messageTime": "2026-11-21T02:50:00Z", "lat": -12.05, "lng": -77.0, "speed": 40 },
+    { "messageKey": "m3", "imei": "000000000000001", "messageTime": "2026-11-21T03:10:00Z", "lat": -12.0003, "lng": -77.0002, "speed": 0, "alertId": 2, "alertDescription": { "en": "Ignition Off, Vehicle ABC-123", "es": "Apagado, vehículo ABC-123" } },
+    { "messageKey": "m4", "imei": "000000000000001", "messageTime": "2026-11-21T03:20:00Z", "lat": -12.0002, "lng": -77.0001, "speed": 0 },
+    { "messageKey": "m5", "imei": "000000000000001", "messageTime": "2026-11-21T03:40:00Z", "lat": -12.0001, "lng": -77.0001, "speed": 0 }
+  ]
+}

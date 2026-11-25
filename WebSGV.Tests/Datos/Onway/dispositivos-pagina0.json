@@ -1,0 +1,7 @@
+{
+  "records": 3,
+  "content": [
+    { "id": "equipo-1", "imei": "000000000000001", "alias": "ABC-123", "deviceTypeDescription": "Equipo de prueba" },
+    { "id": "equipo-2", "imei": "000000000000002", "alias": " xyz-987 ", "deviceTypeDescription": "Equipo de prueba" }
+  ]
+}
