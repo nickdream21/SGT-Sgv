@@ -1,0 +1,73 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using WebSGV.Helpers;
+using WebSGV.Services.Despachos;
+
+namespace WebSGV.Views.Controles.Despachos
+{
+    /// <summary>
+    /// Utilidades de formulario de los controles de RegistroDespacho (E6-24): leer y llenar listas, codificar texto,
+    /// llevar al usuario hasta un aviso y refrescar el UpdatePanel que los contiene.
+    /// </summary>
+    internal static class ControlesFormulario
+    {
+        /// <summary>Lo elegido en un selector: su valor y su texto (null si no hay nada elegido).</summary>
+        public static OpcionElegida Opcion(DropDownList ddl) => new OpcionElegida { Valor = ddl.SelectedValue, Texto = ddl.SelectedItem?.Text };
+
+        /// <summary>Todas las opciones de un selector (valor y texto).</summary>
+        public static List<OpcionElegida> Opciones(DropDownList ddl) =>
+            ddl.Items.Cast<ListItem>().Select(i => new OpcionElegida { Valor = i.Value, Texto = i.Text }).ToList();
+
+        /// <summary>Elige <paramref name="valor"/> si está entre las opciones; si no (o vacío), deja la que había.</summary>
+        public static void RestaurarSeleccion(DropDownList ddl, string valor)
+        {
+            if (string.IsNullOrEmpty(valor)) return;
+            if (ddl.Items.FindByValue(valor) != null) ddl.SelectedValue = valor;
+        }
+
+        /// <summary>Añade las filas de <paramref name="fuente"/> como opciones (texto y valor de sus columnas).</summary>
+        public static void Agregar(DropDownList ddl, DataTable fuente, string texto, string valor)
+        {
+            foreach (DataRow r in fuente.Rows)
+                ddl.Items.Add(new ListItem(r[texto].ToString(), r[valor].ToString()));
+        }
+
+        public static string Html(string texto) => HttpUtility.HtmlEncode(texto ?? string.Empty);
+
+        /// <summary>Al log, con el contexto (el nombre del método) como dato.</summary>
+        public static void RegistrarError(string contexto, Exception ex) => LogSGV.Error(ex, "Error en {Contexto}", contexto);
+
+        /// <summary>Por qué no sirve el Word de la programación elegido (sin archivo, no .docx, pesado o falso); null si está bien.</summary>
+        public static string ErrorWordProgramacion(FileUpload word)
+        {
+            if (!word.HasFile)
+                return "Elija el Word de la programación (.docx).";
+            if (!string.Equals(Path.GetExtension(word.FileName), ".docx", StringComparison.OrdinalIgnoreCase))
+                return "La programación debe ser un Word .docx. Si es un .doc antiguo, guárdelo como .docx.";
+            string error = ArchivoSubidoHelper.Validar(word.PostedFile, ArchivoSubidoHelper.MaxWord, ".docx");
+            return error == null ? null : $"Word de la programación: {error}.";
+        }
+
+        /// <summary>Tras pintar, lleva al usuario hasta el elemento (los botones están al pie de tablas largas).</summary>
+        public static void LlevarHasta(Page pagina, string clave, string idCliente) =>
+            ScriptManager.RegisterStartupScript(pagina, pagina.GetType(), clave,
+                $"setTimeout(function(){{var m=document.getElementById('{idCliente}');if(m)m.scrollIntoView({{behavior:'smooth',block:'center'}});}},50);", true);
+
+        /// <summary>Refresca el UpdatePanel condicional que contiene a <paramref name="control"/> (UpdatePanelMain).</summary>
+        public static void RefrescarPanel(Control control)
+        {
+            for (Control c = control.Parent; c != null; c = c.Parent)
+                if (c is UpdatePanel panel)
+                {
+                    if (panel.UpdateMode == UpdatePanelUpdateMode.Conditional) panel.Update();
+                    return;
+                }
+        }
+    }
+}

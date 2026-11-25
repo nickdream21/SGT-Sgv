@@ -491,7 +491,7 @@ namespace WebSGV.Tests
         [InlineData("Views/ListaDespachos.aspx", "btnRegistrarCpic", "vgCpicLote", true)]
         [InlineData("Views/Controles/Despachos/ProgramacionWord.ascx", "btnProgramarDespachos", "vgProgramar", true)]
         [InlineData("Views/RegistroDespacho.aspx", "btnAplicarImportacion", "vgImportar", true)]
-        [InlineData("Views/RegistroDespacho.aspx", "btnAplicarDescarga", "vgDescarga", true)]
+        [InlineData("Views/Controles/Despachos/DescargaPedido.ascx", "btnAplicarDescarga", "vgDescarga", true)]
         public void H_BotonesConSuGrupo_YPageIsValidEnElServidor(string ruta, string id, string grupo, bool revisaIsValid)
         {
             var b = Boton.Matches(PaginaDe(ruta).Texto).Cast<Match>().SingleOrDefault(m => Atributo(m.Groups["a"].Value, "ID") == id);
@@ -626,7 +626,10 @@ namespace WebSGV.Tests
             string texto = PaginaDe("Views/RegistroDespacho.aspx").Texto;
             Assert.DoesNotContain("rfvGuiaRemitente", texto);
             Assert.DoesNotContain("rfvGuiaRemitente", File.ReadAllText(Path.Combine(RaizWeb(), "Views", "RegistroDespacho.aspx.cs")));
-            Assert.DoesNotContain("ddlPlantaDescarga", string.Join(" ", ObligatoriosMarcados(texto)));
+            // La planta de descarga por defecto vive en DescargaPedido.ascx desde E6-24.
+            string descarga = PaginaDe("Views/Controles/Despachos/DescargaPedido.ascx").Texto;
+            Assert.Contains("ID=\"ddlPlantaDescarga\"", descarga);
+            Assert.DoesNotContain("ddlPlantaDescarga", string.Join(" ", ObligatoriosMarcados(texto + "\n" + descarga)));
             string css = File.ReadAllText(Path.Combine(RaizWeb(), "Content", "paginas", "RegistroDespacho.css"));
             Assert.Contains(".rd-cpic-opcional .sgv-obligatorio { display: none; }", css);
             Assert.DoesNotContain("rd-req", css);

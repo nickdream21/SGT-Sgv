@@ -303,7 +303,7 @@ namespace WebSGV.Tests
             ("Views/Exportacion/ImportarSeguimiento.aspx", "btnImportar", 60, 600),
             ("Views/MovimientosViaje.aspx", "btnRegistrar", 60, 600),
             ("Views/RegistroDespacho.aspx", "btnLeerDocumentos", 60, 600),
-            ("Views/RegistroDespacho.aspx", "btnLeerProgramacionDescarga", 60, 600),
+            ("Views/Controles/Despachos/DescargaPedido.ascx", "btnLeerProgramacionDescarga", 60, 600),
             ("Views/RegistroDespacho.aspx", "btnIniciarLote", 60, 600),
             ("Views/BandejaDocumentos.aspx", "btnLeer", 60, 600),
             ("Views/BandejaDocumentos.aspx", "btnRegistrar", 60, 600),

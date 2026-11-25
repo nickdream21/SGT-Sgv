@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Web;
 using WebSGV.Helpers;
@@ -179,6 +180,39 @@ namespace WebSGV.Services.Despachos
         /// </summary>
         public static bool ProgramacionVigente(string marcaEnviada, ProgramacionNueva enSesion) =>
             enSesion != null && !string.IsNullOrEmpty(marcaEnviada) && string.Equals(marcaEnviada, enSesion.Marca, StringComparison.Ordinal);
+
+        /// <summary>
+        /// Marca de la vista previa de la descarga (E6-24): sale de las cargas mismas (sus IdDespacho, en orden), así que no
+        /// ocupa otra clave de sesión y la fila i del formulario es la carga i mientras coincida. Null sin cargas.
+        /// </summary>
+        public static string MarcaDescarga(IEnumerable<DescargaPedidoService.CargaPendiente> cargas)
+        {
+            if (cargas == null) return null;
+            string ids = string.Join(",", cargas.Select(c => c.IdDespacho));
+            using (var sha = SHA256.Create())
+                return string.Concat(sha.ComputeHash(Encoding.UTF8.GetBytes(ids)).Take(16).Select(b => b.ToString("x2")));
+        }
+
+        /// <summary>
+        /// El formulario enviado es de las cargas por descargar que están en la sesión: misma marca. Con dos pestañas, la
+        /// otra pudo ver otro pedido (o el mismo con otros tractos pendientes); entonces no se usa ni se lee nada.
+        /// </summary>
+        public static bool DescargaVigente(string marcaEnviada, IList<DescargaPedidoService.CargaPendiente> enSesion) =>
+            enSesion != null && enSesion.Count > 0 && !string.IsNullOrEmpty(marcaEnviada)
+            && string.Equals(marcaEnviada, MarcaDescarga(enSesion), StringComparison.Ordinal);
+
+        /// <summary>"1,188 bolsas · 29,818.8 kg" con el detalle por producto y lote debajo (celda Carga de las vistas previas).</summary>
+        public static string DetalleCargaHtml(IList<LineaCarga> lineas)
+        {
+            if (lineas == null || lineas.Count == 0)
+                return SinDato;
+
+            var sb = new StringBuilder();
+            sb.Append($"<strong>{lineas.Sum(l => l.Cantidad):N0} bolsas · {lineas.Sum(l => l.PesoBrutoKg ?? 0):N1} kg</strong>");
+            foreach (var l in lineas)
+                sb.Append($"<small class=\"d-block text-muted\">{Html(l.Descripcion)} · lote {Html(l.Lote ?? "—")} · {l.Cantidad:N0}{(l.IdProducto.HasValue ? "" : " " + EstadoUiHelper.Sello("nuevo", TonoEstado.Alerta))}</small>");
+            return sb.ToString();
+        }
 
         /// <summary>Una fila de "Descargas, entregas y retornos con carga en este Word" como se muestra.</summary>
         public sealed class FilaEntregaVista

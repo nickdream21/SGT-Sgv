@@ -25,7 +25,7 @@ namespace WebSGV.Tests
         /// <summary>Archivos de más de 800 líneas (ruta relativa a WebSGV/).</summary>
         private static readonly Dictionary<string, int> TopesArchivo = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Views/RegistroDespacho.aspx.cs"] = 2710,
+            ["Views/RegistroDespacho.aspx.cs"] = 2349,
             ["Views/ListaDespachos.aspx.cs"] = 2120,
             ["Services/Despachos/BandejaDocumentosService.cs"] = 1549,
             ["Views/ReportesOrdenesViaje.aspx.cs"] = 1479,

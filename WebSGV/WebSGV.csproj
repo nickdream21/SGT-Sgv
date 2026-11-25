@@ -542,6 +542,7 @@
     <Content Include="Views\RegistroChoferes.aspx" />
     <Content Include="Views\CatalogoCliente.aspx" />
     <Content Include="Views\RegistroClientes.aspx" />
+    <Content Include="Views\Controles\Despachos\DescargaPedido.ascx" />
     <Content Include="Views\Controles\Despachos\ProgramacionWord.ascx" />
     <Content Include="Views\RegistroDespacho.aspx" />
     <Content Include="Views\RegistroPeajes.aspx" />
@@ -998,6 +999,15 @@
     <Compile Include="Views\RegistroClientes.aspx.designer.cs">
       <DependentUpon>RegistroClientes.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Views\Controles\Despachos\CatalogosDescarga.cs" />
+    <Compile Include="Views\Controles\Despachos\ControlesFormulario.cs" />
+    <Compile Include="Views\Controles\Despachos\DescargaPedido.ascx.cs">
+      <DependentUpon>DescargaPedido.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Controles\Despachos\DescargaPedido.ascx.designer.cs">
+      <DependentUpon>DescargaPedido.ascx</DependentUpon>
+    </Compile>
     <Compile Include="Views\Controles\Despachos\EstadoRegistroDespacho.cs" />
     <Compile Include="Views\Controles\Despachos\ProgramacionWord.ascx.cs">
       <DependentUpon>ProgramacionWord.ascx</DependentUpon>
@@ -1006,6 +1016,7 @@
     <Compile Include="Views\Controles\Despachos\ProgramacionWord.ascx.designer.cs">
       <DependentUpon>ProgramacionWord.ascx</DependentUpon>
     </Compile>
+    <Compile Include="Views\Controles\Despachos\PropuestaConfiguracionBase.cs" />
     <Compile Include="Views\RegistroDespacho.aspx.cs">
       <DependentUpon>RegistroDespacho.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

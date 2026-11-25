@@ -139,7 +139,8 @@ namespace WebSGV.Tests
                 ("Views/LiquidacionesPendientes.aspx", new[] { "pnlMensajes", "lblMensaje" }),
                 ("Views/ListaDespachos.aspx", new[] { "pnlMensajes", "lblMensaje" }),
                 ("Views/RegistroDespacho.aspx", new[] { "pnlMensajes", "lblMensaje", "pnlMensajeImportacion", "lblMensajeImportacion",
-                    "pnlMensajeDescarga", "lblMensajeDescarga", "pnlMensajeConductor", "lblMensajeConductor" }),
+                    "pnlMensajeConductor", "lblMensajeConductor" }),
+                ("Views/Controles/Despachos/DescargaPedido.ascx", new[] { "pnlMensajeDescarga", "lblMensajeDescarga" }),
             })
             {
                 var texto = Leer(pagina);

@@ -133,6 +133,25 @@ namespace WebSGV.Services.Despachos
             $"Pedido {cargas[0].NumeroPedido}: {descargas} descarga(s) con su carga se agregarán al pulsar \"Iniciar lote\"." +
             (EsInternacional(cargas) ? " El CPIC es opcional: complételo en la configuración base o agréguelo después en Lista de despachos." : "");
 
+        /// <summary>
+        /// Opciones de la lista de pedidos por descargar (texto y valor), con la primera que lo explica: "Seleccione"
+        /// o, sin pedidos, que no hay. Columnas: numeroPedido, cliente, tractos y fechaCarga.
+        /// </summary>
+        public static List<KeyValuePair<string, string>> OpcionesPedidos(DataTable pedidos)
+        {
+            var opciones = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>(pedidos.Rows.Count == 0
+                    ? "-- No hay pedidos cargados pendientes de descarga --"
+                    : "-- Seleccione el pedido a descargar --", "")
+            };
+            foreach (DataRow r in pedidos.Rows)
+                opciones.Add(new KeyValuePair<string, string>(
+                    $"{r["numeroPedido"]} · {r["cliente"]} · {r["tractos"]} tracto(s) por descargar · cargado {Convert.ToDateTime(r["fechaCarga"]):dd/MM/yyyy}",
+                    r["numeroPedido"].ToString()));
+            return opciones;
+        }
+
         /// <summary>La descarga es internacional si alguna carga del pedido es de exportación.</summary>
         public static bool EsInternacional(IEnumerable<DescargaPedidoService.CargaPendiente> cargas) => cargas.Any(c => c.EsExportacion);
 

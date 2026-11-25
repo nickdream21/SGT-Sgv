@@ -46,6 +46,8 @@ namespace WebSGV.Tests
         private static string PaginaCs() => Leer("Views", "RegistroDespacho.aspx.cs");
         private static string Control() => Leer("Views", "Controles", "Despachos", "ProgramacionWord.ascx");
         private static string ControlCs() => Leer("Views", "Controles", "Despachos", "ProgramacionWord.ascx.cs");
+        private static string Descarga() => Leer("Views", "Controles", "Despachos", "DescargaPedido.ascx");
+        private static string DescargaCs() => Leer("Views", "Controles", "Despachos", "DescargaPedido.ascx.cs");
 
         /// <summary>Cuerpo del método cuya firma empieza con <paramref name="firma"/> (de su primera llave a la que la cierra).</summary>
         private static string Cuerpo(string cs, string firma)
@@ -135,6 +137,7 @@ namespace WebSGV.Tests
             {
                 ["RegistroDespacho.aspx.cs"] = PaginaCs(),
                 ["ProgramacionWord.ascx.cs"] = ControlCs(),
+                ["DescargaPedido.ascx.cs"] = DescargaCs(),
             };
             foreach (var f in fuentes)
                 Assert.False(Regex.IsMatch(f.Value, @"\bSession\s*\["), f.Key + " usa Session[...]: use EstadoRegistroDespacho.");
@@ -165,13 +168,19 @@ namespace WebSGV.Tests
             Assert.Contains("ConectarProgramacionWord();", init);
 
             string disparadores = Cuerpo(cs, "private void RegistrarDisparadores()");
-            Assert.Matches(@"foreach \(Control c in new Control\[\] \{ btnIniciarLote, btnLeerDocumentos, btnLeerProgramacionDescarga \}\)\s*" +
+            // "Leer programación" de la descarga vive en DescargaPedido.ascx desde E6-24: llega por DisparadoresCompletos.
+            Assert.Matches(@"foreach \(Control c in new Control\[\] \{ btnIniciarLote, btnLeerDocumentos \}\.Concat\(ucDescargaPedido\.DisparadoresCompletos\)\)\s*" +
                            @"UpdatePanelMain\.Triggers\.Add\(new PostBackTrigger \{ ControlID = IdDesdeElPanel\(c\) \}\);", disparadores);
+            Assert.Matches(@"DisparadoresCompletos => new Control\[\] \{ btnLeerProgramacionDescarga \};", DescargaCs());
             // Ninguno de los tres va además como asíncrono (el FileUpload llegaría vacío).
             string asincronos = disparadores.Substring(disparadores.IndexOf("var clic", StringComparison.Ordinal));
-            foreach (string boton in new[] { "btnIniciarLote", "btnLeerDocumentos", "btnLeerProgramacionDescarga" })
+            foreach (string boton in new[] { "btnIniciarLote", "btnLeerDocumentos", "btnLeerProgramacionDescarga", "DisparadoresCompletos" })
                 Assert.DoesNotContain(boton, asincronos);
             Assert.Contains("ucProgramacionWord.DisparadoresAsincronos", asincronos);
+            Assert.Contains("ucDescargaPedido.DisparadoresAsincronos", asincronos);
+            string asincronosDescarga = Regex.Match(DescargaCs(), @"DisparadoresAsincronos => new Control\[\] \{(?<b>[^}]*)\};").Groups["b"].Value;
+            Assert.Equal(new[] { "btnVerCargasPendientes", "btnAplicarDescarga", "btnDescartarDescarga", "btnQuitarDescarga" },
+                asincronosDescarga.Split(',').Select(b => b.Trim()));
 
             // Y el marcado ya no los declara (no hay dos listas que mantener).
             string aspx = Pagina();
@@ -185,7 +194,11 @@ namespace WebSGV.Tests
         {
             // Los 4 selectores de archivo y el botón (PostBackTrigger) que los envía. Uno nuevo obliga a revisar esta lista.
             var subidas = Regex.Matches(Pagina(), @"<asp:FileUpload ID=""(\w+)""").Cast<Match>().Select(m => m.Groups[1].Value);
-            Assert.Equal(new[] { "fileDocumentosPedido", "fileProgramacionDescarga", "fileFacturaBase", "fileCPICBase" }, subidas);
+            Assert.Equal(new[] { "fileDocumentosPedido", "fileFacturaBase", "fileCPICBase" }, subidas);
+            // El de la programación de la descarga, en su control (E6-24), junto al botón que es PostBackTrigger.
+            var enDescarga = Regex.Matches(Descarga(), @"<asp:FileUpload ID=""(\w+)""").Cast<Match>().Select(m => m.Groups[1].Value);
+            Assert.Equal(new[] { "fileProgramacionDescarga" }, enDescarga);
+            Assert.Contains("ErrorWordProgramacion(fileProgramacionDescarga)", Cuerpo(DescargaCs(), "protected void btnLeerProgramacionDescarga_Click("));
             Assert.Contains("fileDocumentosPedido.PostedFiles", Cuerpo(PaginaCs(), "protected void btnLeerDocumentos_Click("));
             // El control vive dentro de UpdatePanelMain y sus botones son asíncronos: no puede llevar un FileUpload.
             Assert.DoesNotContain("<asp:FileUpload", Control());
