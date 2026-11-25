@@ -222,5 +222,71 @@ namespace WebSGV.Services.Ayuda
         public static string ReescribirEnlaces(string html, Func<string, string> url) =>
             html == null ? null : HrefTema.Replace(html, m =>
                 "href=\"" + HttpUtility.HtmlAttributeEncode(url(m.Groups["c"].Value)) + "\" data-ayuda=\"" + m.Groups["c"].Value + "\"");
+
+        /// <summary>Nombre del grupo de rol para la portada del manual ("Administración", "Conductor"...), o null.</summary>
+        public static string NombreGrupo(string grupo)
+        {
+            switch (grupo)
+            {
+                case GrupoAdmin: return "Administración";
+                case GrupoConductor: return "Conductor";
+                case GrupoContabilidad: return "Contabilidad";
+                case GrupoSistema: return "Administración del sistema";
+                default: return null;
+            }
+        }
+
+        /// <summary>Ancla de un tema dentro del manual completo ("tema-clave").</summary>
+        public static string AnclaManual(string clave) => "tema-" + clave;
+
+        /// <summary>
+        /// Manual completo (E5-21b, <c>Ayuda.aspx?manual=1</c>): portada, índice por sección y cada tema que ve el rol,
+        /// en el orden del índice de la ayuda. Las imágenes van a <paramref name="urlImagen"/>(clave, archivo); un
+        /// enlace a otro tema va a su ancla si está en el manual y, si no, a <paramref name="urlTemaFuera"/>; sin
+        /// <c>data-ayuda</c> (el manual no abre el modal). Títulos y textos de la portada codificados; los fragmentos
+        /// son archivos del repositorio validados por AyudaTests. Misma composición que herramientas/manual/generar-manual.mjs.
+        /// Sin temas para el rol: null.
+        /// </summary>
+        public string HtmlManual(string rol, Func<string, bool> interruptor, Func<string, string, string> urlImagen,
+            Func<string, string> urlTemaFuera, DateTime fecha, string notaPortada = null)
+        {
+            var temas = TemasDelRol(rol, interruptor);
+            if (temas.Count == 0) return null;
+            var enManual = new HashSet<string>(temas.Select(t => t.Clave), StringComparer.Ordinal);
+            string Cod(string s) => HttpUtility.HtmlEncode(s ?? "");
+
+            var sb = new StringBuilder();
+            sb.Append("<section class=\"manual-portada\"><div class=\"manual-titulo\">Manual del sistema SGV</div>")
+              .Append("<p>Usuario: ").Append(Cod(NombreGrupo(Grupo(rol)))).Append("</p>")
+              .Append("<p>Fecha: ").Append(fecha.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture)).Append("</p>");
+            if (!string.IsNullOrWhiteSpace(notaPortada)) sb.Append("<p>").Append(Cod(notaPortada)).Append("</p>");
+            sb.Append("</section>");
+
+            sb.Append("<nav class=\"manual-indice\" aria-label=\"Contenido del manual\"><h2>Contenido</h2><ol>");
+            foreach (var seccion in temas.GroupBy(t => t.Seccion))
+            {
+                sb.Append("<li>").Append(Cod(seccion.Key)).Append("<ol>");
+                foreach (var t in seccion)
+                    sb.Append("<li><a href=\"#").Append(AnclaManual(t.Clave)).Append("\">").Append(Cod(t.Titulo)).Append("</a></li>");
+                sb.Append("</ol></li>");
+            }
+            sb.Append("</ol></nav>");
+
+            foreach (var t in temas)
+            {
+                string html = LeerFragmento(t.Clave);
+                if (html == null) continue;
+                string clave = t.Clave;
+                html = SrcImagen.Replace(html, m => "src=\"" + HttpUtility.HtmlAttributeEncode(urlImagen(clave, m.Groups["a"].Value)) + "\"");
+                html = HrefTema.Replace(html, m =>
+                {
+                    string otra = m.Groups["c"].Value;
+                    return "href=\"" + (enManual.Contains(otra) ? "#" + AnclaManual(otra) : HttpUtility.HtmlAttributeEncode(urlTemaFuera(otra))) + "\"";
+                });
+                sb.Append("<section class=\"manual-tema\" id=\"").Append(AnclaManual(clave)).Append("\"><h2>").Append(Cod(t.Titulo))
+                  .Append("</h2><div class=\"sgv-ayuda-cuerpo\">").Append(html).Append("</div></section>");
+            }
+            return sb.ToString();
+        }
     }
 }

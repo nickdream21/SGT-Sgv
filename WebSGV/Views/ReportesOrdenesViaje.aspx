@@ -11,6 +11,10 @@
             <h1 class="h2">Reporte de liquidaciones y viajes</h1>
             <p>Consulte liquidaciones y viajes activos del sistema</p>
         </div>
+        <div class="sgv-encabezado-acciones">
+            <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=reportes-ordenes-viaje") %>" target="_blank" rel="noopener"
+                data-ayuda="reportes-ordenes-viaje" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+        </div>
     </div>
 
     <!-- Pestañas. hdnPestana: la pestaña abierta, para volver a ella tras un Buscar (M-077). -->

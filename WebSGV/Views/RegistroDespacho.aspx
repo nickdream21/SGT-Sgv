@@ -19,6 +19,8 @@
                         <asp:Label ID="lblEstadoLote" runat="server" CssClass="sgv-estado sgv-estado-ok" Visible="false"></asp:Label>
                     </ContentTemplate>
                 </asp:UpdatePanel>
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=registro-despacho") %>" target="_blank" rel="noopener"
+                    data-ayuda="registro-despacho" aria-label="Ayuda de esta p&#xE1;gina">?</a>
             </div>
         </div>
                         <!-- Solo btnIniciarLote es PostBackTrigger (ver <Triggers> más abajo): ese paso incluye

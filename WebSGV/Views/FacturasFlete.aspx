@@ -20,6 +20,8 @@
             <div class="sgv-acciones sgv-encabezado-acciones">
                 <asp:Button ID="btnExcel" runat="server" CssClass="btn btn-success btn-sm" Text="Excel" OnClick="btnExcel_Click" data-descarga="true"
                     ToolTip="Hojas de conciliaci&#xF3;n y de facturas emitidas" />
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=facturas-flete") %>" target="_blank" rel="noopener"
+                    data-ayuda="facturas-flete" aria-label="Ayuda de esta p&#xE1;gina">?</a>
             </div>
         </div>
 

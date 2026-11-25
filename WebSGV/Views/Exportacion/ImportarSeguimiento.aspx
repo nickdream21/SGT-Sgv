@@ -10,6 +10,10 @@
                 <h1 class="h2">Importar seguimiento de exportación</h1>
                 <p>Para cargar el STATUS GENERAL o la plantilla desde Excel. Las filas que ya existen (pedido + tracto + programación) se actualizan, no se duplican. Los viajes que vienen de despachos o se crearon a mano no se modifican.</p>
             </div>
+            <div class="sgv-encabezado-acciones">
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=seguimiento") %>" target="_blank" rel="noopener"
+                    data-ayuda="seguimiento" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+            </div>
         </div>
 
         <asp:Panel ID="pnlMensaje" runat="server" EnableViewState="false" Visible="false">

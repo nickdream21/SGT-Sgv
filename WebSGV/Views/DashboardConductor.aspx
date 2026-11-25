@@ -15,7 +15,12 @@
         <!-- Encabezado -->
         <header class="dc-cab">
             <div class="dc-cab-texto">
-                <h1 class="dc-titulo">Mi viaje</h1>
+                <%-- El "?" va junto al título y no junto al nombre: a 390 px no lo tapa. --%>
+                <div class="dc-titulo-fila">
+                    <h1 class="dc-titulo">Mi viaje</h1>
+                    <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=conductor-mi-viaje") %>" target="_blank" rel="noopener"
+                        data-ayuda="conductor-mi-viaje" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+                </div>
                 <div class="dc-nombre"><asp:Label ID="lblNombreConductor" runat="server"></asp:Label></div>
                 <div class="dc-dni">DNI <asp:Label ID="lblDNIConductor" runat="server"></asp:Label></div>
             </div>

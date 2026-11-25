@@ -11,6 +11,8 @@
         <div class="sgv-encabezado-acciones">
             <asp:Button ID="btnExportarExcel" runat="server" Text="Exportar Excel"
                 CssClass="btn btn-success btn-sm" OnClick="btnExportarExcel_Click" data-descarga="true" />
+            <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=auditoria") %>" target="_blank" rel="noopener"
+                data-ayuda="auditoria" aria-label="Ayuda de esta p&#xE1;gina">?</a>
         </div>
     </div>
 

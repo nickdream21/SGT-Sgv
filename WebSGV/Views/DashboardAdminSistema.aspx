@@ -13,6 +13,8 @@
             <a href="GestionUsuarios.aspx" class="btn btn-primary">
                 Gestión de usuarios
             </a>
+            <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=panel-sistema") %>" target="_blank" rel="noopener"
+                data-ayuda="panel-sistema" aria-label="Ayuda de esta p&#xE1;gina">?</a>
         </div>
     </div>
 

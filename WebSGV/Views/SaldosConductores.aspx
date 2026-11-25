@@ -13,6 +13,8 @@
                     Excel</asp:LinkButton>
                 <asp:LinkButton ID="btnImagen" runat="server" CssClass="btn btn-outline-secondary btn-sm" OnClick="btnImagen_Click" data-descarga="true">
                     Imagen</asp:LinkButton>
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=saldos-conductores") %>" target="_blank" rel="noopener"
+                    data-ayuda="saldos-conductores" aria-label="Ayuda de esta p&#xE1;gina">?</a>
             </div>
         </div>
 

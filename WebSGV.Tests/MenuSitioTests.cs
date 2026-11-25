@@ -119,15 +119,14 @@ namespace WebSGV.Tests
         [Fact]
         public void Configuracion_AyudaSoloSiElRolTieneTemasAbiertos()
         {
-            // Con el temas.json real (E5-21a): la administración tiene temas abiertos; conductor, contabilidad y
-            // administración de sistema todavía no (sus temas son borrador hasta 21b). Al abrir sus temas, cambie
-            // esta prueba a propósito.
+            // Con el temas.json real (E5-21b, sin temas en borrador): todo rol vigente ve "Ayuda" en Configuración.
+            // Un rol sin temas abiertos no la vería (el caso de un rol desconocido abajo).
             var catalogo = WebSGV.Services.Ayuda.AyudaCatalogo.Cargar(Path.Combine(RaizWeb(), "ContenidoAyuda"));
             Func<string, bool> tiene = r => catalogo.TemasDelRol(r, k => false).Count > 0;
-            foreach (string rol in new[] { "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE" })
+            foreach (string rol in new[] { "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE",
+                                           "CONDUCTOR", "CHOFER", "CONTABILIDAD", "ADMINISTRADOR DE SISTEMA" })
                 Assert.Equal(new[] { "Ayuda" }, MenuSitio.ConfiguracionPara(rol, tiene).Select(e => e.Texto));
-            foreach (string rol in new[] { "CONDUCTOR", "CHOFER", "CONTABILIDAD", "ADMINISTRADOR DE SISTEMA" })
-                Assert.Empty(MenuSitio.ConfiguracionPara(rol, tiene));
+            Assert.Empty(MenuSitio.ConfiguracionPara("ADMIN", r => false).Where(e => e.Texto == "Ayuda"));
 
             // Site.Master lo calcula con el catálogo y el interruptor de cada tema.
             string codigo = File.ReadAllText(Path.Combine(RaizWeb(), "Site.Master.cs"));

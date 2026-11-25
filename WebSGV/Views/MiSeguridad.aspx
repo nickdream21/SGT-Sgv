@@ -8,6 +8,10 @@
                 <h1 class="h2">Mi seguridad</h1>
                 <p>Verificación en dos pasos: además de la contraseña, al entrar se pide un código de 6 dígitos que genera una app de su celular.</p>
             </div>
+            <div class="sgv-encabezado-acciones">
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=cuenta-seguridad") %>" target="_blank" rel="noopener"
+                    data-ayuda="cuenta-seguridad" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+            </div>
         </div>
 
         <asp:Panel ID="pnlMensaje" runat="server" Visible="false" EnableViewState="false" CssClass="mb-3">

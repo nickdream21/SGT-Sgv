@@ -1,0 +1,38 @@
+<p class="ayuda-resumen">Cada liquidación se firma tres veces: el conductor declara sus gastos, la administración la revisa y el conductor da su conformidad con los montos finales. Cada firma deja un PDF con un código que permite comprobar que el documento es auténtico.</p>
+
+<h2>Las tres firmas de una liquidación</h2>
+<table>
+<thead><tr><th>Firma</th><th>Quién firma</th><th>Cómo</th></tr></thead>
+<tbody>
+<tr><td>Declaración</td><td>El conductor</td><td>Con su trazo en la pantalla y su contraseña escrita otra vez.</td></tr>
+<tr><td>Revisión</td><td>La administración</td><td>Con su sesión de usuario, al pulsar <strong>Aprobar y enviar al conductor</strong>.</td></tr>
+<tr><td>Conformidad</td><td>El conductor</td><td>Con su trazo y su contraseña. Recién entonces la liquidación queda aprobada.</td></tr>
+</tbody>
+</table>
+<p>Antes de firmar, el conductor acepta el texto de la firma. La declaración dice:</p>
+<p class="ayuda-nota">Declaro bajo juramento que los gastos consignados en esta liquidación son verdaderos, que corresponden al viaje indicado y que los comprobantes que entrego son auténticos. Entiendo que la administración revisará la liquidación y que, antes de cerrarla, me presentará la liquidación final, con el dinero que me entregaron y los descuentos o reintegros con su motivo, para mi conformidad.</p>
+<p>La revisión de la administración dice:</p>
+<p class="ayuda-nota">Revisé los gastos declarados por el conductor y los comprobantes que los sustentan, registré el dinero que se le entregó y los descuentos o reintegros con su motivo, y envío esta liquidación final al conductor para su conformidad.</p>
+<p>La conformidad del conductor dice:</p>
+<p class="ayuda-nota">He revisado la liquidación final de este viaje: el dinero que me entregaron, mis gastos y los descuentos y reintegros aplicados con su motivo. Expreso mi conformidad con el saldo final y autorizo que los descuentos indicados se apliquen a esta liquidación.</p>
+
+<h3>Qué se guarda con cada firma</h3>
+<p>Cada pantalla de firma muestra este aviso:</p>
+<p class="ayuda-nota">Su nombre, DNI, firma, fecha y hora, dirección IP y dispositivo se registran como evidencia de esta firma y se conservan con la liquidación para fines laborales, contables y tributarios, conforme a la Ley N.° 29733, Ley de Protección de Datos Personales.</p>
+<p>Y su base legal:</p>
+<p class="ayuda-nota">Firmas electrónicas realizadas conforme a la Ley N.° 27269, Ley de Firmas y Certificados Digitales, y su Reglamento (D.S. N.° 052-2008-PCM).</p>
+
+<h2>El PDF firmado</h2>
+<ul>
+<li>Cada firma genera su propio PDF, con el código de verificación al pie de cada página y una página final con la evidencia de la firma.</li>
+<li>Un PDF firmado <strong>nunca se vuelve a generar</strong>: el sistema entrega siempre el archivo guardado. Si alguien lo modifica fuera del sistema, deja de coincidir con su huella.</li>
+<li>Si una liquidación se revierte o se retira, las firmas posteriores quedan anuladas, pero siguen en el historial de firmas de la orden.</li>
+</ul>
+
+<h2>Comprobar que un PDF es auténtico</h2>
+<ol>
+<li>Abra la página <em>Verificación de documentos firmados</em>, cuya dirección aparece al pie del PDF. No hace falta iniciar sesión.</li>
+<li>Escriba el código de verificación del pie del documento (12 letras y números en tres grupos) y pulse <strong>Verificar</strong>.</li>
+<li>La página muestra el documento, quién lo firmó, la fecha y hora, su estado y todas las firmas de la orden.</li>
+<li>Para comprobar el archivo recibido, elíjalo en <em>Comprobar el archivo</em>: su huella se calcula en el mismo navegador, sin enviarlo, y se compara con la registrada. Si coinciden, el archivo es exactamente el documento firmado.</li>
+</ol>

@@ -16,12 +16,20 @@ BD de **ensayo anonimizada**, nunca de la BD de pruebas (`sgvActualizada`) ni de
 msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal
 .\herramientas\sitio-local\iniciar-sitio-ensayo.ps1 -BaseDeDatos sgvEnsayo_ayuda
 
-# 4. Capturar (todas las recetas, o una con --tema).
-node herramientas\manual\capturar.mjs --bd sgvEnsayo_ayuda
+# 4. Solo para los temas del conductor (celular, 390 px): clave de ensayo para un conductor anonimizado. Rehúsa
+#    fuera de una BD sgvEnsayo_*; la clave no se imprime, va solo al JSON indicado (fuera del repositorio).
+.\herramientas\respaldo\clave-conductor-ensayo.ps1 -BaseDeDatos sgvEnsayo_ayuda -Salida $env:TEMP\sgv-conductor-ensayo.json
+
+# 5. Capturar (todas las recetas, o una con --tema). Sin --tema vuelve a sacar TODAS las imágenes: revise con
+#    git diff las que no quería cambiar y restáurelas con git checkout.
+node herramientas\manual\capturar.mjs --bd sgvEnsayo_ayuda --credencial-conductor $env:TEMP\sgv-conductor-ensayo.json
 node herramientas\manual\capturar.mjs --bd sgvEnsayo_ayuda --tema peajes
 
-# 5. Cerrar IIS Express y borrar la BD de ensayo y el login que creó la importación (lo imprime el paso 1).
+# 6. Cerrar el IIS Express del puerto 50391, borrar la BD de ensayo, el login que creó la importación (lo
+#    imprime el paso 1), la copia del sitio y la credencial del conductor.
 sqlcmd -S "(localdb)\MSSQLLocalDB" -E -C -Q "ALTER DATABASE [sgvEnsayo_ayuda] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [sgvEnsayo_ayuda]"
+Remove-Item -Recurse -Force $env:LOCALAPPDATA\SGV-sitio-ensayo
+Remove-Item $env:TEMP\sgv-conductor-ensayo.json
 ```
 
 ## Recetas
@@ -40,3 +48,25 @@ Después de capturar:
 El script inicia sesión con el usuario de pruebas del grupo del tema (contraseña leída de
 `privado/CREDENCIALES_USUARIOS.txt`, nunca impresa) y rehúsa trabajar si el sitio no sirve un `ENSAYO.txt`
 con la BD indicada (lo escribe `iniciar-sitio-ensayo.ps1`).
+
+Los temas sin datos que mostrar en la BD de ensayo (firma, conformidad e historial del conductor sin liquidaciones;
+Mi seguridad con el aviso de que el segundo factor no está configurado en la copia de ensayo) quedan sin imagen.
+
+# Manual completo (PDF por rol)
+
+```powershell
+node herramientas\manual\generar-manual.mjs --rol A      # A administración, C conductor, K contabilidad, Y sistema
+node herramientas\manual\generar-manual.mjs --rol todos
+```
+
+Junta los temas que ve cada grupo de rol (`temas.json`, sin los temas cuyo interruptor está apagado en
+`Web.config`) con la misma composición que `Views/Ayuda.aspx?manual=1` (`AyudaCatalogo.HtmlManual`): portada con
+el rol, la fecha y "Borrador hasta la revisión del usuario.", índice por sección y un tema por hoja, con
+`Content/sgv-base.css` y `Content/paginas/AyudaManual.css`. Las imágenes se leen del disco; no usa la BD ni el
+sitio. Edge sin ventana imprime el PDF (`--print-to-pdf`), sin dependencias de npm.
+
+Salida: `docs/DOCUMENTACION/capacitacion/Manual-SGV-<rol>.pdf` (fuera de git). Quite la nota de borrador de la
+portada (`NOTA_PORTADA`) cuando el usuario apruebe los textos.
+
+Dentro del sitio, cada usuario imprime su manual desde Ayuda > "Manual completo" (`Ayuda.aspx?manual=1`, botón
+Imprimir).

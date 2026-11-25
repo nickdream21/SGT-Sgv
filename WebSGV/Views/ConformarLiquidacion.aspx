@@ -23,7 +23,12 @@
     <header class="fl-header">
         <div class="logo">SGV</div>
         <div>
-            <h1>Liquidación final</h1>
+            <%-- Sin Site.Master (ni su modal): el "?" abre la ayuda en otra pestaña y la firma a medias no se pierde. --%>
+            <div class="fl-titulo-fila">
+                <h1>Liquidación final</h1>
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=conductor-conformidad") %>" target="_blank" rel="noopener"
+                    data-ayuda="conductor-conformidad" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+            </div>
             <div class="sub">Revisa y firma tu conformidad</div>
         </div>
         <div class="fl-format-chip">SGV-CDF-F-05 v01</div>

@@ -665,6 +665,8 @@
             if (bloque) bloque.style.display = 'none';
         },
         recargarPagina: function () { location.reload(); },
+        // "Imprimir" del manual completo de la ayuda (Ayuda.aspx?manual=1): diálogo de impresión del navegador.
+        imprimirPagina: function () { window.print(); return false; },
         // Botón de una fila de grilla sin ViewState (E5-16, catálogos): copia data-argumento al campo
         // oculto de la página (SGV.hfArgumentoFila) y pulsa su botón oculto (SGV.btnAccionFila), que hace
         // el postback. Con data-confirmar en el mismo botón, la pregunta va antes (su listener se registra

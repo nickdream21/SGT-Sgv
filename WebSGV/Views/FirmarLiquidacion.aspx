@@ -22,7 +22,12 @@
     <header class="fl-header">
         <div class="logo">SGV</div>
         <div>
-            <h1>Orden de viaje</h1>
+            <%-- Sin Site.Master (ni su modal): el "?" abre la ayuda en otra pestaña y la firma a medias no se pierde. --%>
+            <div class="fl-titulo-fila">
+                <h1>Orden de viaje</h1>
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=conductor-liquidar-firmar") %>" target="_blank" rel="noopener"
+                    data-ayuda="conductor-liquidar-firmar" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+            </div>
             <div class="sub">Firma del conductor - declaración jurada</div>
         </div>
         <div class="fl-format-chip">SGV-CDF-F-05 v01</div>

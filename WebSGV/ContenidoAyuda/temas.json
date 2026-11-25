@@ -14,8 +14,15 @@
       "paginas": [],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/Inicio.aspx",
+          "ancho": 1366,
+          "selector": "nav.navbar",
+          "clics": []
+        }
+      ]
     },
     {
       "clave": "cuenta-seguridad",
@@ -33,7 +40,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
       "capturas": []
     },
     {
@@ -49,7 +55,6 @@
       "paginas": [],
       "interruptor": "",
       "video": "",
-      "borrador": true,
       "capturas": []
     },
     {
@@ -65,7 +70,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": false,
       "capturas": []
     },
     {
@@ -81,8 +85,15 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/RegistroDespacho.aspx",
+          "ancho": 1366,
+          "selector": "#MainContent_pnlImportarDocumentos",
+          "clics": []
+        }
+      ]
     },
     {
       "clave": "bandeja-documentos",
@@ -97,7 +108,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": false,
       "capturas": [
         {
           "archivo": "01.webp",
@@ -128,7 +138,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": false,
       "capturas": [
         {
           "archivo": "01.webp",
@@ -152,7 +161,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": false,
       "capturas": [
         {
           "archivo": "01.webp",
@@ -178,8 +186,24 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/Exportacion/RegistroSeguimiento.aspx",
+          "ancho": 1366,
+          "selector": ".sgv-tabs ~ div",
+          "clics": [
+            ".sgv-aviso button"
+          ]
+        },
+        {
+          "archivo": "02.webp",
+          "url": "Views/Exportacion/ImportarSeguimiento.aspx",
+          "ancho": 1366,
+          "selector": "#contenido",
+          "clics": []
+        }
+      ]
     },
     {
       "clave": "dashboard-exportacion",
@@ -194,8 +218,15 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/Exportacion/DashboardExportacion.aspx",
+          "ancho": 1366,
+          "selector": "#contenido",
+          "clics": []
+        }
+      ]
     },
     {
       "clave": "liquidaciones-pendientes",
@@ -210,7 +241,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": false,
       "capturas": [
         {
           "archivo": "01.webp",
@@ -232,7 +262,6 @@
       "paginas": [],
       "interruptor": "",
       "video": "",
-      "borrador": true,
       "capturas": []
     },
     {
@@ -248,8 +277,15 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/SaldosConductores.aspx",
+          "ancho": 1366,
+          "selector": "#contenido",
+          "clics": []
+        }
+      ]
     },
     {
       "clave": "movimientos-viaje",
@@ -264,7 +300,6 @@
       ],
       "interruptor": "MovimientosViaje.Habilitado",
       "video": "",
-      "borrador": true,
       "capturas": []
     },
     {
@@ -280,7 +315,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": false,
       "capturas": [
         {
           "archivo": "01.webp",
@@ -304,8 +338,15 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/ReportesOrdenesViaje.aspx",
+          "ancho": 1366,
+          "selector": "#contenido",
+          "clics": []
+        }
+      ]
     },
     {
       "clave": "facturas-flete",
@@ -320,8 +361,15 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/FacturasFlete.aspx",
+          "ancho": 1366,
+          "selector": "#contenido",
+          "clics": []
+        }
+      ]
     },
     {
       "clave": "reporte-gps",
@@ -336,8 +384,15 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/ReporteGps.aspx",
+          "ancho": 1366,
+          "selector": "section.sgv-panel",
+          "clics": []
+        }
+      ]
     },
     {
       "clave": "conductores",
@@ -352,7 +407,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": false,
       "capturas": [
         {
           "archivo": "01.webp",
@@ -377,7 +431,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": false,
       "capturas": [
         {
           "archivo": "01.webp",
@@ -403,7 +456,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": false,
       "capturas": [
         {
           "archivo": "01.webp",
@@ -427,7 +479,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": false,
       "capturas": [
         {
           "archivo": "01.webp",
@@ -451,8 +502,15 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/DashboardConductor.aspx",
+          "ancho": 390,
+          "selector": "#contenido",
+          "clics": []
+        }
+      ]
     },
     {
       "clave": "conductor-liquidar-firmar",
@@ -467,7 +525,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
       "capturas": []
     },
     {
@@ -483,7 +540,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
       "capturas": []
     },
     {
@@ -499,7 +555,6 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
       "capturas": []
     },
     {
@@ -515,8 +570,15 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/DashboardAdminSistema.aspx",
+          "ancho": 1366,
+          "selector": "#contenido",
+          "clics": []
+        }
+      ]
     },
     {
       "clave": "gestion-usuarios",
@@ -531,8 +593,15 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/GestionUsuarios.aspx",
+          "ancho": 1366,
+          "selector": "#contenido",
+          "clics": []
+        }
+      ]
     },
     {
       "clave": "auditoria",
@@ -547,12 +616,19 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/Auditoria.aspx",
+          "ancho": 1366,
+          "selector": "#contenido",
+          "clics": []
+        }
+      ]
     },
     {
       "clave": "usuarios-contrasenas",
-      "titulo": "Restablecer contraseñas y desbloquear cuentas",
+      "titulo": "Restablecer contraseñas, bloqueos y segundo factor",
       "seccion": "Administración del sistema",
       "orden": 4,
       "roles": [
@@ -561,7 +637,6 @@
       "paginas": [],
       "interruptor": "",
       "video": "",
-      "borrador": true,
       "capturas": []
     },
     {
@@ -578,8 +653,15 @@
       ],
       "interruptor": "",
       "video": "",
-      "borrador": true,
-      "capturas": []
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/LiquidacionesAprobadasContabilidad.aspx",
+          "ancho": 1366,
+          "selector": "#contenido",
+          "clics": []
+        }
+      ]
     }
   ]
 }

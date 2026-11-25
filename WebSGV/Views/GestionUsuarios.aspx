@@ -25,6 +25,8 @@
         <div class="sgv-encabezado-acciones">
             <asp:Button ID="btnNuevoUsuario" runat="server" Text="Nuevo usuario"
                 CssClass="btn btn-primary" OnClick="btnNuevoUsuario_Click" />
+            <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=gestion-usuarios") %>" target="_blank" rel="noopener"
+                data-ayuda="gestion-usuarios" aria-label="Ayuda de esta p&#xE1;gina">?</a>
         </div>
     </div>
 

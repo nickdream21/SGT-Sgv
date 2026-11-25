@@ -19,6 +19,9 @@ namespace WebSGV.Views
         /// <summary>Tema que se muestra, o null en el índice.</summary>
         protected TemaAyuda TemaActual { get; private set; }
 
+        /// <summary>True con <c>?manual=1</c> y algún tema para el rol: la página muestra el manual completo.</summary>
+        protected bool EsManual { get; private set; }
+
         /// <summary>Enlace del video del tema solo si es https (lo demás no se pinta).</summary>
         protected string UrlVideo =>
             TemaActual != null && !string.IsNullOrWhiteSpace(TemaActual.Video)
@@ -46,6 +49,23 @@ namespace WebSGV.Views
                 return;
             }
 
+            // Manual completo: todos los temas del rol en una página para imprimir (AyudaManual.css).
+            if (Request.QueryString["manual"] == "1")
+            {
+                string manual = catalogo.HtmlManual(rol, InterruptorEncendido,
+                    (tema, archivo) => UrlImagen(tema, archivo),
+                    otra => ResolveUrl("~/Views/Ayuda.aspx") + "?tema=" + HttpUtility.UrlEncode(otra),
+                    FechaHelper.Hoy());
+                if (manual != null)
+                {
+                    Title = "Manual de ayuda";
+                    EsManual = true;
+                    litManual.Text = manual;
+                    phManual.Visible = true;
+                    return;
+                }
+            }
+
             string clave = Request.QueryString["tema"];
             if (!string.IsNullOrEmpty(clave))
             {
@@ -53,8 +73,7 @@ namespace WebSGV.Views
                 if (html != null)
                 {
                     TemaActual = catalogo.Tema(clave);
-                    string conImagenes = AyudaCatalogo.ReescribirImagenes(html,
-                        archivo => ResolveUrl("~/Views/AyudaImagen.aspx") + "?tema=" + HttpUtility.UrlEncode(clave) + "&img=" + HttpUtility.UrlEncode(archivo));
+                    string conImagenes = AyudaCatalogo.ReescribirImagenes(html, archivo => UrlImagen(clave, archivo));
                     litFragmento.Text = AyudaCatalogo.ReescribirEnlaces(conImagenes,
                         otra => ResolveUrl("~/Views/Ayuda.aspx") + "?tema=" + HttpUtility.UrlEncode(otra));
                     phTema.Visible = true;
@@ -64,8 +83,13 @@ namespace WebSGV.Views
             }
 
             litIndice.Text = HtmlIndice(catalogo, rol);
+            lnkManual.Visible = catalogo.TemasDelRol(rol, InterruptorEncendido).Count > 0;
             phIndice.Visible = true;
         }
+
+        /// <summary>Imagen de un tema servida por AyudaImagen.aspx (con sesión y la misma regla de roles).</summary>
+        private string UrlImagen(string tema, string archivo) =>
+            ResolveUrl("~/Views/AyudaImagen.aspx") + "?tema=" + HttpUtility.UrlEncode(tema) + "&img=" + HttpUtility.UrlEncode(archivo);
 
         /// <summary>Índice por sección; títulos y secciones codificados.</summary>
         private string HtmlIndice(AyudaCatalogo catalogo, string rol)

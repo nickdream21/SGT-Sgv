@@ -61,6 +61,8 @@
                 <textarea id="txtReporteGrifo" hidden readonly aria-hidden="true"><asp:Literal ID="litReporteGrifo" runat="server" /></textarea>
                 <asp:Button ID="btnActualizarGps" runat="server" Text="Actualizar GPS de viajes abiertos" CssClass="sx-btn sx-btn-primario" CausesValidation="false"
                     OnClick="btnActualizarGps_Click" data-accion="actualizarGps" data-espera="300" UseSubmitBehavior="false" />
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=seguimiento") %>" target="_blank" rel="noopener"
+                    data-ayuda="seguimiento" aria-label="Ayuda de esta p&#xE1;gina">?</a>
             </div>
         </div>
 

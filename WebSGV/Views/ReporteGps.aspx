@@ -14,6 +14,10 @@
                 <em>Reportes &#x2192; Historial &#x2192; Exportar datos</em> del portal Onway. Solo lee del GPS: no cambia nada.
             </p>
         </div>
+        <div class="sgv-encabezado-acciones">
+            <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=reporte-gps") %>" target="_blank" rel="noopener"
+                data-ayuda="reporte-gps" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+        </div>
     </div>
 
     <section class="sgv-panel mb-4">

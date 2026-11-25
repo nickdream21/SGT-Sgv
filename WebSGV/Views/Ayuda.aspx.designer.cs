@@ -11,7 +11,10 @@ namespace WebSGV.Views
         protected global::System.Web.UI.WebControls.Panel pnlNoDisponible;
         protected global::System.Web.UI.WebControls.PlaceHolder phTema;
         protected global::System.Web.UI.WebControls.Literal litFragmento;
+        protected global::System.Web.UI.WebControls.PlaceHolder phManual;
+        protected global::System.Web.UI.WebControls.Literal litManual;
         protected global::System.Web.UI.WebControls.PlaceHolder phIndice;
+        protected global::System.Web.UI.WebControls.HyperLink lnkManual;
         protected global::System.Web.UI.WebControls.Literal litIndice;
     }
 }

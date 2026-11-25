@@ -8,6 +8,10 @@
                 <p>Registre en el momento cada entrega de dinero al conductor (adelanto, segundo despacho, mensualidad…)
                    y cada pago que la empresa hace directamente a un proveedor del viaje. Al aprobar la liquidación se unen solos.</p>
             </div>
+            <div class="sgv-encabezado-acciones">
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=movimientos-viaje") %>" target="_blank" rel="noopener"
+                    data-ayuda="movimientos-viaje" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+            </div>
         </div>
 
         <asp:Panel ID="pnlMensaje" runat="server" EnableViewState="false" Visible="false" CssClass="mb-3">

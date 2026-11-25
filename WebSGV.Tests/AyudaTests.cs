@@ -38,33 +38,6 @@ namespace WebSGV.Tests
         private static void SinCasos(string regla, List<string> casos) =>
             Assert.True(casos.Count == 0, regla + " (" + casos.Count + "):\n" + string.Join("\n", casos));
 
-        /// <summary>
-        /// Páginas cuyo "?" llega en E5-21b (lista cerrada temporal): su tema sigue en borrador y la página todavía
-        /// no tiene el enlace. Al escribir el tema y poner el "?", se saca de aquí; al cerrar 21b queda vacía.
-        /// </summary>
-        internal static readonly HashSet<string> PendientesDe21b = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "Views/Auditoria.aspx",
-            "Views/DashboardAdminSistema.aspx",
-            "Views/Exportacion/DashboardExportacion.aspx",
-            "Views/Exportacion/ImportarSeguimiento.aspx",
-            "Views/Exportacion/RegistroSeguimiento.aspx",
-            "Views/Exportacion/SeguimientoViaje.aspx",
-            "Views/FacturasFlete.aspx",
-            "Views/GestionUsuarios.aspx",
-            "Views/LiquidacionesAprobadasContabilidad.aspx",
-            "Views/MiSeguridad.aspx",
-            "Views/MovimientosViaje.aspx",
-            "Views/RegistroDespacho.aspx",
-            "Views/ReporteGps.aspx",
-            "Views/ReportesOrdenesViaje.aspx",
-            "Views/SaldosConductores.aspx",
-            "Views/DashboardConductor.aspx",
-            "Views/FirmarLiquidacion.aspx",
-            "Views/ConformarLiquidacion.aspx",
-            "Views/DetalleOrdenViaje.aspx",
-        };
-
         /// <summary>Pantallas sin la plantilla de encabezado que igual llevan su tema (portada y celular del conductor).</summary>
         private static readonly string[] SinPlantillaConTema =
         {
@@ -119,7 +92,7 @@ namespace WebSGV.Tests
             foreach (string f in Directory.GetFiles(Carpeta()))
             {
                 string nombre = Path.GetFileName(f);
-                if (nombre == AyudaCatalogo.ArchivoTemas || nombre == "manual.css") continue;
+                if (nombre == AyudaCatalogo.ArchivoTemas) continue;
                 if (Path.GetExtension(nombre) != ".html" || !claves.Contains(Path.GetFileNameWithoutExtension(nombre)))
                     casos.Add(nombre + ": archivo fuera del catálogo");
                 else if (cat.Tema(Path.GetFileNameWithoutExtension(nombre)).Borrador)
@@ -171,12 +144,6 @@ namespace WebSGV.Tests
                 if (temas.Count != 1) { casos.Add(p.Ruta + ": está en " + temas.Count + " temas de temas.json (debe ser 1)"); continue; }
                 var tema = temas[0];
                 var enlaces = EnlaceAyuda.Matches(p.Texto).Cast<Match>().ToList();
-                if (PendientesDe21b.Contains(p.Ruta))
-                {
-                    if (!tema.Borrador) casos.Add(p.Ruta + ": su tema " + tema.Clave + " ya no es borrador: ponga el \"?\" y sáquela de PendientesDe21b");
-                    if (enlaces.Count > 0) casos.Add(p.Ruta + ": ya tiene el \"?\": sáquela de PendientesDe21b");
-                    continue;
-                }
                 if (tema.Borrador) casos.Add(p.Ruta + ": su tema " + tema.Clave + " es borrador (no se puede abrir)");
                 if (enlaces.Count != 1) { casos.Add(p.Ruta + ": " + enlaces.Count + " enlaces data-ayuda (debe ser 1)"); continue; }
                 var e = enlaces[0];
@@ -187,9 +154,40 @@ namespace WebSGV.Tests
                 if (!esPortada && (!e.Value.Contains("class=\"sgv-ayuda\"") || !e.Value.Contains("aria-label=")))
                     casos.Add(p.Ruta + ": el \"?\" lleva class=\"sgv-ayuda\" y aria-label");
             }
-            foreach (string r in PendientesDe21b.Where(r => !paginas.Any(p => p.Ruta.Equals(r, StringComparison.OrdinalIgnoreCase))))
-                casos.Add(r + ": está en PendientesDe21b pero no es una pantalla con encabezado");
+            foreach (string r in SinPlantillaConTema.Where(r => !paginas.Any(p => p.Ruta.Equals(r, StringComparison.OrdinalIgnoreCase))))
+                casos.Add(r + ": está en SinPlantillaConTema pero no existe");
             SinCasos("Pantalla sin su \"?\" al tema", casos);
+        }
+
+        [Fact]
+        public void Paginas_ElConductorTieneSuInterrogacionJuntoAlTitulo()
+        {
+            // E5-21b: en las 4 pantallas del celular del conductor el "?" va en la misma fila que el h1 (no junto al
+            // nombre, que a 390 px quedaría tapado), con el estilo de la fila en su hoja de página.
+            string raiz = RaizWeb();
+            var esperadas = new Dictionary<string, (string Fila, string Tema)>
+            {
+                ["Views/DashboardConductor.aspx"] = ("dc-titulo-fila", "conductor-mi-viaje"),
+                ["Views/DetalleOrdenViaje.aspx"] = ("dc-titulo-fila", "conductor-historial"),
+                ["Views/FirmarLiquidacion.aspx"] = ("fl-titulo-fila", "conductor-liquidar-firmar"),
+                ["Views/ConformarLiquidacion.aspx"] = ("fl-titulo-fila", "conductor-conformidad"),
+            };
+            var casos = new List<string>();
+            foreach (var e in esperadas)
+            {
+                string texto = File.ReadAllText(Path.Combine(raiz, e.Key.Replace('/', Path.DirectorySeparatorChar)), Encoding.UTF8);
+                var fila = Regex.Match(texto, @"<div class=""" + e.Value.Fila + @""">\s*<h1\b.*?</h1>\s*(?<a><a class=""sgv-ayuda""(?:<%.*?%>|[^>])*>\?</a>)\s*</div>", RegexOptions.Singleline);
+                if (!fila.Success) { casos.Add(e.Key + ": el \"?\" no está en " + e.Value.Fila + " junto al h1"); continue; }
+                if (!fila.Groups["a"].Value.Contains("data-ayuda=\"" + e.Value.Tema + "\"")) casos.Add(e.Key + ": el \"?\" no abre " + e.Value.Tema);
+            }
+            string cssConductor = File.ReadAllText(Path.Combine(raiz, "Content", "paginas", "DashboardConductor.css"));
+            string cssFirma = File.ReadAllText(Path.Combine(raiz, "Content", "paginas", "FirmarLiquidacion.css"));
+            if (!cssConductor.Contains(".dc-titulo-fila .sgv-ayuda { flex-shrink: 0; }")) casos.Add("DashboardConductor.css sin .dc-titulo-fila");
+            if (!cssFirma.Contains(".fl-titulo-fila .sgv-ayuda { flex-shrink: 0; }")) casos.Add("FirmarLiquidacion.css sin .fl-titulo-fila");
+            // 2,75 rem en el celular (para el dedo): la regla común de sgv-base.css.
+            string base_ = File.ReadAllText(Path.Combine(raiz, "Content", "sgv-base.css"));
+            if (!base_.Contains(".sgv-ayuda { width: 2.75rem; height: 2.75rem; }")) casos.Add("sgv-base.css sin el \"?\" de 2,75 rem en el celular");
+            SinCasos("\"?\" del conductor", casos);
         }
 
         [Fact]
@@ -246,13 +244,17 @@ namespace WebSGV.Tests
         [Fact]
         public void Roles_CadaRolVigenteTieneTemas()
         {
-            // Al cerrar 21b todo rol vigente tiene al menos su tema; en 21a solo la administración tiene temas abiertos.
+            // E5-21b: todo rol vigente tiene temas abiertos (ninguno queda en borrador).
             var cat = Catalogo();
             foreach (var g in GuardasAccesoTests.RolesDelGrupo)
                 foreach (string rol in g.Value)
                     Assert.True(cat.Temas.Any(t => t.Roles.Contains(AyudaCatalogo.Grupo(rol))), rol + " no tiene ningún tema en temas.json");
             Assert.True(cat.TemasDelRol("ADMIN", k => false).Count >= 10);
             foreach (string rol in GuardasAccesoTests.RolesRetirados) Assert.Empty(cat.TemasDelRol(rol, k => true));
+            foreach (var g in GuardasAccesoTests.RolesDelGrupo)
+                foreach (string rol in g.Value)
+                    Assert.True(cat.TemasDelRol(rol, k => false).Count > 0, rol + " no tiene temas abiertos");
+            Assert.Empty(cat.Temas.Where(t => t.Borrador).Select(t => t.Clave));
         }
 
         [Fact]
@@ -473,6 +475,86 @@ namespace WebSGV.Tests
             Assert.Contains("getElementById('ayudaAviso')", js);
             string css = File.ReadAllText(Path.Combine(raiz, "Content", "sgv-base.css"));
             Assert.Contains(".sgv-ayuda-cuerpo figure img { display: block; max-width: 100%;", css);
+        }
+
+        // ── 9. Textos legales y manual completo (E5-21b) ─────────────────────────────────────
+
+        /// <summary>Texto visible de un fragmento: sin etiquetas, entidades decodificadas y espacios unidos.</summary>
+        private static string TextoPlano(string html) =>
+            Regex.Replace(WebUtility.HtmlDecode(Regex.Replace(html, "<[^>]+>", " ")), @"\s+", " ").Trim();
+
+        private static string Unir(string s) => Regex.Replace(s, @"\s+", " ").Trim();
+
+        [Theory]
+        [InlineData("firma-electronica", "Declaracion,Revision,Conformidad,DatosPersonales,BaseLegal")]
+        [InlineData("conductor-liquidar-firmar", "Declaracion,DatosPersonales,BaseLegal")]
+        [InlineData("conductor-conformidad", "Conformidad,DatosPersonales,BaseLegal")]
+        public void Firma_LaAyudaCitaLosTextosLegalesTalCual(string tema, string constantes)
+        {
+            // Lo que el firmante acepta vive solo en TextosFirma; la ayuda lo cita entero, sin parafrasear. Si cambia
+            // un texto legal, esta prueba obliga a actualizar el tema.
+            string texto = TextoPlano(File.ReadAllText(Path.Combine(Carpeta(), tema + ".html"), Encoding.UTF8));
+            var textos = new Dictionary<string, string>
+            {
+                ["Declaracion"] = WebSGV.Services.Liquidaciones.TextosFirma.Declaracion,
+                ["Revision"] = WebSGV.Services.Liquidaciones.TextosFirma.Revision,
+                ["Conformidad"] = WebSGV.Services.Liquidaciones.TextosFirma.Conformidad,
+                ["DatosPersonales"] = WebSGV.Services.Liquidaciones.TextosFirma.DatosPersonales,
+                ["BaseLegal"] = WebSGV.Services.Liquidaciones.TextosFirma.BaseLegal,
+            };
+            var casos = constantes.Split(',').Where(c => !texto.Contains(Unir(textos[c]))).Select(c => tema + ": no cita TextosFirma." + c + " tal cual").ToList();
+            SinCasos("Texto legal en la ayuda", casos);
+        }
+
+        [Fact]
+        public void Manual_JuntaLosTemasDelRolConPortadaIndiceYAnclas()
+        {
+            var cat = Catalogo();
+            foreach (string rol in new[] { "ADMINISTRADOR DE TRANSPORTE", "CONDUCTOR", "CONTABILIDAD", "ADMINISTRADOR DE SISTEMA" })
+            {
+                var temas = cat.TemasDelRol(rol, k => false);
+                string html = cat.HtmlManual(rol, k => false, (t, a) => "/img?tema=" + t + "&img=" + a, c => "/Ayuda.aspx?tema=" + c,
+                    new DateTime(2026, 11, 24), "Nota de portada");
+                Assert.NotNull(html);
+                Assert.Contains("manual-portada", html);
+                Assert.Contains("24/11/2026", html);
+                Assert.Contains("Usuario: " + WebUtility.HtmlEncode(AyudaCatalogo.NombreGrupo(AyudaCatalogo.Grupo(rol))), html);
+                // Un tema por sección del manual, en el orden del índice; nada de otro rol ni apagado.
+                var secciones = Regex.Matches(html, @"<section class=""manual-tema"" id=""tema-(?<c>[a-z0-9-]+)"">").Cast<Match>().Select(m => m.Groups["c"].Value).ToList();
+                Assert.Equal(temas.Select(t => t.Clave), secciones);
+                Assert.DoesNotContain("tema-movimientos-viaje\"", html);
+                // Enlaces entre temas del manual: anclas; sin data-ayuda (no abre el modal); imágenes por la URL dada.
+                Assert.DoesNotContain("data-ayuda", html);
+                Assert.DoesNotContain("href=\"?tema=", html);
+                foreach (Match a in Regex.Matches(html, @"href=""#tema-(?<c>[a-z0-9-]+)""")) Assert.Contains(a.Groups["c"].Value, secciones);
+                foreach (Match s in Regex.Matches(html, @"\bsrc=""(?<u>[^""]*)""")) Assert.StartsWith("/img?tema=", WebUtility.HtmlDecode(s.Groups["u"].Value));
+            }
+            Assert.Null(cat.HtmlManual("ROL INVENTADO", k => true, (t, a) => a, c => c, DateTime.Today));
+            // Con el interruptor encendido el tema de movimientos entra al manual de la administración.
+            Assert.Contains("tema-movimientos-viaje\"", cat.HtmlManual("ADMIN", k => true, (t, a) => a, c => c, DateTime.Today));
+        }
+
+        [Fact]
+        public void Manual_PaginaEnlazadaDesdeElIndiceYConSuHoja()
+        {
+            string raiz = RaizWeb();
+            string aspx = File.ReadAllText(Path.Combine(raiz, "Views", "Ayuda.aspx"));
+            string cs = File.ReadAllText(Path.Combine(raiz, "Views", "Ayuda.aspx.cs"));
+            Assert.Contains("NavigateUrl=\"~/Views/Ayuda.aspx?manual=1\">Manual completo</asp:HyperLink>", aspx);
+            Assert.Contains("RecursoHelper.Url(\"~/Content/paginas/AyudaManual.css\")", aspx);
+            Assert.Contains("data-accion=\"imprimirPagina\"", aspx);
+            Assert.Contains("Request.QueryString[\"manual\"] == \"1\"", cs);
+            Assert.Contains("catalogo.HtmlManual(rol, InterruptorEncendido,", cs);
+            // La hoja del manual se sirve desde Content (ContenidoAyuda está en hiddenSegments) y se despliega.
+            Assert.True(File.Exists(Path.Combine(raiz, "Content", "paginas", "AyudaManual.css")));
+            Assert.False(File.Exists(Path.Combine(Carpeta(), "manual.css")));
+            Assert.Contains("<Content Include=\"Content\\paginas\\AyudaManual.css\" />", File.ReadAllText(Path.Combine(raiz, "WebSGV.csproj")));
+            Assert.Contains("imprimirPagina: function () { window.print(); return false; }",
+                File.ReadAllText(Path.Combine(raiz, "Scripts", "paginas", "SiteMaster.js")));
+            // El generador del PDF usa la misma hoja y marca la portada como borrador.
+            string mjs = File.ReadAllText(Path.Combine(raiz, "..", "herramientas", "manual", "generar-manual.mjs"), Encoding.UTF8);
+            Assert.Contains("Content/paginas/AyudaManual.css", mjs);
+            Assert.Contains("Borrador hasta la revisión del usuario.", mjs);
         }
     }
 }

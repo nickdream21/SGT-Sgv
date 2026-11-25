@@ -34,6 +34,10 @@
     padding: 4px 2px 14px;
 }
 .dc-titulo { font-size: 1.05rem; font-weight: 600; line-height: 1.25; margin: 0; }
+/* Título con su "?" de ayuda al lado (E5-21b); el nombre y el DNI siguen debajo, sin taparse a 390 px. */
+.dc-cab-texto { min-width: 0; }
+.dc-titulo-fila { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.125rem; }
+.dc-titulo-fila .sgv-ayuda { flex-shrink: 0; }
 .dc-nombre { font-size: 0.875rem; font-weight: 600; line-height: 1.25; }
 /* En el detalle de una liquidación el título es el número (h1.dc-nombre): mismo tamaño que .dc-titulo. */
 h1.dc-nombre { font-size: 1.05rem; margin: 0; }

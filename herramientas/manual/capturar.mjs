@@ -7,6 +7,7 @@
 // BD indicada, si no es localhost o si es el puerto del sitio de pruebas (44390 / 50291).
 //
 //   node herramientas/manual/capturar.mjs --bd sgvEnsayo_X [--sitio http://localhost:50391] [--tema clave] [--usuario admin.transporte]
+//        [--credencial-conductor %TEMP%\sgv-conductor-ensayo.json]   (temas del conductor, a 390 px)
 //
 // Inicia sesión con el usuario de pruebas del grupo del tema (la contraseña se lee de
 // privado/CREDENCIALES_USUARIOS.txt y nunca se imprime). La pantalla de ingreso no se captura.
@@ -21,7 +22,8 @@ const AYUDA = path.join(RAIZ, 'WebSGV', 'ContenidoAyuda');
 const esperar = ms => new Promise(r => setTimeout(r, ms));
 
 // Usuario de pruebas por grupo de la ayuda (A administración, K contabilidad, Y sistema). El conductor (C)
-// entra con su documento: sus capturas (21b) necesitan un usuario de ensayo propio, no el de privado/.
+// entra con su documento: sus capturas usan el conductor anonimizado al que
+// herramientas/respaldo/clave-conductor-ensayo.ps1 le puso una clave de ensayo (--credencial-conductor <json>).
 const USUARIO_DEL_GRUPO = { A: 'admin.transporte', K: 'contabilidad', Y: 'admin.sistema' };
 
 function argumento(nombre, porDefecto) {
@@ -29,7 +31,19 @@ function argumento(nombre, porDefecto) {
   return i > 0 && i + 1 < process.argv.length ? process.argv[i + 1] : porDefecto;
 }
 
+// Conductor de ensayo: { usuario, clave } del archivo que escribe clave-conductor-ensayo.ps1 (fuera del repo).
+const CONDUCTOR = (() => {
+  const archivo = argumento('credencial-conductor');
+  if (!archivo) return null;
+  if (path.resolve(archivo).toLowerCase().startsWith(RAIZ.toLowerCase())) throw new Error('La credencial del conductor no va dentro del repositorio.');
+  const c = JSON.parse(fs.readFileSync(archivo, 'utf8'));
+  if (!c.usuario || !c.clave) throw new Error('Credencial del conductor incompleta: ' + archivo);
+  return c;
+})();
+if (CONDUCTOR) USUARIO_DEL_GRUPO.C = CONDUCTOR.usuario;
+
 function claveDe(usuario) {
+  if (CONDUCTOR && usuario === CONDUCTOR.usuario) return CONDUCTOR.clave;
   const texto = fs.readFileSync(path.join(RAIZ, 'privado', 'CREDENCIALES_USUARIOS.txt'), 'utf8');
   const m = texto.match(new RegExp('(^|\\s)' + usuario.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+(\\S+)', 'm'));
   if (!m) throw new Error('No está ' + usuario + ' en privado/CREDENCIALES_USUARIOS.txt');

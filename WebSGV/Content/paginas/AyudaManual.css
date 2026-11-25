@@ -1,0 +1,45 @@
+/* Manual completo de la ayuda (E5-21b): todos los temas de un rol en una sola página para imprimir.
+   Lo usan Views/Ayuda.aspx?manual=1 (dentro de Site.Master) y herramientas/manual/generar-manual.mjs (PDF por
+   rol, fuera del sitio, que también incluye sgv-base.css). Está en Content/ y no en ContenidoAyuda/ porque esa
+   carpeta no se sirve por URL (hiddenSegments). El texto de cada tema usa las clases de la ayuda
+   (.sgv-ayuda-cuerpo en sgv-base.css). Todo va bajo .manual para no tocar el resto de la página. */
+@page { size: A4; margin: 18mm 16mm 20mm; }
+
+.manual { color: var(--sgv-texto); }
+
+.manual-portada { margin-bottom: 1.5rem; }
+/* El título de la portada no es un h1: la página ya tiene el suyo ("Ayuda"). */
+.manual-titulo { margin: 0 0 0.5rem; color: var(--sgv-primario); font-size: 1.75rem; font-weight: 600; line-height: 1.2; }
+.manual-portada p { margin: 0 0 0.25rem; color: var(--sgv-texto-suave); }
+
+.manual-indice { margin-bottom: 1.5rem; }
+.manual-indice h2 { color: var(--sgv-primario); font-size: 1.25rem; }
+.manual-indice ol { padding-left: 1.5rem; }
+
+.manual-tema { margin-top: 2rem; }
+.manual-tema > h2 { margin: 0 0 0.75rem; padding-bottom: 0.375rem; border-bottom: 1px solid var(--sgv-borde); color: var(--sgv-primario); font-size: 1.375rem; }
+
+/* Impreso: A4, portada sola, índice solo y un tema por hoja; sin el menú ni el pie del sitio. */
+@media print {
+    body { margin: 0; background: var(--sgv-superficie); font-size: 11pt; line-height: 1.5; }
+    nav.navbar, footer.footer, .manual-no-imprimir, #modalAyuda { display: none; }
+    main.container { max-width: none; margin: 0; padding: 0; }
+
+    .manual-portada { display: flex; flex-direction: column; justify-content: center; min-height: 240mm; margin: 0; page-break-after: always; }
+    .manual-titulo { margin-bottom: 6mm; font-size: 26pt; }
+    .manual-portada p { margin-bottom: 2mm; }
+    .manual-indice { margin: 0; page-break-after: always; }
+    .manual-indice ol { padding-left: 6mm; }
+
+    .manual-tema { margin: 0; page-break-before: always; }
+    .manual-tema > h2 { margin-bottom: 4mm; padding-bottom: 2mm; font-size: 16pt; }
+    .manual-tema h2 { font-size: 13pt; page-break-after: avoid; }
+    .manual-tema h3 { font-size: 11.5pt; page-break-after: avoid; }
+    .manual-tema figure { page-break-inside: avoid; }
+    /* Capturas más bajas y sin líneas sueltas de 1 o 2 renglones al pie o al inicio de una hoja. */
+    .manual-tema figure img { width: auto; max-height: 110mm; }
+    .manual-tema p, .manual-tema li, .manual-tema td { orphans: 3; widows: 3; }
+    .manual-tema li, .manual-tema tr { page-break-inside: avoid; }
+    .manual-tema table { page-break-inside: avoid; }
+    .manual-tema a { color: inherit; text-decoration: none; }
+}

@@ -11,6 +11,10 @@
                 <h1 class="h2">Dashboard de exportaci&oacute;n</h1>
                 <p>Viajes de Vitapro Per&uacute; &rarr; Ecuador &middot; tiempos medidos con los hitos del GPS</p>
             </div>
+            <div class="sgv-encabezado-acciones">
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=dashboard-exportacion") %>" target="_blank" rel="noopener"
+                    data-ayuda="dashboard-exportacion" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+            </div>
         </div>
 
         <asp:Panel ID="pnlAlert" runat="server" Visible="false">

@@ -1,13 +1,18 @@
 <%@ Page Title="Ayuda" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="Ayuda.aspx.cs" Inherits="WebSGV.Views.Ayuda" EnableViewState="false" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
-    <div class="sgv-encabezado">
+    <div class="sgv-encabezado manual-no-imprimir">
         <div class="sgv-encabezado-titulo">
-            <% if (TemaActual != null) { %>
+            <% if (TemaActual != null || EsManual) { %>
             <a class="sgv-volver" href="<%: ResolveUrl("~/Views/Ayuda.aspx") %>">Volver a los temas de ayuda</a>
             <% } %>
             <h1 class="h2">Ayuda</h1>
             <p>C&#xF3;mo se usa cada pantalla del sistema</p>
         </div>
+        <% if (EsManual) { %>
+        <div class="sgv-encabezado-acciones">
+            <button type="button" class="btn btn-primary" data-accion="imprimirPagina">Imprimir</button>
+        </div>
+        <% } %>
     </div>
 
     <%-- Tema pedido que el rol no puede abrir, borrador o inexistente: el mismo aviso (no dice si existe). --%>
@@ -33,11 +38,21 @@
         </section>
     </asp:PlaceHolder>
 
+    <%-- Manual completo (?manual=1): todos los temas del rol en una página para imprimir (AyudaCatalogo.HtmlManual). --%>
+    <asp:PlaceHolder ID="phManual" runat="server" Visible="false">
+        <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/AyudaManual.css") %>" rel="stylesheet" />
+        <div class="manual" id="ayudaManual">
+            <asp:Literal ID="litManual" runat="server" Mode="PassThrough" />
+        </div>
+    </asp:PlaceHolder>
+
     <%-- Índice: los temas que ve el rol, por sección. --%>
     <asp:PlaceHolder ID="phIndice" runat="server" Visible="false">
         <section class="sgv-panel">
             <div class="sgv-panel-cab">
                 <h2 class="sgv-panel-titulo">Temas de ayuda</h2>
+                <asp:HyperLink ID="lnkManual" runat="server" Visible="false" CssClass="btn btn-outline-primary btn-sm"
+                    NavigateUrl="~/Views/Ayuda.aspx?manual=1">Manual completo</asp:HyperLink>
             </div>
             <div class="sgv-panel-cuerpo sgv-ayuda-indice">
                 <asp:Literal ID="litIndice" runat="server" Mode="PassThrough" />

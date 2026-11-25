@@ -10,13 +10,18 @@
                 <h1 class="h2"><asp:Literal ID="litTitulo" runat="server" /> <asp:Literal ID="litFase" runat="server" /></h1>
                 <p><asp:Literal ID="litSubtitulo" runat="server" /></p>
             </div>
-            <asp:Panel ID="pnlAcciones" runat="server" CssClass="sx-barra-acciones sgv-encabezado-acciones">
-                <button type="button" class="sx-btn" id="btnEditarDatos" aria-expanded="false" aria-controls="seccionDatos">Editar datos del viaje</button>
-                <asp:Button ID="btnExportar" runat="server" Text="Exportar a STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click" data-descarga="true" />
-                <asp:Button ID="btnEstado" runat="server" CssClass="sx-btn" CausesValidation="false" OnClick="btnEstado_Click" />
-                <asp:Button ID="btnActualizarGps" runat="server" Text="Actualizar GPS" CssClass="sx-btn sx-btn-primario" CausesValidation="false"
-                    OnClick="btnActualizarGps_Click" data-accion="avisarConsultaGps" UseSubmitBehavior="false" />
-            </asp:Panel>
+            <%-- El "?" queda fuera de pnlAcciones: el panel se oculta en un viaje nuevo o inexistente. --%>
+            <div class="sgv-encabezado-acciones">
+                <asp:Panel ID="pnlAcciones" runat="server" CssClass="sx-barra-acciones">
+                    <button type="button" class="sx-btn" id="btnEditarDatos" aria-expanded="false" aria-controls="seccionDatos">Editar datos del viaje</button>
+                    <asp:Button ID="btnExportar" runat="server" Text="Exportar a STATUS GENERAL" CssClass="sx-btn" CausesValidation="false" OnClick="btnExportar_Click" data-descarga="true" />
+                    <asp:Button ID="btnEstado" runat="server" CssClass="sx-btn" CausesValidation="false" OnClick="btnEstado_Click" />
+                    <asp:Button ID="btnActualizarGps" runat="server" Text="Actualizar GPS" CssClass="sx-btn sx-btn-primario" CausesValidation="false"
+                        OnClick="btnActualizarGps_Click" data-accion="avisarConsultaGps" UseSubmitBehavior="false" />
+                </asp:Panel>
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=seguimiento") %>" target="_blank" rel="noopener"
+                    data-ayuda="seguimiento" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+            </div>
         </div>
 
         <asp:Panel ID="pnlMensaje" runat="server" Visible="false" EnableViewState="false">

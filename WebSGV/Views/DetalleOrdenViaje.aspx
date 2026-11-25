@@ -19,7 +19,11 @@
 
             <header class="dc-cab">
                 <div class="dc-cab-texto">
-                    <h1 class="dc-nombre">Liquidación <asp:Literal ID="litNumero" runat="server" Mode="Encode" /></h1>
+                    <div class="dc-titulo-fila">
+                        <h1 class="dc-nombre">Liquidación <asp:Literal ID="litNumero" runat="server" Mode="Encode" /></h1>
+                        <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=conductor-historial") %>" target="_blank" rel="noopener"
+                            data-ayuda="conductor-historial" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+                    </div>
                     <div class="dc-dni"><asp:Literal ID="litPeriodo" runat="server" Mode="Encode" /></div>
                 </div>
                 <asp:Label ID="lblEstado" runat="server" CssClass="dc-pill"></asp:Label>

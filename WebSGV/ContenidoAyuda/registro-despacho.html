@@ -1,0 +1,48 @@
+<p class="ayuda-resumen">Aquí se programan las cargas del día con el Word de la programación, se completan con el ZIP o los PDF del correo del cliente, se registra la descarga de un pedido ya cargado y, para los despachos sin archivos, se arma el lote a mano.</p>
+
+<h2>Programar y completar con los archivos del día</h2>
+<p>El recuadro <em>Programar o completar con los archivos del día</em> acepta el Word de la programación (.docx), el ZIP del correo del cliente y los PDF generados por el sistema del cliente (no escaneos). Arrastre los archivos o haga clic para elegirlos (hasta 20 MB en total) y pulse <strong>Leer documentos</strong>. Nada se guarda hasta que usted revise la vista previa y la confirme.</p>
+<ol>
+<li><strong>Programar con el Word.</strong> El Word programa los despachos del día: de él salen el conductor, el tracto y la carreta de cada unidad. Se registra un despacho de carga por unidad, sin pedido ni guías, y el viaje del conductor y su seguimiento GPS empiezan en ese momento. Si el Word trae varias secciones de carga, elija la <em>Sección del Word</em> y programe una a la vez.</li>
+<li><strong>Completar con el ZIP del correo.</strong> Cuando llegue el correo del cliente, suba el ZIP o los PDF en el mismo recuadro: cada guía se une a su unidad y completa su despacho con el pedido, la factura y la carga. Si sube el Word y el ZIP juntos, los despachos se registran completos de una vez.</li>
+<li><strong>Revisar los pendientes.</strong> El enlace <strong>Ver lotes pendientes</strong> abre la <a href="?tema=lista-despachos">Lista de despachos</a> con los lotes a los que todavía les falta la factura, una guía o la CPIC.</li>
+</ol>
+
+<figure><img src="01.webp" alt="Bloque Programar o completar con los archivos del día, con los tres pasos y la zona para soltar archivos"><figcaption>Los tres pasos y la zona donde se sueltan el Word, el ZIP o los PDF.</figcaption></figure>
+<h3>La vista previa de la programación</h3>
+<ul>
+<li>Revise el <em>Cliente</em>, la <em>Fecha de carga</em> (el día del título del Word) y la <em>Planta de carga</em>. Marque <em>Carga para exportación</em> si las unidades van a Ecuador: así entran al seguimiento de exportación.</li>
+<li>En la tabla de unidades, desmarque <em>Incluir</em> en las que no deban programarse. Las unidades que ya tienen su despacho registrado se indican en la columna <em>Estado</em> y no se vuelven a cargar.</li>
+<li>Si aparece el recuadro <em>Revise antes de continuar</em>, lea cada aviso antes de seguir.</li>
+<li>Pulse <strong>Programar despachos</strong> para guardar, o <strong>Descartar</strong> para no hacer nada.</li>
+</ul>
+
+<h3>La vista previa de los documentos del cliente</h3>
+<ul>
+<li>El cliente se reconoce por el RUC del remitente. La fecha de programación propuesta es el día de carga de la programación o, sin ella, la fecha de traslado de las guías.</li>
+<li>Si la lista trae productos o conductores que todavía no están en el sistema, marque <em>Apruebo registrar en el sistema los productos y conductores nuevos de esta lista</em>.</li>
+<li><strong>Crear lote con estos datos</strong> guarda el lote. <strong>Corregir datos a mano</strong> pasa los datos al formulario manual para cambiarlos antes de guardar. <strong>Quitar importación</strong> descarta lo leído.</li>
+</ul>
+
+<h3>Descargas, entregas y retornos del Word</h3>
+<p>Si el Word trae secciones de descarga, aparecen en <em>Descargas, entregas y retornos con carga en este Word</em>. Cada fila completa el viaje del seguimiento de su carga (misma carreta): el pedido y el tracto y conductor que descargan, o el lugar de entrega en los clientes terceros. Pulse <strong>Registrar descargas y entregas</strong>. Las filas ya registradas se marcan como tales.</p>
+<p class="ayuda-nota">La CPIC, los manifiestos y las facturas de flete no van en este recuadro: se sueltan en la <a href="?tema=bandeja-documentos">Bandeja de documentos</a>.</p>
+
+<h2>Registrar la descarga de un pedido ya cargado</h2>
+<ol>
+<li>En <em>Registrar la descarga de un pedido ya cargado</em>, elija el pedido y pulse <strong>Ver tractos por descargar</strong>.</li>
+<li>Aparecen los tractos cargados de ese pedido que faltan descargar, con su carga y su destino. Cambie solo los que hicieron relevo en la base.</li>
+<li>Si tiene el Word que reparte transporte (.docx, hasta 5 MB), elíjalo y pulse <strong>Leer programación</strong>: se busca la sección del pedido y, por la placa de la carreta, se completan el conductor y el tracto que descargan.</li>
+<li>Indique la fecha de programación y, si hace falta, la planta de descarga por defecto. Cada tracto usa la planta que tiene en <a href="?tema=destino-descarga">Destino de descarga</a>; si no tiene, usa la de por defecto.</li>
+<li>En <em>Tractos que descargan</em>, deje marcados en <em>Incluir</em> los que descargan y revise el conductor, el tracto, la carreta y la planta de cada uno.</li>
+<li>Pulse <strong>Usar en el lote de descarga</strong> (o <strong>Descartar</strong>). Las descargas pasan al lote a mano de abajo y se agregan al pulsar <strong>Iniciar lote de despachos</strong>. En una descarga internacional la CPIC es opcional.</li>
+</ol>
+
+<h2>Registrar un lote a mano</h2>
+<p>Para los despachos que no tienen Word ni documentos del correo (nacionales u otros clientes), abra <em>Registrar un lote a mano</em>. Los de exportación se registran con los archivos.</p>
+<ol>
+<li><strong>Configurar el lote.</strong> Indique la fecha de programación, el cliente, el número de pedido (opcional, de 10 dígitos), el tipo de operación (carga o descarga), el ámbito (nacional o internacional) y la planta. Según el tipo y el ámbito, el formulario pide la factura (número, fecha y valor) y la CPIC (número, fecha y valor del flete), con su documento adjunto opcional. Si la CPIC llega después, se agrega en la Lista de despachos. Pulse <strong>Iniciar lote de despachos</strong>.</li>
+<li><strong>Agregar conductores.</strong> Por cada unidad elija el conductor, la placa del tracto y la de la carreta, y escriba la guía de transportista (la guía de remitente es opcional). Pulse <strong>Agregar conductor</strong>. Si el conductor ya tiene viajes en progreso, elija a cuál se suma el despacho o pulse <strong>Crear nuevo viaje</strong>; <strong>Ver historial</strong> muestra sus viajes y permite reabrir uno.</li>
+<li><strong>Finalizar.</strong> Revise la tabla <em>Conductores del lote</em> (cada fila se puede editar o quitar) y pulse <strong>Finalizar lote</strong> para guardar todos los despachos. <strong>Cancelar lote</strong> descarta todo lo que no se guardó.</li>
+</ol>
+<p class="ayuda-nota">Mientras hay un lote en curso, el encabezado de la página lo indica. Termínelo o cancélelo antes de empezar otro.</p>

@@ -12,6 +12,10 @@
             <h1 class="h2">Liquidaciones aprobadas</h1>
             <p>Consulta de liquidaciones aprobadas (solo lectura)</p>
         </div>
+        <div class="sgv-encabezado-acciones">
+            <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=liquidaciones-aprobadas") %>" target="_blank" rel="noopener"
+                data-ayuda="liquidaciones-aprobadas" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+        </div>
     </div>
 
     <details class="sgv-filtros" open data-plegar-movil>

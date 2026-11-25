@@ -1,0 +1,49 @@
+<p class="ayuda-resumen">El tablero de seguimiento muestra un viaje por cada carreta de los despachos de exportación y de los clientes terceros, desde que se programa hasta que vuelve a la base. Las horas de cada hito salen del GPS; usted completa lo que el GPS no sabe y envía los reportes al cliente.</p>
+
+<h2>El tablero</h2>
+<ul>
+<li>Los viajes se crean solos al programar el despacho de exportación en Registro de despachos. Con <em>Más &gt; Nuevo viaje</em> se crea a mano uno que no vino de un despacho.</li>
+<li>Las pestañas agrupan los viajes por fase: <em>Activos</em> (todos los que no están cerrados), <em>En carga</em>, <em>En base</em>, <em>Rumbo a Ecuador / a la descarga</em>, <em>Retorno</em>, <em>Cerrados</em> y <em>Todos</em>. El número de cada pestaña es la cantidad de viajes.</li>
+<li>En <em>Filtros</em> se busca por pedido, carreta, placa o conductor, por fechas de programación, cliente y planta de descarga. <em>Incluir los importados del Excel</em> suma los viajes cargados desde el STATUS GENERAL.</li>
+<li>Cada fila muestra la carga, la descarga, la fase con su avance, el último hito y lo que está pendiente.</li>
+</ul>
+
+<figure><img src="01.webp" alt="Tabla del tablero con pedido, carreta, carga, fase, STATUS y pendiente de cada viaje"><figcaption>Viajes agrupados por pedido, con su fase, el último hito del GPS y lo pendiente.</figcaption></figure>
+<h3>El GPS</h3>
+<p>El sistema consulta el GPS de los viajes abiertos cada cierto tiempo; arriba se indica la hora de la última consulta. <strong>Actualizar GPS de viajes abiertos</strong> lo consulta en el momento; puede tardar unos minutos. Cuando hay datos nuevos aparece el aviso <em>El GPS se actualizó</em> con el botón <strong>Ver datos nuevos</strong>.</p>
+
+<h3>Los reportes para el cliente</h3>
+<p>Arriba están los reportes que se envían: <strong>Excel de STATUS</strong>, <strong>Exportar STATUS GENERAL</strong>, <strong>Excel STATUS EXTRA</strong>, <strong>Cuadro grifo Santa Rosa</strong> y <strong>Excel de llegadas</strong>. Junto a los Excel de STATUS, STATUS EXTRA, grifo y llegadas está el botón <strong>Imagen</strong>, que descarga el mismo reporte como imagen para mandarlo por WhatsApp desde el celular. Los reportes salen con los viajes de la pestaña elegida. En el celular se pliegan bajo <em>Reportes</em>.</p>
+
+<h2>El detalle de un viaje</h2>
+<p>Al abrir un viaje se ve su pedido, carreta, programación, planta de descarga y los tractos y conductores de carga y de descarga, con los hitos de cada tramo y el mapa del recorrido.</p>
+<ul>
+<li><strong>Actualizar GPS</strong> consulta el GPS de ese viaje.</li>
+<li>El mapa muestra las paradas y zonas. Con <em>Velocidad</em> se reproduce el recorrido; <em>Seguir al camión</em> centra el mapa en la unidad y <em>Ver todo</em> muestra el recorrido completo.</li>
+<li><strong>Editar datos del viaje</strong> cambia el pedido, la programación, la planta y los tractos y conductores.</li>
+<li><strong>Exportar a STATUS GENERAL</strong> descarga la fila de ese viaje en el formato del cliente.</li>
+</ul>
+
+<h3>Corregir la hora de un hito</h3>
+<ol>
+<li>En el hito, pulse <strong>Corregir</strong>.</li>
+<li>Escriba la nueva fecha y hora y el motivo, que queda en la auditoría, y pulse <strong>Guardar corrección</strong>.</li>
+</ol>
+<p class="ayuda-nota">Una hora corregida a mano ya no la cambia el GPS. Para que el GPS la vuelva a llenar, guarde la corrección con la fecha vacía.</p>
+
+<figure><img src="02.webp" alt="Pantalla Importar seguimiento de exportación con la zona para elegir el Excel"><figcaption>Importar el STATUS GENERAL o la plantilla desde Excel.</figcaption></figure>
+<h3>Lo que informa el conductor</h3>
+<p>Abajo se registran los datos que da el conductor o el cliente: la hora de registro, el inicio y término de carga y de descarga, la autorización de nacionalización, la bodega nacional, los sacos robados, rotos o mojados y el motivo de un retraso o de una incidencia. Pulse <strong>Guardar</strong>.</p>
+
+<h2>Importar el STATUS GENERAL desde Excel</h2>
+<ol>
+<li>En el tablero, abra <em>Más &gt; Importar Excel</em>.</li>
+<li>Si no tiene el formato, pulse <strong>Descargar plantilla</strong>.</li>
+<li>Arrastre el archivo o haga clic para elegirlo y pulse <strong>Procesar archivo</strong>.</li>
+</ol>
+<ul>
+<li>Las filas que ya existen (mismo pedido, tracto y programación) se actualizan, no se duplican.</li>
+<li>Los viajes que vienen de un despacho o que se crearon a mano no se modifican.</li>
+<li>Si un hito no se pudo leer, se importa el resto de la fila y el hito queda vacío: corríjalo en el Excel y vuelva a subirlo.</li>
+</ul>
+<p>Los indicadores de los viajes están en el <a href="?tema=dashboard-exportacion">Dashboard de exportación</a>.</p>
