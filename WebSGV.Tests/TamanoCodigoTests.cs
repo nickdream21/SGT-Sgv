@@ -30,7 +30,7 @@ namespace WebSGV.Tests
             ["Services/Despachos/BandejaDocumentosService.cs"] = 1549,
             ["Views/ReportesOrdenesViaje.aspx.cs"] = 1479,
             ["Services/PdfOrdenViajeService.cs"] = 1307,
-            ["Views/DashboardConductor.aspx.cs"] = 1285,
+            ["Views/DashboardConductor.aspx.cs"] = 1120,
             ["Views/LiquidacionesPendientes.aspx.cs"] = 1077,
             ["Views/BandejaDocumentos.aspx.cs"] = 912,
             ["Services/Despachos/Importacion/ImportacionPedidoService.cs"] = 901,

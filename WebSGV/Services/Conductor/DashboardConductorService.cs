@@ -10,8 +10,10 @@ namespace WebSGV.Services.Conductor
     /// <summary>
     /// Acceso a datos (SQL y stored procedures) del panel del conductor
     /// (<c>DashboardConductor.aspx</c>). Extraído del code-behind: la sesión, los
-    /// controles/Request.Form, el mapeo a DTO, la auditoría y el logging permanecen en
-    /// el code-behind; este servicio sólo ejecuta el SQL. No se modifica ningún SP.
+    /// controles/Request.Form, la auditoría y el logging permanecen en el code-behind;
+    /// este servicio ejecuta el SQL y, desde E6-18, devuelve las lecturas del panel como
+    /// DTO (datos del conductor, viajes activos, despachos, rechazo e historial filtrado
+    /// en SQL). La página no tiene SQL. No se modifica ningún SP.
     ///
     /// Nota: el envío de liquidación (transacción en btnEnviarLiquidacion_Click y sus
     /// helpers Insertar*) sigue en el code-behind porque lee Request.Form/hidden fields
@@ -20,6 +22,208 @@ namespace WebSGV.Services.Conductor
     /// </summary>
     public static class DashboardConductorService
     {
+        // ------------------------------------------------------------------
+        // Lecturas del panel (E6-18): siempre con el conductor de la sesión o con
+        // los viajes que ya se leyeron para él.
+        // ------------------------------------------------------------------
+
+        /// <summary>Nombre y documento del conductor (<c>sp_DC_ObtenerDatosConductor</c>); <c>null</c> si no existe.</summary>
+        public static DatosConductorPanel ObtenerDatosConductor(int idConductor)
+        {
+            using (DataTable dt = DbHelper.ConsultarTablaSp("sp_DC_ObtenerDatosConductor",
+                DbHelper.Param("@idConductor", idConductor)))
+            {
+                if (dt.Rows.Count == 0) return null;
+                DataRow r = dt.Rows[0];
+                return new DatosConductorPanel
+                {
+                    NombreCompleto = r["nombreCompleto"].ToString(),
+                    Dni = r["DNI"].ToString()
+                };
+            }
+        }
+
+        /// <summary>
+        /// Viajes ABIERTOS del conductor (suyos o con un despacho activo suyo), el más antiguo primero
+        /// (<c>sp_DC_ObtenerViajesActivosConductor</c>).
+        /// </summary>
+        public static List<ViajeActivoConductor> ObtenerViajesActivos(int idConductor)
+        {
+            using (DataTable dt = DbHelper.ConsultarTablaSp("sp_DC_ObtenerViajesActivosConductor",
+                DbHelper.Param("@idConductor", idConductor)))
+            {
+                return dt.Rows.Cast<DataRow>().Select(r => new ViajeActivoConductor
+                {
+                    IdViajeProgreso = Convert.ToInt32(r["idViajeProgreso"]),
+                    NumeroViajeProgreso = r["numeroViajeProgreso"].ToString(),
+                    IdConductor = Convert.ToInt32(r["idConductor"]),
+                    NombreConductor = r["nombreConductor"].ToString(),
+                    FechaInicio = Convert.ToDateTime(r["fechaInicio"]),
+                    FechaUltimaActividad = Convert.ToDateTime(r["fechaUltimaActividad"]),
+                    EstadoViaje = r["estadoViaje"].ToString(),
+                    DescripcionViaje = r["descripcionViaje"]?.ToString() ?? "",
+                    CantidadDespachos = Convert.ToInt32(r["cantidadDespachos"]),
+                    EsInternacional = r["esInternacional"] != DBNull.Value && Convert.ToBoolean(r["esInternacional"])
+                }).ToList();
+            }
+        }
+
+        /// <summary>Despachos activos de esos viajes, el más reciente primero (<c>sp_DC_ObtenerDespachosViajesActivos</c>).</summary>
+        public static List<DespachoViajeActivo> ObtenerDespachosViajesActivos(List<int> idsViajes)
+        {
+            using (DataTable dt = DbHelper.ConsultarTablaSp("sp_DC_ObtenerDespachosViajesActivos",
+                DbHelper.Param("@idsViajes", string.Join(",", idsViajes))))
+            {
+                return dt.Rows.Cast<DataRow>().Select(r => new DespachoViajeActivo
+                {
+                    IdDespacho = Convert.ToInt32(r["idDespacho"]),
+                    NumeroDespacho = r["numeroDespacho"].ToString(),
+                    FechaDespacho = Convert.ToDateTime(r["fechaDespacho"]),
+                    Cliente = r["nombreCliente"].ToString(),
+                    TipoOperacion = r["tipoOperacion"].ToString(),
+                    LugarOperacion = r["lugarOperacion"].ToString(),
+                    PlacaTracto = r["placaTracto"].ToString(),
+                    PlacaCarreta = r["placaCarreta"].ToString(),
+                    EstadoDespacho = r["estadoDespacho"].ToString(),
+                    GuiaRemitente = r["guiaRemitente"].ToString(),
+                    GuiaTransportista = r["guiaTransportista"].ToString(),
+                    NumeroCPIC = r["numeroCPIC"].ToString()
+                }).ToList();
+            }
+        }
+
+        /// <summary>
+        /// Último rechazo con motivo (REABIERTO) de una orden de esos viajes
+        /// (<c>sp_DC_VerificarObservacionesRechazo</c>); <c>null</c> si no hay.
+        /// </summary>
+        public static RechazoOrdenConductor ObtenerUltimoRechazo(List<int> idsViajes)
+        {
+            using (DataTable dt = DbHelper.ConsultarTablaSp("sp_DC_VerificarObservacionesRechazo",
+                DbHelper.Param("@idsViajes", string.Join(",", idsViajes))))
+            {
+                if (dt.Rows.Count == 0) return null;
+                DataRow r = dt.Rows[0];
+                return new RechazoOrdenConductor
+                {
+                    NumeroOrdenViaje = r["numeroOrdenViaje"].ToString(),
+                    Observaciones = r["observacionesRechazo"].ToString(),
+                    FechaRechazo = r["fechaRechazo"] != DBNull.Value ? Convert.ToDateTime(r["fechaRechazo"]) : (DateTime?)null,
+                    // DBNull.ToString() es "": "Administrador" solo si la columna no viniera (igual que antes).
+                    RechazadoPor = r["rechazadoPor"]?.ToString() ?? "Administrador"
+                };
+            }
+        }
+
+        /// <summary>
+        /// Grupo de un estado de la orden para el filtro del historial y su texto (la BD usó APROBADO o
+        /// COMPLETADO, REABIERTO o RECHAZADO); cualquier otro valor es PENDIENTE ("En revisión").
+        /// Debe coincidir con el CASE de <see cref="SqlHistorial"/>.
+        /// </summary>
+        public static string GrupoEstado(string estado)
+        {
+            switch ((estado ?? "").ToUpperInvariant())
+            {
+                case "APROBADO":
+                case "COMPLETADO": return "APROBADO";
+                case "REABIERTO":
+                case "RECHAZADO": return "RECHAZADO";
+                case "POR_CONFORMAR": return "POR_CONFORMAR";
+                default: return "PENDIENTE";
+            }
+        }
+
+        /// <summary>
+        /// Historial del conductor (sus liquidaciones, la más reciente primero) filtrado en SQL por la fecha de
+        /// salida (días completos; sin fecha de salida no entra si hay algún límite) y por el grupo de estado, más
+        /// las POR_CONFORMAR sin filtros (el aviso de conformidad pendiente no depende de ellos). Mismas columnas
+        /// y totales que <c>sp_DC_ObtenerHistorialLiquidaciones</c>, sin los ingresos que la pantalla no usa.
+        /// </summary>
+        private const string SqlHistorial = @"
+SELECT
+    ov.idOrdenViaje,
+    ov.numeroOrdenViaje,
+    ov.fechaSalida,
+    ov.fechaLlegada,
+    ISNULL(ov.estadoAprobacion, 'PENDIENTE') AS estadoAprobacion,
+    CAST(CASE WHEN ov.idFirmaConductor IS NULL THEN 0 ELSE 1 END AS BIT) AS firmada,
+    -- Ya la revisó la administración (se envió a su conformidad al menos una vez): no se puede retirar.
+    CAST(CASE WHEN ov.fechaEnvioConformidad IS NULL THEN 0 ELSE 1 END AS BIT) AS revisada,
+    (ISNULL(eg.peajesSoles, 0) + ISNULL(eg.alimentacionSoles, 0) +
+     ISNULL(eg.apoyoseguridadSoles, 0) + ISNULL(eg.reparacionesVariosSoles, 0) +
+     ISNULL(eg.movilidadSoles, 0) + ISNULL(eg.encarpada_desencarpadaSoles, 0) +
+     ISNULL(eg.hospedajeSoles, 0) + ISNULL(eg.combustibleSoles, 0) +
+     ISNULL((SELECT SUM(ca.soles) FROM CategoriasAdicionales ca WHERE ca.numeroOrdenViaje = ov.numeroOrdenViaje), 0)) AS totalGastosSoles,
+    (ISNULL(eg.peajesDolares, 0) + ISNULL(eg.alimentacionDolares, 0) +
+     ISNULL(eg.apoyoseguridadDolares, 0) + ISNULL(eg.repacionesVariosDolares, 0) +
+     ISNULL(eg.movilidadDolares, 0) + ISNULL(eg.encarpada_desencarpadaDolares, 0) +
+     ISNULL(eg.hospedajeDolares, 0) + ISNULL(eg.combustibleDolares, 0) +
+     ISNULL((SELECT SUM(ca.dolares) FROM CategoriasAdicionales ca WHERE ca.numeroOrdenViaje = ov.numeroOrdenViaje), 0)) AS totalGastosDolares
+FROM OrdenViaje ov
+LEFT JOIN Egresos eg ON ov.numeroOrdenViaje = eg.numeroOrdenViaje
+WHERE ov.idConductor = @idConductor
+    AND ov.registradoPor = 'CONDUCTOR'
+    AND (@desde IS NULL OR ov.fechaSalida >= @desde)
+    AND (@hasta IS NULL OR ov.fechaSalida <= @hasta)
+    AND (@grupoEstado IS NULL OR
+         CASE UPPER(ISNULL(ov.estadoAprobacion, 'PENDIENTE'))
+             WHEN 'APROBADO' THEN 'APROBADO' WHEN 'COMPLETADO' THEN 'APROBADO'
+             WHEN 'REABIERTO' THEN 'RECHAZADO' WHEN 'RECHAZADO' THEN 'RECHAZADO'
+             WHEN 'POR_CONFORMAR' THEN 'POR_CONFORMAR'
+             ELSE 'PENDIENTE' END = @grupoEstado)
+ORDER BY ov.fechaRegistro DESC, ov.idOrdenViaje DESC;
+
+SELECT ov.idOrdenViaje, ov.numeroOrdenViaje
+FROM OrdenViaje ov
+WHERE ov.idConductor = @idConductor
+    AND ov.registradoPor = 'CONDUCTOR'
+    AND UPPER(ov.estadoAprobacion) = 'POR_CONFORMAR'
+ORDER BY ov.fechaRegistro DESC, ov.idOrdenViaje DESC;";
+
+        /// <summary>
+        /// Historial de liquidaciones de <paramref name="idConductor"/> (el de la sesión) con los filtros de la
+        /// pantalla: <paramref name="desde"/>/<paramref name="hasta"/> por la fecha de salida (se toma solo el día)
+        /// y <paramref name="estadoFiltro"/> (valor del desplegable, vacío = todos; se compara por grupo).
+        /// </summary>
+        public static HistorialConductor ObtenerHistorial(int idConductor, DateTime? desde, DateTime? hasta, string estadoFiltro)
+        {
+            var resultado = new HistorialConductor();
+            using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
+            using (SqlCommand cmd = new SqlCommand(SqlHistorial, conn))
+            {
+                cmd.Parameters.Add("@idConductor", SqlDbType.Int).Value = idConductor;
+                cmd.Parameters.Add("@desde", SqlDbType.Date).Value = (object)desde?.Date ?? DBNull.Value;
+                cmd.Parameters.Add("@hasta", SqlDbType.Date).Value = (object)hasta?.Date ?? DBNull.Value;
+                cmd.Parameters.Add("@grupoEstado", SqlDbType.VarChar, 20).Value =
+                    string.IsNullOrEmpty(estadoFiltro) ? (object)DBNull.Value : GrupoEstado(estadoFiltro);
+                conn.Open();
+                using (SqlDataReader r = cmd.ExecuteReader())
+                {
+                    while (r.Read())
+                        resultado.Filas.Add(new FilaHistorialConductor
+                        {
+                            IdOrdenViaje = Convert.ToInt32(r["idOrdenViaje"]),
+                            NumeroViaje = r["numeroOrdenViaje"].ToString(),
+                            FechaSalida = r["fechaSalida"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(r["fechaSalida"]),
+                            FechaLlegada = r["fechaLlegada"] == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(r["fechaLlegada"]),
+                            GastosSoles = Dec(r, "totalGastosSoles"),
+                            GastosDolares = Dec(r, "totalGastosDolares"),
+                            Estado = r["estadoAprobacion"].ToString().ToUpperInvariant(),
+                            Firmada = r["firmada"] != DBNull.Value && Convert.ToBoolean(r["firmada"]),
+                            Revisada = r["revisada"] != DBNull.Value && Convert.ToBoolean(r["revisada"])
+                        });
+
+                    r.NextResult();
+                    while (r.Read())
+                        resultado.PorConformar.Add(new OrdenPorConformarConductor
+                        {
+                            IdOrdenViaje = Convert.ToInt32(r["idOrdenViaje"]),
+                            NumeroViaje = r["numeroOrdenViaje"].ToString()
+                        });
+                }
+            }
+            return resultado;
+        }
+
         /// <summary>Estaciones de peaje (<c>sp_DC_ObtenerEstacionesPeaje</c>).</summary>
         public static DataTable ObtenerEstacionesPeaje() =>
             DbHelper.ConsultarTablaSp("sp_DC_ObtenerEstacionesPeaje");
@@ -291,6 +495,83 @@ namespace WebSGV.Services.Conductor
             if (dolares > 0) g[campo + "Dolares"] = dolares.ToString("0.00", ic);
             if ((soles > 0 || dolares > 0) && !string.IsNullOrWhiteSpace(desc)) g[campoDesc] = desc;
         }
+    }
+
+    /// <summary>Cabecera del panel: nombre y documento del conductor.</summary>
+    public class DatosConductorPanel
+    {
+        public string NombreCompleto { get; set; }
+        public string Dni { get; set; }
+    }
+
+    /// <summary>Viaje ABIERTO del conductor (pestaña Mi viaje y formulario de liquidación).</summary>
+    public class ViajeActivoConductor
+    {
+        public int IdViajeProgreso { get; set; }
+        public string NumeroViajeProgreso { get; set; }
+        public int IdConductor { get; set; }
+        public string NombreConductor { get; set; }
+        public DateTime FechaInicio { get; set; }
+        public DateTime FechaUltimaActividad { get; set; }
+        public string EstadoViaje { get; set; }
+        public string DescripcionViaje { get; set; }
+        public int CantidadDespachos { get; set; }
+        public bool EsInternacional { get; set; }
+    }
+
+    /// <summary>Despacho activo de un viaje en curso (lista de la pestaña Mi viaje).</summary>
+    public class DespachoViajeActivo
+    {
+        public int IdDespacho { get; set; }
+        public string NumeroDespacho { get; set; }
+        public DateTime FechaDespacho { get; set; }
+        public string Cliente { get; set; }
+        public string TipoOperacion { get; set; }
+        public string LugarOperacion { get; set; }
+        public string PlacaTracto { get; set; }
+        public string PlacaCarreta { get; set; }
+        public string EstadoDespacho { get; set; }
+        public string GuiaRemitente { get; set; }
+        public string GuiaTransportista { get; set; }
+        public string NumeroCPIC { get; set; }
+    }
+
+    /// <summary>Último rechazo con motivo de una orden de los viajes en curso.</summary>
+    public class RechazoOrdenConductor
+    {
+        public string NumeroOrdenViaje { get; set; }
+        public string Observaciones { get; set; }
+        public DateTime? FechaRechazo { get; set; }
+        public string RechazadoPor { get; set; }
+    }
+
+    /// <summary>Historial del conductor ya filtrado y sus órdenes por conformar (sin filtros).</summary>
+    public class HistorialConductor
+    {
+        public List<FilaHistorialConductor> Filas { get; } = new List<FilaHistorialConductor>();
+        public List<OrdenPorConformarConductor> PorConformar { get; } = new List<OrdenPorConformarConductor>();
+    }
+
+    /// <summary>Una liquidación del historial (los nombres son los que enlaza el repetidor).</summary>
+    public class FilaHistorialConductor
+    {
+        public int IdOrdenViaje { get; set; }
+        public string NumeroViaje { get; set; }
+        public DateTime? FechaSalida { get; set; }
+        public DateTime? FechaLlegada { get; set; }
+        public decimal GastosSoles { get; set; }
+        public decimal GastosDolares { get; set; }
+        /// <summary>Estado tal como está en la BD, en mayúsculas (la página compara con "PENDIENTE" y "POR_CONFORMAR").</summary>
+        public string Estado { get; set; }
+        public bool Firmada { get; set; }
+        public bool Revisada { get; set; }
+    }
+
+    /// <summary>Orden que espera la conformidad del conductor (aviso de arriba del panel).</summary>
+    public class OrdenPorConformarConductor
+    {
+        public int IdOrdenViaje { get; set; }
+        public string NumeroViaje { get; set; }
     }
 
     /// <summary>Orden rechazada (o reenviada) del conductor, lista para el formulario y para conservar lo de la administración.</summary>

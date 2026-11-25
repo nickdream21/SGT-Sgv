@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Globalization;
 using System.Linq;
 using System.Web.UI.WebControls;
@@ -22,37 +21,8 @@ namespace WebSGV.Views
         #region Clases de Datos
 
         // Los modelos GastoFinanciero, IngresoAdicionalData y GastoAdicionalData se
-        // movieron a WebSGV.Models.Conductor (compartidos con LiquidacionConductorService).
-
-        public class ViajeActivo
-        {
-            public int IdViajeProgreso { get; set; }
-            public string NumeroViajeProgreso { get; set; }
-            public int IdConductor { get; set; }
-            public string NombreConductor { get; set; }
-            public DateTime FechaInicio { get; set; }
-            public DateTime FechaUltimaActividad { get; set; }
-            public string EstadoViaje { get; set; }
-            public string DescripcionViaje { get; set; }
-            public int CantidadDespachos { get; set; }
-            public bool EsInternacional { get; set; }
-        }
-
-        public class DespachoInfo
-        {
-            public int IdDespacho { get; set; }
-            public string NumeroDespacho { get; set; }
-            public DateTime FechaDespacho { get; set; }
-            public string Cliente { get; set; }
-            public string TipoOperacion { get; set; }
-            public string LugarOperacion { get; set; }
-            public string PlacaTracto { get; set; }
-            public string PlacaCarreta { get; set; }
-            public string EstadoDespacho { get; set; }
-            public string GuiaRemitente { get; set; }
-            public string GuiaTransportista { get; set; }
-            public string NumeroCPIC { get; set; }
-        }
+        // movieron a WebSGV.Models.Conductor (compartidos con LiquidacionConductorService);
+        // ViajeActivoConductor, DespachoViajeActivo y el historial, a DashboardConductorService (E6-18).
 
         public class EstacionPeaje
         {
@@ -173,11 +143,11 @@ namespace WebSGV.Views
             try
             {
                 CargarDatosConductor();
-                List<ViajeActivo> viajesActivos = ObtenerViajesActivos();
+                List<ViajeActivoConductor> viajesActivos = ObtenerViajesActivos();
 
                 if (viajesActivos.Count > 0)
                 {
-                    ViajeActivo viajePrimario = viajesActivos[0]; // el más antiguo (ASC)
+                    ViajeActivoConductor viajePrimario = viajesActivos[0]; // el más antiguo (ASC)
                     List<int> idsViajes = viajesActivos.Select(v => v.IdViajeProgreso).ToList();
                     int totalDespachos = viajesActivos.Sum(v => v.CantidadDespachos);
 
@@ -211,24 +181,12 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                DatosConductorPanel datos = DashboardConductorService.ObtenerDatosConductor(IdConductorActual);
+                if (datos != null)
                 {
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerDatosConductor", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@idConductor", IdConductorActual);
-                        conn.Open();
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                lblNombreConductor.Text = System.Web.HttpUtility.HtmlEncode(reader["nombreCompleto"].ToString());
-                                lblDNIConductor.Text = System.Web.HttpUtility.HtmlEncode(reader["DNI"].ToString());
-                                hfIdConductor.Value = IdConductorActual.ToString();
-                            }
-                        }
-                    }
+                    lblNombreConductor.Text = System.Web.HttpUtility.HtmlEncode(datos.NombreCompleto);
+                    lblDNIConductor.Text = System.Web.HttpUtility.HtmlEncode(datos.Dni);
+                    hfIdConductor.Value = IdConductorActual.ToString();
                 }
             }
             catch (Exception ex)
@@ -246,30 +204,10 @@ namespace WebSGV.Views
         {
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_VerificarObservacionesRechazo", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@idsViajes", string.Join(",", idsViajes));
-                        conn.Open();
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                string numeroOrden = reader["numeroOrdenViaje"].ToString();
-                                string observaciones = reader["observacionesRechazo"].ToString();
-                                DateTime fechaRechazo = reader["fechaRechazo"] != DBNull.Value
-                                    ? Convert.ToDateTime(reader["fechaRechazo"])
-                                    : FechaHelper.Ahora();
-                                string rechazadoPor = reader["rechazadoPor"]?.ToString() ?? "Administrador";
-
-                                MostrarAlertaRechazo(numeroOrden, observaciones, fechaRechazo, rechazadoPor);
-                            }
-                        }
-                    }
-                }
+                RechazoOrdenConductor rechazo = DashboardConductorService.ObtenerUltimoRechazo(idsViajes);
+                if (rechazo != null)
+                    MostrarAlertaRechazo(rechazo.NumeroOrdenViaje, rechazo.Observaciones,
+                        rechazo.FechaRechazo ?? FechaHelper.Ahora(), rechazo.RechazadoPor);
             }
             catch (Exception ex)
             {
@@ -353,55 +291,25 @@ namespace WebSGV.Views
 
         #region Métodos de Viaje Activo
 
-        private List<ViajeActivo> ObtenerViajesActivos()
+        /// <summary>Viajes abiertos del conductor de la sesión (nunca de los campos ocultos); vacía si la lectura falla.</summary>
+        private List<ViajeActivoConductor> ObtenerViajesActivos()
         {
-            List<ViajeActivo> viajes = new List<ViajeActivo>();
             try
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerViajesActivosConductor", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@idConductor", IdConductorActual);
-                        conn.Open();
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                viajes.Add(new ViajeActivo
-                                {
-                                    IdViajeProgreso = Convert.ToInt32(reader["idViajeProgreso"]),
-                                    NumeroViajeProgreso = reader["numeroViajeProgreso"].ToString(),
-                                    IdConductor = Convert.ToInt32(reader["idConductor"]),
-                                    NombreConductor = reader["nombreConductor"].ToString(),
-                                    FechaInicio = Convert.ToDateTime(reader["fechaInicio"]),
-                                    FechaUltimaActividad = Convert.ToDateTime(reader["fechaUltimaActividad"]),
-                                    EstadoViaje = reader["estadoViaje"].ToString(),
-                                    DescripcionViaje = reader["descripcionViaje"]?.ToString() ?? "",
-                                    CantidadDespachos = Convert.ToInt32(reader["cantidadDespachos"]),
-                                    EsInternacional = reader["esInternacional"] != DBNull.Value && Convert.ToBoolean(reader["esInternacional"])
-                                });
-                            }
-                        }
-                    }
-                }
-
-                return viajes;
+                return DashboardConductorService.ObtenerViajesActivos(IdConductorActual);
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Error al obtener viajes activos en DashboardConductor");
-                return viajes;
+                return new List<ViajeActivoConductor>();
             }
         }
 
-        private void MostrarViajesActivos(List<ViajeActivo> viajes, int totalDespachos)
+        private void MostrarViajesActivos(List<ViajeActivoConductor> viajes, int totalDespachos)
         {
             try
             {
-                ViajeActivo viajePrimario = viajes[0];
+                ViajeActivoConductor viajePrimario = viajes[0];
                 List<int> ids = viajes.Select(v => v.IdViajeProgreso).ToList();
 
                 pnlViajeActivo.Visible = true;
@@ -455,39 +363,7 @@ namespace WebSGV.Views
         {
             try
             {
-                List<DespachoInfo> despachos = new List<DespachoInfo>();
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    using (SqlCommand cmd = new SqlCommand("sp_DC_ObtenerDespachosViajesActivos", conn))
-                    {
-                        cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.AddWithValue("@idsViajes", string.Join(",", idsViajes));
-                        conn.Open();
-
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                despachos.Add(new DespachoInfo
-                                {
-                                    IdDespacho = Convert.ToInt32(reader["idDespacho"]),
-                                    NumeroDespacho = reader["numeroDespacho"].ToString(),
-                                    FechaDespacho = Convert.ToDateTime(reader["fechaDespacho"]),
-                                    Cliente = reader["nombreCliente"].ToString(),
-                                    TipoOperacion = reader["tipoOperacion"].ToString(),
-                                    LugarOperacion = reader["lugarOperacion"].ToString(),
-                                    PlacaTracto = reader["placaTracto"].ToString(),
-                                    PlacaCarreta = reader["placaCarreta"].ToString(),
-                                    EstadoDespacho = reader["estadoDespacho"].ToString(),
-                                    GuiaRemitente = reader["guiaRemitente"].ToString(),
-                                    GuiaTransportista = reader["guiaTransportista"].ToString(),
-                                    NumeroCPIC = reader["numeroCPIC"].ToString()
-                                });
-                            }
-                        }
-                    }
-                }
+                List<DespachoViajeActivo> despachos = DashboardConductorService.ObtenerDespachosViajesActivos(idsViajes);
 
                 rptDespachosActivos.DataSource = despachos;
                 rptDespachosActivos.DataBind();
@@ -499,11 +375,11 @@ namespace WebSGV.Views
             }
         }
 
-        private void HabilitarLiquidacion(List<ViajeActivo> viajes, int totalDespachos)
+        private void HabilitarLiquidacion(List<ViajeActivoConductor> viajes, int totalDespachos)
         {
             try
             {
-                ViajeActivo viajePrimario = viajes[0];
+                ViajeActivoConductor viajePrimario = viajes[0];
 
                 pnlSinViajeParaLiquidar.Visible = false;
                 pnlFormularioLiquidacion.Visible = true;
@@ -557,7 +433,7 @@ namespace WebSGV.Views
 
                 // Los viajes se leen de la BD con el conductor de la sesión, no de los campos ocultos
                 // (que el navegador puede cambiar): el principal es el mismo que muestra la página.
-                List<ViajeActivo> viajesActivos = ObtenerViajesActivos();
+                List<ViajeActivoConductor> viajesActivos = ObtenerViajesActivos();
                 if (viajesActivos.Count == 0)
                 {
                     MostrarMensaje("No se encontró un viaje activo para liquidar. Recarga la página e intenta nuevamente.", "warning");
@@ -951,41 +827,14 @@ namespace WebSGV.Views
             _historialCargado = true;
             try
             {
-                DataTable dt = DbHelper.ConsultarTablaSp("sp_DC_ObtenerHistorialLiquidaciones",
-                    DbHelper.Param("@idConductor", IdConductorActual));
-
                 DateTime? desde = DateTime.TryParse(txtFechaDesde.Text, out DateTime d) ? d.Date : (DateTime?)null;
                 DateTime? hasta = DateTime.TryParse(txtFechaHasta.Text, out DateTime h) ? h.Date : (DateTime?)null;
-                string estadoFiltro = ddlEstadoFiltro.SelectedValue;
 
-                var filas = new List<object>();
-                var porConformar = new List<object>();
-                foreach (DataRow row in dt.Rows)
-                {
-                    string estado = row["estadoAprobacion"] != DBNull.Value ? row["estadoAprobacion"].ToString().ToUpperInvariant() : "PENDIENTE";
-                    DateTime? salida = row["fechaSalida"] != DBNull.Value ? Convert.ToDateTime(row["fechaSalida"]) : (DateTime?)null;
-
-                    // El aviso de conformidad pendiente no depende de los filtros del historial.
-                    if (estado == "POR_CONFORMAR")
-                        porConformar.Add(new { IdOrdenViaje = Convert.ToInt32(row["idOrdenViaje"]), NumeroViaje = row["numeroOrdenViaje"].ToString() });
-
-                    if (desde.HasValue && (!salida.HasValue || salida.Value.Date < desde.Value)) continue;
-                    if (hasta.HasValue && (!salida.HasValue || salida.Value.Date > hasta.Value)) continue;
-                    if (!string.IsNullOrEmpty(estadoFiltro) && GrupoEstado(estado) != GrupoEstado(estadoFiltro)) continue;
-
-                    filas.Add(new
-                    {
-                        IdOrdenViaje = Convert.ToInt32(row["idOrdenViaje"]),
-                        NumeroViaje = row["numeroOrdenViaje"].ToString(),
-                        FechaSalida = row["fechaSalida"],
-                        FechaLlegada = row["fechaLlegada"],
-                        GastosSoles = row["totalGastosSoles"] != DBNull.Value ? Convert.ToDecimal(row["totalGastosSoles"]) : 0m,
-                        GastosDolares = row["totalGastosDolares"] != DBNull.Value ? Convert.ToDecimal(row["totalGastosDolares"]) : 0m,
-                        Estado = estado,
-                        Firmada = dt.Columns.Contains("firmada") && row["firmada"] != DBNull.Value && Convert.ToBoolean(row["firmada"]),
-                        Revisada = dt.Columns.Contains("revisada") && row["revisada"] != DBNull.Value && Convert.ToBoolean(row["revisada"])
-                    });
-                }
+                // Filtrado en SQL (M-128); el aviso de conformidad pendiente no depende de los filtros.
+                HistorialConductor historial = DashboardConductorService.ObtenerHistorial(
+                    IdConductorActual, desde, hasta, ddlEstadoFiltro.SelectedValue);
+                List<FilaHistorialConductor> filas = historial.Filas;
+                List<OrdenPorConformarConductor> porConformar = historial.PorConformar;
 
                 rptPorConformar.DataSource = porConformar;
                 rptPorConformar.DataBind();
@@ -1031,23 +880,9 @@ namespace WebSGV.Views
             }
         }
 
-        /// <summary>Estados equivalentes (la BD usa APROBADO o COMPLETADO, REABIERTO o RECHAZADO).</summary>
-        private static string GrupoEstado(string estado)
-        {
-            switch ((estado ?? "").ToUpperInvariant())
-            {
-                case "APROBADO":
-                case "COMPLETADO": return "APROBADO";
-                case "REABIERTO":
-                case "RECHAZADO": return "RECHAZADO";
-                case "POR_CONFORMAR": return "POR_CONFORMAR";
-                default: return "PENDIENTE";
-            }
-        }
-
         protected string TextoEstado(object estado)
         {
-            switch (GrupoEstado(estado?.ToString()))
+            switch (DashboardConductorService.GrupoEstado(estado?.ToString()))
             {
                 case "APROBADO": return "Aprobada";
                 case "RECHAZADO": return "Rechazada";

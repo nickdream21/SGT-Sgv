@@ -24,7 +24,6 @@ namespace WebSGV.Tests
             ["Views/RegistroClientes.aspx.cs"] = 32,
             ["Views/RegistroPlantas.aspx.cs"] = 15,
             ["Views/RegistroPeajes.aspx.cs"] = 13,
-            ["Views/DashboardConductor.aspx.cs"] = 10,
             ["Views/DashboardAdminSistema.aspx.cs"] = 4,
             ["Salud.ashx.cs"] = 4,
             ["Views/Exportacion/ImportarSeguimiento.aspx.cs"] = 3,
