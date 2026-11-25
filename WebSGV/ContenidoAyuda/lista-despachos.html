@@ -1,0 +1,29 @@
+<p class="ayuda-resumen">Muestra los viajes en progreso y los lotes registrados (un lote es la carga de un pedido, con todos sus despachos). Desde aquí se consulta cada lote, se corrigen sus datos y se anula si hace falta.</p>
+
+<h2>Las dos listas</h2>
+<figure><img src="01.webp" alt="Lista de lotes de despacho con filtros y acciones por lote"><figcaption>Lotes registrados con sus filtros y las acciones de cada lote.</figcaption></figure>
+<ul>
+<li><strong>Viajes activos</strong>: cada viaje en progreso con su conductor, inicio, cantidad de despachos, ámbito y última actividad. <strong>Ver despachos</strong> muestra los despachos del viaje.</li>
+<li><strong>Lotes registrados</strong>: cada lote con su fecha, pedido, operación, unidades, documentos y factura o CPIC. Se filtran por pedido, cliente, planta, fechas y documentos; <em>Más filtros</em> agrega factura, CPIC, conductor, operación y los lotes anulados.</li>
+</ul>
+<p>El enlace <strong>Ver los lotes con pendientes</strong> filtra los lotes a los que les falta algún documento. <strong>Nuevo despacho</strong> lleva a Registro de despachos.</p>
+
+<h2>Acciones de cada lote</h2>
+<ul>
+<li><strong>Ver unidades</strong>: el detalle del lote con sus despachos, conductores, placas, guías y número de viaje.</li>
+<li><strong>Documentos</strong>: abre el expediente del pedido en la <a href="?tema=bandeja-documentos">Bandeja de documentos</a>. Sale en ámbar si le falta algún documento.</li>
+<li><strong>Editar</strong>: cambia los datos base del lote.</li>
+</ul>
+<p>Un lote anulado es solo de consulta: sus despachos ya no cuentan en la liquidación ni en el seguimiento, y no se pueden editar ni agregar documentos.</p>
+
+<h2>Editar un lote</h2>
+<p>En <em>Editar datos base del lote</em> se corrigen la fecha de programación, la planta y el tipo de operación, el ámbito, los datos de la factura y de la CPIC y el conductor de cada despacho. Los cambios se aplican a todo el lote al pulsar <strong>Guardar cambios</strong> y confirmar.</p>
+<ul>
+<li>Para sacar la factura o la CPIC del lote, marque <em>Quitar esta factura del lote</em> o <em>Quitar esta CPIC del lote</em>.</li>
+<li><strong>Anular lote</strong> deja todos sus despachos como anulados: salen de la lista, de la liquidación del conductor y del seguimiento. Pide confirmación.</li>
+</ul>
+
+<h3>Lotes con más de una factura o CPIC</h3>
+<p>Si el lote lleva más de una factura o más de una CPIC, sus números no se cambian en Editar (escribir un número las juntaría en una). Se corrigen en <strong>Factura y CPIC por despacho</strong>, dentro del registro manual de documentos del lote.</p>
+<p class="ayuda-nota"><strong>Editar lote no pasa un lote a una factura y una CPIC que ya existen.</strong> Para que unos despachos queden con una pareja de factura y CPIC ya registrada, abra <strong>Factura y CPIC por despacho</strong>, marque los despachos, escriba los números y pulse <strong>Asignar a los marcados</strong>. Si el número ya existe se usa ese documento (la factura, del mismo cliente); si no, se crea. Lo que deje vacío no cambia.</p>
+<p>Al registro manual de documentos se llega desde el expediente del pedido en la Bandeja de documentos, con el enlace <strong>Registro manual</strong>.</p>

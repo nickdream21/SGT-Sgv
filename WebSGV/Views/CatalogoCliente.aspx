@@ -22,13 +22,9 @@
             <% if (IdClienteSeleccionado > 0) { %>
             <a class="btn btn-primary btn-sm d-lg-none" href="#altaCatalogo">Agregar</a>
             <% } %>
-            <button type="button" class="sgv-ayuda" data-toggle="collapse" data-target="#ayudaPagina"
-                aria-controls="ayudaPagina" aria-expanded="false" aria-label="Ayuda de esta página">?</button>
+            <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=clientes-plantas") %>" target="_blank" rel="noopener"
+                data-ayuda="clientes-plantas" aria-label="Ayuda de esta p&#xE1;gina">?</a>
         </div>
-    </div>
-    <div id="ayudaPagina" class="collapse">
-        <p class="sgv-ayuda-texto">Cada cliente tiene sus propios productos y plantas; las rutas generales son comunes a todos.
-            Los elementos inactivos dejan de ofrecerse al registrar despachos, pero sus datos hist&#xF3;ricos se conservan.</p>
     </div>
 
     <!-- Selector de cliente -->

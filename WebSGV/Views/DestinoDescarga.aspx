@@ -22,14 +22,9 @@
         </div>
         <div class="sgv-encabezado-acciones">
             <a class="btn btn-primary btn-sm d-lg-none" href="#altaCatalogo">Registrar unidad</a>
-            <button type="button" class="sgv-ayuda" data-toggle="collapse" data-target="#ayudaPagina"
-                aria-controls="ayudaPagina" aria-expanded="false" aria-label="Ayuda de esta página">?</button>
+            <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=destino-descarga") %>" target="_blank" rel="noopener"
+                data-ayuda="destino-descarga" aria-label="Ayuda de esta p&#xE1;gina">?</a>
         </div>
-    </div>
-    <div id="ayudaPagina" class="collapse">
-        <p class="sgv-ayuda-texto">Indica a qu&#xE9; planta del cliente va cada tracto de un pedido (en Vitapro, <strong>Milagro</strong> o <strong>Jave</strong>).
-            La descarga por pedido de Registro de despachos usa esta lista para proponer la planta de cada unidad.
-            Quitar un destino no lo borra: queda en el historial.</p>
     </div>
 
     <%-- Lista del cliente: se lee y se muestra qué cambiaría; no se guarda hasta "Aplicar". Plegada (E5-16) salvo

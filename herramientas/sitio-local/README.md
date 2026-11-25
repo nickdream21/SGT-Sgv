@@ -29,6 +29,13 @@ Si Claude dice que no puede usar el navegador, es que la extensión no está con
 
 Para saber si está conectado: pedirle a Claude "lista los navegadores conectados".
 
+## Copia contra una BD de ensayo (capturas de la ayuda)
+
+`iniciar-sitio-ensayo.ps1 -BaseDeDatos sgvEnsayo_*` copia la salida compilada a `%LOCALAPPDATA%\SGV-sitio-ensayo\`
+con una conexión a esa BD local (autenticación de Windows), sin correo, ApisPeru ni GPS, y la levanta en
+`http://localhost:50391`. Es la que usa `herramientas/manual/capturar.mjs` (ver su README): nunca se captura
+contra la BD de pruebas ni el sitio de 44390/50291.
+
 ## Ver las pantallas sin ventana (capturas)
 
 Si la captura de la extensión falla (ventana minimizada), `capturar.js` abre Edge sin ventana, inicia

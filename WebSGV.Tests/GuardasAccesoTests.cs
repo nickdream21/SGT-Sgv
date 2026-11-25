@@ -32,6 +32,9 @@ namespace WebSGV.Tests
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { "Views/Auditoria.aspx",                         "SecurityHelper.ExigirRolAdminSistema()" },
+                // Ayuda (E5-21): con sesión; el tema y sus imágenes se filtran por rol con AyudaCatalogo.PuedeVer.
+                { "Views/Ayuda.aspx",                             "SecurityHelper.ExigirSesion()" },
+                { "Views/AyudaImagen.aspx",                       "SecurityHelper.ExigirSesion()" },
                 { "Views/BandejaDocumentos.aspx",                 "SecurityHelper.ExigirRolAdmin()" },
                 { "Views/CatalogoCliente.aspx",                   "RolesHelper.ValidarAccesoSeccion(\"REGISTRO\")" },
                 // Conductor (su conformidad) o quien consulta la orden: el rol se decide después, en el GET.
@@ -274,6 +277,9 @@ namespace WebSGV.Tests
             new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
             {
                 { "Views/Auditoria.aspx",                         new[] { Y } },
+                // Solo la sesión: qué tema ve cada rol lo decide AyudaCatalogo (AyudaTests).
+                { "Views/Ayuda.aspx",                             Todos },
+                { "Views/AyudaImagen.aspx",                       Todos },
                 { "Views/BandejaDocumentos.aspx",                 new[] { A } },
                 { "Views/CatalogoCliente.aspx",                   new[] { A } },
                 // Solo la sesión: el permiso por orden y rol se decide después (ver GuardaEsperada).

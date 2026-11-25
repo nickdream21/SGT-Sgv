@@ -85,6 +85,10 @@
                             Configuración
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdownConfig">
+                            <% foreach (var config in MenuConfiguracion)
+                                { %>
+                            <a class="<%: ClaseOpcionConfiguracion(config) %>" href="<%: ResolveUrl(config.Url) %>"<%= AriaActual(config) %>><%: config.Texto %></a>
+                            <% } %>
                             <a class="dropdown-item" href="#modalCambiarContrasena" data-toggle="modal">
                                 Cambiar contraseña
                             </a>
@@ -183,6 +187,29 @@
                             CssClass="btn btn-primary"
                             OnClick="btnCambiarContrasena_Click"
                             data-accion="validarFormContrasena" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de ayuda (E5-21): el "?" de cada pantalla (a[data-ayuda]) trae aquí su tema de
+             Views/Ayuda.aspx (SiteMaster.js), sin salir de la página ni perder lo escrito. Sin JS, el
+             enlace abre el tema en otra pestaña. -->
+        <div class="modal fade" id="modalAyuda" tabindex="-1" role="dialog" aria-labelledby="modalAyudaTitulo" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable sgv-modal-ayuda" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalAyudaTitulo">Ayuda</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="modalAyudaCuerpo" class="sgv-ayuda-cuerpo" aria-live="polite"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <a id="modalAyudaPestana" class="btn btn-outline-secondary" href="#" target="_blank" rel="noopener">Abrir en otra pesta&#xF1;a</a>
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Cerrar</button>
                     </div>
                 </div>
             </div>

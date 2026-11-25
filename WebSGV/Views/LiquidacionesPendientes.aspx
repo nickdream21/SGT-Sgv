@@ -17,6 +17,10 @@
                 <h1 class="h2">Liquidaciones pendientes</h1>
                 <p>Aprueba, revisa y controla las liquidaciones de los conductores</p>
             </div>
+            <div class="sgv-encabezado-acciones">
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=liquidaciones-pendientes") %>" target="_blank" rel="noopener"
+                    data-ayuda="liquidaciones-pendientes" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+            </div>
         </div>
 
         <!-- TABS DE NAVEGACIÓN -->

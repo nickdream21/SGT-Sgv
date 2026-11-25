@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Web;
 using System.Web.UI;
 using WebSGV.Helpers;
@@ -16,6 +17,8 @@ namespace WebSGV
         public string NombreUsuario { get; set; }
         /// <summary>Menús que ve el rol actual (MenuSitio.Para, E5-19c); vacío sin sesión.</summary>
         public IReadOnlyList<GrupoMenu> Menu { get; private set; } = new GrupoMenu[0];
+        /// <summary>Opciones de Configuración que vienen de MenuSitio ("Ayuda", E5-21); vacío sin sesión.</summary>
+        public IReadOnlyList<EntradaMenu> MenuConfiguracion { get; private set; } = new EntradaMenu[0];
         /// <summary>Enlace "Mi seguridad" (segundo factor, E4-14): solo los roles de RolesHelper.ExigeSegundoFactor.</summary>
         public bool MuestraMiSeguridad { get; set; }
         /// <summary>Página de inicio del rol actual (logo y enlace "Inicio" del menú).</summary>
@@ -37,8 +40,28 @@ namespace WebSGV
 
         private bool EnMiSeguridad => MenuSitio.EsActiva(UrlMiSeguridad, RutaActual);
 
-        /// <summary>Menú Configuración: "active" cuando la página actual es Mi seguridad.</summary>
-        public string ClaseConfiguracion => "nav-item dropdown" + (EnMiSeguridad ? " active" : "");
+        /// <summary>Menú Configuración: "active" cuando la página actual es Mi seguridad o una de sus opciones de MenuSitio.</summary>
+        public string ClaseConfiguracion => "nav-item dropdown"
+            + (EnMiSeguridad || MenuConfiguracion.Any(o => MenuSitio.EsActiva(o, RutaActual)) ? " active" : "");
+
+        /// <summary>Clases de una opción de Configuración que viene de MenuSitio.</summary>
+        public string ClaseOpcionConfiguracion(EntradaMenu e) => "dropdown-item" + (MenuSitio.EsActiva(e, RutaActual) ? " active" : "");
+
+        /// <summary>El rol tiene al menos un tema de ayuda abierto (si no, "Ayuda" no sale en el menú).</summary>
+        private static bool RolTieneAyuda(string rol)
+        {
+            try
+            {
+                var catalogo = WebSGV.Services.Ayuda.AyudaCatalogo.CargarConCache(
+                    System.Web.Hosting.HostingEnvironment.MapPath("~/ContenidoAyuda"));
+                return catalogo.TemasDelRol(rol, WebSGV.Views.Ayuda.InterruptorEncendido).Count > 0;
+            }
+            catch (Exception ex)
+            {
+                LogSGV.Error(ex, "Menú: no se pudo leer el catálogo de la ayuda");
+                return false;
+            }
+        }
 
         /// <summary>Opción "Mi seguridad": "active" en su propia página.</summary>
         public string ClaseMiSeguridad => "dropdown-item" + (EnMiSeguridad ? " active" : "");
@@ -239,6 +262,7 @@ namespace WebSGV
             RolUsuario = "";
             NombreUsuario = "";
             Menu = new GrupoMenu[0];
+            MenuConfiguracion = new EntradaMenu[0];
             MuestraMiSeguridad = false;
             UrlInicio = "~/Views/Login.aspx";
         }
@@ -251,6 +275,7 @@ namespace WebSGV
                 NombreUsuario = RolesHelper.ObtenerNombreUsuario() ?? "Usuario";
                 Menu = MenuSitio.Para(RolesHelper.ObtenerRolActual(),
                     WebSGV.Services.Liquidaciones.MovimientosViajeService.Habilitado);
+                MenuConfiguracion = MenuSitio.ConfiguracionPara(RolesHelper.ObtenerRolActual(), RolTieneAyuda);
                 MuestraMiSeguridad = RolesHelper.ExigeSegundoFactor(RolesHelper.ObtenerRolActual());
                 UrlInicio = RolesHelper.UrlInicioSegunRol(RolUsuario) ?? "~/Views/Login.aspx";
             }

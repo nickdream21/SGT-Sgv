@@ -103,6 +103,7 @@ namespace WebSGV.Tests
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 ["Views/DescargarDocumento.aspx.cs"] = "enlace directo (GET) con la llave de sesión",
+                ["Views/AyudaImagen.aspx.cs"] = "imagen de un tema de ayuda (GET desde el <img> del fragmento)",
                 ["Views/DescargarPdfOrdenViaje.aspx.cs"] = "enlace directo (GET) al PDF archivado",
                 ["Views/ReportesOrdenesViaje.aspx.cs"] = "exporta por GET (?action=...) desde ReportesOrdenesViaje.js",
                 ["Views/Exportacion/GpsAutomatico.ashx.cs"] = "manejador JSON, no es una página",

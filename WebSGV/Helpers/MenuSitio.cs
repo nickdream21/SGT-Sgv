@@ -84,7 +84,7 @@ namespace WebSGV.Helpers
     /// <summary>
     /// Única fuente del menú de Site.Master (E5-19c, M-124): los menús y sus opciones en el orden en que
     /// se ven, y quién ve cada una. "Configuración" (Cambiar contraseña, Mi seguridad), el nombre del
-    /// usuario y "Cerrar sesión" siguen en el marcado. Pura (no lee la sesión ni la configuración);
+    /// usuario y "Cerrar sesión" siguen en el marcado; de Configuración solo "Ayuda" sale de aquí (<see cref="Configuracion"/>). Pura (no lee la sesión ni la configuración);
     /// fijada por <c>MenuSitioTests</c>, que además comprueba que quien ve una opción entra a su página.
     /// </summary>
     public static class MenuSitio
@@ -94,6 +94,8 @@ namespace WebSGV.Helpers
         private const string CondConductor = "EsRolConductor";
         private const string CondAdminSistema = "EsRolAdminSistema";
         private const string CondContabilidad = "EsRolContabilidad";
+        // Cualquier rol vigente con sesión (los grupos de la ayuda); un rol retirado no la ve.
+        private const string CondRolVigente = "EsRolVigente";
 
         private static EntradaMenu PorRol(string texto, string url, string condicion, bool separadorAntes = false, bool soloConMovimientos = false)
         {
@@ -106,6 +108,7 @@ namespace WebSGV.Helpers
                 // Solo su menú: la administración también entra a la página (LIQUIDACIONES_CONTABILIDAD),
                 // pero llega desde Inicio, no desde el menú.
                 case CondContabilidad: permite = r => r == RolesHelper.ROL_CONTABILIDAD; break;
+                case CondRolVigente:   permite = r => WebSGV.Services.Ayuda.AyudaCatalogo.Grupo(r) != null; break;
                 default: throw new ArgumentException("Condición de menú desconocida: " + condicion, nameof(condicion));
             }
             return new EntradaMenu(texto, url, null, condicion, permite, separadorAntes, soloConMovimientos);
@@ -163,6 +166,26 @@ namespace WebSGV.Helpers
 
             Directo(PorRol("Liquidaciones aprobadas", "~/Views/LiquidacionesAprobadasContabilidad.aspx", CondContabilidad)),
         };
+
+        /// <summary>
+        /// Opciones de MenuSitio dentro del menú "Configuración" del marcado, antes de "Cambiar contraseña"
+        /// (que abre un modal) y "Mi seguridad" (depende del segundo factor). "Ayuda" (E5-21) la puede abrir todo
+        /// rol vigente, pero el menú solo la muestra si el rol tiene algún tema abierto (ver <see cref="ConfiguracionPara"/>).
+        /// </summary>
+        public static readonly IReadOnlyList<EntradaMenu> Configuracion = new[]
+        {
+            PorRol("Ayuda", UrlAyuda, CondRolVigente),
+        };
+
+        public const string UrlAyuda = "~/Views/Ayuda.aspx";
+
+        /// <summary>
+        /// Las opciones de <see cref="Configuracion"/> que ve el rol. "Ayuda" sale solo si
+        /// <paramref name="rolTieneAyuda"/> dice que el rol tiene al menos un tema abierto (sin borrador ni
+        /// interruptor apagado): un índice vacío no se ofrece. Site.Master lo calcula con AyudaCatalogo.
+        /// </summary>
+        public static IReadOnlyList<EntradaMenu> ConfiguracionPara(string rol, Func<string, bool> rolTieneAyuda) =>
+            Configuracion.Where(e => e.PuedeVer(rol) && (e.Url != UrlAyuda || (rolTieneAyuda != null && rolTieneAyuda(rol)))).ToList();
 
         /// <summary>
         /// Los menús que ve el rol, con solo las opciones que ve (un menú sin opciones no sale).

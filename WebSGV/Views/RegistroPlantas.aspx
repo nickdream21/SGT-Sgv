@@ -23,13 +23,9 @@
         </div>
         <div class="sgv-encabezado-acciones">
             <a class="btn btn-primary btn-sm d-md-none" href="#altaCatalogo">Agregar planta</a>
-            <button type="button" class="sgv-ayuda" data-toggle="collapse" data-target="#ayudaPagina"
-                aria-controls="ayudaPagina" aria-expanded="false" aria-label="Ayuda de esta página">?</button>
+            <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=clientes-plantas") %>" target="_blank" rel="noopener"
+                data-ayuda="clientes-plantas" aria-label="Ayuda de esta p&#xE1;gina">?</a>
         </div>
-    </div>
-    <div id="ayudaPagina" class="collapse">
-        <p class="sgv-ayuda-texto">Las plantas activas aparecen en el selector de planta de operaci&#xF3;n al registrar despachos.
-            Las inactivas quedan ocultas, pero sus datos hist&#xF3;ricos se conservan.</p>
     </div>
 
     <div class="row">

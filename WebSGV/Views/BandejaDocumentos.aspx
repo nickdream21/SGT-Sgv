@@ -13,6 +13,10 @@
                     qu&#xE9; va a registrar antes de guardar. Sin escribir n&#xFA;meros a mano.
                 </p>
             </div>
+            <div class="sgv-encabezado-acciones">
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=bandeja-documentos") %>" target="_blank" rel="noopener"
+                    data-ayuda="bandeja-documentos" aria-label="Ayuda de esta p&#xE1;gina">?</a>
+            </div>
         </div>
 
         <asp:Panel ID="pnlMensaje" runat="server" Visible="false">

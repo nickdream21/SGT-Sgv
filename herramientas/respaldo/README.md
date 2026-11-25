@@ -151,7 +151,12 @@ Registra "SGV - Respaldo diario" (23:00, `-Hora` para cambiarla): `respaldar-bd.
 # Conservar la BD de ensayo para revisarla o romperla a mano (bórrela después), sin pruebas
 .\herramientas\respaldo\ensayar-migracion.ps1 -Conservar -SinPruebas
 .\WebSGV\Database\sql.ps1 "SELECT COUNT(*) FROM dbo.SchemaVersion" -Entorno ensayo -BaseDeDatos sgvEnsayo_20261121_1300
+
+# Anonimizarla para capturas o videos (aborta si no es sgvEnsayo_*; ver herramientas/manual/README.md)
+.\WebSGV\Database\sql.ps1 -Entorno ensayo -BaseDeDatos sgvEnsayo_20261121_1300 -Archivo herramientas\respaldo\anonimizar-ensayo.sql
 ```
+
+`anonimizar-ensayo.sql` reescribe nombres, documentos, contactos, usuarios guardados como texto, trazos de firma y textos libres, y vacía la auditoría (la lista completa está en su cabecera; cada columna de la lista se toca solo si existe). `Usuarios.nombreUsuario` pasa a `usuario<id>` salvo las cuentas de prueba de la tabla `@UsuariosDePrueba` al inicio del script (las de `privado/CREDENCIALES_USUARIOS.txt` menos el conductor, que entra con un documento): es una lista explícita, no "lo que no sea solo dígitos", para que un usuario con nombre de persona tampoco quede. Si se crea una cuenta de prueba nueva, agréguela ahí. El SELECT final debe dar 0 en todo salvo `conductores`, `usuarios` y `usuariosDePrueba`.
 
 - Toma el `.bacpac` más reciente de `<Carpeta>\bd\` (o `-Bacpac`; `-RespaldoNuevo` exporta uno antes) y muestra su fecha y antigüedad. `-Carpeta` por defecto es `$env:SGV_CARPETA_RESPALDO`.
 - Lo importa con `sqlpackage` en una BD **nueva** `sgvEnsayo_aaaaMMdd_HHmm` (`-NombreBd`, siempre `sgvEnsayo_*`) de un SQL Server **local** (`.` y, si no responde, `(localdb)\MSSQLLocalDB`; `-Servidor`), con la autenticación de Windows. Rechaza servidores remotos y BD que ya existan.

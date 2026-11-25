@@ -1328,3 +1328,69 @@
     }, true);
     document.addEventListener('submit', function (e) { SGV.normalizarMontos(e.target); }, true);
 })();
+
+// ── Ayuda de la pantalla (E5-21) ────────────────────────────────────
+// El "?" del encabezado es <a class="sgv-ayuda" href=".../Ayuda.aspx?tema=X" target="_blank" data-ayuda="X">.
+// Con JS, el clic trae esa página, toma su #ayudaContenido (y su data-titulo) y lo muestra en #modalAyuda
+// de Site.Master: no se sale de la pantalla ni se pierde un formulario a medio llenar. Los enlaces a otro
+// tema dentro del fragmento también llevan data-ayuda y se abren en el mismo modal. Ctrl/Mayús/clic central
+// siguen abriendo la pestaña, y en la propia Ayuda.aspx los enlaces navegan normalmente. Si la página no trae
+// el tema (otro rol, sesión vencida, sin conexión), el modal lo dice y ofrece abrirlo en otra pestaña.
+(function () {
+    if (/\/Ayuda\.aspx$/i.test(window.location.pathname)) return;
+
+    function mostrar(titulo, nodos, href) {
+        var cuerpo = document.getElementById('modalAyudaCuerpo');
+        var tit = document.getElementById('modalAyudaTitulo');
+        var pestana = document.getElementById('modalAyudaPestana');
+        if (!cuerpo || !tit) return false;
+        tit.textContent = titulo || 'Ayuda';
+        while (cuerpo.firstChild) cuerpo.removeChild(cuerpo.firstChild);
+        for (var i = 0; i < nodos.length; i++) cuerpo.appendChild(nodos[i]);
+        if (pestana) pestana.setAttribute('href', href);
+        cuerpo.scrollTop = 0;
+        return true;
+    }
+
+    function mensaje(texto) {
+        var p = document.createElement('p');
+        p.className = 'sgv-suave mb-0';
+        p.textContent = texto;
+        return p;
+    }
+
+    function abrir(href) {
+        var $m = window.jQuery ? jQuery('#modalAyuda') : null;
+        if (!$m || !$m.length || typeof $m.modal !== 'function' || !window.fetch || !window.DOMParser) return false;
+        mostrar('Ayuda', [mensaje('Cargando la ayuda…')], href);
+        if (!$m.hasClass('show')) $m.modal('show');
+        fetch(href, { credentials: 'same-origin', headers: { 'Accept': 'text/html' } })
+            .then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); })
+            .then(function (html) {
+                var doc = new DOMParser().parseFromString(html, 'text/html');
+                var art = doc.getElementById('ayudaContenido');
+                if (art) {
+                    var nodos = [];
+                    for (var n = art.firstChild; n; n = n.nextSibling) nodos.push(document.importNode(n, true));
+                    mostrar(art.getAttribute('data-titulo'), nodos, href);
+                    return;
+                }
+                var aviso = doc.getElementById('ayudaAviso');
+                mostrar('Ayuda', [mensaje(aviso ? aviso.textContent : 'No se pudo abrir este tema. Pruebe abrirlo en otra pestaña.')], href);
+            })
+            .catch(function () {
+                mostrar('Ayuda', [mensaje('No se pudo cargar la ayuda. Revise la conexión o ábrala en otra pestaña.')], href);
+            });
+        return true;
+    }
+
+    document.addEventListener('click', function (e) {
+        if (e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+        var a = e.target && e.target.closest ? e.target.closest('a[data-ayuda]') : null;
+        if (!a || !a.href) return;
+        if (abrir(a.href)) e.preventDefault();
+    });
+
+    window.SGV = window.SGV || {};
+    SGV.abrirAyuda = abrir;
+})();

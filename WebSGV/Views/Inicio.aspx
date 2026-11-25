@@ -7,6 +7,9 @@
         <p class="inicio-descripcion">
             Gestiona de manera eficiente tus operaciones de transporte y logística.
         </p>
+        <%-- Tema de ayuda de la portada (E5-21): el recorrido del viaje, en el modal de Site.Master. --%>
+        <a class="inicio-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=flujo-del-viaje") %>" target="_blank" rel="noopener"
+            data-ayuda="flujo-del-viaje">C&#xF3;mo funciona el sistema</a>
         <%-- Cargas registradas que esperan factura, guía o CPIC: la bandeja de documentos las muestra por
              cliente y pedido y es donde se suben (antes, ListaDespachos con el filtro "Documentos"). --%>
         <asp:HyperLink ID="lnkDocumentosPendientes" runat="server" Visible="false"

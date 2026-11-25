@@ -1,0 +1,585 @@
+{
+  "temas": [
+    {
+      "clave": "primeros-pasos",
+      "titulo": "Primeros pasos en el sistema",
+      "seccion": "Primeros pasos",
+      "orden": 1,
+      "roles": [
+        "A",
+        "C",
+        "K",
+        "Y"
+      ],
+      "paginas": [],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "cuenta-seguridad",
+      "titulo": "Su cuenta: contraseña y segundo factor",
+      "seccion": "Primeros pasos",
+      "orden": 2,
+      "roles": [
+        "A",
+        "C",
+        "K",
+        "Y"
+      ],
+      "paginas": [
+        "Views/MiSeguridad.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "firma-electronica",
+      "titulo": "La firma electrónica y la verificación del PDF",
+      "seccion": "Primeros pasos",
+      "orden": 3,
+      "roles": [
+        "A",
+        "C",
+        "K"
+      ],
+      "paginas": [],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "flujo-del-viaje",
+      "titulo": "Cómo funciona el sistema: del despacho a la liquidación",
+      "seccion": "Primeros pasos",
+      "orden": 4,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/Inicio.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": false,
+      "capturas": []
+    },
+    {
+      "clave": "registro-despacho",
+      "titulo": "Registrar un despacho",
+      "seccion": "Despacho",
+      "orden": 1,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/RegistroDespacho.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "bandeja-documentos",
+      "titulo": "Bandeja de documentos",
+      "seccion": "Despacho",
+      "orden": 2,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/BandejaDocumentos.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": false,
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/BandejaDocumentos.aspx",
+          "ancho": 1366,
+          "selector": ".bd-subir",
+          "clics": []
+        },
+        {
+          "archivo": "02.webp",
+          "url": "Views/BandejaDocumentos.aspx",
+          "ancho": 1366,
+          "selector": "#MainContent_pnlTablero",
+          "clics": []
+        }
+      ]
+    },
+    {
+      "clave": "lista-despachos",
+      "titulo": "Lista de despachos y edición de lotes",
+      "seccion": "Despacho",
+      "orden": 3,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/ListaDespachos.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": false,
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/ListaDespachos.aspx",
+          "ancho": 1366,
+          "selector": "section.sgv-panel:has(#MainContent_gvLotesRegistrados)",
+          "clics": []
+        }
+      ]
+    },
+    {
+      "clave": "destino-descarga",
+      "titulo": "Destino de descarga",
+      "seccion": "Despacho",
+      "orden": 4,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/DestinoDescarga.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": false,
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/DestinoDescarga.aspx",
+          "ancho": 1366,
+          "selector": "#altaCatalogo .sgv-panel",
+          "clics": []
+        }
+      ]
+    },
+    {
+      "clave": "seguimiento",
+      "titulo": "Seguimiento de exportación",
+      "seccion": "Seguimiento",
+      "orden": 1,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/Exportacion/RegistroSeguimiento.aspx",
+        "Views/Exportacion/SeguimientoViaje.aspx",
+        "Views/Exportacion/ImportarSeguimiento.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "dashboard-exportacion",
+      "titulo": "Dashboard de exportación",
+      "seccion": "Seguimiento",
+      "orden": 2,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/Exportacion/DashboardExportacion.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "liquidaciones-pendientes",
+      "titulo": "Revisar y aprobar liquidaciones",
+      "seccion": "Liquidaciones",
+      "orden": 1,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/LiquidacionesPendientes.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": false,
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/LiquidacionesPendientes.aspx",
+          "ancho": 1366,
+          "selector": "#seccionPendientes",
+          "clics": []
+        }
+      ]
+    },
+    {
+      "clave": "corregir-revertir-retirar",
+      "titulo": "Corregir, revertir o retirar una liquidación",
+      "seccion": "Liquidaciones",
+      "orden": 2,
+      "roles": [
+        "A"
+      ],
+      "paginas": [],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "saldos-conductores",
+      "titulo": "Descuentos y reintegros de la quincena",
+      "seccion": "Liquidaciones",
+      "orden": 3,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/SaldosConductores.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "movimientos-viaje",
+      "titulo": "Dinero y pagos del viaje",
+      "seccion": "Liquidaciones",
+      "orden": 4,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/MovimientosViaje.aspx"
+      ],
+      "interruptor": "MovimientosViaje.Habilitado",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "reporte-cargas",
+      "titulo": "Reporte de cargas",
+      "seccion": "Reportes",
+      "orden": 1,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/ReporteCargas.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": false,
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/ReporteCargas.aspx",
+          "ancho": 1366,
+          "selector": ".sgv-filtros",
+          "clics": []
+        }
+      ]
+    },
+    {
+      "clave": "reportes-ordenes-viaje",
+      "titulo": "Reporte de liquidaciones y viajes",
+      "seccion": "Reportes",
+      "orden": 2,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/ReportesOrdenesViaje.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "facturas-flete",
+      "titulo": "Facturas de flete",
+      "seccion": "Reportes",
+      "orden": 3,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/FacturasFlete.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "reporte-gps",
+      "titulo": "Reporte GPS por placas",
+      "seccion": "Reportes",
+      "orden": 4,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/ReporteGps.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "conductores",
+      "titulo": "Conductores",
+      "seccion": "Catálogos",
+      "orden": 1,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/RegistroChoferes.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": false,
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/RegistroChoferes.aspx",
+          "ancho": 1366,
+          "selector": "#altaCatalogo .sgv-panel",
+          "clics": []
+        }
+      ]
+    },
+    {
+      "clave": "unidades",
+      "titulo": "Tractos y semirremolques",
+      "seccion": "Catálogos",
+      "orden": 2,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/RegistroTractos.aspx",
+        "Views/RegistroSemiremolques.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": false,
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/RegistroTractos.aspx",
+          "ancho": 1366,
+          "selector": "#altaCatalogo .sgv-panel",
+          "clics": []
+        }
+      ]
+    },
+    {
+      "clave": "clientes-plantas",
+      "titulo": "Clientes, catálogo del cliente y plantas",
+      "seccion": "Catálogos",
+      "orden": 3,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/RegistroClientes.aspx",
+        "Views/CatalogoCliente.aspx",
+        "Views/RegistroPlantas.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": false,
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/RegistroClientes.aspx",
+          "ancho": 1366,
+          "selector": "#altaCatalogo .sgv-panel",
+          "clics": []
+        }
+      ]
+    },
+    {
+      "clave": "peajes",
+      "titulo": "Peajes",
+      "seccion": "Catálogos",
+      "orden": 4,
+      "roles": [
+        "A"
+      ],
+      "paginas": [
+        "Views/RegistroPeajes.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": false,
+      "capturas": [
+        {
+          "archivo": "01.webp",
+          "url": "Views/RegistroPeajes.aspx",
+          "ancho": 1366,
+          "selector": "#altaCatalogo .sgv-panel",
+          "clics": []
+        }
+      ]
+    },
+    {
+      "clave": "conductor-mi-viaje",
+      "titulo": "Mi viaje",
+      "seccion": "Conductor",
+      "orden": 1,
+      "roles": [
+        "C"
+      ],
+      "paginas": [
+        "Views/DashboardConductor.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "conductor-liquidar-firmar",
+      "titulo": "Liquidar el viaje y firmar",
+      "seccion": "Conductor",
+      "orden": 2,
+      "roles": [
+        "C"
+      ],
+      "paginas": [
+        "Views/FirmarLiquidacion.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "conductor-conformidad",
+      "titulo": "Dar la conformidad",
+      "seccion": "Conductor",
+      "orden": 3,
+      "roles": [
+        "C"
+      ],
+      "paginas": [
+        "Views/ConformarLiquidacion.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "conductor-historial",
+      "titulo": "Historial de liquidaciones",
+      "seccion": "Conductor",
+      "orden": 4,
+      "roles": [
+        "C"
+      ],
+      "paginas": [
+        "Views/DetalleOrdenViaje.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "panel-sistema",
+      "titulo": "Panel del sistema",
+      "seccion": "Administración del sistema",
+      "orden": 1,
+      "roles": [
+        "Y"
+      ],
+      "paginas": [
+        "Views/DashboardAdminSistema.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "gestion-usuarios",
+      "titulo": "Gestión de usuarios",
+      "seccion": "Administración del sistema",
+      "orden": 2,
+      "roles": [
+        "Y"
+      ],
+      "paginas": [
+        "Views/GestionUsuarios.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "auditoria",
+      "titulo": "Auditoría del sistema",
+      "seccion": "Administración del sistema",
+      "orden": 3,
+      "roles": [
+        "Y"
+      ],
+      "paginas": [
+        "Views/Auditoria.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "usuarios-contrasenas",
+      "titulo": "Restablecer contraseñas y desbloquear cuentas",
+      "seccion": "Administración del sistema",
+      "orden": 4,
+      "roles": [
+        "Y"
+      ],
+      "paginas": [],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    },
+    {
+      "clave": "liquidaciones-aprobadas",
+      "titulo": "Liquidaciones aprobadas",
+      "seccion": "Contabilidad",
+      "orden": 1,
+      "roles": [
+        "K",
+        "A"
+      ],
+      "paginas": [
+        "Views/LiquidacionesAprobadasContabilidad.aspx"
+      ],
+      "interruptor": "",
+      "video": "",
+      "borrador": true,
+      "capturas": []
+    }
+  ]
+}

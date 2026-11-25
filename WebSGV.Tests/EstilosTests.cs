@@ -35,7 +35,8 @@ namespace WebSGV.Tests
         // fallen los archivos estáticos).
         private static readonly HashSet<string> SinMasterSinHojas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            "Views/Error.aspx", "Views/DescargarDocumento.aspx", "Views/DescargarPdfOrdenViaje.aspx"
+            "Views/Error.aspx", "Views/DescargarDocumento.aspx", "Views/DescargarPdfOrdenViaje.aspx",
+            "Views/AyudaImagen.aspx",   // solo devuelve la imagen de un tema de ayuda
         };
 
         private static readonly Regex Literal = new Regex(

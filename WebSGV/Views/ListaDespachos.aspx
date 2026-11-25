@@ -18,6 +18,8 @@
             <div class="sgv-encabezado-acciones">
                 <asp:HyperLink ID="hlNuevoDespacho" runat="server" NavigateUrl="~/Views/RegistroDespacho.aspx"
                     CssClass="btn btn-primary">Nuevo despacho</asp:HyperLink>
+                <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=lista-despachos") %>" target="_blank" rel="noopener"
+                    data-ayuda="lista-despachos" aria-label="Ayuda de esta p&#xE1;gina">?</a>
             </div>
         </div>
 

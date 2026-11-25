@@ -1,0 +1,9 @@
+{
+  "name": "sgv-manual",
+  "private": true,
+  "type": "module",
+  "description": "Capturas de la ayuda del SGV (WebSGV/ContenidoAyuda): Edge sin ventana por CDP contra el sitio de ensayo. Sin dependencias (Node 24).",
+  "scripts": {
+    "capturar": "node capturar.mjs"
+  }
+}

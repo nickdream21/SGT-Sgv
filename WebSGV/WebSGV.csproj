@@ -418,6 +418,30 @@
     <Content Include="Views\DashboardAdminSistema.aspx" />
     <Content Include="Views\GestionUsuarios.aspx" />
     <Content Include="Views\DashboardConductor.aspx" />
+    <Content Include="Views\Ayuda.aspx" />
+    <Content Include="Views\AyudaImagen.aspx" />
+    <Content Include="ContenidoAyuda\temas.json" />
+    <Content Include="ContenidoAyuda\img\bandeja-documentos\01.webp" />
+    <Content Include="ContenidoAyuda\img\bandeja-documentos\02.webp" />
+    <Content Include="ContenidoAyuda\img\clientes-plantas\01.webp" />
+    <Content Include="ContenidoAyuda\img\conductores\01.webp" />
+    <Content Include="ContenidoAyuda\img\destino-descarga\01.webp" />
+    <Content Include="ContenidoAyuda\img\liquidaciones-pendientes\01.webp" />
+    <Content Include="ContenidoAyuda\img\lista-despachos\01.webp" />
+    <Content Include="ContenidoAyuda\img\peajes\01.webp" />
+    <Content Include="ContenidoAyuda\img\reporte-cargas\01.webp" />
+    <Content Include="ContenidoAyuda\img\unidades\01.webp" />
+    <Content Include="ContenidoAyuda\manual.css" />
+    <Content Include="ContenidoAyuda\flujo-del-viaje.html" />
+    <Content Include="ContenidoAyuda\bandeja-documentos.html" />
+    <Content Include="ContenidoAyuda\lista-despachos.html" />
+    <Content Include="ContenidoAyuda\destino-descarga.html" />
+    <Content Include="ContenidoAyuda\liquidaciones-pendientes.html" />
+    <Content Include="ContenidoAyuda\conductores.html" />
+    <Content Include="ContenidoAyuda\unidades.html" />
+    <Content Include="ContenidoAyuda\clientes-plantas.html" />
+    <Content Include="ContenidoAyuda\peajes.html" />
+    <Content Include="ContenidoAyuda\reporte-cargas.html" />
     <Content Include="Views\DescargarDocumento.aspx" />
     <Content Include="Views\DescargarPdfOrdenViaje.aspx" />
     <Content Include="Views\DetalleOrdenViaje.aspx" />
@@ -691,6 +715,20 @@
     <Compile Include="Views\DashboardConductor.aspx.designer.cs">
       <DependentUpon>DashboardConductor.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Views\Ayuda.aspx.cs">
+      <DependentUpon>Ayuda.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Ayuda.aspx.designer.cs">
+      <DependentUpon>Ayuda.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AyudaImagen.aspx.cs">
+      <DependentUpon>AyudaImagen.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\AyudaImagen.aspx.designer.cs">
+      <DependentUpon>AyudaImagen.aspx</DependentUpon>
+    </Compile>
     <Compile Include="Views\DescargarDocumento.aspx.cs">
       <DependentUpon>DescargarDocumento.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -853,6 +891,7 @@
     <Compile Include="Views\CatalogoCliente.aspx.designer.cs">
       <DependentUpon>CatalogoCliente.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Services\Ayuda\AyudaCatalogo.cs" />
     <Compile Include="Services\Clientes\CatalogoClienteService.cs" />
     <Compile Include="Services\Consultas\ConsultaDocumentoService.cs" />
     <Compile Include="Services\Vehiculos\PlacaVehiculo.cs" />

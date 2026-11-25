@@ -54,6 +54,13 @@
     text-decoration: none;
 }
 
+/* Enlace a la ayuda "Cómo funciona el sistema" (E5-21): lo abre SiteMaster.js en el modal de ayuda. */
+.inicio-ayuda {
+    margin-top: 1rem;
+    color: var(--sgv-primario);
+    font-weight: 600;
+}
+
 /* Media query para dispositivos móviles */
 @media (max-width: 767.98px) {
     .inicio-titulo {

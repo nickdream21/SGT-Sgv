@@ -598,7 +598,7 @@ namespace WebSGV.Tests
         /// 2) la palabra DNI seguida (tras hasta 6 signos) de 7 cifras o más, aunque lleven puntos o espacios
         ///    ("DNI 12.345.678"). "DNI ****" o "DNI de 8 cifras" no cuentan.
         /// </summary>
-        private static readonly Regex NumeroConFormaDeDni = new Regex(
+        internal static readonly Regex NumeroConFormaDeDni = new Regex(
             @"(?<![0-9A-Za-z_/\\])(?<![A-Za-z0-9]{4}-)(?<![0-9A-Za-z]\.)(?!000)" +
             @"(?!20[0-9]{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01]))[0-9]{8}(?![0-9A-Za-z_\-])" +
             @"|\b(?i:DNI)\b\W{0,6}[0-9](?:[.\s]?[0-9]){6,}");

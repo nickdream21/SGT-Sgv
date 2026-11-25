@@ -228,17 +228,14 @@ namespace WebSGV.Tests
             Assert.DoesNotContain("Información:", WebUtility.HtmlDecode(aspx));
             Assert.DoesNotContain("Informaci&#xF3;n:", aspx);
 
-            Match boton = Regex.Match(aspx, @"<button\b[^>]*\bclass=""sgv-ayuda""[^>]*>", RegexOptions.Singleline);
-            Assert.True(boton.Success, "Falta el botón sgv-ayuda");
-            Match destino = Regex.Match(boton.Value, @"aria-controls=""(?<id>[\w-]+)""");
-            Assert.True(destino.Success, "El botón sgv-ayuda no tiene aria-controls");
-            string id = destino.Groups["id"].Value;
-            Assert.Contains("data-target=\"#" + id + "\"", boton.Value);
-
-            Match bloque = Regex.Match(aspx, @"<div\b[^>]*\bid=""" + Regex.Escape(id) + @"""[^>]*>(?<c>.*?)</div>", RegexOptions.Singleline);
-            Assert.True(bloque.Success, "No existe el elemento id=\"" + id + "\" de la ayuda");
-            string texto = Regex.Replace(WebUtility.HtmlDecode(bloque.Groups["c"].Value), "<[^>]+>", " ").Trim();
-            Assert.True(texto.Length >= 20, "La ayuda está vacía");
+            // E5-21: el "?" es un enlace al tema de la página en Ayuda.aspx (lo abre el modal de Site.Master); el
+            // texto que antes estaba en #ayudaPagina está ahora en ContenidoAyuda (lo revisa AyudaTests).
+            Match enlace = Regex.Match(aspx, @"<a\b[^>]*\bclass=""sgv-ayuda""(?:<%.*?%>|[^>])*>\?</a>", RegexOptions.Singleline);
+            Assert.True(enlace.Success, "Falta el enlace sgv-ayuda");
+            Match tema = Regex.Match(enlace.Value, @"data-ayuda=""(?<t>[a-z0-9-]+)""");
+            Assert.True(tema.Success, "El enlace sgv-ayuda no tiene data-ayuda");
+            Assert.Contains("~/Views/Ayuda.aspx?tema=" + tema.Groups["t"].Value + "\"", enlace.Value);
+            Assert.DoesNotContain("id=\"ayudaPagina\"", aspx);
         }
 
         // ── (f) En el celular la lista va primero ────────────────────────────────────────────

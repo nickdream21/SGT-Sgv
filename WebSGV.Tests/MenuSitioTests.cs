@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -93,6 +93,49 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void Configuracion_AyudaParaTodoRolVigente()
+        {
+            // Con temas abiertos para el rol, todo rol vigente la ve; un rol retirado nunca.
+            foreach (var (_, rol) in RolesVigentes())
+                Assert.Equal(new[] { "Ayuda" }, MenuSitio.ConfiguracionPara(rol, r => true).Select(e => e.Texto));
+            Assert.Equal(new[] { "Ayuda" }, MenuSitio.ConfiguracionPara(" chofer ", r => true).Select(e => e.Texto));
+            foreach (string rol in GuardasAccesoTests.RolesRetirados.Concat(new[] { "", null }))
+                Assert.Empty(MenuSitio.ConfiguracionPara(rol, r => true));
+            // Sin temas abiertos no sale (no se ofrece un índice vacío).
+            foreach (var (_, rol) in RolesVigentes())
+                Assert.Empty(MenuSitio.ConfiguracionPara(rol, r => false));
+            Assert.Empty(MenuSitio.ConfiguracionPara("ADMIN", null));
+            Assert.Equal("~/Views/Ayuda.aspx", MenuSitio.Configuracion.Single().Url);
+
+            // Site.Master la pinta dentro de Configuración, antes de "Cambiar contraseña".
+            string master = File.ReadAllText(Path.Combine(RaizWeb(), "Site.Master"));
+            int config = master.IndexOf("id=\"navbarDropdownConfig\"", StringComparison.Ordinal);
+            int ayuda = master.IndexOf("foreach (var config in MenuConfiguracion)", StringComparison.Ordinal);
+            int cambiar = master.IndexOf("href=\"#modalCambiarContrasena\"", StringComparison.Ordinal);
+            Assert.True(config > 0 && ayuda > config && cambiar > ayuda, "Ayuda debe ir en Configuración, antes de Cambiar contraseña");
+            Assert.Contains("<%: config.Texto %>", master);
+        }
+
+        [Fact]
+        public void Configuracion_AyudaSoloSiElRolTieneTemasAbiertos()
+        {
+            // Con el temas.json real (E5-21a): la administración tiene temas abiertos; conductor, contabilidad y
+            // administración de sistema todavía no (sus temas son borrador hasta 21b). Al abrir sus temas, cambie
+            // esta prueba a propósito.
+            var catalogo = WebSGV.Services.Ayuda.AyudaCatalogo.Cargar(Path.Combine(RaizWeb(), "ContenidoAyuda"));
+            Func<string, bool> tiene = r => catalogo.TemasDelRol(r, k => false).Count > 0;
+            foreach (string rol in new[] { "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE" })
+                Assert.Equal(new[] { "Ayuda" }, MenuSitio.ConfiguracionPara(rol, tiene).Select(e => e.Texto));
+            foreach (string rol in new[] { "CONDUCTOR", "CHOFER", "CONTABILIDAD", "ADMINISTRADOR DE SISTEMA" })
+                Assert.Empty(MenuSitio.ConfiguracionPara(rol, tiene));
+
+            // Site.Master lo calcula con el catálogo y el interruptor de cada tema.
+            string codigo = File.ReadAllText(Path.Combine(RaizWeb(), "Site.Master.cs"));
+            Assert.Contains("MenuSitio.ConfiguracionPara(RolesHelper.ObtenerRolActual(), RolTieneAyuda)", codigo);
+            Assert.Contains("TemasDelRol(rol, WebSGV.Views.Ayuda.InterruptorEncendido).Count > 0", codigo);
+        }
+
+        [Fact]
         public void Menu_PorRol_DesplegablesYEnlacesDirectos()
         {
             Assert.Equal(new[] { "Despacho", "Seguimiento", "Liquidaciones", "Reportes", "Catálogos" },
@@ -126,7 +169,7 @@ namespace WebSGV.Tests
         {
             var fallas = new List<string>();
             foreach (var (grupo, rol) in RolesVigentes())
-                foreach (var e in MenuSitio.Para(rol, movimientosHabilitado: true).SelectMany(g => g.Entradas))
+                foreach (var e in MenuSitio.Para(rol, movimientosHabilitado: true).SelectMany(g => g.Entradas).Concat(MenuSitio.ConfiguracionPara(rol, r => true)))
                 {
                     if (!GuardasAccesoTests.AccesoEsperado.TryGetValue(Pagina(e.Url), out var entran))
                         fallas.Add($"{e.Texto} ({e.Url}): la página no está en GuardasAccesoTests.AccesoEsperado.");
@@ -153,7 +196,8 @@ namespace WebSGV.Tests
             foreach (var (_, rol) in RolesVigentes())
                 foreach (bool mov in new[] { true, false })
                 {
-                    var urls = MenuSitio.Para(rol, mov).SelectMany(g => g.Entradas).Select(e => MenuSitio.NormalizarRuta(e.Url)).ToList();
+                    var urls = MenuSitio.Para(rol, mov).SelectMany(g => g.Entradas).Concat(MenuSitio.ConfiguracionPara(rol, r => true))
+                        .Select(e => MenuSitio.NormalizarRuta(e.Url)).ToList();
                     var repetidas = urls.GroupBy(u => u).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
                     Assert.True(repetidas.Count == 0, rol + ": opciones repetidas " + string.Join(", ", repetidas));
                 }
@@ -176,6 +220,7 @@ namespace WebSGV.Tests
             ["Views/Exportacion/SeguimientoViaje.aspx"] = "detalle de un viaje: se abre desde el tablero de seguimiento",
             ["Views/Exportacion/ImportarSeguimiento.aspx"] = "importación: se abre desde el tablero de seguimiento",
             ["Views/DescargarDocumento.aspx"] = "descarga con clave de sesión (DocumentoHelper.UrlDescarga)",
+            ["Views/AyudaImagen.aspx"] = "imagen de un tema de ayuda: la pide Ayuda.aspx",
             ["Views/DescargarPdfOrdenViaje.aspx"] = "descarga del PDF de una orden",
             ["Views/VerificarDocumento.aspx"] = "verificación pública del PDF firmado (código del pie)",
             ["Views/Login.aspx"] = "inicio de sesión, sin menú",
@@ -193,7 +238,8 @@ namespace WebSGV.Tests
             var todas = Directory.GetFiles(Path.Combine(raiz, "Views"), "*.aspx", SearchOption.AllDirectories)
                 .Select(f => f.Substring(raiz.Length + 1).Replace('\\', '/'))
                 .ToList();
-            var enMenu = new HashSet<string>(MenuSitio.Completo.SelectMany(g => g.Entradas).Select(e => Pagina(e.Url)), StringComparer.OrdinalIgnoreCase);
+            var enMenu = new HashSet<string>(MenuSitio.Completo.SelectMany(g => g.Entradas).Concat(MenuSitio.Configuracion)
+                .Select(e => Pagina(e.Url)), StringComparer.OrdinalIgnoreCase);
 
             foreach (string p in enMenu)
                 Assert.True(todas.Contains(p, StringComparer.OrdinalIgnoreCase), "El menú enlaza a una página que no existe: " + p);

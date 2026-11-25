@@ -252,6 +252,27 @@ namespace WebSGV.Tests
             Assert.Empty(contenidoDeDatos);
         }
 
+        /// <summary>
+        /// Carpetas que IIS no sirve por URL directa (404): Uploads (adjuntos, vía DescargarDocumento.aspx) y
+        /// ContenidoAyuda (E5-21: temas.json, fragmentos e imágenes, vía Ayuda.aspx y AyudaImagen.aspx con sesión).
+        /// La ayuda sí se publica: a diferencia de App_Data, no está en ExcludeFromPackageFolders.
+        /// </summary>
+        [Fact]
+        public void HiddenSegments_OcultaUploadsYContenidoAyuda()
+        {
+            XDocument config = Cargar("Web.config");
+            var segmentos = config.Root.Element("system.webServer").Element("security").Element("requestFiltering")
+                .Element("hiddenSegments").Elements("add").Select(e => (string)e.Attribute("segment")).ToList();
+            Assert.Contains("Uploads", segmentos);
+            Assert.Contains("ContenidoAyuda", segmentos);
+
+            XDocument csproj = Cargar("WebSGV.csproj");
+            XNamespace ns = csproj.Root.Name.Namespace;
+            var excluidas = csproj.Descendants(ns + "ExcludeFromPackageFolders")
+                .SelectMany(e => ((string)e.Attribute("Include") ?? "").Split(';')).Select(c => c.Trim().TrimEnd('\\'));
+            Assert.DoesNotContain("ContenidoAyuda", excluidas, StringComparer.OrdinalIgnoreCase);
+        }
+
         // ---- E4-10: conexión cifrada a la BD -----------------------------------------------------
 
         private static string RaizRepo() => Path.GetDirectoryName(RaizWeb());

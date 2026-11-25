@@ -18,13 +18,9 @@
             <asp:Button ID="btnExcel" runat="server" CssClass="btn btn-success btn-sm" Text="Excel" OnClick="btnExcel_Click" data-descarga="true"
                 ToolTip="Hojas de cargas, por cliente, por producto y detalle de cada lote" />
             <asp:Button ID="btnPdf" runat="server" CssClass="btn btn-outline-danger btn-sm" Text="PDF" OnClick="btnPdf_Click" data-descarga="true" />
-            <button type="button" class="sgv-ayuda" data-toggle="collapse" data-target="#ayudaPagina"
-                aria-controls="ayudaPagina" aria-expanded="false" aria-label="Ayuda de esta p&#xE1;gina">?</button>
+            <a class="sgv-ayuda" href="<%: ResolveUrl("~/Views/Ayuda.aspx?tema=reporte-cargas") %>" target="_blank" rel="noopener"
+                data-ayuda="reporte-cargas" aria-label="Ayuda de esta p&#xE1;gina">?</a>
         </div>
-    </div>
-    <div id="ayudaPagina" class="collapse">
-        <p class="sgv-ayuda-texto">Viajes, clientes, productos, facturas y documentaci&#xF3;n del per&#xED;odo, y el detalle de cada pedido
-            (unidad, chofer, gu&#xED;a, bolsas y kg). Incluye las cargas registradas con los documentos del correo que no entran a la liquidaci&#xF3;n del chofer.</p>
     </div>
 
     <details class="sgv-filtros" open data-plegar-movil>

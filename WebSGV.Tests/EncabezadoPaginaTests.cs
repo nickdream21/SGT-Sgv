@@ -209,6 +209,7 @@ namespace WebSGV.Tests
                 textos.Add(("MenuSitio: menú", g.Texto));
                 foreach (var e in g.Entradas) textos.Add(("MenuSitio: " + g.Texto, e.Texto));
             }
+            foreach (var e in WebSGV.Helpers.MenuSitio.Configuracion) textos.Add(("MenuSitio: Configuración", e.Texto));
             var m = Master();
             foreach (Match e in EnlaceMenu.Matches(m.Texto))
             {
@@ -236,7 +237,8 @@ namespace WebSGV.Tests
         {
             var paginas = Paginas();
             var casos = new List<string>();
-            var opciones = WebSGV.Helpers.MenuSitio.Completo.SelectMany(g => g.Entradas).Select(e => (e.Texto, e.Url))
+            var opciones = WebSGV.Helpers.MenuSitio.Completo.SelectMany(g => g.Entradas).Concat(WebSGV.Helpers.MenuSitio.Configuracion)
+                .Select(e => (e.Texto, e.Url))
                 .Concat(new[] { ("Mi seguridad", WebSGV.SiteMaster.UrlMiSeguridad) })
                 .ToList();
             foreach (var (texto, url) in opciones)
