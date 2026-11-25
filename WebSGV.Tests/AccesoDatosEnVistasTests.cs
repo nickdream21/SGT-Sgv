@@ -42,7 +42,6 @@ namespace WebSGV.Tests
             ["Views/VerificarDocumento.aspx.cs"] = 2,
             ["Views/BandejaDocumentos.aspx.cs"] = 1,
             ["Views/Exportacion/DashboardExportacion.aspx.cs"] = 1,
-            ["Views/Exportacion/GpsAutomatico.ashx.cs"] = 1,
             ["Views/RegistroChoferes.aspx.cs"] = 1,
             ["Views/RegistroSemiremolques.aspx.cs"] = 1,
             ["Views/RegistroTractos.aspx.cs"] = 1,

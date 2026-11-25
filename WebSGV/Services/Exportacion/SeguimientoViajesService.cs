@@ -318,6 +318,14 @@ namespace WebSGV.Services.Exportacion
             return Tuple.Create(Convert.ToInt32(dt.Rows[0]["creados"]), Convert.ToInt32(dt.Rows[0]["actualizados"]));
         }
 
+        /// <summary>Hora (de Perú) de la última consulta al GPS entre los viajes abiertos; null si ninguno se consultó. La pide el tablero abierto (GpsAutomatico.ashx?estado=1).</summary>
+        public static DateTime? UltimaConsultaGpsAbiertos()
+        {
+            object ultima = DbHelper.EjecutarEscalar(
+                "SELECT MAX(fhUltimaConsultaGps) FROM SeguimientoExportacion WHERE activo = 1 AND ISNULL(estado, '') NOT IN ('FINALIZADO', 'CANCELADO')");
+            return ultima == null || ultima == DBNull.Value ? (DateTime?)null : Convert.ToDateTime(ultima);
+        }
+
         public static ViajeDetalle ObtenerDetalle(int idSeguimiento)
         {
             DataTable dt = DbHelper.ConsultarTabla(SqlBase + " AND se.idSeguimiento = @id", DbHelper.Param("@id", idSeguimiento));

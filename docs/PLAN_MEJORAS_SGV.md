@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-25**, commit anterior `318e9c3` — **Etapa 6 en ejecución**: E6-8 (pruebas del GPS: cliente Onway con HTTP, reloj y espera inyectados, y hora de llegada). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-25**, commit anterior `404faa8` — **Etapa 6 en ejecución**: E6-9 (cierra M-090: GPS automático y `GpsAutomatico.ashx` con pruebas; el log dice "(programada)" o "(manual)"). No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-189 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-191 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -205,7 +205,6 @@ Las tareas de la etapa (E6-1 a E6-30) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 
 - [ ] **M-088** Quitar el panel viejo "Documentos del lote" de ListaDespachos — hoy solo se llega con `?manual=1&lote=`; pasar ese registro manual al expediente y borrar `pnlManifiestosLote` y su código (con la partición de ListaDespachos). · C
 - [ ] **M-089** Juntar pantallas que hacen lo mismo — los catálogos `Registro*` (misma grilla + formulario) sobre una plantilla común; `LiquidacionesAprobadasContabilidad` como pestaña de Gestión de liquidaciones. · C
-- [ ] **M-090** El log no distingue la corrida manual del GPS de la del cron — ambas escriben "Actualización automática del GPS" (`ActualizacionGpsAutomatica.cs:123`): añadir "(manual)"/"(programada)". · C
 - [ ] **M-091** Tablero de seguimiento: respaldo por postback si `GpsAutomatico.ashx` cae — el respaldo hace la consulta pesada por postback (`RegistroSeguimiento.js:~73-98`). Nota para probadores: abrir el tablero con `?auto=0` para no actualizar el GPS. · C
 - [ ] **M-092** `DbHelper.FijarConexionParaPruebas` sigue `public` — (`DbHelper.cs:51`) porque lo usan `herramientas/cuadro-status-general` y `herramientas/perfil-llegada`: darles `InternalsVisibleTo` y hacerlo `internal`. · C
 - [ ] **M-093** El mapa del viaje (`ObtenerRuta`) toma la sesión mientras carga — con la caché fría son hasta 10 s en que otra pantalla del mismo usuario espera. Pasarlo a un servicio sin sesión de escritura si molesta; lo mismo los Excel grandes. · C
@@ -227,6 +226,8 @@ Las tareas de la etapa (E6-1 a E6-30) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-187** Toda imagen que llegue a QuestPDF pasa antes por `ValidadorPng` — QuestPDF 2026.5.0 deja una `Image` a medio construir que revienta en su finalizador si recibe bytes que no decodifican (E6-5): prueba de fuente que exija `ValidadorPng` (o los métodos de trazo y logo) junto a cada `.Image(` de `WebSGV/`; un JPEG o WEBP dañado como logo aún pasaría; validar el trazo ya al recibir la firma (`FirmaService`) y no solo al generar el PDF; probar si un bloque auxiliar hostil (iCCP, zTXt) hace fallar a Skia (hoy se aceptan sin leerlos); reportarlo a QuestPDF. · C
 - [ ] **M-188** Rutas y huella del PDF archivado (`Services/Liquidaciones/ArchivoOrdenViajeService.cs`, visto en E6-6) — una orden sin firmas entrega su PDF guardado sin comparar la huella registrada (59-60); una ruta guardada como `/App_Data/...` cuenta como absoluta y apunta a la raíz de la unidad (108-109); se acepta cualquier ruta absoluta o UNC de la BD sin limitarla a `App_Data/OrdenesViaje` (107-110). Además (E6-7): `PdfOrdenViajeService.cs:269-276` guarda en `rutaPdfFirmado` la ruta física absoluta si la carpeta del archivo (`OrdenViaje.RutaArchivo`) no está bajo `~/App_Data/`, y `EmpresaConfigHelper.cs:113-114` usa la ruta virtual literal si `MapPath` da null (fuera de IIS). Ver qué rutas hay en la BD (SELECT) y decidir. · C
 - [ ] **M-189** Prueba intermitente `ListaChoferesTests.LeerExcel_PrimeraHoja` — falló una vez con "Ya se agregó un elemento con la misma clave" en `System.IO.Packaging.ContentTypeHelper` (carrera al abrir paquetes OpenXml en paralelo en .NET Framework); con la suite en 25 s puede salir más: aislar las pruebas que abren .xlsx/.docx en una `[Collection]` sin paralelismo. · B
+- [ ] **M-190** El botón "Actualizar GPS" del tablero reinicia el intervalo del cron (`Services/Exportacion/ActualizacionGpsAutomatica.cs`, una sola marca de inicio; fijado tal cual en `APedido_ReiniciaElIntervaloDelCron`, E6-9): si cron-job.org llega menos de 5 min después del botón, se salta su corrida. Decidir si el intervalo del cron se mide solo contra `UltimoInicioProgramado`. · C
+- [ ] **M-191** `herramientas/sitio-local/capturar.js` no corta ningún POST — abrir `Exportacion/RegistroSeguimiento.aspx` sin `?auto=0` con más de 15 min desde la última consulta lanza el `POST GpsAutomatico.ashx?iniciar=1` y llamaría al GPS real: añadir la intercepción `Fetch.requestPaused` con lista blanca (solo `Login.aspx`), como el arnés del probador en E6-9. · B
 - [ ] **M-185** `[FactBD]` en CI con LocalDB — hoy no se puede: las migraciones 01–63 parten de una BD existente. Haría falta versionar el esquema completo sin datos (`sqlpackage /a:Extract`) y una semilla sintética de maestros (las pruebas toman datos con `SELECT TOP 1`, 94 usos); atado a U-078 (repositorio público). Fuera de la Etapa 6. · C
 - [ ] **M-186** Errores de JavaScript del navegador al log — `ErrorCliente.ashx` con el limitador de `CspInforme` y `window.onerror`/`unhandledrejection` con `sendBeacon` en `SiteMaster.js` (solo mensaje, archivo, línea y ruta): hoy un fallo de JS en el celular del conductor no se ve. Es un punto de entrada anónimo más; fuera de la Etapa 6. · C
 

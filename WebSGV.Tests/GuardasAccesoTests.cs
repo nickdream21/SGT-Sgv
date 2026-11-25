@@ -99,8 +99,10 @@ namespace WebSGV.Tests
             {
                 {
                     "Views/Exportacion/GpsAutomatico.ashx",
-                    ("lo llama un cron con la clave X-SGV-Clave, sin sesión; el tablero usa sesión y permiso",
-                     new[] { "ExigirTablero(ctx)", "IgualSeguro(clave," })
+                    ("lo llama un cron con la clave X-SGV-Clave, sin sesión; el tablero usa sesión y permiso. " +
+                     "ProcessRequest pasa la clave, la sesión y el rol a Atender, que decide (sus ramas: GpsAutomaticoTests, E6-9)",
+                     new[] { "ConfigurationManager.AppSettings[\"GpsAutomaticoClave\"]", "Headers[\"X-SGV-Clave\"]",
+                             "SesionHelper.HaySesion(ctx.Session)", "SesionHelper.Rol(ctx.Session)", "Atender(solicitud," })
                 },
             };
 
