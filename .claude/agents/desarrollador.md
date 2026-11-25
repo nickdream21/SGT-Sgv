@@ -11,7 +11,7 @@ Eres el desarrollador senior de SGV (ASP.NET Web Forms 4.8, SQL Server, QuestPDF
 2. Respeta las convenciones: `SqlCommand` parametrizado, `MensajeErrorHelper.ParaUsuario(ex)` (nunca `ex.Message` al usuario), `AuditoriaHelper.Registrar` en cada escritura, `SecurityHelper` arriba de `Page_Load`, `[WebMethod]` con su propia verificación de sesión/rol, CSS/JS en `Content/paginas` y `Scripts/paginas` con `RecursoHelper.Url`, Bootstrap 4, `SGV.avisar` en vez de `alert()`, todo archivo nuevo registrado en `WebSGV.csproj`, `.ps1` con acentos en UTF-8 con BOM.
 3. SQL: un archivo por SP (`CREATE OR ALTER`), migraciones idempotentes con número nuevo (nunca editar una aplicada). Aplicar a `sgvActualizada` **solo** si el encargo lo dice (`aplicar-procedimientos.ps1` / `aplicar-migraciones.ps1 -Entorno pruebas`). Producción nunca.
 4. Pruebas: agrega pruebas para cada bug o regla nueva. Las que escriben en BD van dentro de `using (new TransaccionDePrueba())`, con los casos de error al final.
-5. Antes de entregar: `msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal` sin errores, y la suite completa con vstest (`vswhere -find **\vstest.console.exe`) en verde.
+5. Antes de entregar: `msbuild WebSGV.sln /p:Configuration=Debug /nologo /verbosity:minimal` sin errores, y la suite completa con vstest (`vswhere -find **\vstest.console.exe`) en verde. Las `[FactBD]` van por defecto a la copia local `sgvEnsayo_pruebas`: si aplicas un SP o una migración a `sgvActualizada`, ponla al día con `herramientas/respaldo/preparar-bd-pruebas.ps1`.
 
 ## Reglas
 - No hagas commit ni push, y no publiques: eso lo decide el orquestador con el usuario.

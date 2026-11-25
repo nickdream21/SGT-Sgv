@@ -18,7 +18,7 @@ Copiarlos a mano desde la otra PC (p. ej. con la transferencia de archivos de An
 
 | Archivo | Para qué | Cómo |
 |---|---|---|
-| `WebSGV/connectionStrings.config` | BD de pruebas `sgvActualizada` (sitio local, `sql.ps1`, respaldos y pruebas de integración) | Copiarlo, o crearlo desde `WebSGV/connectionStrings.config.example`; con `Encrypt=True;TrustServerCertificate=True` (U-084: sin el segundo, somee no conecta) |
+| `WebSGV/connectionStrings.config` | BD de pruebas `sgvActualizada` (sitio local, `sql.ps1`, respaldos y, solo con `SGV_TEST_BD=actualizada`, pruebas de integración) | Copiarlo, o crearlo desde `WebSGV/connectionStrings.config.example`; con `Encrypt=True;TrustServerCertificate=True` (U-084: sin el segundo, somee no conecta) |
 | `WebSGV/connectionStrings.Production.config` | BD `sgvTransporte` (`-Entorno produccion`). Solo en la PC que vaya a hacer el [paso a producción](PASO_A_PRODUCCION.md) | Copiarlo (mismo formato que el anterior) |
 | `WebSGV/appSettings.Secrets.config` | GPS (Onway), clave del cron del GPS, apisperu, SMTP y la clave maestra del segundo factor (`Seguridad.ClaveSegundoFactor`) | Copiarlo, o crearlo desde `WebSGV/appSettings.Secrets.config.example` (un comentario por clave). Para publicar desde esta PC debe tener `GpsAutomaticoClave` (ver `herramientas/publicar/README.md`). `Seguridad.ClaveSegundoFactor` debe ser la misma en todas las PCs y en el sitio que usan la misma BD (copiarla, no generar otra): si cambia, los secretos guardados no se descifran |
 | `privado/` | Credenciales por rol de pruebas (`CREDENCIALES_USUARIOS.txt`), scripts con datos de personas, tablas de trabajo | Copiar la carpeta **menos** `ftp-respaldo.xml` |
@@ -65,6 +65,16 @@ Obligatorio antes de aplicar migraciones o SP a la BD del sitio (`herramientas/r
 - **La carpeta de respaldos** con al menos un `.bacpac` en `<carpeta>\bd\`: la unidad compartida de Google Drive (`G:\Unidades compartidas\Respaldos_Sistemas_SGV`, sección 5) como `SGV_CARPETA_RESPALDO` o `-Carpeta`. Sin Drive, `-RespaldoNuevo` exporta uno (necesita `connectionStrings.config`) o se pasa `-Bacpac` a un archivo fuera del repo.
 - La solución compilada en Debug (para las `[FactBD]`) o `-SinPruebas`.
 
+### 5.2. Copia local para las pruebas de integración (toda PC que corra la suite)
+
+Las `[FactBD]` corren por defecto contra la copia local `sgvEnsayo_pruebas`, no contra `sgvActualizada`. Con los requisitos de 5.1 (SQL Server local o LocalDB, `sqlpackage`, un `.bacpac`):
+
+```powershell
+.\herramientas\respaldo\preparar-bd-pruebas.ps1 -Carpeta '<carpeta de respaldos>'     # sin .bacpac: agregar -RespaldoNuevo
+```
+
+Repetirlo (sin parámetros) tras aplicar un SP o una migración nuevos, y con `-Rehacer` cuando se quieran datos más nuevos (`herramientas/respaldo/README.md`, "Copia local para las pruebas de integración"). Sin la copia, las `[FactBD]` salen omitidas; `SGV_TEST_BD=actualizada` las corre contra `sgvActualizada` solo a pedido.
+
 ## 6. Comprobar
 
 ```powershell
@@ -74,4 +84,4 @@ $vstest = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.
 .\WebSGV\Database\sql.ps1 "SELECT DB_NAME()"          # debe decir sgvActualizada
 ```
 
-Todas las pruebas en verde. Sin `connectionStrings.config`, las de integración salen como omitidas (no fallan). Después, levantar el sitio local (`herramientas/sitio-local/README.md`).
+Todas las pruebas en verde. Sin la copia local `sgvEnsayo_pruebas` (5.2), las de integración salen como omitidas (no fallan). Después, levantar el sitio local (`herramientas/sitio-local/README.md`).

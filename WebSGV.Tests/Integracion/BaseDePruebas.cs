@@ -10,17 +10,34 @@ using Xunit;
 namespace WebSGV.Tests.Integracion
 {
     /// <summary>
-    /// Conexión a la BD de PRUEBAS para los tests de integración. Se toma de la variable de
-    /// entorno SGV_TEST_CONNSTR o, si no existe, de WebSGV/connectionStrings.config (gitignored).
-    /// Por seguridad solo se acepta la BD de pruebas (sgvActualizada) o un ensayo local
-    /// (sgvEnsayo_*, que crea herramientas/respaldo/ensayar-migracion.ps1 desde un .bacpac) en un
-    /// SQL Server de esta máquina; con cualquier otra, o sin conexión (p. ej. en el CI de GitHub),
-    /// los tests [FactBD] se marcan como omitidos.
+    /// Conexión de los tests de integración ([FactBD]). Orden (U-098):
+    ///   1. La variable SGV_TEST_CONNSTR, si está (la usa ensayar-migracion.ps1).
+    ///   2. Con SGV_TEST_BD=actualizada, la de WebSGV/connectionStrings.config (sgvActualizada: la BD
+    ///      del sitio publicado, con datos reales; solo a pedido).
+    ///   3. Si no, la copia local persistente sgvEnsayo_pruebas (herramientas/respaldo/
+    ///      preparar-bd-pruebas.ps1) en (localdb)\MSSQLLocalDB o "." con la autenticación de Windows.
+    ///   4. Sin copia, los [FactBD] se marcan como omitidos con el motivo (p. ej. en el CI de GitHub).
+    /// Por seguridad solo se acepta sgvActualizada o un ensayo sgvEnsayo_* en un SQL Server de esta
+    /// máquina; con cualquier otra BD, o sin conexión, los [FactBD] se omiten.
     /// </summary>
     public static class BaseDePruebas
     {
         public const string BdPermitida = "sgvActualizada";
         public const string PrefijoBdEnsayo = "sgvEnsayo_";
+        /// <summary>Copia local persistente (preparar-bd-pruebas.ps1 usa el mismo nombre).</summary>
+        public const string BdCopiaLocal = "sgvEnsayo_pruebas";
+        /// <summary>Valor de SGV_TEST_BD que elige sgvActualizada.</summary>
+        public const string ValorBdActualizada = "actualizada";
+
+        /// <summary>
+        /// Servidores donde se busca la copia, en orden. LocalDB primero: si no tiene la copia responde
+        /// en menos de un segundo (aunque esté detenida), mientras que "." sin SQL Server agota el timeout.
+        /// </summary>
+        public static readonly string[] ServidoresCopiaLocal = { @"(localdb)\MSSQLLocalDB", "." };
+
+        public static readonly string MotivoSinCopiaLocal =
+            "Sin copia local de pruebas (" + BdCopiaLocal + " en " + string.Join(" o ", ServidoresCopiaLocal)
+            + "): corre herramientas/respaldo/preparar-bd-pruebas.ps1 (-Rehacer si quedó a medias) o pon SGV_TEST_BD=actualizada.";
 
         private static readonly Lazy<string> _cadena = new Lazy<string>(Resolver);
         private static readonly Lazy<string> _raizRepo = new Lazy<string>(BuscarRaizRepo);
@@ -28,6 +45,9 @@ namespace WebSGV.Tests.Integracion
         public static string Cadena => _cadena.Value;
         public static bool Disponible => Cadena != null;
         public static string MotivoNoDisponible { get; private set; }
+
+        /// <summary>De dónde salió la conexión y a qué servidor y BD apunta (sin usuario ni clave).</summary>
+        public static string Destino { get; private set; }
 
         /// <summary>Carpeta raíz del repositorio (la que contiene WebSGV/ y WebSGV.Tests/).</summary>
         public static string RaizRepo => _raizRepo.Value;
@@ -39,42 +59,136 @@ namespace WebSGV.Tests.Integracion
 
         private static string Resolver()
         {
-            string cadena = Environment.GetEnvironmentVariable("SGV_TEST_CONNSTR");
-            if (string.IsNullOrWhiteSpace(cadena) && RaizRepo != null)
+            var eleccion = Elegir(
+                Environment.GetEnvironmentVariable("SGV_TEST_CONNSTR"),
+                Environment.GetEnvironmentVariable("SGV_TEST_BD"),
+                LeerCadenaDeConfig,
+                BuscarCopiaLocal);
+            if (eleccion.Cadena == null)
             {
-                string archivo = Path.Combine(RaizRepo, "WebSGV", "connectionStrings.config");
-                if (File.Exists(archivo))
-                {
-                    cadena = XDocument.Load(archivo).Descendants("add")
-                        .Where(e => (string)e.Attribute("name") == "ConexionSGV")
-                        .Select(e => (string)e.Attribute("connectionString"))
-                        .FirstOrDefault();
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(cadena))
-            {
-                MotivoNoDisponible = "Sin conexión a la BD de pruebas (SGV_TEST_CONNSTR o WebSGV/connectionStrings.config).";
-                return null;
-            }
-
-            string motivo = MotivoDestinoNoPermitido(cadena);
-            if (motivo != null)
-            {
-                MotivoNoDisponible = motivo;
+                MotivoNoDisponible = eleccion.Motivo;
                 return null;
             }
 
             try
             {
-                using (var conn = new SqlConnection(cadena)) conn.Open();
+                using (var conn = new SqlConnection(eleccion.Cadena)) conn.Open();
             }
             catch (Exception ex)
             {
-                MotivoNoDisponible = "No se pudo conectar a la BD de pruebas: " + ex.Message;
+                MotivoNoDisponible = "No se pudo conectar a la BD de pruebas (" + eleccion.Origen + "): " + ex.Message;
                 return null;
             }
-            return cadena;
+            Destino = DescribirDestino(eleccion);
+            return eleccion.Cadena;
+        }
+
+        /// <summary>Resultado de <see cref="Elegir"/>: la cadena y su origen, o el motivo para omitir.</summary>
+        public sealed class EleccionConexion
+        {
+            public string Cadena { get; set; }
+            public string Origen { get; set; }
+            public string Motivo { get; set; }
+        }
+
+        /// <summary>
+        /// Elige la conexión en el orden de la clase. Pura: las fuentes se inyectan. leerConfig devuelve
+        /// la cadena ConexionSGV de connectionStrings.config o null; buscarCopiaLocal, la cadena de la
+        /// copia local si existe o null. Solo se llama a la fuente que hace falta.
+        /// </summary>
+        public static EleccionConexion Elegir(string varConnStr, string varBd, Func<string> leerConfig, Func<string> buscarCopiaLocal)
+        {
+            if (leerConfig == null) throw new ArgumentNullException(nameof(leerConfig));
+            if (buscarCopiaLocal == null) throw new ArgumentNullException(nameof(buscarCopiaLocal));
+
+            string cadena, origen;
+            string bd = (varBd ?? "").Trim();
+            if (!string.IsNullOrWhiteSpace(varConnStr))
+            {
+                cadena = varConnStr;
+                origen = "SGV_TEST_CONNSTR";
+            }
+            else if (string.Equals(bd, ValorBdActualizada, StringComparison.OrdinalIgnoreCase))
+            {
+                cadena = leerConfig();
+                origen = "SGV_TEST_BD=actualizada (WebSGV/connectionStrings.config)";
+                if (string.IsNullOrWhiteSpace(cadena))
+                    return new EleccionConexion { Motivo = "SGV_TEST_BD=actualizada pero no hay cadena ConexionSGV en WebSGV/connectionStrings.config." };
+            }
+            else if (bd.Length == 0)
+            {
+                cadena = buscarCopiaLocal();
+                origen = "copia local " + BdCopiaLocal;
+                if (string.IsNullOrWhiteSpace(cadena))
+                    return new EleccionConexion { Motivo = MotivoSinCopiaLocal };
+            }
+            else
+            {
+                return new EleccionConexion { Motivo = $"SGV_TEST_BD='{bd}' no se reconoce: use '{ValorBdActualizada}' o quítela (copia local {BdCopiaLocal})." };
+            }
+
+            string motivo = MotivoDestinoNoPermitido(cadena);
+            if (motivo != null) return new EleccionConexion { Motivo = motivo };
+            return new EleccionConexion { Cadena = cadena, Origen = origen };
+        }
+
+        /// <summary>Cadena de la copia local en un servidor (autenticación de Windows, sin clave). Pura.</summary>
+        public static string CadenaCopiaLocal(string servidor, int segundosEspera)
+        {
+            var b = new SqlConnectionStringBuilder
+            {
+                DataSource = servidor,
+                InitialCatalog = BdCopiaLocal,
+                IntegratedSecurity = true,
+                TrustServerCertificate = true,
+                ConnectTimeout = segundosEspera,
+            };
+            return b.ConnectionString;
+        }
+
+        /// <summary>"origen -> servidor / BD", sin usuario ni clave.</summary>
+        public static string DescribirDestino(EleccionConexion eleccion)
+        {
+            if (eleccion == null) throw new ArgumentNullException(nameof(eleccion));
+            var b = new SqlConnectionStringBuilder(eleccion.Cadena);
+            return $"{eleccion.Origen} -> {b.DataSource} / {b.InitialCatalog}";
+        }
+
+        private static string LeerCadenaDeConfig()
+        {
+            if (RaizRepo == null) return null;
+            string archivo = Path.Combine(RaizRepo, "WebSGV", "connectionStrings.config");
+            if (!File.Exists(archivo)) return null;
+            return XDocument.Load(archivo).Descendants("add")
+                .Where(e => (string)e.Attribute("name") == "ConexionSGV")
+                .Select(e => (string)e.Attribute("connectionString"))
+                .FirstOrDefault();
+        }
+
+        /// <summary>
+        /// La copia en el primer servidor local que la tenga completa (con dbo.SchemaVersion: si la
+        /// importación quedó a medias no se usa). Se llama una sola vez (Lazy), con 3 s de espera por
+        /// servidor. En GitHub Actions no se busca: allí no hay copia.
+        /// </summary>
+        private static string BuscarCopiaLocal()
+        {
+            if (string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase))
+                return null;
+            foreach (string servidor in ServidoresCopiaLocal)
+            {
+                try
+                {
+                    using (var conn = new SqlConnection(CadenaCopiaLocal(servidor, 3)))
+                    using (var cmd = new SqlCommand("SELECT CASE WHEN OBJECT_ID(N'dbo.SchemaVersion') IS NULL THEN 0 ELSE 1 END", conn))
+                    {
+                        conn.Open();
+                        if ((int)cmd.ExecuteScalar() == 1)
+                            return CadenaCopiaLocal(servidor, 15);
+                    }
+                }
+                catch (SqlException) { }   // sin servidor o sin la BD: se prueba el siguiente
+            }
+            return null;
         }
 
         /// <summary>

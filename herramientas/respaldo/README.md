@@ -168,6 +168,28 @@ Registra "SGV - Respaldo diario" (23:00, `-Hora` para cambiarla): `respaldar-bd.
 - Código de salida: `0` todo en verde; `1` falló la importación, una migración, un SP, el humo, una prueba, el control o el borrado.
 - **Obligatorio** antes de aplicar migraciones o SP a `sgvActualizada` (la BD del sitio; `herramientas/publicar/README.md`, "Antes") o a producción (`docs/PASO_A_PRODUCCION.md`, pasos 4 y 5): el humo de `aplicar-procedimientos.ps1` sobre la BD viva avisa, pero después de aplicar. Requisitos de la PC: `docs/PREPARAR_MAQUINA.md`, sección 5.1.
 
+## Copia local para las pruebas de integración (U-098)
+
+Las `[FactBD]` corren por defecto contra la copia local persistente `sgvEnsayo_pruebas`, no contra `sgvActualizada` (la BD del sitio publicado, con datos reales: la suite hacía cientos de miles de ejecuciones por día y llenaba su Query Store).
+
+```powershell
+# Crearla (la primera vez) o ponerla al día: migraciones y SP pendientes + humo, sin reimportar
+.\herramientas\respaldo\preparar-bd-pruebas.ps1 -Carpeta C:\RespaldosSGV
+
+# Rehacerla con datos nuevos (borra la copia y vuelve a importar; -RespaldoNuevo exporta antes un .bacpac)
+.\herramientas\respaldo\preparar-bd-pruebas.ps1 -Rehacer -RespaldoNuevo -Carpeta C:\RespaldosSGV
+
+# Correr la suite contra sgvActualizada, solo a pedido
+$env:SGV_TEST_BD = 'actualizada'; & $vstest WebSGV.Tests\bin\Debug\net48\WebSGV.Tests.dll; Remove-Item Env:SGV_TEST_BD
+```
+
+- Si la copia no existe, la crea con `ensayar-migracion.ps1 -NombreBd sgvEnsayo_pruebas -Conservar -QuitarLoginsImportados -SinPruebas` (`-ConPruebas` corre también las `[FactBD]`): mismo `.bacpac` más reciente, servidor local, migraciones, SP y humo; borra el login SQL que crea la importación con la regla del ensayo (el usuario de la copia queda huérfano: el acceso es con Windows). Si la importación no termina, borra la copia a medias.
+- Si existe, solo corre `aplicar-migraciones.ps1` y `aplicar-procedimientos.ps1` con `-Entorno ensayo -BaseDeDatos sgvEnsayo_pruebas`. **Después de aplicar un SP o una migración nuevos a `sgvActualizada`, córralo también**, o las pruebas de ese cambio fallarán contra la copia. Sus datos son los del `.bacpac` del día en que se creó (lo muestra): una prueba que dependa de datos más nuevos necesita `-Rehacer`.
+- Busca la copia en `(localdb)\MSSQLLocalDB` y luego `.` (el orden de las pruebas); si está en los dos, se detiene.
+- Tiene datos reales y **no se anonimiza** (hay pruebas que dependen de ellos): queda solo en el servidor local.
+
+Cómo elige la conexión `WebSGV.Tests/Integracion/BaseDePruebas.cs`: `SGV_TEST_CONNSTR` si está; si no, con `SGV_TEST_BD=actualizada` la de `WebSGV/connectionStrings.config`; si no, la copia local si existe completa (con `dbo.SchemaVersion`; 3 s de espera por servidor, una vez por corrida); si no, las `[FactBD]` se omiten con el motivo. En GitHub Actions no se busca la copia. La prueba `BaseDePruebasEleccionTests.InformaElDestinoElegido` deja en su salida (p. ej. en un `.trx`) contra qué BD corrió la suite, sin clave.
+
 ## Sello de firmas y auditoría (E4-11)
 
 ```powershell

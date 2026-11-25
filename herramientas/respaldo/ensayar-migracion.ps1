@@ -49,6 +49,11 @@
 .PARAMETER Conservar
     No borra la BD de ensayo al terminar (para revisarla a mano; bórrela después).
 
+.PARAMETER QuitarLoginsImportados
+    Con -Conservar: conserva la BD pero borra igual el login SQL que creó la importación (misma regla
+    que sin -Conservar; el usuario de la BD queda huérfano, no hace falta: el acceso es con Windows).
+    Lo usa preparar-bd-pruebas.ps1 para la copia persistente sgvEnsayo_pruebas.
+
 .EXAMPLE
     .\herramientas\respaldo\ensayar-migracion.ps1 -Carpeta 'G:\Unidades compartidas\Respaldos_Sistemas_SGV'
     .\herramientas\respaldo\ensayar-migracion.ps1 -RespaldoNuevo -ArchivoControl .\control.sql
@@ -62,7 +67,8 @@ param(
     [string]$NombreBd,
     [string]$ArchivoControl,
     [switch]$SinPruebas,
-    [switch]$Conservar
+    [switch]$Conservar,
+    [switch]$QuitarLoginsImportados
 )
 
 $ErrorActionPreference = 'Stop'
@@ -224,6 +230,14 @@ function Get-LoginsCreados {
     $ahora = Get-LoginsSqlServidor
     @($loginsModelo | Where-Object { ($ahora -contains $_) -and -not ($loginsAntes -contains $_) -and ($conSid -contains $_) })
 }
+function Remove-LoginsCreados([string[]]$Logins) {
+    try {
+        foreach ($l in $Logins) {
+            Invoke-Consulta $cadenaMaster ('DROP LOGIN [' + $l.Replace(']', ']]') + ']') | Out-Null
+            Write-Host "Login [$l] creado por la importación: borrado del servidor local."
+        }
+    } catch { $errores.Add("No se pudo borrar el login creado por la importación: bórrelo a mano. $($_.Exception.Message)") }
+}
 
 try {
     # --- Importación -------------------------------------------------------------------------------
@@ -286,7 +300,13 @@ try {
 } finally {
     Write-Host ""
     if ($creada) {
-        if ($Conservar) {
+        if ($Conservar -and $QuitarLoginsImportados) {
+            Write-Host "BD conservada: [$NombreBd] en '$Servidor' (tiene datos reales: solo en este servidor local)." -ForegroundColor Yellow
+            $loginsABorrar = @()
+            try { $loginsABorrar = Get-LoginsCreados }
+            catch { $errores.Add("No se pudo comprobar qué login creó la importación (no se borra ninguno): $($_.Exception.Message)") }
+            Remove-LoginsCreados $loginsABorrar
+        } elseif ($Conservar) {
             Write-Host "BD conservada: [$NombreBd] en '$Servidor'. Bórrela al terminar (tiene datos reales):" -ForegroundColor Yellow
             Write-Host "  sqlcmd -S $Servidor -E -C -Q `"ALTER DATABASE [$NombreBd] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$NombreBd]`""
             try {
@@ -302,12 +322,7 @@ try {
                 Invoke-Consulta $cadenaMaster "IF DB_ID(N'$NombreBd') IS NOT NULL BEGIN ALTER DATABASE [$NombreBd] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$NombreBd]; END" | Out-Null
                 Write-Host "BD de ensayo [$NombreBd] borrada."
             } catch { $errores.Add("No se pudo borrar la BD [$NombreBd]: bórrela a mano. $($_.Exception.Message)") }
-            try {
-                foreach ($l in $loginsABorrar) {
-                    Invoke-Consulta $cadenaMaster ('DROP LOGIN [' + $l.Replace(']', ']]') + ']') | Out-Null
-                    Write-Host "Login [$l] creado por la importación: borrado del servidor local."
-                }
-            } catch { $errores.Add("No se pudo borrar el login creado por la importación: bórrelo a mano. $($_.Exception.Message)") }
+            Remove-LoginsCreados $loginsABorrar
         }
     }
 }

@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-34 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-35 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -54,6 +54,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-32 | Factura y CPIC registradas a mano: número y fecha obligatorios, valor opcional |
 | DN-33 | Páginas sin enlace retiradas: productos y rutas solo desde el Catálogo del cliente |
 | DN-34 | Rol SUPERVISOR retirado |
+| DN-35 | Etapa 6: pruebas con BD en una copia local, registro manual a su página, Contabilidad aparte, plantas por ámbito, Estado del sistema solo con conteos (opción recomendada, a confirmar) |
 
 ---
 
@@ -396,6 +397,23 @@ de totales: los contadores van en las pestañas. Se conservan los colores suaves
   `WebSGV.Tests/InterfazFormalTests.cs` (topes de iconos que solo bajan; las tarjetas KPI de E5-17/E5-18 en lista cerrada).
 - Estado: vigente.
 
+## 7. Operación y calidad
+
+### DN-35 — Etapa 6: decisiones tomadas con la opción recomendada (a confirmar)
+Decisiones tomadas por el orquestador con la opción recomendada mientras el usuario no estaba (2026-11-25: pidió
+ejecutar la Etapa 6 decidiendo lo necesario "como un desarrollador profesional"):
+1. Las pruebas con BD (`[FactBD]`) corren por defecto contra una copia local `sgvEnsayo_pruebas` (desde el último
+   `.bacpac`); `sgvActualizada` solo con `SGV_TEST_BD=actualizada`, para no tapar la medición de la BD real (U-098).
+2. El registro manual de ListaDespachos se mueve tal cual a una página propia, sin retirar nada: no se pierde la
+   salida "sin documento" (U-099, E6-27).
+3. Contabilidad no se junta con Gestión de liquidaciones: el rol no tiene la sección de órdenes de viaje y el
+   administrador ya tiene "Control de aprobadas"; M-089 queda solo con los catálogos (U-100).
+4. Plantas: el mismo nombre se admite una vez como nacional y una como internacional, y no más; lo fija un índice
+   único por nombre y ámbito (U-101, migración 64 de E6-19).
+5. "Estado del sistema" muestra al administrador de sistema solo conteos de errores por día y la plantilla de los
+   mensajes más repetidos, nunca la línea completa del log; petición lenta desde 3 segundos (U-102, E6-12).
+- Desde: 2026-11-25.
+- Estado: vigente, a confirmar por el usuario.
 ## Reglas
 
 Las mismas en `docs/PLAN_MEJORAS_SGV.md`, `docs/PENDIENTES_USUARIO.md`, `docs/DATOS_POR_CORREGIR.md`, `docs/PRUEBAS_PENDIENTES.md`, `docs/DECISIONES_NEGOCIO.md` y `CLAUDE.md` ("Keeping the plan up to date"). `CodigoFuenteLimpiezaTests` comprueba una parte: sin `[x]`, formato del id, ids únicos y no mayores que el último usado, tamaño del plan y números con forma de DNI en `docs/`.
