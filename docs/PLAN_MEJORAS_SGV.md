@@ -2,16 +2,16 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-24**, commit anterior `8523c1c` — E5-23: **Etapa 5 cerrada con nota medida 7,5** (ver `docs/HOJA_DE_RUTA_CALIDAD.md`); M-142, M-143 y M-154 cerrados (ya resueltos en el código); `PASO_A_PRODUCCION.md` con las migraciones 01–63; README de publicar con los sobrantes de jQuery UI y las mediciones de `.axd`, postback, primer ingreso y fuente; nuevos M-176, M-177 y P-095. Sigue la Etapa 6, que el usuario analiza primero. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-25**, commit anterior `169fb73` — **plan detallado de la Etapa 6 escrito** (E6-1 a E6-30 en `docs/HOJA_DE_RUTA_CALIDAD.md`; 4 analistas, solo lectura; no se ejecuta hasta la orden del usuario); nuevos M-178 a M-186, U-098 a U-103 y P-096 a P-098; M-127 reescrito. No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-177 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-186 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
 - El sitio publicado (`https://sgvtransporte.somee.com`, publicado el commit `92d4dc6` el 2026-11-21) usa la BD de **pruebas** `sgvActualizada`, que tiene **datos reales** desde el 2026-10-19: no se borra ni limpia nada allí sin confirmar.
 - Producción (`sgvTransporte`) no está al día: el paso a producción es `docs/PASO_A_PRODUCCION.md`, en orden, tras la decisión U-011.
 - Etapa 1 (operación) cerrada: respaldo diario de la BD y de los archivos en Google Drive, restauración ensayada, publicación con vuelta atrás (`herramientas/publicar/publicar.ps1`), monitores de UptimeRobot y cron del GPS activos.
-- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 (integridad de la BD) cerrada el 2026-11-21 con nota 8**; **Etapa 4 (seguridad) cerrada el 2026-11-22 con nota 8** (lo más urgente sigue siendo U-078: el repositorio de GitHub es público); **Etapa 5 (interfaz) con plan escrito** (E5-1 a E5-24 en la hoja de ruta), por ejecutar.
+- Etapa 2 (ordenar el plan) cerrada el 2026-11-21 con nota 7; **Etapa 3 (integridad de la BD) cerrada el 2026-11-21 con nota 8**; **Etapa 4 (seguridad) cerrada el 2026-11-22 con nota 8** (lo más urgente sigue siendo U-078: el repositorio de GitHub es público); **Etapa 5 (interfaz) cerrada el 2026-11-24 con nota 7,5**; **Etapa 6 (arquitectura y medición) con plan escrito** (E6-1 a E6-30 en la hoja de ruta), a la espera de la orden del usuario.
 - Lo abierto está en este plan (mejoras) y en los documentos de "Otros documentos" (usuario, datos, pruebas); cada uno se cuenta en su propio documento.
 
 ## Top 20
@@ -201,6 +201,8 @@ Las tareas de la etapa (E5-1 a E5-24) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 
 ### Etapa 6 — Arquitectura y medición
 
+Las tareas de la etapa (E6-1 a E6-30) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; cada pendiente de aquí dice con qué tarea se cierra o por qué queda fuera.
+
 - [ ] **M-087** Test de integración "dinero entregado no menor que las entregas unidas" — regla en `LiquidacionesPendientesService.cs:305` (el caso de rechazo va al final del test) y limpiar los PDF que dejan los tests en `App_Data/OrdenesViaje`. · C
 - [ ] **M-088** Quitar el panel viejo "Documentos del lote" de ListaDespachos — hoy solo se llega con `?manual=1&lote=`; pasar ese registro manual al expediente y borrar `pnlManifiestosLote` y su código (con la partición de ListaDespachos). · C
 - [ ] **M-089** Juntar pantallas que hacen lo mismo — los catálogos `Registro*` (misma grilla + formulario) sobre una plantilla común; `LiquidacionesAprobadasContabilidad` como pestaña de Gestión de liquidaciones. · C
@@ -215,8 +217,17 @@ Las tareas de la etapa (E5-1 a E5-24) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-099** Serilog 2.12 → 4.x — opcional (`packages.config:17`); requiere dependencias nuevas y binding redirects. · C
 - [ ] **M-100** Script de ingreso `herramientas/sitio-local/entrar-sgv.ps1` — que lea la credencial de `privado/CREDENCIALES_USUARIOS.txt` como `probar-importacion.ps1` y se nombre en su README, para probar por HTTP sin abrir el archivo (salió de U-002). · C
 - [ ] **M-126** Lecturas largas con la sesión en solo lectura — los 23 `[WebMethod]` usan `EnableSession = true` (bloqueo de escritura): `ObtenerRuta` (M-093), `ConsultarHoraLlegadaGps`, `BuscarPorDNI`/`BuscarPorRuc` y los `Obtener*` de LiquidacionesPendientes frenan las demás pestañas del mismo usuario; pasarlas a un `.ashx` con `IReadOnlySessionState` y `DescargarDocumento.aspx` a `EnableSessionState="ReadOnly"` si no escribe en la sesión. · C
-- [ ] **M-127** Quitar `'unsafe-inline'` de `style-src` — tras E5-18 quedan 33 `style="display:none"` (pasarlos a `d-none` rompe `.show()` de jQuery: cambiar a una clase propia y `classList`) y los `style` que pone el JS; con ellos en 0, endurecer la CSP (junto con M-125). · C
+- [ ] **M-127** Quitar `'unsafe-inline'` de `style-src` — fuera de la Etapa 6 (medido el 2026-11-25): lo que la CSP bloquearía son los atributos `style` del HTML, es decir los 94 validadores con `Display="Dynamic"` (ASP.NET escribe `style="display:none"`), los 29 `style=` del marcado (26 `display:none`) y unos 15 `style="…"` que `DashboardExportacion.js` arma en cadenas para `innerHTML` (M-171); `.show()`/`.hide()` de jQuery y `el.style.x = …` no cuentan (son CSSOM). Exige reemplazar los validadores de WebForms; junto con M-125. · C
 - [ ] **M-128** Historial del conductor filtrado en memoria — `DashboardConductor.aspx.cs:903-937` trae toda la historia del conductor y filtra en C# (hoy 0,2 ms): acotarlo en SQL cuando crezca. · C
+- [ ] **M-178** La PR #4 de Dependabot (ClosedXML y 18 paquetes más) falla en 7 pruebas — 6 de `PdfOrdenViajeTests` y 1 de `LlegadaEstimadaTests` (corrida del CI, 2026-11-25): separar la subida por paquete, ver cuál rompe y fijarlo o adaptar el código; no fusionarla en bloque. · B
+- [ ] **M-179** Revisar uno por uno los avisos de flujo de NetAnalyzers — CA3002 (40) y CA3003 (11), sobre todo en ListaDespachos, RegistroDespacho y ReporteGps (la muestra de `AvisoHelper.cs:104` y `AyudaCatalogo.cs:192` parece falso positivo): arreglar o suprimir con su motivo; quedan con trinquete desde E6-3. · B
+- [ ] **M-180** El nombre completo del conductor se arma de 22 formas en 13 archivos (C# y SP) — unificarlo en una función o columna calculada; `NombreConductorFiltroBdTests` y los `LIKE` con `RTRIM` por columna dependen de la forma exacta. Fuera de la Etapa 6. · C
+- [ ] **M-181** 22 `new SqlCommand` dentro de 6 servicios (`ListaDespachosService` 7, `RegistroDespachoService` 6, `DashboardConductorService` 4…) — pasarlos a `DbHelper` y, al terminar, fijar en 0 el tope de `Services/`. Fuera de la Etapa 6. · C
+- [ ] **M-182** `Site.Master.cs:80-90` (`UsuarioLogin`) lee `Session["Usuario"]`/`Session["NombreUsuario"]` sin pasar por `SesionHelper` (lo escribe `Login.aspx.cs:391`) — confirmar y pasarlo a `SesionHelper`, o ampliar la regla de `CodigoFuenteLimpiezaTests`; con E6-16. · C
+- [ ] **M-183** Las aprobadas se leen por dos caminos — la pestaña "Control de aprobadas" del administrador (`LiquidacionesPendientesService.ObtenerAprobadas`, M-137) y la página de contabilidad (`LiquidacionesContabilidadService.ObtenerPagina`): una sola consulta paginada para las dos. · C
+- [ ] **M-184** `NullReferenceException` en el finalizador de `QuestPDF.Infrastructure.Image` — salió en 1 de 3 corridas completas de la suite el 2026-11-25 (terminó en verde; no se repitió aislando `PdfOrdenViajeTests`). En .NET Framework una excepción en un finalizador termina el proceso: en IIS reciclaría el sitio. Reproducir con `--blame` y liberar la imagen (sospecha: `PdfOrdenViajeService.cs:1092` o `ReporteTabular.cs:569`). Tarea E6-5. · B
+- [ ] **M-185** `[FactBD]` en CI con LocalDB — hoy no se puede: las migraciones 01–63 parten de una BD existente. Haría falta versionar el esquema completo sin datos (`sqlpackage /a:Extract`) y una semilla sintética de maestros (las pruebas toman datos con `SELECT TOP 1`, 94 usos); atado a U-078 (repositorio público). Fuera de la Etapa 6. · C
+- [ ] **M-186** Errores de JavaScript del navegador al log — `ErrorCliente.ashx` con el limitador de `CspInforme` y `window.onerror`/`unhandledrejection` con `sendBeacon` en `SiteMaster.js` (solo mensaje, archivo, línea y ruta): hoy un fallo de JS en el celular del conductor no se ve. Es un punto de entrada anónimo más; fuera de la Etapa 6. · C
 
 ## Reglas
 

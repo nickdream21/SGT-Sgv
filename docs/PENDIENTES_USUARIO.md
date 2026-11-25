@@ -4,7 +4,7 @@ Lo que **solo puede hacer el usuario** (o la oficina, a pedido suyo): decisiones
 
 Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = valor claro; C = menor. Las mejoras de código están en `docs/PLAN_MEJORAS_SGV.md` (`M-`), los datos por corregir en `docs/DATOS_POR_CORREGIR.md` (`D-`) y las pruebas en `docs/PRUEBAS_PENDIENTES.md` (`P-`).
 
-Último id usado: U-097 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: U-103 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Credenciales y paneles externos
 
@@ -84,6 +84,12 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-082** Qué muestra la verificación pública de documentos — cualquiera con un código ve el nombre completo de cada firmante, el motivo de anulación (texto libre) y los códigos de las demás firmas de la orden. Recomendado: mantener nombre, fecha, estado y huella; quitar el motivo de anulación y los otros códigos. Entra en E4-8. · C
 - [ ] **U-096** Videos de uso (E5-22): voz y reparto — ¿sirve la voz sintética en español de Perú del video del conductor que ya existe, y por dónde se entregan (recomendado: enlace por WhatsApp y desde la ayuda del sistema)? · B
 - [ ] **U-097** Revisar el texto de la ayuda y del manual por rol (E5-21, hecha) — los 31 temas están en `WebSGV/ContenidoAyuda/*.html` y se leen en el sistema en Configuración > Ayuda (o "Manual completo"); los PDF por rol (`Manual-SGV-A/C/K/Y.pdf`, en `docs/DOCUMENTACION/capacitacion/`, se regeneran con `herramientas/manual/generar-manual.mjs`) llevan en la portada "Borrador hasta la revisión del usuario". Confirmar que cada paso es como se trabaja de verdad (y si la captura de Facturas de flete, con montos reales de facturación, se queda); tras su visto bueno se quita esa nota (`NOTA_PORTADA`) y se reparte el manual. · B
+- [ ] **U-098** Dónde corren las pruebas con BD (`[FactBD]`) — hoy van contra `sgvActualizada`, la BD con datos reales del sitio publicado: no dejan filas (todo se revierte), pero el 2026-11-24 hicieron 476 708 ejecuciones y Query Store lleva 75 de 100 MB en 4 días, así que la medición de la BD real queda tapada. Opción recomendada: por defecto, una copia local `sgvEnsayo_*` (ya existe `ensayar-migracion.ps1`) y `sgvActualizada` solo a pedido. Conviene antes de E6-7. · B
+- [ ] **U-099** Registro manual de ListaDespachos (M-088, frena E6-27) — desde el 2026-10-19 se usó 13 veces, solo para subir el PDF de la factura o la CPIC (la Bandeja registró 488); guías, manifiestos y asignación por despacho, ninguna. Opciones: (a) moverlo tal cual a una página propia (recomendado: no se pierde la salida "sin documento") o (b) retirarlo y dejar en el expediente de la Bandeja solo "subir el PDF de la factura o la CPIC". · B
+- [ ] **U-100** Confirmar que Contabilidad no se junta con Gestión de liquidaciones (segunda mitad de M-089) — recomendado no juntarlas: el rol CONTABILIDAD no tiene la sección de órdenes de viaje y el administrador ya tiene su pestaña "Control de aprobadas". Si se confirma, se anota como DN y M-089 queda solo con los catálogos. · C
+- [ ] **U-101** Plantas: nombre único por ámbito (frena la migración 64 de E6-19) — confirmar la regla de hoy: el mismo nombre se admite una vez como nacional y una como internacional, y no más (13 plantas, 13 nombres distintos). · C
+- [ ] **U-102** Qué ve el administrador de sistema en la pantalla "Estado del sistema" (frena E6-12) — recomendado: solo conteos de errores por día y la plantilla de los mensajes más repetidos, nunca la línea completa del log (puede traer texto de SQL con valores); y el umbral de "petición lenta", 3 segundos. · C
+- [ ] **U-103** Cuota de disco del plan de somee — verla en el panel: el log puede llegar a 1,2 GB en el peor caso (62 archivos de 20 MB), además de los PDF firmados y los Uploads. · C
 
 ## Datos o documentos por conseguir
 
