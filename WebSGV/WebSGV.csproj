@@ -537,11 +537,13 @@
     <Compile Include="Helpers\ExcelSubidoHelper.cs" />
     <Compile Include="Helpers\ArchivosTemporalesHelper.cs" />
     <Compile Include="Helpers\ErrorAplicacionHelper.cs" />
+    <Compile Include="Helpers\ErrorMetodoPagina.cs" />
     <Compile Include="Helpers\IpClienteHelper.cs" />
     <Compile Include="Helpers\LimiteConsultasSesion.cs" />
     <Compile Include="Helpers\JsonSeguro.cs" />
     <Compile Include="Helpers\MensajeHtml.cs" />
     <Compile Include="Helpers\DocumentoHelper.cs" />
+    <Compile Include="Helpers\MedicionPeticiones.cs" />
     <Compile Include="Helpers\MensajeErrorHelper.cs" />
     <Compile Include="Helpers\EmpresaConfigHelper.cs" />
     <Compile Include="Helpers\EstadoUiHelper.cs" />

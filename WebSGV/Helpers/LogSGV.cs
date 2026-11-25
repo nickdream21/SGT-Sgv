@@ -89,8 +89,36 @@ namespace WebSGV.Helpers
         public static void Error(string mensaje, params object[] valores) =>
             Log.Error(mensaje, valores);
 
-        public static void Error(Exception ex, string mensaje, params object[] valores) =>
+        public static void Error(Exception ex, string mensaje, params object[] valores)
+        {
+            AnotarExcepcionRegistrada(ex);
             Log.Error(ex, mensaje, valores);
+        }
+
+        /// <summary>
+        /// Clave de <c>HttpContext.Items</c> con las excepciones que esta petición ya registró como ERR
+        /// (<c>List&lt;Exception&gt;</c>; E6-11: la de un <c>[WebMethod]</c> que el método registró y relanzó no se
+        /// registra otra vez en EndRequest, y un ERR de otra excepción no la silencia).
+        /// </summary>
+        public const string ClaveExcepcionesRegistradas = "SGV_ExcepcionesRegistradas";
+
+        /// <summary>
+        /// Clave de <c>HttpContext.Items</c> con el id del usuario de la petición (E6-11, <c>MedicionPeticiones</c> al tener
+        /// la sesión): el módulo de sesión la quita del contexto en ReleaseRequestState y las líneas de EndRequest
+        /// (petición lenta, error de un WebMethod) siguen llevando el usuario.
+        /// </summary>
+        public const string ClaveIdUsuario = "SGV_IdUsuarioPeticion";
+
+        private static void AnotarExcepcionRegistrada(Exception ex)
+        {
+            HttpContext ctx = HttpContext.Current; // null fuera de una petición: no hay nada que anotar
+            if (ctx == null || ex == null)
+                return;
+            if (!(ctx.Items[ClaveExcepcionesRegistradas] is System.Collections.Generic.List<Exception> lista))
+                ctx.Items[ClaveExcepcionesRegistradas] = lista = new System.Collections.Generic.List<Exception>();
+            if (lista.Count < 20) // tope: una petición que registra en bucle no crece sin fin
+                lista.Add(ex);
+        }
 
         /// <summary>
         /// Información con una propiedad más que la plantilla puede nombrar después de sus valores (la usa
@@ -148,6 +176,10 @@ namespace WebSGV.Helpers
             // Sesión no disponible en este punto del pipeline (Application_Start, sesión ya liberada o abandonada).
             catch (HttpException) { }
             catch (InvalidOperationException) { } // incluye ObjectDisposedException
+
+            // Sesión ya liberada (EndRequest): el usuario que se guardó al tenerla (MedicionPeticiones.AlTenerSesion).
+            if (usuario == SinUsuario && ctx.Items[LogSGV.ClaveIdUsuario] is int guardado)
+                usuario = guardado.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
     }
 }

@@ -60,9 +60,9 @@ Si el log dice `onway_sin_respuesta` o `cron_con_error`, el cron llama bien: rev
 
 ## 4. Aviso por correo de errores no controlados
 
-Cada error no controlado del sitio (el que llega a `Global.asax` `Application_Error` y queda en el log como "Error no controlado en ...") y cada error de un postback parcial de UpdatePanel (`Site.Master`, "Error en postback parcial de ...") manda un correo de texto plano, en segundo plano, sin frenar la respuesta ni cambiar lo que ve el usuario. Código: `Services/Operacion/AvisoErrores.cs` (reglas, probadas en `AvisoErroresTests`) y `Helpers/CorreoHelper.cs` (envío común, el mismo de los avisos de liquidaciones y de la recuperación de contraseña).
+Cada error no controlado del sitio (el que llega a `Global.asax` `Application_Error` y queda en el log como "Error no controlado en ..."), cada excepción que un `[WebMethod]` no captura ("Error no controlado en ... (WebMethod)", sección 5) y cada error de un postback parcial de UpdatePanel (`Site.Master`, "Error en postback parcial de ...") manda un correo de texto plano, en segundo plano, sin frenar la respuesta ni cambiar lo que ve el usuario. Código: `Services/Operacion/AvisoErrores.cs` (reglas, probadas en `AvisoErroresTests`) y `Helpers/CorreoHelper.cs` (envío común, el mismo de los avisos de liquidaciones y de la recuperación de contraseña).
 
-**Qué no cubre:** los errores que las páginas ya capturan y muestran con `MensajeErrorHelper` (quedan solo en el log) y los `[WebMethod]` (PageMethods: el ScriptHandler responde el error al navegador sin pasar por `Application_Error`).
+**Qué no cubre:** los errores que las páginas y los `[WebMethod]` ya capturan y muestran con `MensajeErrorHelper` (quedan solo en el log).
 
 **A quién:** la clave `AvisoErroresPara` de `WebSGV/Web.config` (no es secreta), hoy `sistemas.cibertic@serviciosgeneralesviviana.com`. Para cambiarlo, editar ese valor (varios destinatarios separados por comas) y publicar `Web.config`; vacío = no se envía nada. Las peticiones locales (PCs de desarrollo: `Request.IsLocal` o host `localhost`/`127.0.0.1`/`::1`) no avisan. Para probar el aviso en local, agregar temporalmente `<add key="AvisoErroresLocal" value="true" />` en `appSettings` de `Web.config`, provocar el error y quitarla (no se versiona; el asunto lleva el host, p. ej. `localhost:44390`).
 
@@ -94,7 +94,7 @@ System.Data.SqlClient.SqlException (0x80131904): ...
 
 - Fecha y hora del servidor, nivel (`DBG`, `INF`, `WRN`, `ERR`), **id de la petición** entre corchetes y **id del usuario** de la sesión tras la `u`; luego el mensaje y, en las de error, la excepción en las líneas siguientes.
 - El id de petición son 8 caracteres hexadecimales al azar que pone `Global.asax` (`Application_BeginRequest`) en cada petición. Todo lo que registra esa petición lleva el mismo id. También sale en el encabezado de respuesta `X-SGV-Peticion` (herramientas del navegador → Red → la petición → Encabezados), para ir del navegador a sus líneas; se pone al enviar las cabeceras, así que lo llevan también las descargas de Excel/PDF y los 404.
-- `[--------]` = fuera de una petición (arranque del sitio, hilos de fondo: GPS automático, limpieza de temporales, correos de aviso). `u-` = sin sesión (Login, `Salud.ashx`, `GpsAutomatico.ashx`, páginas públicas) o antes de que se cargue la sesión.
+- `[--------]` = fuera de una petición (arranque del sitio, hilos de fondo: GPS automático, limpieza de temporales, correos de aviso). `u-` = sin sesión (Login, `Salud.ashx`, `GpsAutomatico.ashx`, páginas públicas) o antes de que se cargue la sesión. Las líneas del final de la petición (petición lenta, error de un `[WebMethod]`), escritas cuando la sesión ya se soltó, llevan el usuario que tenía la sesión al cargarse.
 - La `u` es siempre el usuario de la sesión; si el mensaje dice "usuario {n}" puede ser otro (el afectado por la acción).
 - Errores que una página captura y muestra (`MensajeErrorHelper.ParaUsuario(ex, "qué se hacía {Dato}", dato)`): uno técnico deja **una** línea `[ERR]` con ese contexto y la excepción; uno de negocio (mensaje de un SP o `ErrorNegocioException`, el usuario lo puede corregir) deja una `[INF]` "(aviso de negocio al usuario: ...)", nunca `[ERR]`; si ese aviso envuelve una falla (p. ej. "no se pudo generar el PDF" con el error de QuestPDF dentro), una `[WRN]` con la excepción y su pila. Con `ParaUsuario(ex)` sin contexto, el técnico queda como "Error técnico mostrado al usuario como mensaje genérico" y el de negocio no se registra.
 
@@ -105,3 +105,19 @@ Select-String -Path .\sgv-AAAAMMDD*.log -Pattern '\[3f9a0c1e\]' -Context 0,20
 ```
 
 `-Context 0,20` trae también la pila de la excepción, que va en las líneas siguientes sin id. Para solo los errores del día: `-Pattern '\[ERR\]'`; los de un usuario: `-Pattern '\] u12 '`.
+
+**Errores de los `[WebMethod]`** (E6-11). Si un PageMethod (`Pagina.aspx/Metodo`, las llamadas de JavaScript) lanza una excepción que no captura, ASP.NET AJAX responde 500 en JSON (cabecera `jsonerror: true`) sin pasar por `Application_Error`. `Helpers/ErrorMetodoPagina.cs` la toma (`AppDomain.FirstChanceException`, solo en las peticiones de PageMethod: guarda la última excepción del hilo de la petición) y, al terminar la petición, si la respuesta es ese 500, el método llegó a ejecutarse (la excepción viene de la llamada al método o de código de SGV) y esa misma excepción no se registró ya como ERR (un método que la registró y relanzó), deja **una** línea y manda el aviso por correo de la sección 4, con el usuario de la sesión:
+
+```
+2026-11-25 06:36:53.824 [ERR] [808055c2] u90 Error no controlado en /Views/X.aspx/Metodo (WebMethod)
+System.InvalidOperationException: ...
+```
+
+Si ASP.NET rechaza la llamada antes de ejecutar el método (JSON inválido, un parámetro que falta o de otro tipo: lo típico de un bot o de una pestaña con un script viejo), queda solo un `[WRN] ... Llamada inválida a /Views/X.aspx/Metodo (WebMethod; ASP.NET la rechazó antes de ejecutar el método: ArgumentException)`, sin el mensaje (podría traer parte de lo enviado), sin pila y sin correo. Si la excepción es un aviso de negocio (`ErrorNegocioException` o el mensaje de un SP), queda como `[INF]` "WebMethod ... respondió 500 con un aviso de negocio: ...". Un 401/403 del control de sesión no es un error.
+
+**Medición de peticiones** (E6-11, `Helpers/MedicionPeticiones.cs`). Se cuenta en memoria, por ruta (archivo y método del PageMethod, en minúsculas, sin querystring): cantidad, ms totales, máximo, lentas, respuestas 5xx (también un error no controlado que en Release termina en la redirección a `Error.aspx`) y ms esperando la sesión (lo que tarda el módulo de sesión en entregarla: otra petición del mismo usuario la tiene tomada, p. ej. el mapa de `SeguimientoViaje`). No cuenta estáticos (`.css`, `.js`, imágenes, fuentes, `.map`), `.axd`, `Salud.ashx` ni `CspInforme.ashx`.
+
+- `[WRN] ... Petición lenta ~/views/x.aspx 4008 ms (sesión 0 ms)`: la petición tardó más que `Medicion.UmbralMs` (`Web.config`, 3000; DN-35). Tras publicar o reciclar, las primeras (Login) suelen salir lentas porque el sitio compila: no es una falla.
+- `[INF] ... Resumen del día 2026-11-24: 812 peticiones desde las 06:12, 3 lentas, 1 con 5xx; más tiempo: ...; lentas: ...; 5xx: ...`: la escribe la primera petición del día siguiente (hora de Perú; lleva el id y el usuario de esa petición, que no tienen que ver con el resumen) y reinicia la cuenta; trae las 5 rutas con más ms totales, las 5 con más lentas y las 5 con más 5xx. Al detenerse el sitio (reciclaje, publicación) se escribe "Resumen del día ... (parcial: el sitio se detiene)": la cuenta vive en memoria, así que cada resumen cubre desde que arrancó el sitio ("desde las HH:mm"). Es una cuenta aproximada en el borde del día: una petición que termina justo en el cambio puede quedar fuera de los dos resúmenes.
+
+Buscar: `-Pattern 'Petición lenta'`, `-Pattern 'Resumen del día'` o `-Pattern '\(WebMethod\)'`.

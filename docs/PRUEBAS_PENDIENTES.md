@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-100 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-101 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -19,6 +19,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-095** Doble clic e indicador de espera en el tablero de seguimiento y en DashboardExportacion — en E5-23 su POST de búsqueda quedó fuera de la lista permitida del arnés (ListaDespachos, ReportesOrdenesViaje y ReporteCargas sí: 1 POST y "Procesando…" a los ~350 ms): en local con ese POST permitido, o junto con P-054 en el sitio publicado, comprobar un solo POST, el velo y el tiempo real de respuesta. · C
 - [ ] **P-096** Tras E6-15 y E6-18: firmar, conformar, ver el detalle y el historial con un conductor real en su celular — los controles de pertenencia y las lecturas del panel pasan a servicios: comprobar que entra a lo suyo y que la orden de otro conductor responde "no disponible". · B
 - [ ] **P-097** Con E6-11 publicada, una semana de uso real — anotar del "Resumen del día" las rutas lentas, los 500 de WebMethod y los ms esperando la sesión: decide si entran la sesión de solo lectura (M-126, M-093) y la cookie testigo de las descargas (M-130). · B
+- [ ] **P-101** Tras publicar E6-11: en el log del sitio publicado (somee) un 500 de un `[WebMethod]` deja su ERR con la excepción (con `customErrors` remoto el JSON es genérico), salen "Petición lenta" y el "Resumen del día", y la espera de sesión de `ObtenerRuta` (mapa) queda medida para P-097. · B
 - [ ] **P-100** Tras E6-8 (al publicar): "Verificar GPS" en Liquidaciones pendientes y "Actualizar GPS" del seguimiento contra el Onway real — el estado compartido del cliente (ritmo de 2 por segundo, lista de dispositivos, flota) dejó de ser campos `static`; en el log, una sola lista de dispositivos por cada 30 min. · B
 - [ ] **P-099** Tras E6-3: con un usuario que debe cambiar su contraseña, un postback en una página con consulta (p. ej. `DetalleOrdenViaje.aspx?id=`) recarga la misma URL con su consulta (`Site.Master.cs`, ya no usa `RawUrl`). · C
 - [ ] **P-098** Tras E6-23 a E6-28: registrar un lote real de punta a punta (ZIP + Word, programar con el Word, descarga por pedido, editar el lote y el registro manual) en la oficina y a 390 px — los bloques pasan a controles y páginas propias. · B

@@ -17,6 +17,8 @@ namespace WebSGV
             // acoplar el helper a System.Web.
             LogSGV.Inicializar(System.Web.Hosting.HostingEnvironment.MapPath("~/App_Data/logs"));
             LogSGV.Info("Aplicación SGV iniciada");
+            // E6-11: guarda la excepción de un [WebMethod] que no la captura (el manejador de scripts no la pasa a Application_Error).
+            ErrorMetodoPagina.Instalar();
             // Salud.ashx?gps=1 no avisa durante la primera hora: tras un reciclaje no se sabe cuándo corrió el GPS.
             Salud.InicioAplicacionUtc = DateTime.UtcNow;
 
@@ -60,11 +62,30 @@ namespace WebSGV
         void Application_BeginRequest(object sender, EventArgs e)
         {
             Context.Items[LogSGV.ClaveIdPeticion] = LogSGV.NuevoIdPeticion();
+            MedicionPeticiones.AlIniciar(Context);
+            ErrorMetodoPagina.AlIniciar(Context);
+        }
+
+        /// <summary>Empieza la espera de la sesión (E6-11): el módulo de sesión la toma en AcquireRequestState.</summary>
+        void Application_PostMapRequestHandler(object sender, EventArgs e)
+        {
+            MedicionPeticiones.AlMapearManejador(Context);
+        }
+
+        /// <summary>
+        /// E6-11: un 500 de un [WebMethod] deja una línea ERR (ErrorMetodoPagina) y la petición se suma a la medición
+        /// por ruta, con el aviso "Petición lenta" y el "Resumen del día" (MedicionPeticiones). Ninguna de las dos lanza.
+        /// </summary>
+        void Application_EndRequest(object sender, EventArgs e)
+        {
+            ErrorMetodoPagina.RegistrarSiFallo(Context);
+            MedicionPeticiones.AlTerminar(Context);
         }
 
         void Application_End(object sender, EventArgs e)
         {
-            // Vaciar y cerrar los sinks de log al apagar la aplicación.
+            // Resumen parcial de la medición (lo de memoria se pierde) y luego vaciar y cerrar los sinks de log.
+            MedicionPeticiones.AlDetener();
             LogSGV.Cerrar();
         }
 
@@ -81,6 +102,7 @@ namespace WebSGV
         /// </summary>
         void Application_AcquireRequestState(object sender, EventArgs e)
         {
+            MedicionPeticiones.AlTenerSesion(Context); // E6-11: fin de la espera de la sesión (corre tras el módulo de sesión)
             HttpContext ctx = Context;
             HttpSessionState sesion = ctx.Session;
             if (sesion == null)

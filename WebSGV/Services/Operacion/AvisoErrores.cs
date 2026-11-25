@@ -381,6 +381,22 @@ namespace WebSGV.Services.Operacion
         // ── Entrada desde Application_Error ──────────────────────────────────
 
         /// <summary>
+        /// Usuario guardado en <c>Items</c> al cargarse la sesión (<c>MedicionPeticiones.AlTenerSesion</c>, E6-11): el
+        /// aviso de un <c>[WebMethod]</c> sale en EndRequest, cuando el módulo de sesión ya la quitó del contexto. Solo se
+        /// usa si la sesión no dio el usuario (Application_Error, con sesión, no cambia).
+        /// </summary>
+        internal static void CompletarUsuarioGuardado(DatosErrorAviso datos, System.Collections.IDictionary items)
+        {
+            if (datos == null || items == null || datos.IdUsuario.HasValue)
+                return;
+            if (!(items[LogSGV.ClaveIdUsuario] is int id))
+                return;
+            datos.IdUsuario = id;
+            datos.NombreUsuario = items[MedicionPeticiones.ClaveNombreUsuario] as string ?? "";
+            datos.Rol = items[MedicionPeticiones.ClaveRolUsuario] as string ?? "";
+        }
+
+        /// <summary>
         /// Arma el aviso con los datos de la petición y lo envía en segundo plano si corresponde. Nunca lanza
         /// ni espera al SMTP: la respuesta del error sale igual. Llamar después de registrar el error en el log.
         /// </summary>
@@ -415,6 +431,8 @@ namespace WebSGV.Services.Operacion
                     datos.Rol = SesionHelper.Rol(sesion);
                 }
                 catch { /* sin sesión en este punto del pipeline */ }
+                if (!datos.IdUsuario.HasValue)
+                    CompletarUsuarioGuardado(datos, ctx.Items);
 
                 string tipo = ClaveTipo(real, ruta);
                 DecisionAviso decision = Limitador.Evaluar(tipo, datos.FechaPeru);

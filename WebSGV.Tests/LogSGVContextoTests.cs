@@ -25,8 +25,12 @@ namespace WebSGV.Tests
     /// memoria (y lo devuelven al terminar) y solo cuentan los eventos con su propio id de petición: otras clases de
     /// pruebas que corren en paralelo pueden registrar a la vez.
     /// </summary>
+    [Collection(LogSGVContextoTests.ColeccionLog)]
     public class LogSGVContextoTests
     {
+        /// <summary>Las clases que cambian <c>Log.Logger</c> (global) van en esta colección: no corren a la vez.</summary>
+        internal const string ColeccionLog = "Log.Logger global";
+
         private sealed class DestinoMemoria : ILogEventSink
         {
             public readonly ConcurrentQueue<LogEvent> Eventos = new ConcurrentQueue<LogEvent>();
