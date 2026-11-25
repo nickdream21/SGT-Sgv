@@ -18,6 +18,8 @@ namespace WebSGV.Views.Exportacion
     /// evidencia del GPS, la corrección manual con motivo y los datos que el GPS no sabe.
     /// ?nuevo=1 crea un viaje a mano (cuando no viene del despacho).
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5368:Set ViewStateUserKey For Classes Derived From Page",
+        Justification = "Usa Site.Master, que asigna ViewStateUserKey en Page_Init a toda página con sesión.")]
     public partial class SeguimientoViaje : System.Web.UI.Page
     {
         protected bool ModoNuevo { get; private set; }
@@ -328,6 +330,8 @@ namespace WebSGV.Views.Exportacion
         /// Vuelve a cargar el detalle con un GET (así F5 no repite la acción). <paramref name="codigoAviso"/> es una
         /// constante de <see cref="AvisoSeguimiento"/>, nunca un texto.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA3007:Review code for open redirect vulnerabilities",
+            Justification = "Destino fijo SeguimientoViaje.aspx; lo que viene del formulario solo va en la consulta, codificado con UrlEncode.")]
         private void Volver(int id, string codigoAviso, string columna = null)
         {
             string url = $"SeguimientoViaje.aspx?id={id}&msg={HttpUtility.UrlEncode(codigoAviso)}" +

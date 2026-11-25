@@ -10,7 +10,8 @@ namespace WebSGV.Tests
     /// <summary>
     /// Fija lo esencial del CI (E4-9): token de solo lectura, acciones fijadas por SHA,
     /// auditoría de NuGet y de JS de terceros, corrida semanal y Dependabot; y la cobertura con
-    /// su tope (E6-1); y los avisos como error en los dos proyectos (E6-2).
+    /// su tope (E6-1); los avisos como error en los dos proyectos (E6-2); y los analizadores con sus
+    /// reglas en error y el trinquete en CI (E6-3).
     /// Lee los YAML como texto para no añadir dependencias.
     /// </summary>
     public class ConfiguracionCiTests
@@ -124,6 +125,65 @@ namespace WebSGV.Tests
             foreach (string codigo in new[] { "NU1901", "NU1902" })
                 Assert.Contains(codigo, noComoError);
             Assert.All(noComoError, c => Assert.StartsWith("NU19", c));
+        }
+
+        [Fact]
+        public void Analizadores_ReglasEnErrorYTrinqueteEnCi()
+        {
+            // E6-3: el paquete de analizadores (solo de desarrollo) y sus dos DLL en el csproj.
+            string paquetes = Leer("WebSGV", "packages.config");
+            Assert.Matches(new Regex(@"<package id=""Microsoft\.CodeAnalysis\.NetAnalyzers"" version=""[\d.]+""[^>]*developmentDependency=""true"""), paquetes);
+            var csproj = XDocument.Parse(Leer("WebSGV", "WebSGV.csproj"));
+            var analizadores = csproj.Descendants().Where(e => e.Name.LocalName == "Analyzer")
+                .Select(e => (string)e.Attribute("Include")).ToList();
+            Assert.Contains(analizadores, a => a.EndsWith(@"analyzers\dotnet\Microsoft.CodeAnalysis.NetAnalyzers.dll"));
+            Assert.Contains(analizadores, a => a.EndsWith(@"analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll"));
+            // Si falta cualquiera de las dos, el build lo dice claro (EnsureNuGetPackageBuildImports).
+            var faltaPaquete = csproj.Descendants().Where(e => e.Name.LocalName == "Target"
+                    && (string)e.Attribute("Name") == "EnsureNuGetPackageBuildImports")
+                .SelectMany(t => t.Elements()).Where(e => e.Name.LocalName == "Error")
+                .Select(e => (string)e.Attribute("Condition") ?? "").ToList();
+            foreach (string dll in analizadores)
+                Assert.Contains(faltaPaquete, c => c.Contains("!Exists('" + dll + "')"));
+
+            // SGV.globalconfig siempre; el del trinquete solo al medir. Ninguno se publica.
+            var configs = csproj.Descendants().Where(e => e.Name.LocalName == "GlobalAnalyzerConfigFiles").ToList();
+            Assert.Contains(configs, e => (string)e.Attribute("Include") == "SGV.globalconfig" && e.Attribute("Condition") == null);
+            Assert.Contains(configs, e => (string)e.Attribute("Include") == "SGV.trinquete.globalconfig"
+                && ((string)e.Attribute("Condition") ?? "").Contains("'$(SgvContarAvisos)' == 'true'"));
+            Assert.DoesNotContain(csproj.Descendants(), e => e.Name.LocalName == "Content"
+                && ((string)e.Attribute("Include") ?? "").EndsWith(".globalconfig"));
+
+            // Todo apagado salvo las 6 de seguridad, en error.
+            string global = Leer("WebSGV", "SGV.globalconfig");
+            Assert.Matches(new Regex(@"^is_global\s*=\s*true\s*$", RegexOptions.Multiline), global);
+            Assert.Matches(new Regex(@"^dotnet_analyzer_diagnostic\.severity\s*=\s*none\s*$", RegexOptions.Multiline), global);
+            var enError = new[] { "CA2100", "CA3007", "CA5350", "CA5368", "CA2213", "CA2025" };
+            foreach (string regla in enError)
+                Assert.Matches(new Regex(@"^dotnet_diagnostic\." + regla + @"\.severity\s*=\s*error\s*$", RegexOptions.Multiline), global);
+            var conSeveridad = Regex.Matches(global, @"^dotnet_diagnostic\.(\w+)\.severity", RegexOptions.Multiline)
+                .Cast<Match>().Select(m => m.Groups[1].Value).ToList();
+            Assert.Equal(enError.OrderBy(r => r), conSeveridad.OrderBy(r => r));
+
+            // Las 5 del trinquete: aviso al medir y con su cifra en la base.
+            var trinquete = new[] { "CA1031", "CA2000", "CA3002", "CA3003", "CA1062" };
+            string medir = Leer("WebSGV", "SGV.trinquete.globalconfig");
+            string baseAvisos = Leer("herramientas", "calidad", "avisos-base.json");
+            foreach (string regla in trinquete)
+            {
+                Assert.Matches(new Regex(@"^dotnet_diagnostic\." + regla + @"\.severity\s*=\s*warning\s*$", RegexOptions.Multiline), medir);
+                Assert.Matches(new Regex("\"" + regla + @"""\s*:\s*\d+"), baseAvisos);
+            }
+
+            // El CI corre el script tras compilar.
+            string w = Workflow();
+            // Trinquete estricto: también falla si una regla baja sin bajar la base.
+            string script = Leer("herramientas", "calidad", "contar-avisos.ps1");
+            Assert.Matches(new Regex(@"if \(\$bajan\.Count -gt 0\) \{\s*\r?\n(?:[^\r\n]*\r?\n){0,3}?[^\r\n]*Corre -Actualizar[^\r\n]*\r?\n\s*exit 1", RegexOptions.Singleline), script);
+            int compilar = w.IndexOf("msbuild WebSGV.sln /t:Build");
+            var paso = Regex.Match(w, @"-\s*name:\s*Contar avisos del trinquete\s*\r?\n\s+shell:\s*pwsh\s*\r?\n\s+run:\s*\./herramientas/calidad/contar-avisos\.ps1\s*$", RegexOptions.Multiline);
+            Assert.True(paso.Success, "Falta el paso que corre contar-avisos.ps1");
+            Assert.True(compilar >= 0 && paso.Index > compilar, "contar-avisos.ps1 debe correr después de compilar");
         }
 
         [Fact]

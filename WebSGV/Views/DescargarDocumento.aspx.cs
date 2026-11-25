@@ -9,6 +9,8 @@ namespace WebSGV.Views
     /// Entrega un archivo de ~/Uploads solo si la sesión actual tiene registrada la llave
     /// (ver <see cref="DocumentoHelper"/>). Uploads no se sirve por URL directa.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5368:Set ViewStateUserKey For Classes Derived From Page",
+        Justification = "Sin formulario ni postback: solo responde a un GET con el archivo.")]
     public partial class DescargarDocumento : System.Web.UI.Page
     {
         protected void Page_Load(object sender, EventArgs e)

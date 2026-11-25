@@ -1016,6 +1016,17 @@
       <DependentUpon>Web.config</DependentUpon>
     </None>
   </ItemGroup>
+  <!-- E6-3: analizadores de .NET (paquete de desarrollo, no se publica). SGV.globalconfig apaga todo
+       salvo las reglas de seguridad que rompen la compilación. Con /p:SgvContarAvisos=true se suma
+       SGV.trinquete.globalconfig (5 reglas como aviso) para herramientas/calidad/contar-avisos.ps1. -->
+  <ItemGroup>
+    <Analyzer Include="..\packages\Microsoft.CodeAnalysis.NetAnalyzers.10.0.100\analyzers\dotnet\Microsoft.CodeAnalysis.NetAnalyzers.dll" />
+    <Analyzer Include="..\packages\Microsoft.CodeAnalysis.NetAnalyzers.10.0.100\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll" />
+    <GlobalAnalyzerConfigFiles Include="SGV.globalconfig" />
+    <GlobalAnalyzerConfigFiles Include="SGV.trinquete.globalconfig" Condition="'$(SgvContarAvisos)' == 'true'" />
+    <None Include="SGV.globalconfig" />
+    <None Include="SGV.trinquete.globalconfig" />
+  </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
@@ -1046,6 +1057,8 @@
       <ErrorText>Este proyecto hace referencia a los paquetes NuGet que faltan en este equipo. Use la restauraci�n de paquetes NuGet para descargarlos. Para obtener m�s informaci�n, consulte http://go.microsoft.com/fwlink/?LinkID=322105. El archivo que falta es {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\build\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.4.1.0\build\net472\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.CodeAnalysis.NetAnalyzers.10.0.100\analyzers\dotnet\Microsoft.CodeAnalysis.NetAnalyzers.dll')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeAnalysis.NetAnalyzers.10.0.100\analyzers\dotnet\Microsoft.CodeAnalysis.NetAnalyzers.dll'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.CodeAnalysis.NetAnalyzers.10.0.100\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeAnalysis.NetAnalyzers.10.0.100\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll'))" />
   </Target>
   <!-- Al publicar (no al compilar): appSettings.Secrets.config reemplaza al del servidor. Sin GpsAutomaticoClave,
        cron-job.org recibe 403 y desactiva la tarea (27/10/2026, publicado desde una PC con el archivo viejo). -->

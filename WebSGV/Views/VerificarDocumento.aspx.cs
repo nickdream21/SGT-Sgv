@@ -14,6 +14,8 @@ namespace WebSGV.Views
     /// (el archivo no se envía al servidor). Pensada para auditorías: el auditor no necesita usuario.
     /// Uso: /Views/VerificarDocumento.aspx[?c=XXXX-XXXX-XXXX]
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5368:Set ViewStateUserKey For Classes Derived From Page",
+        Justification = "Página pública sin sesión: como en Site.Master, ViewStateUserKey se omite porque el SessionID puede cambiar entre GET y POST.")]
     public partial class VerificarDocumento : System.Web.UI.Page
     {
         /// <summary>Límite de consultas por IP (la página es pública): evita barrer códigos. 30 consultas

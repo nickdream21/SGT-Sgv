@@ -20,6 +20,8 @@ namespace WebSGV.Views
     ///   - CONDUCTOR: sólo las suyas.
     ///   (ver <see cref="AccesoLiquidacion"/>)
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5368:Set ViewStateUserKey For Classes Derived From Page",
+        Justification = "Sin formulario ni postback: solo responde a un GET con el PDF.")]
     public partial class DescargarPdfOrdenViaje : Page
     {
         protected void Page_Load(object sender, EventArgs e)

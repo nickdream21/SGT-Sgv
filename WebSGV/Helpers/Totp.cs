@@ -57,6 +57,8 @@ namespace WebSGV.Helpers
         public static string Generar(byte[] secreto) => Generar(secreto, Reloj());
 
         /// <summary>HOTP de RFC 4226: HMAC-SHA1 del contador (8 bytes big-endian) con truncado dinámico.</summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms",
+            Justification = "HOTP/TOTP (RFC 4226 y 6238) usan HMAC-SHA1 como MAC, no como hash de firma; es lo que aceptan las apps autenticadoras.")]
         public static string Hotp(byte[] secreto, long contador)
         {
             if (secreto == null) throw new ArgumentNullException(nameof(secreto));

@@ -14,6 +14,8 @@ namespace WebSGV.Views
     /// AyudaImagen.aspx. Tema de otro rol, borrador o inexistente: el índice con un aviso que no dice si existe.
     /// El "?" de cada pantalla abre esta página en el modal de Site.Master (SiteMaster.js) o en otra pestaña.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5368:Set ViewStateUserKey For Classes Derived From Page",
+        Justification = "Usa Site.Master, que asigna ViewStateUserKey en Page_Init a toda página con sesión.")]
     public partial class Ayuda : System.Web.UI.Page
     {
         /// <summary>Tema que se muestra, o null en el índice.</summary>

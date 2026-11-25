@@ -16,6 +16,8 @@ namespace WebSGV.Views.Exportacion
     /// atención. El detalle de cada viaje está en SeguimientoViaje; la importación del Excel,
     /// en ImportarSeguimiento.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5368:Set ViewStateUserKey For Classes Derived From Page",
+        Justification = "Usa Site.Master, que asigna ViewStateUserKey en Page_Init a toda página con sesión.")]
     public partial class RegistroSeguimiento : System.Web.UI.Page
     {
         /// <summary>

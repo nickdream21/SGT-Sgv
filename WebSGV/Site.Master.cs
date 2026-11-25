@@ -175,6 +175,8 @@ namespace WebSGV
         /// y de los eventos): cualquier postback que no sea "Cambiar contraseña" o "Cerrar sesión"
         /// se descarta recargando la página, que vuelve a mostrar el modal obligatorio.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA3007:Review code for open redirect vulnerabilities",
+            Justification = "El destino empieza siempre por la ruta \"~/...\" del archivo que se ejecuta; la consulta de la petición va detrás de '?' y no puede cambiar el sitio.")]
         private void BloquearAccionesSiDebeCambiarContrasena()
         {
             if (!Page.IsPostBack || !TieneSesionActivaLocal() || !RequiereCambioContrasena())
@@ -192,7 +194,9 @@ namespace WebSGV
                                       && (origen == idCodigosGuardados || Request.Form[idCodigosGuardados] != null);
 
             if (!esCambioContrasena && !esCerrarSesion && !esCodigosGuardados)
-                Response.Redirect(Request.RawUrl, true);
+                // Ruta "~/..." del archivo que se ejecuta (no RawUrl: una ruta que empiece por "//" sería
+                // relativa al protocolo y llevaría a otro sitio) más la consulta de esta petición.
+                Response.Redirect(Request.AppRelativeCurrentExecutionFilePath + Request.Url.Query, true);
         }
 
         protected void Page_Load(object sender, EventArgs e)

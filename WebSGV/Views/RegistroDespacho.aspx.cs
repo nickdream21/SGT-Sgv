@@ -1471,6 +1471,17 @@ namespace WebSGV.Views
         }
 
         private DataTable _conductoresImp, _tractosImp, _carretasImp;
+
+        /// <summary>Libera las tablas de apoyo de la importación y de las descargas (CA2213).</summary>
+        public override void Dispose()
+        {
+            _conductoresImp?.Dispose();
+            _tractosImp?.Dispose();
+            _carretasImp?.Dispose();
+            _plantasDesc?.Dispose();
+            base.Dispose();
+        }
+
         private List<DespachoProgramado> _programadosImp = new List<DespachoProgramado>();
 
         /// <summary>

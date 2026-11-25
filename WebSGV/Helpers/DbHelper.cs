@@ -263,6 +263,8 @@ namespace WebSGV.Helpers
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities",
+            Justification = "Punto único de DbHelper: el texto es el nombre de un SP o SQL fijo del código que llama; los valores van siempre en parametros.")]
         private static SqlCommand CrearComando(string comando, CommandType tipo, SqlConnection conn, SqlParameter[] parametros)
         {
             SqlCommand cmd = new SqlCommand(comando, conn) { CommandType = tipo };
@@ -271,6 +273,8 @@ namespace WebSGV.Helpers
             return cmd;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities",
+            Justification = "Punto único de DbHelper: el texto es el nombre de un SP o SQL fijo del código que llama; los valores van siempre en parametros.")]
         private static SqlCommand CrearComando(string comando, CommandType tipo, SqlConnection conn, SqlTransaction tx, SqlParameter[] parametros)
         {
             SqlCommand cmd = new SqlCommand(comando, conn, tx) { CommandType = tipo };

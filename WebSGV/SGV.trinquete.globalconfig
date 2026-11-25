@@ -1,0 +1,15 @@
+# E6-3: reglas con trinquete. Solo se usa al medir (msbuild ... /p:SgvContarAvisos=true, lo hace
+# herramientas/calidad/contar-avisos.ps1); en la compilación normal no se carga. Su cuenta por regla
+# no puede subir de herramientas/calidad/avisos-base.json. No se publica.
+is_global = true
+
+# CA1031: catch de Exception (o sin tipo) que atrapa todo.
+dotnet_diagnostic.CA1031.severity = warning
+# CA2000: objeto IDisposable que no se libera en todos los caminos.
+dotnet_diagnostic.CA2000.severity = warning
+# CA3002: XSS (texto de la petición que llega sin codificar a la respuesta).
+dotnet_diagnostic.CA3002.severity = warning
+# CA3003: ruta de archivo tomada de la petición (path traversal).
+dotnet_diagnostic.CA3003.severity = warning
+# CA1062: argumento de un método público usado sin validar que no sea null.
+dotnet_diagnostic.CA1062.severity = warning

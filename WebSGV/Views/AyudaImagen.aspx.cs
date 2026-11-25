@@ -8,6 +8,8 @@ namespace WebSGV.Views
     /// Imagen de un tema de la ayuda (ContenidoAyuda/img/&lt;tema&gt;/NN.webp, que no se sirve por URL directa):
     /// con sesión y solo si el rol puede ver el tema (como Ayuda.aspx). Cualquier otro caso: 404 sin detalle.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5368:Set ViewStateUserKey For Classes Derived From Page",
+        Justification = "Sin formulario ni postback: solo responde a un GET con una imagen.")]
     public partial class AyudaImagen : System.Web.UI.Page
     {
         protected void Page_Load(object sender, EventArgs e)

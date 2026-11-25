@@ -387,6 +387,8 @@ namespace WebSGV.Services.GpsIntegracion
         /// transitorios del proveedor (502/503/504) reintenta hasta <see cref="MaxIntentos"/> veces
         /// con espera creciente (o la indicada por Retry-After, máx. 5 s). Antes fallaba al primer error.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2025:Do not pass 'IDisposable' instances into unawaited tasks",
+            Justification = "SendAsync se espera en el acto con GetAwaiter().GetResult(): la tarea termina antes de que el using libere la petición.")]
         private static T Ejecutar<T>(string url, bool permiteReintento, Func<HttpRequestMessage> crearRequest)
         {
             for (int intento = 1; ; intento++)

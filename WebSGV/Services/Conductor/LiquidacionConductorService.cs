@@ -439,6 +439,8 @@ namespace WebSGV.Services.Conductor
             public void Crudo(string plantilla, params object[] valores) =>
                 _instrucciones.Add(new Instruccion { Plantilla = plantilla, Valores = valores });
 
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities",
+                Justification = "El lote une plantillas fijas del servicio (nombres de SP y SQL literal de Sp/Crudo); cada valor se reemplaza por un parámetro @pN.")]
             public Resultado Ejecutar(SqlConnection conn, SqlTransaction transaction)
             {
                 var resultado = new Resultado();

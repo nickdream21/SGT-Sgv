@@ -16,6 +16,8 @@ namespace WebSGV.Views.Exportacion
     /// Importación masiva del seguimiento de exportación desde Excel (STATUS GENERAL VIVIANA o la
     /// plantilla) y descarga de la plantilla. Antes estaba dentro de RegistroSeguimiento.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5368:Set ViewStateUserKey For Classes Derived From Page",
+        Justification = "Usa Site.Master, que asigna ViewStateUserKey en Page_Init a toda página con sesión.")]
     public partial class ImportarSeguimiento : System.Web.UI.Page
     {
         private static readonly string ConnStr =

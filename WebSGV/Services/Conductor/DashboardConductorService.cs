@@ -61,6 +61,8 @@ namespace WebSGV.Services.Conductor
         /// Cuenta cuántos de <paramref name="idsViajes"/> pertenecen a
         /// <paramref name="idConductor"/> (IN parametrizado, sin interpolar valores).
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities",
+            Justification = "El SQL solo concatena los nombres @id0..@idN generados aquí; los ids van como parámetros.")]
         public static int ContarViajesDelConductor(List<int> idsViajes, int idConductor)
         {
             var paramNames = idsViajes.Select((_, i) => $"@id{i}").ToList();

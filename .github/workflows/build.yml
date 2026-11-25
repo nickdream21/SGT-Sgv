@@ -51,6 +51,13 @@ jobs:
       - name: Compilar
         run: msbuild WebSGV.sln /t:Build /p:Configuration=Release /nologo /verbosity:minimal
 
+      # Trinquete de analizadores (E6-3): falla si sube la cuenta de CA1031, CA2000, CA3002, CA3003 o
+      # CA1062 respecto de herramientas/calidad/avisos-base.json. Compila aparte (obj/contar-avisos),
+      # sin tocar bin/. Las reglas en error (WebSGV/SGV.globalconfig) ya las frena el paso anterior.
+      - name: Contar avisos del trinquete
+        shell: pwsh
+        run: ./herramientas/calidad/contar-avisos.ps1
+
       # Con cobertura de lineas de WebSGV.dll (E6-1). Sin BD: las [FactBD] se saltan.
       - name: Ejecutar tests
         run: dotnet test WebSGV.Tests/WebSGV.Tests.csproj -c Release --logger "console;verbosity=minimal" --settings WebSGV.Tests/cobertura.runsettings --collect "Code Coverage;Format=cobertura" --results-directory TestResults/cobertura

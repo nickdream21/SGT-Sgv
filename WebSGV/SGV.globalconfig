@@ -1,0 +1,28 @@
+# E6-3: configuración de los analizadores de .NET (Microsoft.CodeAnalysis.NetAnalyzers) para WebSGV.
+# Se aplica en cada compilación (Debug, Release y CI). No se publica.
+#
+# Lo mínimo: todas las reglas de analizadores apagadas (estilo, cultura, rendimiento, diseño...),
+# salvo las de seguridad de abajo, que rompen la compilación. Un falso positivo se suprime en el
+# código con [SuppressMessage("...", "CAxxxx", Justification = "motivo")], nunca aquí.
+#
+# Las reglas con trinquete (CA1031, CA2000, CA3002, CA3003, CA1062) quedan apagadas aquí: con
+# TreatWarningsAsErrors romperían la compilación. Se cuentan aparte con
+# herramientas/calidad/contar-avisos.ps1, que suma SGV.trinquete.globalconfig.
+is_global = true
+
+# Todo apagado (equivale a AnalysisMode = None).
+dotnet_analyzer_diagnostic.severity = none
+
+# Como error.
+# CA2100: SQL armado con texto que puede venir del usuario (inyección SQL).
+dotnet_diagnostic.CA2100.severity = error
+# CA3007: redirección abierta (URL de redirección tomada de la petición).
+dotnet_diagnostic.CA3007.severity = error
+# CA5350: algoritmos criptográficos débiles (TripleDES, SHA1, RIPEMD160).
+dotnet_diagnostic.CA5350.severity = error
+# CA5368: Page.ViewStateUserKey sin asignar en páginas (CSRF del ViewState).
+dotnet_diagnostic.CA5368.severity = error
+# CA2213: un campo IDisposable de una clase IDisposable que nunca se libera.
+dotnet_diagnostic.CA2213.severity = error
+# CA2025: un IDisposable entregado a una tarea que puede seguir usándolo tras liberarlo.
+dotnet_diagnostic.CA2025.severity = error

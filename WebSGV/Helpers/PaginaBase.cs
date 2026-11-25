@@ -21,6 +21,8 @@ namespace WebSGV.Helpers
     /// controles y firmas distintas (pnlMensaje/lblMensaje, litMensaje/divMensaje,
     /// lblError, etc.), por lo que se mantiene por página.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5368:Set ViewStateUserKey For Classes Derived From Page",
+        Justification = "Las páginas con sesión y Site.Master reciben la clave en su Page_Init; las públicas (SesionVigenteHelper) la omiten a propósito porque el SessionID puede cambiar entre GET y POST; FirmarLiquidacion y ConformarLiquidacion no tienen master ni postback de servidor (solo métodos web JSON e if (IsPostBack) return;), lo fija ViewStateUserKeyTests.")]
     public abstract class PaginaBase : Page
     {
         /// <summary>
