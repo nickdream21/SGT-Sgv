@@ -22,18 +22,37 @@ namespace WebSGV.Helpers
             return MensajeError.Generico;
         }
 
+        /// <summary>Propiedad del log con el mensaje de negocio que se mostró (lo nombra la plantilla de información).</summary>
+        internal const string PropiedadAvisoNegocio = "AvisoNegocio";
+
         /// <summary>
-        /// Igual que <see cref="ParaUsuario(Exception)"/>, pero el error técnico se registra con
-        /// <paramref name="contexto"/> (qué se estaba haciendo) en vez del texto genérico.
+        /// Igual que <see cref="ParaUsuario(Exception)"/>, pero registra una sola vez con contexto: la
+        /// <paramref name="plantilla"/> de Serilog (qué se estaba haciendo, p. ej. "Error al anular el lote {Lote}") con
+        /// sus <paramref name="valores"/>. Un error técnico queda como ERR con la excepción; uno de negocio
+        /// (<see cref="ErrorNegocioException"/> o RAISERROR de un SP) no es una falla del sistema: queda como INF con el
+        /// mensaje que vio el usuario. Reemplaza el par <c>LogSGV.Error(ex, ...)</c> + <c>ParaUsuario(ex)</c> (E6-10),
+        /// que registraba el error dos veces y el de negocio como ERR.
         /// </summary>
-        public static string ParaUsuario(Exception ex, string contexto)
+        public static string ParaUsuario(Exception ex, string plantilla, params object[] valores)
         {
+            if (string.IsNullOrWhiteSpace(plantilla))
+                plantilla = "Error técnico mostrado al usuario como mensaje genérico";
+
             string negocio = MensajeError.ExtraerMensajeDeNegocio(ex);
             if (negocio != null)
+            {
+                string conAviso = plantilla + " (aviso de negocio al usuario: {" + PropiedadAvisoNegocio + "})";
+                // Un aviso de negocio que envuelve una falla (p. ej. el PDF que QuestPDF no pudo generar) guarda la causa:
+                // advertencia con la excepción y su pila. Sin causa interna basta la información.
+                if (ex?.InnerException != null)
+                    LogSGV.AdvertenciaCon(ex, PropiedadAvisoNegocio, negocio, conAviso, valores ?? new object[0]);
+                else
+                    LogSGV.InfoCon(PropiedadAvisoNegocio, negocio, conAviso, valores ?? new object[0]);
                 return negocio;
+            }
 
             if (ex != null)
-                LogSGV.Error(ex, string.IsNullOrWhiteSpace(contexto) ? "Error técnico mostrado al usuario como mensaje genérico" : contexto);
+                LogSGV.Error(ex, plantilla, valores ?? new object[0]);
             return MensajeError.Generico;
         }
 

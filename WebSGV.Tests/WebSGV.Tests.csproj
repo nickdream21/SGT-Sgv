@@ -21,6 +21,8 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <!-- Misma versión que WebSGV/packages.config: para generar el QR del segundo factor en las pruebas (E4-14) -->
     <PackageReference Include="QRCoder" Version="1.8.1" />
+    <!-- Misma versión que WebSGV/packages.config: destino en memoria para leer lo que registra LogSGV (E6-10) -->
+    <PackageReference Include="Serilog" Version="2.12.0" />
     <!-- E6-4: leer el C# de WebSGV como árbol de sintaxis para medir el largo de cada método (TamanoCodigoTests).
          Solo en las pruebas: no se publica con el sitio. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />

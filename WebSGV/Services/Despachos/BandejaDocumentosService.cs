@@ -158,8 +158,7 @@ namespace WebSGV.Services.Despachos
                 }
                 catch (Exception ex)
                 {
-                    LogSGV.Error(ex, "Bandeja: no se pudo guardar el PDF de la guía {Numero}", g.Numero);
-                    r.Errores.Add($"Guía {g.Numero}: no se pudo guardar su PDF. {MensajeErrorHelper.ParaUsuario(ex)}");
+                    r.Errores.Add($"Guía {g.Numero}: no se pudo guardar su PDF. {MensajeErrorHelper.ParaUsuario(ex, "Bandeja: no se pudo guardar el PDF de la guía {Numero}", g.Numero)}");
                 }
             }
             if (r.PdfGuiasGuardados > 0) r.Detalle.Add($"{r.PdfGuiasGuardados} PDF de guía(s) guardado(s) en su despacho.");
@@ -916,8 +915,7 @@ namespace WebSGV.Services.Despachos
                 }
                 catch (Exception ex)
                 {
-                    LogSGV.Error(ex, "Bandeja: no se pudo registrar la GRE {Numero}", g.Gre.Numero);
-                    r.Errores.Add($"GRE {g.Gre.Numero}: {MensajeErrorHelper.ParaUsuario(ex)}");
+                    r.Errores.Add($"GRE {g.Gre.Numero}: {MensajeErrorHelper.ParaUsuario(ex, "Bandeja: no se pudo registrar la GRE {Numero}", g.Gre.Numero)}");
                 }
             }
         }
@@ -1173,8 +1171,7 @@ namespace WebSGV.Services.Despachos
                 }
                 catch (Exception ex)
                 {
-                    LogSGV.Error(ex, "Bandeja: no se pudo registrar el pedido {Pedido}", imp.NumeroPedido);
-                    r.Errores.Add($"Pedido {imp.NumeroPedido}: no se registró. {MensajeErrorHelper.ParaUsuario(ex)}");
+                    r.Errores.Add($"Pedido {imp.NumeroPedido}: no se registró. {MensajeErrorHelper.ParaUsuario(ex, "Bandeja: no se pudo registrar el pedido {Pedido}", imp.NumeroPedido)}");
                     continue;
                 }
                 if (AdjuntaPdf(p, idFactura, raizFisicaUploads)) AdjuntarPdfDe(p, idFactura.Value, usuario, raizFisicaUploads, r);
@@ -1196,8 +1193,7 @@ namespace WebSGV.Services.Despachos
                 }
                 catch (Exception ex)
                 {
-                    LogSGV.Error(ex, "Bandeja: no se pudo registrar la factura de flete {Archivo}", f.Archivo);
-                    r.Errores.Add($"{f.Archivo}: {MensajeErrorHelper.ParaUsuario(ex)}");
+                    r.Errores.Add($"{f.Archivo}: {MensajeErrorHelper.ParaUsuario(ex, "Bandeja: no se pudo registrar la factura de flete {Archivo}", f.Archivo)}");
                 }
             }
             if (r.FacturasFleteRegistradas > 0) r.Detalle.Add($"{r.FacturasFleteRegistradas} factura(s) de flete registrada(s) o actualizada(s).");
@@ -1392,8 +1388,7 @@ namespace WebSGV.Services.Despachos
                 }
                 catch (Exception ex)
                 {
-                    LogSGV.Error(ex, "Bandeja: no se pudo volver a resolver la CPIC {Numero}", c.Cpic.Numero);
-                    r.Errores.Add($"CPIC {c.Cpic.Numero}: {MensajeErrorHelper.ParaUsuario(ex)}");
+                    r.Errores.Add($"CPIC {c.Cpic.Numero}: {MensajeErrorHelper.ParaUsuario(ex, "Bandeja: no se pudo volver a resolver la CPIC {Numero}", c.Cpic.Numero)}");
                 }
             }
         }
@@ -1435,8 +1430,7 @@ namespace WebSGV.Services.Despachos
                 }
                 catch (Exception ex)
                 {
-                    LogSGV.Error(ex, "Bandeja: no se pudo registrar la CPIC {Numero}", c.Cpic.Numero);
-                    r.Errores.Add($"CPIC {c.Cpic.Numero}: {MensajeErrorHelper.ParaUsuario(ex)}");
+                    r.Errores.Add($"CPIC {c.Cpic.Numero}: {MensajeErrorHelper.ParaUsuario(ex, "Bandeja: no se pudo registrar la CPIC {Numero}", c.Cpic.Numero)}");
                 }
             }
         }
@@ -1449,8 +1443,7 @@ namespace WebSGV.Services.Despachos
                 try { ResolverMci(l, m); }
                 catch (Exception ex)
                 {
-                    LogSGV.Error(ex, "Bandeja: no se pudo unir el MCI {Numero} tras su CPIC", m.Mci.Numero);
-                    r.Errores.Add($"MCI {m.Mci.Numero}: {MensajeErrorHelper.ParaUsuario(ex)}");
+                    r.Errores.Add($"MCI {m.Mci.Numero}: {MensajeErrorHelper.ParaUsuario(ex, "Bandeja: no se pudo unir el MCI {Numero} tras su CPIC", m.Mci.Numero)}");
                 }
             }
 
@@ -1487,8 +1480,7 @@ namespace WebSGV.Services.Despachos
                 }
                 catch (Exception ex)
                 {
-                    LogSGV.Error(ex, "Bandeja: no se pudo adjuntar el MCI {Numero}", m.Mci.Numero);
-                    r.Errores.Add($"MCI {m.Mci.Numero}: {MensajeErrorHelper.ParaUsuario(ex)}");
+                    r.Errores.Add($"MCI {m.Mci.Numero}: {MensajeErrorHelper.ParaUsuario(ex, "Bandeja: no se pudo adjuntar el MCI {Numero}", m.Mci.Numero)}");
                 }
             }
             if (r.ManifiestosAdjuntados > 0) r.Detalle.Add($"{r.ManifiestosAdjuntados} manifiesto(s) (MCI) adjuntado(s) a su despacho.");

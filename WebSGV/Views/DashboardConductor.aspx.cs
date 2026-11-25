@@ -694,8 +694,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    LogSGV.Error(ex, "Error en la transacción de liquidación del conductor (orden {Numero})", numeroOrdenViaje);
-                    MostrarMensaje($"Error al enviar la liquidación: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
+                    MostrarMensaje($"Error al enviar la liquidación: {MensajeErrorHelper.ParaUsuario(ex, "Error en la transacción de liquidación del conductor (orden {Numero})", numeroOrdenViaje)}", "danger");
                     MantenerPestanaLiquidar();
                 }
 
@@ -1000,8 +999,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar el historial en DashboardConductor");
-                MostrarMensaje($"Error al cargar el historial: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
+                MostrarMensaje($"Error al cargar el historial: {MensajeErrorHelper.ParaUsuario(ex, "Error al cargar el historial en DashboardConductor")}", "danger");
             }
         }
 

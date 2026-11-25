@@ -108,8 +108,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    LogSGV.Error(ex, "Error al registrar la factura de flete {Archivo}", nombre);
-                    resultados.Add(new ResultadoFacturaSubida { Archivo = nombre, Estado = "No se registró", Detalle = MensajeErrorHelper.ParaUsuario(ex) });
+                    resultados.Add(new ResultadoFacturaSubida { Archivo = nombre, Estado = "No se registró", Detalle = MensajeErrorHelper.ParaUsuario(ex, "Error al registrar la factura de flete {Archivo}", nombre) });
                 }
             }
 
@@ -212,8 +211,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al conciliar las facturas de flete");
-                MostrarMensaje("No se pudo obtener la conciliación. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("No se pudo obtener la conciliación. " + MensajeErrorHelper.ParaUsuario(ex, "Error al conciliar las facturas de flete"), "danger");
             }
         }
 
@@ -246,9 +244,9 @@ namespace WebSGV.Views
             catch (System.Threading.ThreadAbortException) { /* normal: Response.End() */ }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al exportar las facturas de flete");
+                string mensaje = MensajeErrorHelper.ParaUsuario(ex, "Error al exportar las facturas de flete");
                 Buscar();
-                MostrarMensaje("No se pudo generar el Excel. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("No se pudo generar el Excel. " + mensaje, "danger");
             }
         }
 

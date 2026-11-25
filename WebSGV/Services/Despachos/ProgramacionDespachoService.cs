@@ -511,8 +511,7 @@ namespace WebSGV.Services.Despachos
                 }
                 catch (Exception ex)
                 {
-                    LogSGV.Error(ex, "No se pudo programar el despacho {Fila}", f.Etiqueta);
-                    r.Errores.Add($"{f.Etiqueta}: {MensajeErrorHelper.ParaUsuario(ex)}");
+                    r.Errores.Add($"{f.Etiqueta}: {MensajeErrorHelper.ParaUsuario(ex, "No se pudo programar el despacho {Fila}", f.Etiqueta)}");
                 }
             }
 

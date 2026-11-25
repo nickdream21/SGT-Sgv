@@ -50,6 +50,18 @@ namespace WebSGV
             }
         }
 
+        /// <summary>
+        /// Id de la petición (E6-10): 8 hex al azar en <c>Context.Items</c>, que <c>LogSGV</c> pone en cada línea
+        /// (<c>[3f9a0c1e] u12</c>) para juntar todo lo que dejó una petición. También va en el encabezado de respuesta
+        /// <c>X-SGV-Peticion</c> (al azar, no dice nada del usuario ni del servidor), que se pone al enviar las cabeceras
+        /// (<see cref="Application_PreSendRequestHeaders"/>) para que sobreviva a un <c>Response.ClearHeaders()</c> de
+        /// las descargas: con las herramientas del navegador se llega a las líneas del log de una respuesta concreta.
+        /// </summary>
+        void Application_BeginRequest(object sender, EventArgs e)
+        {
+            Context.Items[LogSGV.ClaveIdPeticion] = LogSGV.NuevoIdPeticion();
+        }
+
         void Application_End(object sender, EventArgs e)
         {
             // Vaciar y cerrar los sinks de log al apagar la aplicación.
@@ -308,11 +320,19 @@ namespace WebSGV
             CompresionRespuesta.AplicarSiCorresponde(Context);
         }
 
-        /// <summary>Quita la cabecera "Server" (versión de IIS) de todas las respuestas.</summary>
+        /// <summary>
+        /// Quita la cabecera "Server" (versión de IIS) de todas las respuestas y pone <c>X-SGV-Peticion</c> con el id de la
+        /// petición (E6-10). Aquí y no en BeginRequest: las descargas de Excel/PDF limpian las cabeceras antes de escribir.
+        /// </summary>
         void Application_PreSendRequestHeaders(object sender, EventArgs e)
         {
-            try { Response.Headers.Remove("Server"); }
-            catch { /* modo clásico o cabeceras ya enviadas: no hay nada que hacer */ }
+            try
+            {
+                Response.Headers.Remove("Server");
+                if (Context?.Items[LogSGV.ClaveIdPeticion] is string id)
+                    Response.Headers.Set("X-SGV-Peticion", id);
+            }
+            catch { /* modo clásico o cabeceras ya enviadas: no hay nada que hacer (el id sigue en el log) */ }
         }
     }
 }

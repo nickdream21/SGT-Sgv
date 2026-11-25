@@ -135,8 +135,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception ex)
                 {
-                    LogSGV.Error(ex, "Error al cargar la página en ListaDespachos");
-                    MostrarMensaje("Error al cargar página: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                    MostrarMensaje("Error al cargar página: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cargar la página en ListaDespachos"), "danger");
                 }
             }
         }
@@ -180,8 +179,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar datos iniciales en ListaDespachos");
-                MostrarMensaje("Error al cargar datos iniciales: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al cargar datos iniciales: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cargar datos iniciales en ListaDespachos"), "danger");
                 return 0;
             }
         }
@@ -203,8 +201,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar conductores en ListaDespachos");
-                MostrarMensaje("Error al cargar conductores: " + MensajeErrorHelper.ParaUsuario(ex), "warning");
+                MostrarMensaje("Error al cargar conductores: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cargar conductores en ListaDespachos"), "warning");
             }
         }
 
@@ -216,8 +213,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar clientes en ListaDespachos");
-                MostrarMensaje("Error al cargar clientes: " + MensajeErrorHelper.ParaUsuario(ex), "warning");
+                MostrarMensaje("Error al cargar clientes: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cargar clientes en ListaDespachos"), "warning");
             }
         }
 
@@ -251,8 +247,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar plantas en ListaDespachos");
-                MostrarMensaje("Error al cargar plantas: " + MensajeErrorHelper.ParaUsuario(ex), "warning");
+                MostrarMensaje("Error al cargar plantas: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cargar plantas en ListaDespachos"), "warning");
             }
         }
 
@@ -313,8 +308,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar viajes activos en ListaDespachos");
-                MostrarMensaje("Error al cargar viajes activos: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al cargar viajes activos: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cargar viajes activos en ListaDespachos"), "danger");
             }
         }
 
@@ -343,8 +337,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar despachos del viaje en ListaDespachos");
-                MostrarMensaje("Error al cargar despachos del viaje: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al cargar despachos del viaje: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cargar despachos del viaje en ListaDespachos"), "danger");
             }
         }
 
@@ -457,8 +450,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar lotes registrados en ListaDespachos");
-                MostrarMensaje("Error al cargar lotes registrados: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al cargar lotes registrados: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cargar lotes registrados en ListaDespachos"), "danger");
             }
         }
 
@@ -517,8 +509,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar despachos del lote en ListaDespachos");
-                MostrarMensaje("Error al cargar despachos del lote: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al cargar despachos del lote: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cargar despachos del lote en ListaDespachos"), "danger");
             }
         }
 
@@ -584,8 +575,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al mostrar viajes en ListaDespachos");
-                MostrarMensaje("Error al mostrar viajes: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al mostrar viajes: " + MensajeErrorHelper.ParaUsuario(ex, "Error al mostrar viajes en ListaDespachos"), "danger");
             }
         }
 
@@ -598,8 +588,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al mostrar lotes en ListaDespachos");
-                MostrarMensaje("Error al mostrar lotes: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al mostrar lotes: " + MensajeErrorHelper.ParaUsuario(ex, "Error al mostrar lotes en ListaDespachos"), "danger");
             }
         }
 
@@ -634,8 +623,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al refrescar viajes en ListaDespachos");
-                MostrarMensaje("Error al refrescar viajes: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al refrescar viajes: " + MensajeErrorHelper.ParaUsuario(ex, "Error al refrescar viajes en ListaDespachos"), "danger");
             }
         }
 
@@ -683,8 +671,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al limpiar filtros en ListaDespachos");
-                MostrarMensaje("Error al limpiar filtros: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al limpiar filtros: " + MensajeErrorHelper.ParaUsuario(ex, "Error al limpiar filtros en ListaDespachos"), "danger");
             }
         }
 
@@ -701,8 +688,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al refrescar lotes en ListaDespachos");
-                MostrarMensaje("Error al refrescar lotes: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al refrescar lotes: " + MensajeErrorHelper.ParaUsuario(ex, "Error al refrescar lotes en ListaDespachos"), "danger");
             }
         }
 
@@ -752,8 +738,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al procesar la acción de una fila en ListaDespachos");
-                MostrarMensaje("Error al procesar la acción: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al procesar la acción: " + MensajeErrorHelper.ParaUsuario(ex, "Error al procesar la acción de una fila en ListaDespachos"), "danger");
             }
         }
 
@@ -885,8 +870,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al guardar cambios del lote {Lote}", LoteSeleccionadoId);
-                MostrarMensaje("Error al guardar cambios: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al guardar cambios: " + MensajeErrorHelper.ParaUsuario(ex, "Error al guardar cambios del lote {Lote}", LoteSeleccionadoId), "danger");
             }
         }
 
@@ -1107,9 +1091,8 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al anular el lote {Lote}", LoteSeleccionadoId);
                 // El 50010/50011 del SP ya dice "No se puede anular el lote…": sin prefijo repetido.
-                string detalle = MensajeErrorHelper.ParaUsuario(ex);
+                string detalle = MensajeErrorHelper.ParaUsuario(ex, "Error al anular el lote {Lote}", LoteSeleccionadoId);
                 MostrarMensaje(detalle.StartsWith("No se puede anular", StringComparison.OrdinalIgnoreCase)
                     ? detalle : "No se pudo anular el lote: " + detalle, "danger");
             }
@@ -1343,8 +1326,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar manifiestos del lote en ListaDespachos");
-                MostrarMensajeManifiesto("Error al cargar los manifiestos del lote: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeManifiesto("Error al cargar los manifiestos del lote: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cargar manifiestos del lote en ListaDespachos"), "danger");
             }
         }
 
@@ -1573,8 +1555,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al asignar factura/CPIC por despacho en el lote {Lote}", LoteSeleccionadoId);
-                MostrarMensajeManifiesto("No se asignaron los documentos: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeManifiesto("No se asignaron los documentos: " + MensajeErrorHelper.ParaUsuario(ex, "Error al asignar factura/CPIC por despacho en el lote {Lote}", LoteSeleccionadoId), "danger");
                 CargarManifiestosLote(LoteSeleccionadoId, conservarMarcas: true);
             }
         }
@@ -1623,8 +1604,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error con el PDF de un documento del lote {Lote}", LoteSeleccionadoId);
-                MostrarMensajeManifiesto("Error al procesar el documento: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeManifiesto("Error al procesar el documento: " + MensajeErrorHelper.ParaUsuario(ex, "Error con el PDF de un documento del lote {Lote}", LoteSeleccionadoId), "danger");
             }
         }
 
@@ -1682,8 +1662,7 @@ namespace WebSGV.Views
                     }
                     catch (Exception ex)
                     {
-                        LogSGV.Error(ex, "Error al guardar las guías del despacho {IdDespacho}", idDespacho);
-                        errores.Add($"{actual.NumeroDespacho}: {MensajeErrorHelper.ParaUsuario(ex)}");
+                        errores.Add($"{actual.NumeroDespacho}: {MensajeErrorHelper.ParaUsuario(ex, "Error al guardar las guías del despacho {IdDespacho}", idDespacho)}");
                     }
                 }
 
@@ -1700,8 +1679,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al guardar las guías del lote {Lote}", LoteSeleccionadoId);
-                MostrarMensajeManifiesto("Error al guardar las guías: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeManifiesto("Error al guardar las guías: " + MensajeErrorHelper.ParaUsuario(ex, "Error al guardar las guías del lote {Lote}", LoteSeleccionadoId), "danger");
             }
         }
 
@@ -1747,8 +1725,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al registrar la factura del lote {Lote}", LoteSeleccionadoId);
-                MostrarMensajeManifiesto("Error al registrar la factura: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeManifiesto("Error al registrar la factura: " + MensajeErrorHelper.ParaUsuario(ex, "Error al registrar la factura del lote {Lote}", LoteSeleccionadoId), "danger");
             }
         }
 
@@ -1794,8 +1771,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al registrar el CPIC del lote {Lote}", LoteSeleccionadoId);
-                MostrarMensajeManifiesto("Error al registrar el CPIC: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeManifiesto("Error al registrar el CPIC: " + MensajeErrorHelper.ParaUsuario(ex, "Error al registrar el CPIC del lote {Lote}", LoteSeleccionadoId), "danger");
             }
         }
 
@@ -1871,8 +1847,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al adjuntar el PDF de {Documento} del lote {Lote}", documento, LoteSeleccionadoId);
-                MostrarMensajeManifiesto($"Error al adjuntar el PDF {deDocumento}: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeManifiesto($"Error al adjuntar el PDF {deDocumento}: " + MensajeErrorHelper.ParaUsuario(ex, "Error al adjuntar el PDF de {Documento} del lote {Lote}", documento, LoteSeleccionadoId), "danger");
             }
         }
 
@@ -1934,8 +1909,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al procesar acción de manifiesto en ListaDespachos");
-                MostrarMensajeManifiesto("Error al procesar la acción: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeManifiesto("Error al procesar la acción: " + MensajeErrorHelper.ParaUsuario(ex, "Error al procesar acción de manifiesto en ListaDespachos"), "danger");
             }
         }
 
@@ -2096,8 +2070,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al establecer contadores en ListaDespachos");
-                MostrarMensaje("Error al establecer contadores: " + MensajeErrorHelper.ParaUsuario(ex), "warning");
+                MostrarMensaje("Error al establecer contadores: " + MensajeErrorHelper.ParaUsuario(ex, "Error al establecer contadores en ListaDespachos"), "warning");
                 return 0;
             }
         }

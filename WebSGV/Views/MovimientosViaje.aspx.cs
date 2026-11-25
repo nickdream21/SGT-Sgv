@@ -198,8 +198,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al registrar un movimiento de dinero del viaje");
-                MostrarMensaje("No se pudo registrar: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("No se pudo registrar: " + MensajeErrorHelper.ParaUsuario(ex, "Error al registrar un movimiento de dinero del viaje"), "danger");
             }
         }
 
@@ -247,8 +246,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al anular un movimiento de dinero del viaje");
-                MostrarMensaje("No se pudo anular: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("No se pudo anular: " + MensajeErrorHelper.ParaUsuario(ex, "Error al anular un movimiento de dinero del viaje"), "danger");
             }
         }
 

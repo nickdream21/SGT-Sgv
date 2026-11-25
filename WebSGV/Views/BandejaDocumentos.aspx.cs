@@ -131,8 +131,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Bandeja de documentos: error al leer los archivos");
-                MostrarMensaje("No se pudieron leer los archivos. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("No se pudieron leer los archivos. " + MensajeErrorHelper.ParaUsuario(ex, "Bandeja de documentos: error al leer los archivos"), "danger");
             }
             CargarTablero();
         }
@@ -239,8 +238,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Bandeja de documentos: error al registrar");
-                MostrarMensaje("No se pudo registrar. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("No se pudo registrar. " + MensajeErrorHelper.ParaUsuario(ex, "Bandeja de documentos: error al registrar"), "danger");
                 MostrarVistaPrevia(lectura, null);
             }
             CargarTablero();
@@ -663,8 +661,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Bandeja de documentos: error al cargar el tablero");
-                litTablero.Text = $"<div class='alert alert-danger bd-alerta'>No se pudo cargar el tablero. {H(MensajeErrorHelper.ParaUsuario(ex))}</div>";
+                litTablero.Text = $"<div class='alert alert-danger bd-alerta'>No se pudo cargar el tablero. {H(MensajeErrorHelper.ParaUsuario(ex, "Bandeja de documentos: error al cargar el tablero"))}</div>";
             }
         }
 
@@ -768,8 +765,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Bandeja de documentos: error al cargar el expediente {Lote}", idLote);
-                litExpediente.Text = $"<div class='alert alert-danger bd-alerta'>No se pudo cargar el expediente. {H(MensajeErrorHelper.ParaUsuario(ex))}</div>";
+                litExpediente.Text = $"<div class='alert alert-danger bd-alerta'>No se pudo cargar el expediente. {H(MensajeErrorHelper.ParaUsuario(ex, "Bandeja de documentos: error al cargar el expediente {Lote}", idLote))}</div>";
             }
             return true;
         }

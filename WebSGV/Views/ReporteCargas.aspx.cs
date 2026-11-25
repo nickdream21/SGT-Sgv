@@ -151,8 +151,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al buscar en el reporte de cargas");
-                MostrarMensaje("No se pudo obtener el reporte. " + MensajeErrorHelper.ParaUsuario(ex));
+                MostrarMensaje("No se pudo obtener el reporte. " + MensajeErrorHelper.ParaUsuario(ex, "Error al buscar en el reporte de cargas"));
             }
         }
 
@@ -186,9 +185,8 @@ namespace WebSGV.Views
             catch (System.Threading.ThreadAbortException) { /* normal: Response.End() */ }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al exportar el reporte de cargas");
                 Buscar();   // los resultados no viajan en el ViewState: se vuelven a armar
-                MostrarMensaje("No se pudo generar el archivo. " + MensajeErrorHelper.ParaUsuario(ex));
+                MostrarMensaje("No se pudo generar el archivo. " + MensajeErrorHelper.ParaUsuario(ex, "Error al exportar el reporte de cargas"));
             }
         }
 

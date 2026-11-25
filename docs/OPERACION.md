@@ -79,4 +79,29 @@ Cada error no controlado del sitio (el que llega a `Global.asax` `Application_Er
 
 **Qué trae:** fecha y hora de Perú, sitio (host), URL sin los valores del querystring (solo los nombres: `?id=&token=`), método, usuario y rol si hay sesión, IP, tipo, mensaje, lugar y la excepción completa con sus internas y la pila. Nunca valores de formularios, cookies, contraseñas, cadenas de conexión ni el querystring con valores.
 
-**Qué hacer al recibir uno:** buscar la misma hora en `App_Data/logs/sgv-AAAAMMDD*.log` del servidor (al pasar de 20 MB el día sigue en `sgv-AAAAMMDD_001.log`, `_002`…; allí está todo, también los omitidos), reproducir con la ruta y el usuario del correo, y corregir con una tarea en `docs/PLAN_MEJORAS_SGV.md`.
+**Qué hacer al recibir uno:** buscar la misma hora en `App_Data/logs/sgv-AAAAMMDD*.log` del servidor (al pasar de 20 MB el día sigue en `sgv-AAAAMMDD_001.log`, `_002`…; allí está todo, también los omitidos), tomar el id de petición de esa línea y sacar todas las de esa petición (sección 5), reproducir con la ruta y el usuario del correo, y corregir con una tarea en `docs/PLAN_MEJORAS_SGV.md`.
+
+## 5. El log del sitio (`App_Data/logs`)
+
+Un archivo por día, `sgv-AAAAMMDD.log` (Serilog, `Helpers/LogSGV.cs`; pasado los 20 MB sigue en `_001`, `_002`…; se guardan 62). Cada línea (E6-10):
+
+```
+2026-11-25 10:15:02.123 [ERR] [3f9a0c1e] u12 Error al anular el lote 15
+System.Data.SqlClient.SqlException (0x80131904): ...
+2026-11-25 10:15:40.007 [INF] [b81d77a0] u12 Error al anular el lote 15 (aviso de negocio al usuario: El lote ya está anulado)
+2026-11-25 10:16:00.000 [INF] [--------] u- Actualización automática del GPS (programada): ...
+```
+
+- Fecha y hora del servidor, nivel (`DBG`, `INF`, `WRN`, `ERR`), **id de la petición** entre corchetes y **id del usuario** de la sesión tras la `u`; luego el mensaje y, en las de error, la excepción en las líneas siguientes.
+- El id de petición son 8 caracteres hexadecimales al azar que pone `Global.asax` (`Application_BeginRequest`) en cada petición. Todo lo que registra esa petición lleva el mismo id. También sale en el encabezado de respuesta `X-SGV-Peticion` (herramientas del navegador → Red → la petición → Encabezados), para ir del navegador a sus líneas; se pone al enviar las cabeceras, así que lo llevan también las descargas de Excel/PDF y los 404.
+- `[--------]` = fuera de una petición (arranque del sitio, hilos de fondo: GPS automático, limpieza de temporales, correos de aviso). `u-` = sin sesión (Login, `Salud.ashx`, `GpsAutomatico.ashx`, páginas públicas) o antes de que se cargue la sesión.
+- La `u` es siempre el usuario de la sesión; si el mensaje dice "usuario {n}" puede ser otro (el afectado por la acción).
+- Errores que una página captura y muestra (`MensajeErrorHelper.ParaUsuario(ex, "qué se hacía {Dato}", dato)`): uno técnico deja **una** línea `[ERR]` con ese contexto y la excepción; uno de negocio (mensaje de un SP o `ErrorNegocioException`, el usuario lo puede corregir) deja una `[INF]` "(aviso de negocio al usuario: ...)", nunca `[ERR]`; si ese aviso envuelve una falla (p. ej. "no se pudo generar el PDF" con el error de QuestPDF dentro), una `[WRN]` con la excepción y su pila. Con `ParaUsuario(ex)` sin contexto, el técnico queda como "Error técnico mostrado al usuario como mensaje genérico" y el de negocio no se registra.
+
+**Todas las líneas de una petición** (PowerShell, con el log bajado por FTP o en la PC de desarrollo):
+
+```powershell
+Select-String -Path .\sgv-AAAAMMDD*.log -Pattern '\[3f9a0c1e\]' -Context 0,20
+```
+
+`-Context 0,20` trae también la pila de la excepción, que va en las líneas siguientes sin id. Para solo los errores del día: `-Pattern '\[ERR\]'`; los de un usuario: `-Pattern '\] u12 '`.

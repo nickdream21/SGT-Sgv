@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-25**, commit anterior `404faa8` — **Etapa 6 en ejecución**: E6-9 (cierra M-090: GPS automático y `GpsAutomatico.ashx` con pruebas; el log dice "(programada)" o "(manual)"). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-25**, commit anterior `d713956` — **Etapa 6 en ejecución**: E6-10 (log con id de petición y usuario; 68 registros dobles → 0). No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-191 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

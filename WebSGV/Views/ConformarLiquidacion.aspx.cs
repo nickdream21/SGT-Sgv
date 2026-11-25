@@ -192,8 +192,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar la liquidación para conformidad (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "No se pudo cargar la liquidación: " + MensajeErrorHelper.ParaUsuario(ex) };
+                return new { success = false, message = "No se pudo cargar la liquidación: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cargar la liquidación para conformidad (orden {IdOrden})", idOrdenViaje) };
             }
         }
 
@@ -226,8 +225,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al registrar la conformidad (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "No se pudo registrar tu conformidad: " + MensajeErrorHelper.ParaUsuario(ex) };
+                return new { success = false, message = "No se pudo registrar tu conformidad: " + MensajeErrorHelper.ParaUsuario(ex, "Error al registrar la conformidad (orden {IdOrden})", idOrdenViaje) };
             }
         }
 
@@ -259,8 +257,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al registrar la observación del conductor (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "No se pudo enviar tu observación: " + MensajeErrorHelper.ParaUsuario(ex) };
+                return new { success = false, message = "No se pudo enviar tu observación: " + MensajeErrorHelper.ParaUsuario(ex, "Error al registrar la observación del conductor (orden {IdOrden})", idOrdenViaje) };
             }
         }
     }

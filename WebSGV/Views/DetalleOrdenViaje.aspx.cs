@@ -58,9 +58,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                if (!(ex is ErrorNegocioException))
-                    LogSGV.Error(ex, "Error al cargar el detalle de la liquidación del conductor");
-                litError.Text = MensajeErrorHelper.ParaUsuario(ex);
+                litError.Text = MensajeErrorHelper.ParaUsuario(ex, "Error al cargar el detalle de la liquidación del conductor");
                 pnlError.Visible = true;
             }
         }

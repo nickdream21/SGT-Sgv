@@ -72,14 +72,12 @@ namespace WebSGV.Services.Exportacion
 
         /// <summary>
         /// Resumen (respuesta del cron) y mensaje (tablero) de una corrida que falló, sin texto técnico (E4-8):
-        /// <see cref="MensajeErrorHelper.ParaUsuario(Exception, string)"/> registra el error técnico (una vez, con
-        /// este contexto) y devuelve el genérico; uno de negocio se registra aparte como advertencia.
+        /// <see cref="MensajeErrorHelper.ParaUsuario(Exception, string, object[])"/> registra una sola vez, con este
+        /// contexto: el técnico como error (y devuelve el genérico), el de negocio como información con su mensaje.
         /// </summary>
         public static (string Resumen, string Mensaje) TextosTrasError(Exception ex)
         {
             string texto = MensajeErrorHelper.ParaUsuario(ex, "Actualización automática del GPS");
-            if (WebSGV.Services.Common.MensajeError.ExtraerMensajeDeNegocio(ex) != null)
-                LogSGV.Advertencia("Actualización automática del GPS: {Mensaje}", texto);
             return ("Error: " + texto, "No se pudo consultar el GPS. " + texto);
         }
 

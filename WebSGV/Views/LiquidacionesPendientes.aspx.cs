@@ -104,8 +104,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al inicializar la página en LiquidacionesPendientes");
-                MostrarMensaje($"Error al cargar la página: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
+                MostrarMensaje($"Error al cargar la página: {MensajeErrorHelper.ParaUsuario(ex, "Error al inicializar la página en LiquidacionesPendientes")}", "danger");
             }
         }
 
@@ -172,8 +171,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al cargar liquidaciones en LiquidacionesPendientes");
-                MostrarMensaje($"Error al cargar las liquidaciones: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
+                MostrarMensaje($"Error al cargar las liquidaciones: {MensajeErrorHelper.ParaUsuario(ex, "Error al cargar liquidaciones en LiquidacionesPendientes")}", "danger");
             }
         }
 
@@ -255,8 +253,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al rechazar la liquidación");
-                MostrarMensaje($"Error al rechazar la liquidación: {MensajeErrorHelper.ParaUsuario(ex)}", "danger");
+                MostrarMensaje($"Error al rechazar la liquidación: {MensajeErrorHelper.ParaUsuario(ex, "Error al rechazar la liquidación")}", "danger");
             }
         }
 
@@ -595,8 +592,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al devolver a revisión la liquidación (orden {IdOrden}, {Origen})", idOrdenViaje, origen);
-                return new { success = false, message = "No se pudo completar la operación: " + MensajeErrorHelper.ParaUsuario(ex) };
+                return new { success = false, message = "No se pudo completar la operación: " + MensajeErrorHelper.ParaUsuario(ex, "Error al devolver a revisión la liquidación (orden {IdOrden}, {Origen})", idOrdenViaje, origen) };
             }
         }
 
@@ -812,8 +808,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al registrar la firma del conductor (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error al registrar la firma: " + MensajeErrorHelper.ParaUsuario(ex) };
+                return new { success = false, message = "Error al registrar la firma: " + MensajeErrorHelper.ParaUsuario(ex, "Error al registrar la firma del conductor (orden {IdOrden})", idOrdenViaje) };
             }
         }
 
@@ -877,8 +872,7 @@ namespace WebSGV.Views
                 }
                 catch (Exception exFirma)
                 {
-                    LogSGV.Error(exFirma, "Falló la firma de revisión (orden {IdOrden})", idOrdenViaje);
-                    r = new ResultadoFirma { Exito = false, Mensaje = MensajeErrorHelper.ParaUsuario(exFirma) };
+                    r = new ResultadoFirma { Exito = false, Mensaje = MensajeErrorHelper.ParaUsuario(exFirma, "Falló la firma de revisión (orden {IdOrden})", idOrdenViaje) };
                 }
 
                 if (!r.Exito)
@@ -929,8 +923,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al enviar a conformidad la liquidación (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error al aprobar: " + MensajeErrorHelper.ParaUsuario(ex) };
+                return new { success = false, message = "Error al aprobar: " + MensajeErrorHelper.ParaUsuario(ex, "Error al enviar a conformidad la liquidación (orden {IdOrden})", idOrdenViaje) };
             }
         }
 
@@ -969,8 +962,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al leer los movimientos de dinero de la orden {IdOrden}", idOrdenViaje);
-                return new { success = false, message = MensajeErrorHelper.ParaUsuario(ex) };
+                return new { success = false, message = MensajeErrorHelper.ParaUsuario(ex, "Error al leer los movimientos de dinero de la orden {IdOrden}", idOrdenViaje) };
             }
         }
 
@@ -1077,8 +1069,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "No se pudo preparar el PDF de la orden {IdOrden}", idOrdenViaje);
-                return new { success = false, message = "No se pudo preparar el PDF: " + MensajeErrorHelper.ParaUsuario(ex) };
+                return new { success = false, message = "No se pudo preparar el PDF: " + MensajeErrorHelper.ParaUsuario(ex, "No se pudo preparar el PDF de la orden {IdOrden}", idOrdenViaje) };
             }
         }
         #endregion
