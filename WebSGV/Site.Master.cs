@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Web;
 using System.Web.UI;
@@ -297,86 +295,24 @@ namespace WebSGV
         {
             try
             {
-                string contrasenaActual = txtContrasenaActual.Text;
-                // La nueva se guarda recortada, como en Restablecer contraseña: el autocompletado del
-                // celular agrega un espacio al final y después la persona no podía entrar sin él.
-                string nuevaContrasena = (txtNuevaContrasena.Text ?? "").Trim();
-                string confirmarContrasena = (txtConfirmarContrasena.Text ?? "").Trim();
-
-                if (string.IsNullOrEmpty(contrasenaActual) || string.IsNullOrEmpty(nuevaContrasena) || string.IsNullOrEmpty(confirmarContrasena))
+                // Validación (mismos mensajes y orden), la actual con el contador de la firma, el UPDATE con
+                // sello nuevo y la auditoría: ContrasenaService (E6-16). La nueva se guarda recortada.
+                var cambio = Services.Usuarios.ContrasenaService.CambiarPropia(IdUsuarioActual,
+                    txtContrasenaActual.Text, txtNuevaContrasena.Text, txtConfirmarContrasena.Text);
+                if (!cambio.Cambiada)
                 {
-                    MostrarMensajeContrasena("Todos los campos son obligatorios.", "danger");
+                    MostrarMensajeContrasena(cambio.Error, "danger");
                     AbrirModalContrasena();
                     return;
                 }
 
-                string errorNueva = ContrasenaNuevaHelper.ValidarParaUsuario(nuevaContrasena, IdUsuarioActual);
-                if (errorNueva != null)
-                {
-                    MostrarMensajeContrasena(errorNueva, "danger");
-                    AbrirModalContrasena();
-                    return;
-                }
-
-                if (nuevaContrasena != confirmarContrasena)
-                {
-                    MostrarMensajeContrasena("Las contraseñas nuevas no coinciden.", "danger");
-                    AbrirModalContrasena();
-                    return;
-                }
-
-                if (nuevaContrasena == contrasenaActual || nuevaContrasena == contrasenaActual.Trim())
-                {
-                    MostrarMensajeContrasena("La nueva contraseña debe ser distinta de la actual.", "danger");
-                    AbrirModalContrasena();
-                    return;
-                }
-
-                if (IdUsuarioActual == 0)
-                {
-                    MostrarMensajeContrasena("No se encontró la cuenta de usuario activa.", "danger");
-                    AbrirModalContrasena();
-                    return;
-                }
-
-                // Mismo contador de intentos que la firma: 5 incorrectas en 15 min bloquean ambas.
-                string errorActual = ReautenticacionHelper.Verificar(IdUsuarioActual, contrasenaActual,
-                    PropositoReautenticacion.CambioContrasena);
-                if (errorActual != null)
-                {
-                    MostrarMensajeContrasena(errorActual, "danger");
-                    AbrirModalContrasena();
-                    return;
-                }
-
-                string connectionString = ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString;
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    conn.Open();
-
-                    string nuevoHash = PasswordHelper.HashPassword(nuevaContrasena);
-                    // Nuevo sello: se cierran las demás sesiones del usuario; esta sigue abierta
-                    // porque guarda el sello nuevo (decisión del usuario, auditoría tarea 5).
-                    Guid nuevoSello = Guid.NewGuid();
-                    using (SqlCommand cmd = new SqlCommand(
-                        "UPDATE Usuarios SET contrasena = @contrasena, requiereCambioContrasena = 0, resetToken = NULL, resetTokenExpira = NULL, selloSesion = @sello WHERE idUsuario = @idUsuario", conn))
-                    {
-                        cmd.Parameters.AddWithValue("@contrasena", nuevoHash);
-                        cmd.Parameters.AddWithValue("@sello", nuevoSello);
-                        cmd.Parameters.AddWithValue("@idUsuario", IdUsuarioActual);
-                        cmd.ExecuteNonQuery();
-                    }
-                    Session[SesionVigenteHelper.ClaveSello] = nuevoSello;
-                    SesionVigenteHelper.InvalidarCache(IdUsuarioActual);
-                }
+                // Esta sesión guarda el sello nuevo y sigue abierta; las demás del usuario se cierran.
+                Session[SesionVigenteHelper.ClaveSello] = cambio.SelloNuevo;
 
                 txtContrasenaActual.Text = txtNuevaContrasena.Text = txtConfirmarContrasena.Text = "";
                 pnlMensajeContrasena.Visible = false;
                 Session["RequiereCambioContrasena"] = false;
                 SesionVigenteHelper.MarcarContrasenaFueraDePolitica(Session, false);
-
-                AuditoriaHelper.Registrar("UPDATE", "Usuarios", IdUsuarioActual, "Contrasena cambiada por el usuario");
 
                 ScriptManager.RegisterStartupScript(this, GetType(), "SuccessContrasena",
                     "$('#modalCambiarContrasena').modal('hide'); SGV.avisar('Contraseña cambiada correctamente.', { tipo: 'success' });", true);

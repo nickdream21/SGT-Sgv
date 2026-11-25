@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
-using System.Data;
 using System.Web.Hosting;
-using System.Web.UI;
 using WebSGV.Helpers;
+using WebSGV.Services.Usuarios;
 
 namespace WebSGV.Views
 {
@@ -83,11 +82,10 @@ namespace WebSGV.Views
                     break;
 
                 case SolicitudRecuperacion.Accion.EnviarCorreo:
-                    var (token, hash) = TokenRecuperacion.Generar();
-                    if (!GuardarTokenRecuperacion(usuario.IdUsuario, hash, FechaHelper.Ahora().AddHours(1)))
+                    // Guarda el hash del token con vencimiento en 1 hora y audita (ContrasenaService, E6-16).
+                    string token = EmitirTokenRecuperacion(usuario.IdUsuario);
+                    if (token == null)
                         return;
-                    AuditoriaHelper.Registrar("RECUPERAR_CONTRASENA", "Usuarios", usuario.IdUsuario,
-                        "Enlace de recuperación generado (correo en cola de envío)");
                     EncolarCorreoRecuperacion(usuario, token);
                     break;
             }
@@ -101,55 +99,28 @@ namespace WebSGV.Views
         /// <summary>Usuarios activos que coinciden por nombre de usuario o por email (la elección la hace <see cref="SolicitudRecuperacion.Elegir"/>).</summary>
         private List<SolicitudRecuperacion.Candidato> BuscarUsuarios(string usuarioEmail)
         {
-            var lista = new List<SolicitudRecuperacion.Candidato>();
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    @"SELECT idUsuario, email, nombre,
-                             CASE WHEN nombreUsuario = @UsuarioEmail THEN 1 ELSE 0 END AS porNombreUsuario
-                      FROM Usuarios
-                      WHERE (nombreUsuario = @UsuarioEmail OR email = @UsuarioEmail)
-                      AND activo = 1",
-                    DbHelper.Param("@UsuarioEmail", usuarioEmail));
-
-                foreach (DataRow r in dt.Rows)
-                {
-                    lista.Add(new SolicitudRecuperacion.Candidato
-                    {
-                        IdUsuario = Convert.ToInt32(r["idUsuario"]),
-                        Email = r["email"] == DBNull.Value ? "" : r["email"].ToString().Trim(),
-                        Nombre = r["nombre"] == DBNull.Value ? "" : r["nombre"].ToString(),
-                        PorNombreUsuario = Convert.ToInt32(r["porNombreUsuario"]) == 1
-                    });
-                }
+                return ContrasenaService.CandidatosRecuperacion(usuarioEmail);
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Recuperar contraseña: error al buscar el usuario");
-                lista.Clear();
+                return new List<SolicitudRecuperacion.Candidato>();
             }
-            return lista;
         }
 
-        /// <summary>Guarda el SHA-256 del token (nunca el token en claro) y su vencimiento.</summary>
-        private bool GuardarTokenRecuperacion(int idUsuario, string hashToken, DateTime expiracion)
+        /// <summary>Token en claro para el correo (en la BD solo su SHA-256), o null si no se pudo guardar.</summary>
+        private static string EmitirTokenRecuperacion(int idUsuario)
         {
             try
             {
-                int filas = DbHelper.EjecutarNonQuery(
-                    @"UPDATE Usuarios
-                      SET resetToken = @Hash,
-                          resetTokenExpira = @Expiracion
-                      WHERE idUsuario = @IdUsuario",
-                    DbHelper.Param("@Hash", hashToken),
-                    DbHelper.Param("@Expiracion", expiracion),
-                    DbHelper.Param("@IdUsuario", idUsuario));
-                return filas > 0;
+                return ContrasenaService.EmitirTokenRecuperacion(idUsuario);
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Recuperar contraseña: error al guardar el token del usuario {IdUsuario}", idUsuario);
-                return false;
+                return null;
             }
         }
 

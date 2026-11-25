@@ -27,8 +27,11 @@ namespace WebSGV.Tests
         {
             "Site.Master", "Site.Master.cs", @"Scripts\paginas\SiteMaster-2.js",
             @"Views\GestionUsuarios.aspx", @"Views\GestionUsuarios.aspx.cs",
-            @"Views\RestablecerContrasena.aspx", @"Views\RestablecerContrasena.aspx.cs"
+            @"Views\RestablecerContrasena.aspx", @"Views\RestablecerContrasena.aspx.cs",
+            @"Services\Usuarios\ContrasenaService.cs"
         };
+
+        private const string Servicio = @"Services\Usuarios\ContrasenaService.cs";
 
         [Fact]
         public void NoQuedaElMinimoDeSeisNiDeOchoCaracteres()
@@ -41,11 +44,15 @@ namespace WebSGV.Tests
         [Fact]
         public void ValidacionDelServidor_UsaLaPolitica()
         {
-            Assert.Contains("ContrasenaNuevaHelper.ValidarParaUsuario(nuevaContrasena, IdUsuarioActual)", Leer("Site.Master.cs"));
-            Assert.Contains("ContrasenaNuevaHelper.ValidarParaUsuario(nuevaContrasena, idDelEnlace.Value)", Leer(@"Views\RestablecerContrasena.aspx.cs"));
+            // E6-16: cambio propio, restablecer por el administrador y enlace pasan por ContrasenaService.
+            string servicio = Leer(Servicio);
+            Assert.Contains("ContrasenaNuevaHelper.ValidarParaUsuario(nueva, idUsuario)", servicio);   // propia y administrador
+            Assert.Contains("ContrasenaNuevaHelper.ValidarParaUsuario(nueva, idDelEnlace.Value)", servicio);
+            Assert.Contains("ContrasenaService.CambiarPropia(IdUsuarioActual,", Leer("Site.Master.cs"));
+            Assert.Contains("ContrasenaService.RestablecerConToken(HashTokenActual, nuevaContrasena)", Leer(@"Views\RestablecerContrasena.aspx.cs"));
             string gestion = Leer(@"Views\GestionUsuarios.aspx.cs");
             Assert.Contains("ContrasenaNuevaHelper.ValidarParaNuevoUsuario(contrasena, nombreUsuario, nombre,", gestion);
-            Assert.Contains("ContrasenaNuevaHelper.ValidarParaUsuario(nuevaPass, idUsuario)", gestion);
+            Assert.Contains("ContrasenaService.RestablecerPorAdministrador(idUsuario, nuevaPass, confirmarPass)", gestion);
         }
 
         [Fact]
@@ -67,9 +74,13 @@ namespace WebSGV.Tests
         [Fact]
         public void CambioDesdeElMenu_VerificaLaActualConElContadorDeReautenticacion()
         {
-            string codigo = Leer("Site.Master.cs");
-            Assert.Contains("PropositoReautenticacion.CambioContrasena", codigo);
+            // E6-16: la verificación de la actual vive en ContrasenaService.CambiarPropia, que llama Site.Master.
+            string codigo = Leer(Servicio);
+            Assert.Contains("ReautenticacionHelper.Verificar(idUsuario, actual, PropositoReautenticacion.CambioContrasena)", codigo);
             Assert.DoesNotContain("PasswordHelper.VerificarIngresada", codigo);
+            string master = Leer("Site.Master.cs");
+            Assert.Contains("ContrasenaService.CambiarPropia(", master);
+            Assert.DoesNotContain("PasswordHelper.VerificarIngresada", master);
         }
     }
 }

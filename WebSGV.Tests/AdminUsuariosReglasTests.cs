@@ -121,10 +121,14 @@ namespace WebSGV.Tests
 
             Assert.Contains("PropositoReautenticacion.AdminUsuarios", cs);
             Assert.Contains("UsuarioEstadoService.ActualizarDatos(", cs);
-            // btnResetPass_Click repite las dos comprobaciones (el botón oculto no basta).
+            // btnResetPass_Click repite las dos comprobaciones (el botón oculto no basta) antes de guardar
+            // (E6-16: el guardado es ContrasenaService.RestablecerPorAdministrador).
             int reset = cs.IndexOf("protected void btnResetPass_Click", StringComparison.Ordinal);
             Assert.True(reset > 0);
-            string cuerpoReset = cs.Substring(reset, cs.IndexOf("HashPassword", reset, StringComparison.Ordinal) - reset);
+            int guardado = cs.IndexOf("ContrasenaService.RestablecerPorAdministrador(", reset, StringComparison.Ordinal);
+            Assert.True(guardado > reset, "btnResetPass_Click debe guardar con ContrasenaService.RestablecerPorAdministrador");
+            Assert.DoesNotContain("HashPassword", cs.Substring(reset, guardado - reset));
+            string cuerpoReset = cs.Substring(reset, guardado - reset);
             Assert.Contains("AdminUsuariosReglas.EsFilaPropia(", cuerpoReset);
             Assert.Contains("ReautenticacionVigente()", cuerpoReset);
 

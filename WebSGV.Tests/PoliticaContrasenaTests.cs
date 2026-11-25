@@ -277,10 +277,33 @@ namespace WebSGV.Tests
             { "Helpers/PasswordHelper.cs", false },             // la definición y la conversión del hash de la MISMA contraseña
             { "Views/Login.aspx.cs", false },                   // HashFicticio: contraseña aleatoria para igualar tiempos
             // true = guarda una contraseña nueva
-            { "Site.Master.cs", true },                         // cambio por el propio usuario
-            { "Views/GestionUsuarios.aspx.cs", true },          // crear usuario y restablecer (administrador de sistema)
-            { "Views/RestablecerContrasena.aspx.cs", true },    // enlace de recuperación por correo
+            { "Views/GestionUsuarios.aspx.cs", true },          // crear usuario (administrador de sistema)
+            // E6-16: cambio por el propio usuario, restablecer por el administrador y enlace de recuperación
+            // (antes Site.Master.cs, GestionUsuarios.aspx.cs y RestablecerContrasena.aspx.cs). Un solo
+            // HashPassword en GuardarNueva: CadaGuardadoDeContrasenaServiceAplicaLaPolitica mira cada camino.
+            { "Services/Usuarios/ContrasenaService.cs", true },
         };
+
+        /// <summary>
+        /// E6-16: en ContrasenaService el HashPassword está una vez (en GuardarNueva), así que la prueba de arriba no
+        /// distingue los caminos. Cada llamada a GuardarNueva debe tener la política antes, dentro del mismo método.
+        /// </summary>
+        [Fact]
+        public void CadaGuardadoDeContrasenaServiceAplicaLaPolitica()
+        {
+            string texto = File.ReadAllText(Path.Combine(RaizWeb(), "Services", "Usuarios", "ContrasenaService.cs"));
+            var llamadas = Regex.Matches(texto, @"\bGuardarNueva\((?!int )").Cast<Match>().ToList();
+            Assert.Equal(3, llamadas.Count);   // propia, administrador y enlace
+            foreach (Match g in llamadas)
+            {
+                int inicioMetodo = texto.LastIndexOf("public static ", g.Index, StringComparison.Ordinal);
+                Assert.True(inicioMetodo >= 0, "GuardarNueva fuera de un método público");
+                string cuerpo = texto.Substring(inicioMetodo, g.Index - inicioMetodo);
+                Assert.True(LlamadaPolitica.IsMatch(cuerpo),
+                    "GuardarNueva en la posición " + g.Index + " sin ContrasenaNuevaHelper.ValidarPara... antes en el mismo método");
+            }
+            Assert.Single(Regex.Matches(texto, @"\bHashPassword\s*\(").Cast<Match>());
+        }
 
         private static IEnumerable<string> ArchivosCs(string raiz) =>
             Directory.EnumerateFiles(raiz, "*.cs", SearchOption.AllDirectories)

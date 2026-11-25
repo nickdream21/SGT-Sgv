@@ -21,16 +21,13 @@ namespace WebSGV.Tests
         /// <summary>Tope por archivo (ruta relativa a WebSGV/). Al mover SQL a un servicio, baje el número; al llegar a 0, quite la fila.</summary>
         private static readonly Dictionary<string, int> Topes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Views/GestionUsuarios.aspx.cs"] = 34,
+            ["Views/GestionUsuarios.aspx.cs"] = 31,
             ["Views/RegistroClientes.aspx.cs"] = 32,
             ["Views/RegistroPlantas.aspx.cs"] = 15,
             ["Views/RegistroPeajes.aspx.cs"] = 13,
             ["Views/DashboardConductor.aspx.cs"] = 10,
-            ["Views/RestablecerContrasena.aspx.cs"] = 10,
-            ["Views/RecuperarContrasena.aspx.cs"] = 6,
             ["Views/DashboardAdminSistema.aspx.cs"] = 4,
             ["Salud.ashx.cs"] = 4,
-            ["Site.Master.cs"] = 3,
             ["Views/Exportacion/ImportarSeguimiento.aspx.cs"] = 3,
             ["Views/Auditoria.aspx.cs"] = 2,
             ["Views/Login.aspx.cs"] = 2,

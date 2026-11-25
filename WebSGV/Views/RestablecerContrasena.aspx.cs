@@ -1,6 +1,6 @@
 using System;
-using System.Web.UI;
 using WebSGV.Helpers;
+using WebSGV.Services.Usuarios;
 
 namespace WebSGV.Views
 {
@@ -87,43 +87,29 @@ namespace WebSGV.Views
                 return;
             }
 
-            // Las reglas miran el usuario, el nombre y el DNI de la cuenta del enlace.
-            string errorNueva;
-            try
+            // Vigencia del enlace, política con los datos de esa cuenta, UPDATE que consume el enlace (uso
+            // único y atómico), sello nuevo y auditoría: ContrasenaService (E6-16). Los errores de BD llegan
+            // ya registrados como resultado.
+            var r = ContrasenaService.RestablecerConToken(HashTokenActual, nuevaContrasena);
+            switch (r.Resultado)
             {
-                int? idDelEnlace = IdUsuarioDelToken(HashTokenActual);
-                if (!idDelEnlace.HasValue)
-                {
+                case ContrasenaService.ResultadoEnlace.Restablecida:
+                    MostrarMensaje("Contraseña restablecida. Ahora puede iniciar sesión.", true);
+                    pnlFormulario.Visible = false;
+                    HashTokenActual = "";
+                    break;
+                case ContrasenaService.ResultadoEnlace.EnlaceNoVigente:
                     MostrarError("El enlace ha expirado o no es válido. Solicite uno nuevo desde la página de recuperación.");
-                    return;
-                }
-                errorNueva = ContrasenaNuevaHelper.ValidarParaUsuario(nuevaContrasena, idDelEnlace.Value);
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Restablecer contraseña: error al revisar la política de contraseña");
-                MostrarMensaje("No se pudo verificar el enlace. Intente nuevamente en unos minutos.", false);
-                return;
-            }
-            if (errorNueva != null)
-            {
-                MostrarMensaje(errorNueva, false);
-                return;
-            }
-
-            int? idUsuario = ActualizarContrasena(HashTokenActual, nuevaContrasena);
-            if (idUsuario.HasValue)
-            {
-                SesionVigenteHelper.InvalidarCache(idUsuario.Value);
-                AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario.Value,
-                    "Contraseña restablecida mediante enlace de recuperación");
-                MostrarMensaje("Contraseña restablecida. Ahora puede iniciar sesión.", true);
-                pnlFormulario.Visible = false;
-                HashTokenActual = "";
-            }
-            else
-            {
-                MostrarError("Error al restablecer la contraseña. El enlace puede haber expirado.");
+                    break;
+                case ContrasenaService.ResultadoEnlace.ErrorAlVerificar:
+                    MostrarMensaje("No se pudo verificar el enlace. Intente nuevamente en unos minutos.", false);
+                    break;
+                case ContrasenaService.ResultadoEnlace.NoCumplePolitica:
+                    MostrarMensaje(r.Mensaje, false);
+                    break;
+                default:
+                    MostrarError("Error al restablecer la contraseña. El enlace puede haber expirado.");
+                    break;
             }
         }
 
@@ -132,77 +118,16 @@ namespace WebSGV.Views
             Response.Redirect("~/Views/Login.aspx");
         }
 
-        /// <summary>idUsuario del enlace vigente, o null si no existe o venció. Los errores de BD se propagan.</summary>
-        private static int? IdUsuarioDelToken(string hashToken)
-        {
-            object id = DbHelper.EjecutarEscalar(
-                @"SELECT TOP 1 idUsuario FROM Usuarios
-                  WHERE resetToken = @Hash
-                  AND resetTokenExpira > @FechaActual
-                  AND activo = 1",
-                DbHelper.Param("@Hash", hashToken),
-                DbHelper.Param("@FechaActual", FechaHelper.Ahora()));
-            if (id == null || id == DBNull.Value) return null;
-            return Convert.ToInt32(id);
-        }
-
         /// <summary>true: vigente; false: no existe o venció; null: error de BD.</summary>
         private bool? ValidarToken(string hashToken)
         {
             try
             {
-                int count = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    @"SELECT COUNT(*) FROM Usuarios
-                      WHERE resetToken = @Hash
-                      AND resetTokenExpira > @FechaActual
-                      AND activo = 1",
-                    DbHelper.Param("@Hash", hashToken),
-                    DbHelper.Param("@FechaActual", FechaHelper.Ahora())));
-                return count > 0;
+                return ContrasenaService.IdUsuarioDelToken(hashToken).HasValue;
             }
             catch (Exception ex)
             {
                 LogSGV.Error(ex, "Restablecer contraseña: error al validar el token");
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Cambia la contraseña y consume el token en un único UPDATE (uso único y atómico: dos
-        /// envíos con el mismo enlace no pueden ganar ambos). Devuelve el idUsuario o null.
-        /// </summary>
-        private int? ActualizarContrasena(string hashToken, string nuevaContrasena)
-        {
-            try
-            {
-                string hashedPassword = PasswordHelper.HashPassword(nuevaContrasena);
-
-                // OUTPUT ... INTO una variable de tabla: funciona aunque la tabla tenga triggers.
-                object id = DbHelper.EjecutarEscalar(
-                    @"DECLARE @Actualizado TABLE (idUsuario INT);
-                      UPDATE Usuarios
-                      SET contrasena = @NuevaContrasena,
-                          resetToken = NULL,
-                          resetTokenExpira = NULL,
-                          -- Quien recupera por correo eligió su contraseña: ya no debe cambiarla.
-                          requiereCambioContrasena = 0,
-                          -- Nuevo sello: se cierran las sesiones abiertas con la contraseña anterior.
-                          selloSesion = NEWID()
-                      OUTPUT inserted.idUsuario INTO @Actualizado
-                      WHERE resetToken = @Hash
-                      AND resetTokenExpira > @FechaActual
-                      AND activo = 1;
-                      SELECT TOP 1 idUsuario FROM @Actualizado;",
-                    DbHelper.Param("@NuevaContrasena", hashedPassword),
-                    DbHelper.Param("@Hash", hashToken),
-                    DbHelper.Param("@FechaActual", FechaHelper.Ahora()));
-
-                if (id == null || id == DBNull.Value) return null;
-                return Convert.ToInt32(id);
-            }
-            catch (Exception ex)
-            {
-                LogSGV.Error(ex, "Restablecer contraseña: error al actualizar la contraseña");
                 return null;
             }
         }

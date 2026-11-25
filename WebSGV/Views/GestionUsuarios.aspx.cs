@@ -771,30 +771,16 @@ namespace WebSGV.Views
 
             try
             {
-                string errorNueva = ContrasenaNuevaHelper.ValidarParaUsuario(nuevaPass, idUsuario);
-                if (errorNueva != null)
+                // Política, confirmación, UPDATE con "debe cambiar" y sello nuevo (cierra sus sesiones) y
+                // auditoría: ContrasenaService (E6-16).
+                string error = Services.Usuarios.ContrasenaService.RestablecerPorAdministrador(idUsuario, nuevaPass, confirmarPass);
+                if (error != null)
                 {
-                    MostrarMensajeReset(errorNueva, "danger");
+                    MostrarMensajeReset(error, "danger");
                     AbrirModal("modalResetPass");
                     return;
                 }
 
-                if (nuevaPass != confirmarPass)
-                {
-                    MostrarMensajeReset("Las contraseñas no coinciden.", "danger");
-                    AbrirModal("modalResetPass");
-                    return;
-                }
-
-                string hash = PasswordHelper.HashPassword(nuevaPass);
-                DbHelper.EjecutarNonQuery(
-                    "UPDATE Usuarios SET contrasena = @hash, requiereCambioContrasena = 1, resetToken = NULL, resetTokenExpira = NULL, selloSesion = NEWID() WHERE idUsuario = @id",
-                    DbHelper.Param("@hash", hash),
-                    DbHelper.Param("@id",   idUsuario));
-                // Nuevo sello: las sesiones abiertas con la contraseña anterior se cierran.
-                SesionVigenteHelper.InvalidarCache(idUsuario);
-
-                AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario, "Contraseña restablecida por Admin Sistema");
                 MostrarMensaje("Contraseña restablecida.", "success");
                 CargarUsuarios();
             }

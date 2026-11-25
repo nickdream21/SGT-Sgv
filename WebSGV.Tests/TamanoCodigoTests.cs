@@ -34,7 +34,7 @@ namespace WebSGV.Tests
             ["Views/LiquidacionesPendientes.aspx.cs"] = 1077,
             ["Views/BandejaDocumentos.aspx.cs"] = 912,
             ["Services/Despachos/Importacion/ImportacionPedidoService.cs"] = 901,
-            ["Views/GestionUsuarios.aspx.cs"] = 863,
+            ["Views/GestionUsuarios.aspx.cs"] = 849,
             ["Services/Liquidaciones/LiquidacionesPendientesService.cs"] = 860,
         };
 
@@ -74,7 +74,6 @@ namespace WebSGV.Tests
             ["Views/Login.aspx.cs::Page_Load"] = 98,
             ["Views/VerificarDocumento.aspx.cs::Verificar"] = 98,
             ["Views/BandejaDocumentos.aspx.cs::btnRegistrar_Click"] = 97,
-            ["Site.Master.cs::btnCambiarContrasena_Click"] = 95,
             ["Views/RegistroDespacho.aspx.cs::ValidarConfiguracionBase"] = 95,
             ["Services/Despachos/ListaDespachosService.cs::GuardarCambiosLote"] = 94,
             ["Services/Conductor/DashboardConductorService.cs::CargarFinancieros"] = 93,
