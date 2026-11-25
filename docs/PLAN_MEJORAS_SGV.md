@@ -2,9 +2,9 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-25**, commit anterior `895c4be` — **Etapa 6 en ejecución**: E6-5 (cierra M-184: un PNG que no decodifica ya no llega a QuestPDF, `Helpers/ValidadorPng.cs`). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-25**, commit anterior `00198ad` — **Etapa 6 en ejecución**: E6-6 (pruebas de `ArchivoOrdenViajeService`: la decisión de servir o declarar alterado un PDF firmado, al 100 %). No contiene contraseñas: solo dice dónde están.
 
-Último id usado: M-187 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: M-188 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Estado
 
@@ -226,6 +226,7 @@ Las tareas de la etapa (E6-1 a E6-30) están en `docs/HOJA_DE_RUTA_CALIDAD.md`; 
 - [ ] **M-182** `Site.Master.cs:80-90` (`UsuarioLogin`) lee `Session["Usuario"]`/`Session["NombreUsuario"]` sin pasar por `SesionHelper` (lo escribe `Login.aspx.cs:391`) — confirmar y pasarlo a `SesionHelper`, o ampliar la regla de `CodigoFuenteLimpiezaTests`; con E6-16. · C
 - [ ] **M-183** Las aprobadas se leen por dos caminos — la pestaña "Control de aprobadas" del administrador (`LiquidacionesPendientesService.ObtenerAprobadas`, M-137) y la página de contabilidad (`LiquidacionesContabilidadService.ObtenerPagina`): una sola consulta paginada para las dos. · C
 - [ ] **M-187** Toda imagen que llegue a QuestPDF pasa antes por `ValidadorPng` — QuestPDF 2026.5.0 deja una `Image` a medio construir que revienta en su finalizador si recibe bytes que no decodifican (E6-5): prueba de fuente que exija `ValidadorPng` (o los métodos de trazo y logo) junto a cada `.Image(` de `WebSGV/`; un JPEG o WEBP dañado como logo aún pasaría; validar el trazo ya al recibir la firma (`FirmaService`) y no solo al generar el PDF; probar si un bloque auxiliar hostil (iCCP, zTXt) hace fallar a Skia (hoy se aceptan sin leerlos); reportarlo a QuestPDF. · C
+- [ ] **M-188** Rutas y huella del PDF archivado (`Services/Liquidaciones/ArchivoOrdenViajeService.cs`, visto en E6-6) — una orden sin firmas entrega su PDF guardado sin comparar la huella registrada (59-60); una ruta guardada como `/App_Data/...` cuenta como absoluta y apunta a la raíz de la unidad (108-109); se acepta cualquier ruta absoluta o UNC de la BD sin limitarla a `App_Data/OrdenesViaje` (107-110). Ver qué rutas hay en la BD (SELECT) y decidir. · C
 - [ ] **M-185** `[FactBD]` en CI con LocalDB — hoy no se puede: las migraciones 01–63 parten de una BD existente. Haría falta versionar el esquema completo sin datos (`sqlpackage /a:Extract`) y una semilla sintética de maestros (las pruebas toman datos con `SELECT TOP 1`, 94 usos); atado a U-078 (repositorio público). Fuera de la Etapa 6. · C
 - [ ] **M-186** Errores de JavaScript del navegador al log — `ErrorCliente.ashx` con el limitador de `CspInforme` y `window.onerror`/`unhandledrejection` con `sendBeacon` en `SiteMaster.js` (solo mensaje, archivo, línea y ruta): hoy un fallo de JS en el celular del conductor no se ve. Es un punto de entrada anónimo más; fuera de la Etapa 6. · C
 

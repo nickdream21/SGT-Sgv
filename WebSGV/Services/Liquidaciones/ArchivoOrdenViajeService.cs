@@ -41,36 +41,46 @@ namespace WebSGV.Services.Liquidaciones
             if (doc == null)
                 return new PdfArchivado { Error = "No se encontró el documento solicitado." };
 
-            if (!doc.Firmado)
-                return ObtenerOGenerarSinFirmas(idOrdenViaje, doc);
+            return Resolver(doc, RutaFisica(doc.RutaRelativa), LeerSiExiste, detalle => Incidente(idOrdenViaje, detalle))
+                ?? GenerarSinFirmas(idOrdenViaje);
+        }
 
-            string fisica = RutaFisica(doc.RutaRelativa);
-            if (string.IsNullOrEmpty(fisica) || !File.Exists(fisica))
+        /// <summary>
+        /// Decide qué se entrega a partir del documento registrado y su archivo, sin tocar la BD.
+        /// <paramref name="leer"/> devuelve los bytes del archivo o null si no existe (solo se llama con
+        /// una ruta no vacía); <paramref name="incidente"/> registra el detalle de un problema de integridad.
+        /// Devuelve null solo para una orden sin firmas cuyo PDF aún no está archivado: el llamador lo genera.
+        /// </summary>
+        internal static PdfArchivado Resolver(DocumentoFirmado doc, string rutaFisica,
+            Func<string, byte[]> leer, Action<string> incidente)
+        {
+            byte[] bytes = string.IsNullOrEmpty(rutaFisica) ? null : leer(rutaFisica);
+
+            if (!doc.Firmado)
+                return bytes == null ? null : new PdfArchivado { Bytes = bytes, Hash = HashHelper.ComputeSha256(bytes) };
+
+            if (bytes == null)
             {
-                Incidente(idOrdenViaje, "PDF firmado no encontrado en el archivo: " + (doc.RutaRelativa ?? "(sin ruta)"));
+                incidente("PDF firmado no encontrado en el archivo: " + (doc.RutaRelativa ?? "(sin ruta)"));
                 return new PdfArchivado { Error = MensajeNoEncontrado };
             }
 
-            byte[] bytes = File.ReadAllBytes(fisica);
             string hash = HashHelper.ComputeSha256(bytes);
             if (string.IsNullOrEmpty(doc.Hash) || !HashHelper.HashesIguales(hash, doc.Hash))
             {
-                Incidente(idOrdenViaje, $"El PDF firmado {doc.RutaRelativa} no coincide con su huella (registrada {doc.Hash}, archivo {hash})");
+                incidente($"El PDF firmado {doc.RutaRelativa} no coincide con su huella (registrada {doc.Hash}, archivo {hash})");
                 return new PdfArchivado { Error = MensajeAlterado };
             }
 
             return new PdfArchivado { Bytes = bytes, Hash = hash };
         }
 
-        private static PdfArchivado ObtenerOGenerarSinFirmas(int idOrdenViaje, DocumentoFirmado doc)
-        {
-            string fisica = RutaFisica(doc.RutaRelativa);
-            if (!string.IsNullOrEmpty(fisica) && File.Exists(fisica))
-            {
-                byte[] guardado = File.ReadAllBytes(fisica);
-                return new PdfArchivado { Bytes = guardado, Hash = HashHelper.ComputeSha256(guardado) };
-            }
+        /// <summary>Los bytes del archivo, o null si no existe.</summary>
+        internal static byte[] LeerSiExiste(string rutaFisica)
+            => File.Exists(rutaFisica) ? File.ReadAllBytes(rutaFisica) : null;
 
+        private static PdfArchivado GenerarSinFirmas(int idOrdenViaje)
+        {
             var detalle = LiquidacionesPendientesService.ObtenerDetalleLiquidacion(idOrdenViaje);
             if (detalle == null)
                 return new PdfArchivado { Error = "No se encontró la orden de viaje." };
