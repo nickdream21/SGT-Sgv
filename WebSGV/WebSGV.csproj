@@ -23,6 +23,10 @@
     <UseGlobalApplicationHostFile />
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <!-- E6-2: todo aviso del compilador rompe la compilación (Debug y Release). La auditoría de
+         paquetes NuGet (NU1901-NU1904) sigue como aviso: la decide el CI con /warnaserror:NU1903,NU1904. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>

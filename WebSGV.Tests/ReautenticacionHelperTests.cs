@@ -139,7 +139,7 @@ namespace WebSGV.Tests
         }
 
         [Fact]
-        public void PeticionesEnParalelo_ComoMaximoCincoLleganALaBd()
+        public async Task PeticionesEnParalelo_ComoMaximoCincoLleganALaBd()
         {
             int consultas = 0;
             Func<int, string> lento = _ =>
@@ -157,10 +157,9 @@ namespace WebSGV.Tests
                     return Verificar("mala" + i, lento);
                 })).ToArray();
                 salida.Set();
-                Task.WaitAll(tareas);
+                string[] mensajes = await Task.WhenAll(tareas);
 
                 Assert.Equal(5, consultas);
-                var mensajes = tareas.Select(t => t.Result).ToList();
                 Assert.Equal(4, mensajes.Count(m => m == MsjIncorrecta));
                 Assert.Equal(1, mensajes.Count(m => m == MsjQuedoBloqueada));
                 Assert.Equal(5, mensajes.Count(m => m.StartsWith("Demasiadas contraseñas incorrectas. Podrá volver a firmar en ")));

@@ -244,8 +244,8 @@ namespace WebSGV.Tests
             string preRender = Cuerpo(cs, "protected override void OnPreRender(EventArgs e)");
             Assert.Contains("CargarLiquidaciones(mostrarAvisos: false)", preRender);
             Assert.Contains("CargarViajesActivos(mostrarAvisos: false)", preRender);
-            Assert.Empty(Regex.Matches(cs, @"CargarLiquidaciones\(mostrarAvisos: false\)|CargarViajesActivos\(mostrarAvisos: false\)")
-                .Cast<Match>().Where(m => !preRender.Contains(m.Value)));
+            Assert.DoesNotContain(Regex.Matches(cs, @"CargarLiquidaciones\(mostrarAvisos: false\)|CargarViajesActivos\(mostrarAvisos: false\)")
+                .Cast<Match>(), m => !preRender.Contains(m.Value));
             Assert.Equal(2, Regex.Matches(cs, @"mostrarAvisos: false").Count);
 
             foreach (var (metodo, vaciar) in new[] { ("private void CargarLiquidaciones(bool mostrarAvisos = true)", "VaciarLiquidaciones();"),

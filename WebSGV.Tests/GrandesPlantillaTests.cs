@@ -179,8 +179,8 @@ namespace WebSGV.Tests
             string cs = Cs("ListaDespachos");
             Assert.Matches(@"pnlNavegacionListas\.Visible = (ListaDespachosReglas\.)?MuestraNavegacion\(vista\)", Metodo(cs, "MostrarVista"));
             // Toda pantalla pasa por MostrarVista: ningún otro método enciende un panel a mano.
-            Assert.Equal(1, Regex.Matches(cs, @"pnlListaLotes\.Visible\s*=").Count);
-            Assert.Equal(1, Regex.Matches(cs, @"pnlManifiestosLote\.Visible\s*=").Count);
+            Assert.Single(Regex.Matches(cs, @"pnlListaLotes\.Visible\s*="));
+            Assert.Single(Regex.Matches(cs, @"pnlManifiestosLote\.Visible\s*="));
         }
 
         [Fact]
@@ -410,7 +410,7 @@ namespace WebSGV.Tests
             string fila = Regex.Match(tabla, @"<ItemTemplate>(?<c>.*?)</ItemTemplate>", RegexOptions.Singleline).Groups["c"].Value;
             // Una sola fila por tracto (sin la fila extra de antes) y tantas celdas como encabezados: la de la descarga
             // tenía 7 columnas y su fila extra sumaba 6.
-            Assert.Equal(1, Regex.Matches(fila, @"<tr\b").Count);
+            Assert.Single(Regex.Matches(fila, @"<tr\b"));
             Assert.Equal(columnas, Regex.Matches(fila, @"<td\b").Count);
             Assert.Contains("ID=\"" + literal + "\"", fila);
             Assert.Contains("FindControl(\"" + literal + "\")", Cs("RegistroDespacho"));
@@ -520,7 +520,7 @@ namespace WebSGV.Tests
             int sinCreados = programar.IndexOf("if (r.Creados.Count == 0)", StringComparison.Ordinal);
             int visible = programar.IndexOf("hlVerLotesPendientes.Visible = true;", StringComparison.Ordinal);
             Assert.True(sinCreados > 0 && visible > programar.IndexOf("return;", sinCreados, StringComparison.Ordinal));
-            Assert.Equal(1, Regex.Matches(cs, @"hlVerLotesPendientes\.Visible\s*=").Count);
+            Assert.Single(Regex.Matches(cs, @"hlVerLotesPendientes\.Visible\s*="));
 
             // Los pasos del lote a mano: ocultos con d-none (sin style), y el script los muestra con classList.
             Assert.Matches(@"<ol class=""rd-pasos rd-pasos-manual d-none"" id=""rdStepper""", aspx);

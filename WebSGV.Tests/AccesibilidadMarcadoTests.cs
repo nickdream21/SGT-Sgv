@@ -546,7 +546,7 @@ namespace WebSGV.Tests
         public void Analizador_LabelSueltoYCampoSinNada_SeDetectan()
         {
             var r = AnalizarEtiquetas(De("<label class=\"x\">Fecha</label>\n<input type=\"date\" id=\"f\" placeholder=\"dd/mm\" />\n<asp:TextBox ID=\"txtB\" runat=\"server\" Text='<%# Eval(\"A\") %>' />"));
-            Assert.Equal(1, r.LabelSinForNiControl.Count);
+            Assert.Single(r.LabelSinForNiControl);
             Assert.Equal(2, r.CampoSinEtiqueta.Count);   // el placeholder no es etiqueta
         }
 

@@ -378,8 +378,8 @@ namespace WebSGV.Tests.Integracion
                 // El pago directo no cambia el saldo del conductor: solo cuenta lo entregado y sus gastos.
                 Assert.Equal(LiquidacionCalculos.SaldoFinal(500m, detalle.TotalGastosSoles, 0m, 0m),
                     LiquidacionCalculos.SaldoFinal(detalle.TotalIngresosSoles, detalle.TotalGastosSoles, 0m, 0m));
-                Assert.Empty(MovimientosViajeService.ObtenerSinLiquidar(datos.IdConductor)
-                    .Where(m => new[] { adelanto.IdMovimiento, sobre.IdMovimiento, pago.IdMovimiento }.Contains(m.IdMovimiento)));
+                Assert.DoesNotContain(MovimientosViajeService.ObtenerSinLiquidar(datos.IdConductor),
+                    m => new[] { adelanto.IdMovimiento, sobre.IdMovimiento, pago.IdMovimiento }.Contains(m.IdMovimiento));
 
                 // Ya enviada al conductor: no se puede anular lo que él va a firmar.
                 var anular = MovimientosViajeService.Anular(sobre.IdMovimiento, datos.IdUsuarioAdmin, "Anulación de prueba en test");

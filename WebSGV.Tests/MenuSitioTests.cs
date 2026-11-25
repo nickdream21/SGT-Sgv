@@ -126,7 +126,7 @@ namespace WebSGV.Tests
             foreach (string rol in new[] { "ADMIN", "ADMINISTRADOR", "ADMINISTRADOR DE TRANSPORTE",
                                            "CONDUCTOR", "CHOFER", "CONTABILIDAD", "ADMINISTRADOR DE SISTEMA" })
                 Assert.Equal(new[] { "Ayuda" }, MenuSitio.ConfiguracionPara(rol, tiene).Select(e => e.Texto));
-            Assert.Empty(MenuSitio.ConfiguracionPara("ADMIN", r => false).Where(e => e.Texto == "Ayuda"));
+            Assert.DoesNotContain(MenuSitio.ConfiguracionPara("ADMIN", r => false), e => e.Texto == "Ayuda");
 
             // Site.Master lo calcula con el catálogo y el interruptor de cada tema.
             string codigo = File.ReadAllText(Path.Combine(RaizWeb(), "Site.Master.cs"));
@@ -273,7 +273,7 @@ namespace WebSGV.Tests
         {
             var menu = MenuSitio.Para("ADMIN", true);
             Assert.Equal(new[] { "Reportes" }, menu.Where(g => MenuSitio.EsActivo(g, "~/Views/ReporteGps.aspx")).Select(g => g.Texto));
-            Assert.Empty(menu.Where(g => MenuSitio.EsActivo(g, "~/Views/Inicio.aspx")));
+            Assert.DoesNotContain(menu, g => MenuSitio.EsActivo(g, "~/Views/Inicio.aspx"));
             Assert.False(MenuSitio.EsActiva((EntradaMenu)null, "~/Views/Inicio.aspx"));
         }
 

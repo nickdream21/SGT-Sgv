@@ -4,6 +4,11 @@
     <TargetFramework>net48</TargetFramework>
     <IsPackable>false</IsPackable>
     <RootNamespace>WebSGV.Tests</RootNamespace>
+    <!-- E6-2: todo aviso (compilador y analizadores de xUnit) rompe la compilación. La auditoría de
+         paquetes NuGet (NU1901-NU1904) sigue como aviso también en la restauración: la decide el CI
+         con /warnaserror:NU1903,NU1904. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

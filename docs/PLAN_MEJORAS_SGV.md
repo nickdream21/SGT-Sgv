@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-25**, commit anterior `97a1a20` — **Etapa 6 en ejecución**: E6-1 (cobertura en CI con mínimo: `herramientas/calidad/`). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-25**, commit anterior `2d5499f` — **Etapa 6 en ejecución**: E6-2 (avisos como error en los dos proyectos). No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-186 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

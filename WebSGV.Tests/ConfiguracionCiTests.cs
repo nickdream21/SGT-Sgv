@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using WebSGV.Tests.Integracion;
 using Xunit;
 
@@ -9,7 +10,7 @@ namespace WebSGV.Tests
     /// <summary>
     /// Fija lo esencial del CI (E4-9): token de solo lectura, acciones fijadas por SHA,
     /// auditoría de NuGet y de JS de terceros, corrida semanal y Dependabot; y la cobertura con
-    /// su tope (E6-1).
+    /// su tope (E6-1); y los avisos como error en los dos proyectos (E6-2).
     /// Lee los YAML como texto para no añadir dependencias.
     /// </summary>
     public class ConfiguracionCiTests
@@ -103,6 +104,26 @@ namespace WebSGV.Tests
             string minimos = Leer("herramientas", "calidad", "cobertura-minima.json");
             foreach (string clave in new[] { "\"total\"", "\"Services\"", "\"Helpers\"" })
                 Assert.Contains(clave, minimos);
+        }
+
+        [Theory]
+        [InlineData("WebSGV", "WebSGV.csproj")]
+        [InlineData("WebSGV.Tests", "WebSGV.Tests.csproj")]
+        public void Proyectos_AvisosComoError(string carpeta, string archivo)
+        {
+            // E6-2: en un PropertyGroup sin condición (vale para Debug y Release), sin silenciar avisos
+            // y con la auditoría NuGet fuera (la decide el CI con /warnaserror:NU1903,NU1904).
+            var xml = XDocument.Parse(Leer(carpeta, archivo));
+            var comunes = xml.Descendants().Where(e => e.Name.LocalName == "PropertyGroup"
+                && e.Attribute("Condition") == null).SelectMany(g => g.Elements()).ToList();
+            Assert.Contains(comunes, e => e.Name.LocalName == "TreatWarningsAsErrors" && e.Value.Trim() == "true");
+            Assert.DoesNotContain(xml.Descendants(), e => e.Name.LocalName == "TreatWarningsAsErrors" && e.Value.Trim() != "true");
+            Assert.DoesNotContain(xml.Descendants(), e => e.Name.LocalName == "NoWarn");
+            var noComoError = comunes.Where(e => e.Name.LocalName == "WarningsNotAsErrors")
+                .SelectMany(e => e.Value.Split(';')).Select(s => s.Trim()).ToList();
+            foreach (string codigo in new[] { "NU1901", "NU1902" })
+                Assert.Contains(codigo, noComoError);
+            Assert.All(noComoError, c => Assert.StartsWith("NU19", c));
         }
 
         [Fact]
