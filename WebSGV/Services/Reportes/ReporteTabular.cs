@@ -565,7 +565,7 @@ namespace WebSGV.Services.Reportes
                 {
                     row.ConstantItem(44).AlignMiddle().Element(logo =>
                     {
-                        if (!string.IsNullOrEmpty(_rutaLogo) && File.Exists(_rutaLogo))
+                        if (ValidadorPng.LogoUtilizable(_rutaLogo))   // un logo dañado no llega a QuestPDF (M-184)
                             logo.Height(38).Image(_rutaLogo).FitArea();
                     });
                     row.RelativeItem().PaddingLeft(8).AlignMiddle().Column(c =>

@@ -384,7 +384,7 @@ namespace WebSGV.Services
                     row.ConstantItem(62).BorderRight(0.8f).BorderColor(Azul).Padding(6)
                         .AlignCenter().AlignMiddle().Element(logo =>
                         {
-                            if (!string.IsNullOrEmpty(_rutaLogo) && File.Exists(_rutaLogo))
+                            if (ValidadorPng.LogoUtilizable(_rutaLogo))
                                 logo.Height(46).Image(_rutaLogo).FitArea();
                             else
                                 logo.Text("SGV").Bold().FontSize(14).FontColor(Azul);
@@ -1085,9 +1085,9 @@ namespace WebSGV.Services
                 {
                     if (firmaEsteDocumento)
                     {
-                        // Un documento firmado sin el trazo de su firma no se emite (antes salía con
-                        // "[Firma no disponible]" y la firma se registraba igual).
-                        if (!LiquidacionCalculos.EsTrazoPngValido(_firmas.TrazoConductor))
+                        // Sin un trazo íntegro el documento firmado no se emite; y QuestPDF nunca recibe un PNG que no
+                        // decodifica: dejaría una imagen a medio crear cuyo finalizador tumba el proceso (M-184).
+                        if (!LiquidacionCalculos.EsTrazoPngValido(_firmas.TrazoConductor) || !ValidadorPng.EsTrazoDeCanvas(_firmas.TrazoConductor))
                             throw new ErrorNegocioException(TrazoInvalido);
                         try { area.PaddingBottom(2).Image(_firmas.TrazoConductor).FitArea(); }
                         catch (Exception ex) { throw new ErrorNegocioException(TrazoInvalido, ex); }

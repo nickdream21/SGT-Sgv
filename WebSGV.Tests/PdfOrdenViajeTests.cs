@@ -262,6 +262,59 @@ namespace WebSGV.Tests
             Assert.Equal(2, Paginas(LiquidacionTipica(), DeclaracionConTrazo(Trazo)));
         }
 
+        // ---- M-184: ninguna imagen que QuestPDF no decodifique llega a QuestPDF ----
+
+        /// <summary>
+        /// Ejecuta <paramref name="accion"/>, fuerza la recolección y los finalizadores, y devuelve
+        /// las excepciones que lanzaron (en IIS cualquiera de ellas termina el proceso del sitio).
+        /// </summary>
+        internal static List<string> ExcepcionesEnFinalizadores(Action accion)
+        {
+            var errores = new System.Collections.Concurrent.ConcurrentQueue<string>();
+            UnhandledExceptionEventHandler alLanzar = (s, e) => errores.Enqueue(e.ExceptionObject.ToString());
+            AppDomain.CurrentDomain.UnhandledException += alLanzar;
+            try
+            {
+                accion();
+                for (int i = 0; i < 3; i++) { GC.Collect(); GC.WaitForPendingFinalizers(); }
+            }
+            finally { AppDomain.CurrentDomain.UnhandledException -= alLanzar; }
+            return errores.ToList();
+        }
+
+        [Fact]
+        public void TrazoConCabeceraPngPeroDatosCorruptos_NoDejaUnaImagenQueLanceEnElFinalizador()
+        {
+            // Antes: QuestPDF intentaba decodificarlo, fallaba y dejaba un QuestPDF.Infrastructure.Image
+            // sin construir; su finalizador lanzaba NullReferenceException (salía en cada corrida de la suite).
+            var errores = ExcepcionesEnFinalizadores(() =>
+            {
+                for (int i = 0; i < 5; i++) AssertTrazoInvalido(ValidadorPngTests.PngCorrupto());
+            });
+
+            Assert.Empty(errores);
+        }
+
+        [Fact]
+        public void LogoPngDanado_ElPdfSaleSinLogoYSinErrorEnElFinalizador()
+        {
+            string logo = Path.Combine(Path.GetTempPath(), "sgv-logo-danado-" + Guid.NewGuid().ToString("N") + ".png");
+            File.WriteAllBytes(logo, ValidadorPngTests.PngCorrupto());
+            try
+            {
+                var errores = ExcepcionesEnFinalizadores(() =>
+                {
+                    Assert.Equal(2, Paginas(LiquidacionTipica(), FirmasFinal(), logo));
+                    var reporte = new WebSGV.Services.Reportes.ReporteTabular { Titulo = "Prueba" };
+                    reporte.Columnas.Add(new WebSGV.Services.Reportes.ColumnaReporte { Titulo = "Placa", Valor = d => d[0] });
+                    WebSGV.Services.Reportes.ReporteTabularExportador.CrearPdf(reporte, Empresa, logo).GeneratePdf();
+                });
+
+                Assert.Empty(errores);
+            }
+            finally { File.Delete(logo); }
+        }
+
         // ---- Archivado: nunca se pisa un PDF ajeno ----
 
         private static string CarpetaTemporal()
