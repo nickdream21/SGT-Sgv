@@ -413,18 +413,19 @@ namespace WebSGV.Services
             return p;
         }
 
-        private static string SoloNumero(string documento)
+        /// <summary>"DNI 12345678" → "12345678" (lo que sigue al primer espacio); vacío → null.</summary>
+        internal static string SoloNumero(string documento)
         {
             if (string.IsNullOrWhiteSpace(documento)) return null;
             int i = documento.IndexOf(' ');
             return i >= 0 ? documento.Substring(i + 1).Trim() : documento.Trim();
         }
 
-        private static string Recortar(string s, int max) =>
+        internal static string Recortar(string s, int max) =>
             string.IsNullOrEmpty(s) || s.Length <= max ? s : s.Substring(0, max);
 
         /// <summary>Quita el "Orden de viaje N.° X. " con que se guarda el consentimiento.</summary>
-        private static string SinPrefijoOrden(string texto)
+        internal static string SinPrefijoOrden(string texto)
         {
             if (string.IsNullOrEmpty(texto) || !texto.StartsWith("Orden de viaje N.° ", StringComparison.Ordinal))
                 return texto;

@@ -39,10 +39,8 @@ namespace WebSGV.Helpers
     /// </summary>
     public static class EmpresaConfigHelper
     {
-        private static string ConnectionString
-        {
-            get { return ConfigurationManager.ConnectionStrings["ConexionSGV"].ConnectionString; }
-        }
+        // La misma de DbHelper (en el sitio, ConexionSGV; en las pruebas, la que fija BaseDePruebas).
+        private static string ConnectionString => DbHelper.ConnectionString;
 
         /// <summary>
         /// Obtiene los datos corporativos desde Web.config (appSettings).
@@ -95,15 +93,27 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
+        /// Solo para las pruebas (E6-7): carpeta física donde se archivan los PDF firmados en lugar
+        /// de <c>~/App_Data/OrdenesViaje</c>, para que las pruebas que firman con los servicios reales
+        /// no dejen archivos en el sitio. La fija y la restaura <c>CarpetaArchivoTemporal</c> de
+        /// WebSGV.Tests; el sitio nunca la toca (vacía = la ruta de la configuración).
+        /// </summary>
+        internal static string CarpetaArchivoOrdenesViajeDePrueba { get; set; }
+
+        /// <summary>
         /// Devuelve la ruta física absoluta donde se archivan los PDFs firmados
         /// de Órdenes de Viaje, creando la carpeta si no existe.
         /// </summary>
         public static string ObtenerRutaArchivoOrdenesViaje()
         {
-            string rutaVirtual = ConfigurationManager.AppSettings["OrdenViaje.RutaArchivo"]
-                                 ?? "~/App_Data/OrdenesViaje";
-            string rutaFisica = System.Web.Hosting.HostingEnvironment.MapPath(rutaVirtual)
-                                ?? rutaVirtual;
+            string rutaFisica = CarpetaArchivoOrdenesViajeDePrueba;
+            if (string.IsNullOrEmpty(rutaFisica))
+            {
+                string rutaVirtual = ConfigurationManager.AppSettings["OrdenViaje.RutaArchivo"]
+                                     ?? "~/App_Data/OrdenesViaje";
+                rutaFisica = System.Web.Hosting.HostingEnvironment.MapPath(rutaVirtual)
+                             ?? rutaVirtual;
+            }
 
             if (!System.IO.Directory.Exists(rutaFisica))
                 System.IO.Directory.CreateDirectory(rutaFisica);

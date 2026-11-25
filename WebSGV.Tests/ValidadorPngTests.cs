@@ -70,7 +70,7 @@ namespace WebSGV.Tests
         }
 
         /// <summary>PNG RGBA de 8 bits (tipo de color 6) con los datos crudos dados (byte de filtro + píxeles por fila).</summary>
-        private static byte[] ConstruirPng(int ancho, int alto, byte[] crudo, byte entrelazado = 0, bool adlerCorrecto = true)
+        internal static byte[] ConstruirPng(int ancho, int alto, byte[] crudo, byte entrelazado = 0, bool adlerCorrecto = true)
         {
             byte[] ihdr = BigEndian((uint)ancho).Concat(BigEndian((uint)alto)).Concat(new byte[] { 8, 6, 0, 0, entrelazado }).ToArray();
             return new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }
@@ -91,7 +91,7 @@ namespace WebSGV.Tests
 
         private static Tuple<string, byte[]> B(string tipo, int largo) => Tuple.Create(tipo, new byte[largo]);
 
-        private static byte[] Crudo(int ancho, int alto, byte filtro = 0)
+        internal static byte[] Crudo(int ancho, int alto, byte filtro = 0)
         {
             var filas = new List<byte>();
             for (int y = 0; y < alto; y++)
