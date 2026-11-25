@@ -284,8 +284,10 @@ namespace WebSGV.Tests
             string cuerpo = cs.Substring(i, cs.IndexOf("\n        }", i, StringComparison.Ordinal) - i);
             // El usuario tiene que existir y el argumento se borra tras leerlo.
             Assert.Contains("hfArgumentoFila.Value = \"\";", cuerpo);
-            Assert.Contains("SELECT 1 FROM Usuarios WHERE idUsuario = @id", cuerpo);
-            Assert.Contains("CargarUsuarioEnModal(idUsuario)", cuerpo);
+            // E6-17: la lectura por id es GestionUsuariosService.Leer (null = ya no existe).
+            Assert.Contains("UsuarioGestion usuario = GestionUsuariosService.Leer(idUsuario);", cuerpo);
+            Assert.Contains("if (usuario == null)", cuerpo);
+            Assert.Contains("CargarUsuarioEnModal(usuario)", cuerpo);
             Assert.Contains("CambiarEstadoUsuario(", cuerpo);
             Assert.Contains("QuitarSegundoFactor(idUsuario)", cuerpo);
             Assert.Contains("RestablecerContrasenaDeFila(idUsuario)", cuerpo);
@@ -331,7 +333,10 @@ namespace WebSGV.Tests
             Assert.Contains("ListaCatalogo.RecortarBusqueda(hfFiltroTexto.Value)", cs);
             Assert.Contains("ddlFiltroRol.Items.FindByValue(hfFiltroRol.Value", cs);
             Assert.Contains("AdminUsuariosReglas.FiltroEstadoValido(hfFiltroEstado.Value)", cs);
-            Assert.Contains("DbHelper.PatronContiene(buscar)", cs);
+            Assert.Contains("GestionUsuariosService.Listar(buscar, rol, estado)", cs);
+            // E6-17: el LIKE con el patrón escapado está en el servicio.
+            Assert.Contains("DbHelper.PatronContiene(buscar)", System.IO.File.ReadAllText(System.IO.Path.Combine(
+                Integracion.BaseDePruebas.RaizRepo, "WebSGV", "Services", "Usuarios", "GestionUsuariosService.cs")));
         }
 
         [Fact]

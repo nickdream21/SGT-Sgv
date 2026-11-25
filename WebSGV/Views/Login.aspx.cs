@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Data;
 using System.Web;
 using WebSGV.Helpers;
 using WebSGV.Services.Usuarios;
@@ -276,24 +275,16 @@ namespace WebSGV.Views
                 // Sin filtrar por activo: una cuenta inactiva se verifica igual (mismo costo) y se rechaza
                 // con el mismo mensaje, pero queda su LOGIN_FALLIDO (M-062).
                 // Sin la migración 62 (tabla del segundo factor): con el interruptor apagado se entra como antes.
-                DataTable dt = InicioSesionHelper.ConsultarConSegundoFactor(conTabla => DbHelper.ConsultarTabla(@"
-                    SELECT u.idUsuario, u.nombreUsuario, u.nombre, u.rol,
-                           u.idConductor, u.contrasena, u.activo,
-                           ISNULL(u.requiereCambioContrasena, 0) AS requiereCambioContrasena,
-                           u.selloSesion,
-                           " + InicioSesionHelper.SqlFactorActivo(conTabla, "u.idUsuario") + @" AS segundoFactorActivo
-                    FROM Usuarios u
-                    WHERE u.nombreUsuario = @Usuario",
-                    DbHelper.Param("@Usuario", usuario)));
+                // Una sola consulta, exista o no la cuenta (InicioSesionHelper, E6-17).
+                CuentaIngreso cuenta = InicioSesionHelper.BuscarCuentaParaIngreso(usuario);
 
-                if (dt.Rows.Count > 0)
+                if (cuenta != null)
                 {
-                    DataRow reader = dt.Rows[0];
-                    string storedHash = reader["contrasena"].ToString();
-                    r.IdUsuario = Convert.ToInt32(reader["idUsuario"]);
+                    string storedHash = cuenta.HashContrasena;
+                    r.IdUsuario = cuenta.IdUsuario;
                     r.CuentaExiste = true;
-                    r.CuentaInactiva = reader["activo"] == DBNull.Value || !Convert.ToBoolean(reader["activo"]);
-                    r.NombreUsuario = reader["nombreUsuario"].ToString().Trim();
+                    r.CuentaInactiva = !cuenta.Activo;
+                    r.NombreUsuario = cuenta.NombreUsuario;
                     int idUsuario = r.IdUsuario;
 
                     string coincidente;
@@ -322,16 +313,16 @@ namespace WebSGV.Views
 
                     if (coincide && !r.CuentaInactiva)
                     {
-                        r.Nombre = reader["nombre"].ToString().Trim();
-                        r.Rol    = reader["rol"].ToString().Trim();
+                        r.Nombre = cuenta.Nombre;
+                        r.Rol    = cuenta.Rol;
 
-                        if (RolesHelper.EsRolConductor(r.Rol) && reader["idConductor"] != DBNull.Value)
-                            r.IdConductor = Convert.ToInt32(reader["idConductor"]);
+                        if (RolesHelper.EsRolConductor(r.Rol) && cuenta.IdConductor.HasValue)
+                            r.IdConductor = cuenta.IdConductor;
 
                         r.EsValido = true;
-                        r.RequiereCambioContrasena = Convert.ToBoolean(reader["requiereCambioContrasena"]);
-                        r.SelloSesion = (Guid)reader["selloSesion"];
-                        r.SegundoFactorActivo = Convert.ToBoolean(reader["segundoFactorActivo"]);
+                        r.RequiereCambioContrasena = cuenta.RequiereCambioContrasena;
+                        r.SelloSesion = cuenta.SelloSesion;
+                        r.SegundoFactorActivo = cuenta.SegundoFactorActivo;
                     }
                 }
                 else

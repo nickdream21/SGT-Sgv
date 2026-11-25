@@ -954,6 +954,7 @@
     <Compile Include="Services\Vehiculos\VehiculoService.cs" />
     <Compile Include="Services\Usuarios\AdminUsuariosReglas.cs" />
     <Compile Include="Services\Usuarios\ContrasenaService.cs" />
+    <Compile Include="Services\Usuarios\GestionUsuariosService.cs" />
     <Compile Include="Services\Usuarios\SegundoFactorReglas.cs" />
     <Compile Include="Services\Usuarios\SegundoFactorService.cs" />
     <Compile Include="Services\Usuarios\UsuarioEstadoService.cs" />

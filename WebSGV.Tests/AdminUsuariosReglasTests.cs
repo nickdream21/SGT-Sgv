@@ -135,7 +135,10 @@ namespace WebSGV.Tests
             // Ronda 2: el alta (al abrir y antes del INSERT) y la activación de cuentas de administración.
             int nuevo = cs.IndexOf("protected void btnNuevoUsuario_Click", StringComparison.Ordinal);
             Assert.Contains("ReautenticacionVigente()", cs.Substring(nuevo, cs.IndexOf("AbrirNuevoUsuario();", nuevo, StringComparison.Ordinal) - nuevo));
-            int insert = cs.IndexOf("INSERT INTO Usuarios", StringComparison.Ordinal);
+            // E6-17: el INSERT está en GestionUsuariosService.Crear; la página lo llama justo tras la reautenticación.
+            Assert.DoesNotContain("INSERT INTO Usuarios", cs);
+            int insert = cs.IndexOf("GestionUsuariosService.Crear(", StringComparison.Ordinal);
+            Assert.True(insert > 0, "El alta debe guardar con GestionUsuariosService.Crear");
             int antesInsert = cs.LastIndexOf("RequiereReautenticacionAlGuardar(esAlta: true", insert, StringComparison.Ordinal);
             Assert.True(antesInsert > 0 && insert - antesInsert < 800, "El INSERT del alta debe ir justo después de exigir la reautenticación.");
             Assert.Contains("AdminUsuariosReglas.RequiereReautenticacionAlActivar(", cs);

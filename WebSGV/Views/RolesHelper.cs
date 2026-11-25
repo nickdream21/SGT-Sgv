@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Web;
 
@@ -223,10 +222,7 @@ namespace WebSGV.Helpers
             var rolesBd = new List<string>();
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    "SELECT DISTINCT LTRIM(RTRIM(rol)) AS rol FROM Usuarios WHERE rol IS NOT NULL AND LTRIM(RTRIM(rol)) <> ''");
-                foreach (DataRow row in dt.Rows)
-                    rolesBd.Add(row["rol"].ToString());
+                rolesBd.AddRange(Services.Usuarios.GestionUsuariosService.RolesEnUso());
             }
             catch (Exception ex)
             {

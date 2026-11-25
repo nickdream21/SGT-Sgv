@@ -222,15 +222,22 @@ namespace WebSGV.Tests
                 false, ex => ex is FaltaTablaFalsa, ex => { }));
         }
 
-        /// <summary>Las tres consultas que leen la tabla pasan por el tolerante (login, relectura tras el código, Gestión de usuarios).</summary>
+        /// <summary>
+        /// Las tres consultas que leen la tabla pasan por el tolerante: login y relectura tras el código
+        /// (InicioSesionHelper, la del login salió de Login.aspx.cs en E6-17) y la lista de Gestión de usuarios
+        /// (GestionUsuariosService).
+        /// </summary>
         [Fact]
         public void ConsultasConTablaFactor_PasanPorElTolerante()
         {
-            foreach (string archivo in new[] { "Views/Login.aspx.cs", "Helpers/InicioSesionHelper.cs", "Views/GestionUsuarios.aspx.cs" })
+            foreach (var (archivo, veces) in new[] { ("Helpers/InicioSesionHelper.cs", 2), ("Services/Usuarios/GestionUsuariosService.cs", 1) })
             {
                 string codigo = System.IO.File.ReadAllText(System.IO.Path.Combine(RaizWeb(), archivo));
-                Assert.Contains("ConsultarConSegundoFactor(conTabla =>", codigo);
+                Assert.Equal(veces, System.Text.RegularExpressions.Regex.Matches(codigo, @"ConsultarConSegundoFactor\(conTabla =>").Count);
             }
+            // Las páginas ya no leen la tabla por su cuenta.
+            foreach (string archivo in new[] { "Views/Login.aspx.cs", "Views/GestionUsuarios.aspx.cs" })
+                Assert.DoesNotContain("UsuarioSegundoFactor", System.IO.File.ReadAllText(System.IO.Path.Combine(RaizWeb(), archivo)));
         }
 
         [Fact]

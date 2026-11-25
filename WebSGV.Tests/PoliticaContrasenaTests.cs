@@ -277,7 +277,7 @@ namespace WebSGV.Tests
             { "Helpers/PasswordHelper.cs", false },             // la definición y la conversión del hash de la MISMA contraseña
             { "Views/Login.aspx.cs", false },                   // HashFicticio: contraseña aleatoria para igualar tiempos
             // true = guarda una contraseña nueva
-            { "Views/GestionUsuarios.aspx.cs", true },          // crear usuario (administrador de sistema)
+            { "Services/Usuarios/GestionUsuariosService.cs", true }, // crear usuario (administrador de sistema; antes en GestionUsuarios.aspx.cs, E6-17)
             // E6-16: cambio por el propio usuario, restablecer por el administrador y enlace de recuperación
             // (antes Site.Master.cs, GestionUsuarios.aspx.cs y RestablecerContrasena.aspx.cs). Un solo
             // HashPassword en GuardarNueva: CadaGuardadoDeContrasenaServiceAplicaLaPolitica mira cada camino.

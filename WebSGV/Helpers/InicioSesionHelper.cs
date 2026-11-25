@@ -31,6 +31,29 @@ namespace WebSGV.Helpers
     }
 
     /// <summary>
+    /// La cuenta que busca el formulario de ingreso por su nombre de usuario (<see cref="InicioSesionHelper.BuscarCuentaParaIngreso"/>),
+    /// también si está inactiva: Login la verifica igual (mismo costo) y la rechaza con el mismo mensaje.
+    /// </summary>
+    public sealed class CuentaIngreso
+    {
+        public int IdUsuario { get; internal set; }
+        /// <summary>Recortado.</summary>
+        public string NombreUsuario { get; internal set; }
+        /// <summary>Recortado; "" si es NULL.</summary>
+        public string Nombre { get; internal set; }
+        /// <summary>Recortado.</summary>
+        public string Rol { get; internal set; }
+        /// <summary>El de la fila, sea cual sea el rol (Login lo usa solo si el rol es conductor).</summary>
+        public int? IdConductor { get; internal set; }
+        /// <summary>Hash guardado de la contraseña ("" si viniera vacío).</summary>
+        public string HashContrasena { get; internal set; }
+        public bool Activo { get; internal set; }
+        public bool RequiereCambioContrasena { get; internal set; }
+        public Guid SelloSesion { get; internal set; }
+        public bool SegundoFactorActivo { get; internal set; }
+    }
+
+    /// <summary>
     /// Regeneración del id de sesión al iniciar sesión (anti session fixation), compartida por Login y
     /// SegundoFactor (E4-14). Con sesión InProc no es fiable cambiar el SessionID dentro del mismo request,
     /// así que el login se completa en dos pasos:
@@ -135,6 +158,43 @@ namespace WebSGV.Helpers
                 Rol = rol,
                 IdConductor = RolesHelper.EsRolConductor(rol) && r["idConductor"] != DBNull.Value
                     ? Convert.ToInt32(r["idConductor"]) : (int?)null,
+                RequiereCambioContrasena = Convert.ToBoolean(r["requiereCambioContrasena"]),
+                SelloSesion = (Guid)r["selloSesion"],
+                SegundoFactorActivo = Convert.ToBoolean(r["segundoFactorActivo"])
+            };
+        }
+
+        /// <summary>
+        /// La cuenta con ese nombre de usuario (E6-17, antes en Login.aspx.cs), activa o no, o null si no existe.
+        /// Sin la migración 62 (tabla del segundo factor) y con el interruptor apagado, sin factor. Una sola
+        /// consulta, exista o no la cuenta: la igualación de tiempos del ingreso (verificación con el hash
+        /// ficticio, M-115) la hace Login. Los errores de BD se propagan (Login los registra y no los cuenta como
+        /// credenciales incorrectas).
+        /// </summary>
+        public static CuentaIngreso BuscarCuentaParaIngreso(string nombreUsuario)
+        {
+            DataTable dt = ConsultarConSegundoFactor(conTabla => DbHelper.ConsultarTabla(@"
+                SELECT u.idUsuario, u.nombreUsuario, u.nombre, u.rol,
+                       u.idConductor, u.contrasena, u.activo,
+                       ISNULL(u.requiereCambioContrasena, 0) AS requiereCambioContrasena,
+                       u.selloSesion,
+                       " + SqlFactorActivo(conTabla, "u.idUsuario") + @" AS segundoFactorActivo
+                FROM Usuarios u
+                WHERE u.nombreUsuario = @Usuario",
+                DbHelper.Param("@Usuario", nombreUsuario)));
+            if (dt.Rows.Count == 0)
+                return null;
+
+            DataRow r = dt.Rows[0];
+            return new CuentaIngreso
+            {
+                IdUsuario = Convert.ToInt32(r["idUsuario"]),
+                NombreUsuario = r["nombreUsuario"].ToString().Trim(),
+                Nombre = r["nombre"].ToString().Trim(),
+                Rol = r["rol"].ToString().Trim(),
+                IdConductor = r["idConductor"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idConductor"]),
+                HashContrasena = r["contrasena"].ToString(),
+                Activo = r["activo"] != DBNull.Value && Convert.ToBoolean(r["activo"]),
                 RequiereCambioContrasena = Convert.ToBoolean(r["requiereCambioContrasena"]),
                 SelloSesion = (Guid)r["selloSesion"],
                 SegundoFactorActivo = Convert.ToBoolean(r["segundoFactorActivo"])

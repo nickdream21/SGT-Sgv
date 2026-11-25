@@ -34,7 +34,6 @@ namespace WebSGV.Tests
             ["Views/LiquidacionesPendientes.aspx.cs"] = 1077,
             ["Views/BandejaDocumentos.aspx.cs"] = 912,
             ["Services/Despachos/Importacion/ImportacionPedidoService.cs"] = 901,
-            ["Views/GestionUsuarios.aspx.cs"] = 849,
             ["Services/Liquidaciones/LiquidacionesPendientesService.cs"] = 860,
         };
 
@@ -47,7 +46,7 @@ namespace WebSGV.Tests
             ["Services/Liquidaciones/LiquidacionesPendientesService.cs::ObtenerDetalleLiquidacion"] = 337,
             ["Services/GpsIntegracion/SeguimientoExportacionGpsService.cs::ConsultarYActualizar"] = 300,
             ["Views/DashboardConductor.aspx.cs::btnEnviarLiquidacion_Click"] = 186,
-            ["Views/GestionUsuarios.aspx.cs::btnGuardarUsuario_Click"] = 181,
+            ["Views/GestionUsuarios.aspx.cs::btnGuardarUsuario_Click"] = 152,
             ["Services/Reportes/ReporteTabular.cs::EscribirHoja"] = 179,
             ["Views/Exportacion/ImportarSeguimiento.aspx.cs::LeerExcel"] = 178,
             ["Services/GpsIntegracion/TrazabilidadTercerosService.cs::Detectar"] = 162,
@@ -77,7 +76,7 @@ namespace WebSGV.Tests
             ["Views/RegistroDespacho.aspx.cs::ValidarConfiguracionBase"] = 95,
             ["Services/Despachos/ListaDespachosService.cs::GuardarCambiosLote"] = 94,
             ["Services/Conductor/DashboardConductorService.cs::CargarFinancieros"] = 93,
-            ["Views/Login.aspx.cs::ValidarUsuario"] = 93,
+            ["Views/Login.aspx.cs::ValidarUsuario"] = 85,
             ["Services/GpsIntegracion/ReporteHistorialGpsService.cs::Generar"] = 92,
             ["Views/RegistroDespacho.aspx.cs::btnLeerProgramacionDescarga_Click"] = 91,
             ["Services/Despachos/Importacion/ImportacionPedidoService.cs::PdfsDelZip"] = 91,

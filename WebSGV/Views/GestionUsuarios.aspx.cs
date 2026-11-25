@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Data;
-using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
@@ -79,17 +77,7 @@ namespace WebSGV.Views
 
         private void CargarConductores()
         {
-            DataTable dt = DbHelper.ConsultarTabla(@"
-                SELECT c.idConductor,
-                       LTRIM(RTRIM(
-                           COALESCE(NULLIF(c.DNI, ''), NULLIF(c.carnetExtranjeria, ''), 'Sin documento')
-                           + ' - ' + ISNULL(c.nombre, '') + ' ' + ISNULL(c.apPaterno, '') + ' ' + ISNULL(c.apMaterno, '')
-                       )) AS descripcion,
-                       u.nombreUsuario
-                FROM Conductor c
-                LEFT JOIN Usuarios u ON u.idConductor = c.idConductor
-                WHERE c.activo = 1
-                ORDER BY c.apPaterno, c.apMaterno, c.nombre");
+            DataTable dt = GestionUsuariosService.ConductoresParaVincular();
 
             ddlConductor.Items.Clear();
             ddlConductor.Items.Add(new ListItem("-- No aplica --", ""));
@@ -132,36 +120,9 @@ namespace WebSGV.Views
             ddlFiltroEstado.SelectedValue = estado;
             bool conFiltro = buscar.Length > 0 || rol.Length > 0 || estado.Length > 0;
 
-            var parametros = new List<SqlParameter>();
-            string query = " FROM Usuarios WHERE 1=1";
-
-            if (!string.IsNullOrEmpty(buscar))
-            {
-                query += " AND (nombreUsuario LIKE @Buscar OR nombre LIKE @Buscar)";
-                parametros.Add(DbHelper.Param("@Buscar", DbHelper.PatronContiene(buscar)));
-            }
-            if (!string.IsNullOrEmpty(rol))
-            {
-                query += " AND rol = @Rol";
-                parametros.Add(DbHelper.Param("@Rol", rol));
-            }
-            if (!string.IsNullOrEmpty(estado))
-            {
-                query += " AND activo = @Estado";
-                parametros.Add(DbHelper.Param("@Estado", Convert.ToInt32(estado)));
-            }
-            query += " ORDER BY activo DESC, rol, nombre";
-
             // segundoFactor: 1 si lo tiene activo, 0 si tiene un alta a medias, NULL si no tiene nada (E4-14). Sin la
-            // migración 62 y con el interruptor apagado, NULL para todos (sin insignias). Parámetros nuevos en cada
-            // intento: un SqlParameter no puede estar en dos comandos.
-            DataTable dt = InicioSesionHelper.ConsultarConSegundoFactor(conTabla => DbHelper.ConsultarTabla(
-                @"SELECT idUsuario, nombreUsuario, nombre, rol, activo, "
-                    + (conTabla
-                        ? "(SELECT CAST(f.activo AS INT) FROM dbo.UsuarioSegundoFactor f WHERE f.idUsuario = Usuarios.idUsuario)"
-                        : "CAST(NULL AS INT)")
-                    + " AS segundoFactor" + query,
-                parametros.Select(p => DbHelper.Param(p.ParameterName, p.Value)).ToArray()));
+            // migración 62 y con el interruptor apagado, NULL para todos (sin insignias).
+            DataTable dt = GestionUsuariosService.Listar(buscar, rol, estado);
 
             gvUsuarios.PageIndex = ListaCatalogo.IndiceValido(gvUsuarios.PageIndex, dt.Rows.Count);
             gvUsuarios.EmptyDataText = conFiltro
@@ -173,11 +134,8 @@ namespace WebSGV.Views
             string resumen = ListaCatalogo.Resumen(gvUsuarios.PageIndex, dt.Rows.Count, dt.Rows.Count, "");
             litResumen.Text = conFiltro && resumen.Length > 0 ? resumen + " con los filtros aplicados" : resumen;
 
-            DataTable totales = DbHelper.ConsultarTabla(
-                "SELECT COUNT(*) AS total, ISNULL(SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END), 0) AS activos FROM Usuarios");
-            if (totales.Rows.Count > 0)
-                lblContador.Text = AdminUsuariosReglas.TextoContador(Convert.ToInt32(totales.Rows[0]["total"]),
-                    Convert.ToInt32(totales.Rows[0]["activos"]));
+            var (total, activos) = GestionUsuariosService.Totales();
+            lblContador.Text = AdminUsuariosReglas.TextoContador(total, activos);
         }
 
         protected void gvUsuarios_PageIndexChanging(object sender, GridViewPageEventArgs e)
@@ -234,8 +192,8 @@ namespace WebSGV.Views
                 return;
             }
 
-            object existe = DbHelper.EjecutarEscalar("SELECT 1 FROM Usuarios WHERE idUsuario = @id", DbHelper.Param("@id", idUsuario));
-            if (existe == null || existe == DBNull.Value)
+            UsuarioGestion usuario = GestionUsuariosService.Leer(idUsuario);
+            if (usuario == null)
             {
                 MostrarMensaje("El usuario ya no existe; se actualizó la lista.", "warning");
                 CargarUsuarios();
@@ -245,7 +203,7 @@ namespace WebSGV.Views
             switch (accion)
             {
                 case AccionFilaUsuarioTipo.Editar:
-                    CargarUsuarioEnModal(idUsuario);
+                    CargarUsuarioEnModal(usuario);
                     break;
                 case AccionFilaUsuarioTipo.Estado:
                     // Mismo "id|estadoDestino" de B5-8 que leía el antiguo CommandArgument.
@@ -378,23 +336,18 @@ namespace WebSGV.Views
             MostrarMensaje("Contraseña confirmada. Vuelva a elegir la acción.", "info");
         }
 
-        private void CargarUsuarioEnModal(int idUsuario)
+        /// <summary>Abre el modal de edición con el usuario que ya leyó btnAccionFila_Click.</summary>
+        private void CargarUsuarioEnModal(UsuarioGestion u)
         {
-            DataTable dt = DbHelper.ConsultarTabla(
-                "SELECT idUsuario, nombreUsuario, nombre, rol, idConductor FROM Usuarios WHERE idUsuario = @id",
-                DbHelper.Param("@id", idUsuario));
-
-            if (dt.Rows.Count == 0) return;
-            DataRow r = dt.Rows[0];
-
-            hfIdUsuario.Value        = r["idUsuario"].ToString();
+            int idUsuario = u.IdUsuario;
+            hfIdUsuario.Value        = idUsuario.ToString(System.Globalization.CultureInfo.InvariantCulture);
             lblTituloModal.Text      = "Editar usuario";
-            txtNombreUsuario.Text    = r["nombreUsuario"].ToString();
+            txtNombreUsuario.Text    = u.NombreUsuario;
             txtNombreUsuario.Enabled = false;
-            txtNombre.Text           = r["nombre"].ToString();
+            txtNombre.Text           = u.Nombre;
             // Los roles son un valor cerrado en MAYUSCULAS; se normaliza para que un valor antiguo
             // en minuscula no deje de coincidir con la lista ni se vuelva a guardar asi.
-            string rolUsuario = r["rol"].ToString().Trim().ToUpperInvariant();
+            string rolUsuario = u.Rol.Trim().ToUpperInvariant();
             // Lista limpia: el rol retirado solo aparece mientras se edita al usuario que ya lo tiene.
             CargarRolesAsignables();
             ListItem itemRol = ddlRol.Items.FindByValue(rolUsuario);
@@ -404,9 +357,9 @@ namespace WebSGV.Views
             // Su propio rol no se cambia (E4-12): el servidor lo rechaza igual en btnGuardarUsuario_Click.
             ddlRol.Enabled           = AdminUsuariosReglas.Decidir(idUsuario, SesionHelper.IdUsuarioActual).PuedeCambiarRol;
             ddlConductor.SelectedIndex = 0;
-            if (r["idConductor"] != DBNull.Value)
+            if (u.IdConductor.HasValue)
             {
-                ListItem itemConductor = ddlConductor.Items.FindByValue(r["idConductor"].ToString());
+                ListItem itemConductor = ddlConductor.Items.FindByValue(u.IdConductor.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 if (itemConductor != null)
                     ddlConductor.SelectedValue = itemConductor.Value;
             }
@@ -433,12 +386,11 @@ namespace WebSGV.Views
             // E4-12: activar una cuenta de administración pide la contraseña del administrador.
             if (nuevoActivo && !ReautenticacionVigente())
             {
-                DataTable dt = DbHelper.ConsultarTabla("SELECT nombreUsuario, rol FROM Usuarios WHERE idUsuario = @id",
-                    DbHelper.Param("@id", idUsuario));
-                if (dt.Rows.Count > 0 && AdminUsuariosReglas.RequiereReautenticacionAlActivar(Convert.ToString(dt.Rows[0]["rol"])))
+                UsuarioGestion u = GestionUsuariosService.Leer(idUsuario);
+                if (u != null && AdminUsuariosReglas.RequiereReautenticacionAlActivar(u.Rol))
                 {
                     PedirReautenticacion(AccionReautActivar + idUsuario.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                        "activar la cuenta de administración " + Convert.ToString(dt.Rows[0]["nombreUsuario"]).Trim());
+                        "activar la cuenta de administración " + u.NombreUsuario.Trim());
                     CargarUsuarios();
                     return;
                 }
@@ -480,8 +432,7 @@ namespace WebSGV.Views
 
             try
             {
-                string nombre = Convert.ToString(DbHelper.EjecutarEscalar("SELECT nombreUsuario FROM Usuarios WHERE idUsuario = @id",
-                    DbHelper.Param("@id", idUsuario)) ?? "").Trim();
+                string nombre = (GestionUsuariosService.Leer(idUsuario)?.NombreUsuario ?? "").Trim();
                 if (SegundoFactorService.Quitar(idUsuario))
                 {
                     AuditoriaHelper.Registrar(SegundoFactorService.AccionQuitado, "Usuarios", idUsuario,
@@ -527,34 +478,19 @@ namespace WebSGV.Views
             EstadoUiHelper.Sello(EstadoUiHelper.ObtenerTextoEstado(activo),
                 EstadoUiHelper.ObtenerTextoEstado(activo) == "Activo" ? TonoEstado.Ok : TonoEstado.Neutro);
 
-        /// <summary>
-        /// Valores nuevos que se auditan al crear un usuario. Nunca incluye la contraseña ni su hash.
-        /// </summary>
-        internal static string JsonUsuarioNuevo(string nombreUsuario, string nombre, string rol, int? idConductor) =>
-            Newtonsoft.Json.JsonConvert.SerializeObject(new
-            {
-                nombreUsuario,
-                nombre,
-                rol,
-                idConductor,
-                requiereCambioContrasena = 1
-            });
-
         private static string MensajeRolNoVigente(string rol) =>
             $"El rol {rol} ya no está vigente en el sistema y no se puede asignar. Elija otro rol.";
 
         private void PrepararResetPassword(int idUsuario)
         {
-            object result = DbHelper.EjecutarEscalar(
-                "SELECT nombreUsuario FROM Usuarios WHERE idUsuario = @id",
-                DbHelper.Param("@id", idUsuario));
-            if (result == null || result == DBNull.Value)
+            UsuarioGestion u = GestionUsuariosService.Leer(idUsuario);
+            if (u == null)
             {
                 MostrarMensaje("El usuario ya no existe; se actualizó la lista.", "warning");
                 CargarUsuarios();
                 return;
             }
-            lblUsuarioReset.Text = System.Web.HttpUtility.HtmlEncode(result?.ToString() ?? "");
+            lblUsuarioReset.Text = System.Web.HttpUtility.HtmlEncode(u.NombreUsuario);
 
             hfIdUsuarioReset.Value   = idUsuario.ToString();
             txtNuevaPass.Text        = "";
@@ -633,37 +569,24 @@ namespace WebSGV.Views
                     }
                 }
 
-                if (tieneConductor)
+                // Conductor libre y nombre libre antes de pedir la contraseña del administrador, con los mismos
+                // mensajes sin el prefijo "Error al guardar" (GestionUsuariosService.Crear los repite antes del INSERT).
+                try
                 {
-                    int asociado = Convert.ToInt32(DbHelper.EjecutarEscalar(@"
-                        SELECT COUNT(*)
-                        FROM Usuarios
-                        WHERE idConductor = @idConductor
-                          AND idUsuario <> @idUsuario",
-                        DbHelper.Param("@idConductor", idConductor),
-                        DbHelper.Param("@idUsuario", idUsuario)));
-
-                    if (asociado > 0)
-                    {
-                        MostrarMensajeModal("El conductor seleccionado ya está asociado a otro usuario.", "danger");
-                        AbrirModal("modalUsuario");
-                        return;
-                    }
+                    if (tieneConductor)
+                        GestionUsuariosService.ValidarConductorLibre(idConductor, idUsuario);
+                    if (idUsuario == 0)
+                        GestionUsuariosService.ValidarNombreLibre(nombreUsuario);
+                }
+                catch (ErrorNegocioException exNegocio)
+                {
+                    MostrarMensajeModal(MensajeErrorHelper.ParaUsuario(exNegocio), "danger");
+                    AbrirModal("modalUsuario");
+                    return;
                 }
 
                 if (idUsuario == 0)
                 {
-                    int existe = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                        "SELECT COUNT(*) FROM Usuarios WHERE nombreUsuario = @user",
-                        DbHelper.Param("@user", nombreUsuario)));
-
-                    if (existe > 0)
-                    {
-                        MostrarMensajeModal("El nombre de usuario ya existe. Elige otro.", "danger");
-                        AbrirModal("modalUsuario");
-                        return;
-                    }
-
                     // E4-12: toda alta exige la contraseña del administrador (vigente: se pidió al abrir el formulario).
                     // Si venció mientras se llenaba, se pide y btnConfirmarReaut_Click retoma este guardado.
                     if (AdminUsuariosReglas.RequiereReautenticacionAlGuardar(esAlta: true, cambiaRol: false) && !ReautenticacionVigente())
@@ -672,32 +595,16 @@ namespace WebSGV.Views
                         return;
                     }
 
-                    string hash = PasswordHelper.HashPassword(contrasena);
-                    int idNuevo = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                        @"INSERT INTO Usuarios
-                            (nombreUsuario, nombre, contrasena, rol, activo, idConductor, requiereCambioContrasena)
-                          OUTPUT INSERTED.idUsuario
-                          VALUES
-                            (@user, @nombre, @pass, @rol, 1, @idConductor, 1)",
-                        DbHelper.Param("@user",   nombreUsuario),
-                        DbHelper.Param("@nombre", nombre),
-                        DbHelper.Param("@pass",   hash),
-                        DbHelper.Param("@rol",    rol),
-                        DbHelper.Param("@idConductor", tieneConductor ? (object)idConductor : DBNull.Value)));
-
-                    AuditoriaHelper.Registrar("INSERT", "Usuarios", idNuevo, $"Nuevo usuario creado: {nombreUsuario}, rol: {rol}",
-                        null, JsonUsuarioNuevo(nombreUsuario, nombre, rol, tieneConductor ? (int?)idConductor : null));
+                    // Política, conductor y nombre libres (otra vez), hash, INSERT con "debe cambiar" y auditoría.
+                    GestionUsuariosService.Crear(nombreUsuario, nombre, rol, contrasena, tieneConductor ? (int?)idConductor : null);
                     MostrarMensaje($"Usuario '{nombreUsuario}' creado.", "success");
                 }
                 else
                 {
-                    DataTable previo = DbHelper.ConsultarTabla(
-                        "SELECT nombre, rol, idConductor FROM Usuarios WHERE idUsuario = @id",
-                        DbHelper.Param("@id", idUsuario));
-                    if (previo.Rows.Count == 0)
+                    UsuarioGestion anterior = GestionUsuariosService.Leer(idUsuario);
+                    if (anterior == null)
                         throw new Services.Common.ErrorNegocioException("El usuario ya no existe. Actualice la lista.");
-                    DataRow anterior = previo.Rows[0];
-                    string rolAnterior = Convert.ToString(anterior["rol"]).Trim();
+                    string rolAnterior = anterior.Rol.Trim();
 
                     // Un rol retirado solo se conserva si ya era el suyo; no se asigna a nadie más.
                     if (!RolesHelper.PuedeAsignarseRol(rol, rolAnterior))
@@ -722,18 +629,18 @@ namespace WebSGV.Views
                     UsuarioEstadoService.ActualizarDatos(idUsuario, nombre, rol,
                         tieneConductor ? (int?)idConductor : null);
 
-                    string Json(string n, string r, object idC) => Newtonsoft.Json.JsonConvert.SerializeObject(new
+                    string Json(string n, string r, int? idC) => Newtonsoft.Json.JsonConvert.SerializeObject(new
                     {
                         nombre = n,
                         rol = r,
-                        idConductor = idC == null || idC == DBNull.Value ? (int?)null : Convert.ToInt32(idC)
+                        idConductor = idC
                     });
                     AuditoriaHelper.Registrar("UPDATE", "Usuarios", idUsuario,
                         string.Equals(rolAnterior, rol.Trim(), StringComparison.OrdinalIgnoreCase)
                             ? $"Usuario actualizado: nombre={nombre}, rol={rol}"
                             : $"Usuario actualizado: nombre={nombre}, rol {rolAnterior} -> {rol}",
-                        Json(Convert.ToString(anterior["nombre"]), rolAnterior, anterior["idConductor"]),
-                        Json(nombre, rol, tieneConductor ? (object)idConductor : null));
+                        Json(anterior.Nombre, rolAnterior, anterior.IdConductor),
+                        Json(nombre, rol, tieneConductor ? (int?)idConductor : null));
                     MostrarMensaje("Usuario actualizado.", "success");
                 }
 

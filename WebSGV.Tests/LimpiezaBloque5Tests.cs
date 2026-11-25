@@ -49,7 +49,7 @@ namespace WebSGV.Tests
         [Fact]
         public void GestionUsuarios_busca_con_el_patron_escapado()
         {
-            string codigo = Fuente("WebSGV", "Views", "GestionUsuarios.aspx.cs");
+            string codigo = Fuente("WebSGV", "Services", "Usuarios", "GestionUsuariosService.cs");   // E6-17: la lista salió de la página
             Assert.Contains("DbHelper.PatronContiene(buscar)", codigo);
             Assert.DoesNotContain("\"%\" + buscar", codigo);
         }

@@ -5,6 +5,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using WebSGV.Helpers;
 using WebSGV.Services.Auditoria;
+using WebSGV.Services.Usuarios;
 using WebSGV.Views;
 using Xunit;
 
@@ -19,7 +20,7 @@ namespace WebSGV.Tests
         [Fact]
         public void JsonUsuarioNuevo_EscapaComillasYConservaTildes()
         {
-            string json = GestionUsuarios.JsonUsuarioNuevo("jperez", "José \"Pepe\" Muñoz", "CONDUCTOR", 15);
+            string json = GestionUsuariosService.JsonUsuarioNuevo("jperez", "José \"Pepe\" Muñoz", "CONDUCTOR", 15);
 
             var o = JObject.Parse(json);
             Assert.Equal("jperez", (string)o["nombreUsuario"]);
@@ -34,7 +35,7 @@ namespace WebSGV.Tests
         [Fact]
         public void JsonUsuarioNuevo_NuncaIncluyeLaContrasena()
         {
-            var o = JObject.Parse(GestionUsuarios.JsonUsuarioNuevo("admin2", "Ana", "ADMIN", null));
+            var o = JObject.Parse(GestionUsuariosService.JsonUsuarioNuevo("admin2", "Ana", "ADMIN", null));
 
             Assert.Equal(JTokenType.Null, o["idConductor"].Type);
             Assert.DoesNotContain(o.Properties(), p => p.Name.IndexOf("contrasena", StringComparison.OrdinalIgnoreCase) >= 0
