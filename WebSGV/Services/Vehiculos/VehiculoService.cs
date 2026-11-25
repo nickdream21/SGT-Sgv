@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.Linq;
@@ -281,6 +282,9 @@ FROM {t.Nombre} v
 LEFT JOIN ({string.Join(" UNION ", claves)}) h ON h.clave = {ClaveSql("v." + t.Placa)} AND {ClaveSql("v." + t.Placa)} <> ''
 ORDER BY v.{t.Placa}";
         }
+
+        /// <summary>Filas de la grilla de <c>RegistroTractos</c> / <c>RegistroSemiremolques</c> (<see cref="ConsultaGrilla"/>, E6-19).</summary>
+        public static DataTable ObtenerGrilla(TipoVehiculo tipo) => DbHelper.ConsultarTabla(ConsultaGrilla(tipo));
 
         /// <summary>Cambia placa, marca y modelo de un tracto o semirremolque.</summary>
         public static void Actualizar(TipoVehiculo tipo, int id, string placa, string marca, string modelo)

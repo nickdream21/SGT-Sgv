@@ -115,7 +115,8 @@ namespace WebSGV.Tests
         public void Nombre_completo_del_conductor_usa_una_sola_expresion()
         {
             string servicio = File.ReadAllText(Path.Combine(BaseDePruebas.RaizRepo, "WebSGV", "Services", "Conductor", "RegistroConductorService.cs"));
-            string pagina = File.ReadAllText(Path.Combine(BaseDePruebas.RaizRepo, "WebSGV", "Views", "RegistroChoferes.aspx.cs"));
+            // La grilla de RegistroChoferes vive en ListaChoferesService.ObtenerGrilla desde E6-19.
+            string pagina = File.ReadAllText(Path.Combine(BaseDePruebas.RaizRepo, "WebSGV", "Services", "Conductor", "ListaChoferesService.cs"));
 
             Assert.Contains("internal const string SqlNombreCompleto", servicio);
             Assert.Contains("\"SELECT idConductor, DNI, carnetExtranjeria, \" + SqlNombreCompleto", servicio);

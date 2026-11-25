@@ -50,6 +50,8 @@ Correr cada uno con `.\WebSGV\Database\sql.ps1 -Entorno produccion -ConfirmoProd
 | 50 (placa de semirremolque única) | `SELECT REPLACE(REPLACE(UPPER(placaCarreta),'-',''),' ','') AS clave, COUNT(*) FROM dbo.Carreta WHERE placaCarreta IS NOT NULL GROUP BY REPLACE(REPLACE(UPPER(placaCarreta),'-',''),' ','') HAVING COUNT(*) > 1` y lo mismo con `placaTracto` en `dbo.Tracto` | Ninguna fila (`ABC-123` = `ABC123`). Si hay, unificar los vehículos repetidos antes. |
 | 51 (montos FLOAT → DECIMAL(12,2)) | La consulta de abajo | Por columna: filas, mínimo, máximo, cuántos valores tienen más de 2 decimales y en cuántas órdenes `POR_CONFORMAR`. Si alguna orden `POR_CONFORMAR` tiene valores con más de 2 decimales, la administración vuelve a firmar su revisión después de migrar. |
 | 63 (rol SUPERVISOR retirado, E5-19b) | `SELECT activo, COUNT(*) AS n FROM dbo.Usuarios WHERE UPPER(LTRIM(RTRIM(rol))) = 'SUPERVISOR' GROUP BY activo;` | Ninguna fila con `activo = 1` (la 63 se detiene con THROW 50063 si hay alguna). Si hay activos, desactivarlos o cambiarles el rol desde Gestión de usuarios **con permiso del usuario**, y volver a correr la consulta. |
+| 14 (RUC de cliente único, `UQ_Cliente_Ruc`) | `SELECT ruc, COUNT(*) FROM dbo.Cliente WHERE ruc IS NOT NULL GROUP BY ruc HAVING COUNT(*) > 1;` | Ninguna fila. Con RUC repetidos la 14 **solo avisa con PRINT, no crea el índice y queda registrada**; desde E6-19 el alta de clientes ya no cuenta antes de insertar, así que lo garantiza la 64 (que se detiene si siguen repetidos). Si los repetidos son RUC vacíos (`''` o solo espacios), la salida es pasarlos a NULL, no unificar clientes: `UPDATE dbo.Cliente SET ruc = NULL WHERE LTRIM(RTRIM(ruc)) = '';` **con permiso del usuario**. Si son RUC reales, unificar esos clientes **con permiso del usuario**. |
+| 64 (nombres de planta por ámbito, RUC de cliente y nombre de estación de peaje únicos, E6-19) | `SELECT nombre, esInternacional, COUNT(*) AS n FROM dbo.Planta GROUP BY nombre, esInternacional HAVING COUNT(*) > 1;`, la de la fila 14 y `SELECT nombre, COUNT(*) FROM dbo.EstacionesPeaje GROUP BY nombre HAVING COUNT(*) > 1;` | Ninguna fila en las tres (la 64 se detiene con THROW 50064 si falta alguno de los índices y hay repetidos; la comparación es la de la collation de la columna, sin distinguir mayúsculas ni espacios al final). Si hay, unificar o renombrar esas plantas **con permiso del usuario** (revisar antes qué despachos y destinos las usan) y volver a correr la consulta. En `sgvActualizada`, el 2026-11-25: 0 filas. |
 
 Consulta de control de la 51 (solo lectura; si ya no hay columnas FLOAT/REAL, lo dice):
 
@@ -89,7 +91,7 @@ WHERE idDespachoOrigen IS NULL AND idDespachoDestino IS NULL AND estado = 'COMPL
 .\WebSGV\Database\aplicar-migraciones.ps1 -Entorno produccion -ConfirmoProduccion
 ```
 
-Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–63) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
+Aplica en orden todas las pendientes de `Database/Schema/` (hoy 01–64) y las registra en `dbo.SchemaVersion`. Si una se detiene, corregir el dato que dice el mensaje y repetir (son idempotentes). Algunas que conviene conocer: la **26 borra `Despachos.idProducto`**; la 16 pone la hora de Perú (`dbo.fn_AhoraPeru()`); la 46 agrega `Usuarios.selloSesion` (al pasar, todas las sesiones se cierran una vez); la 47 protege `AuditoriaLog` y `Auditoria` contra UPDATE/DELETE.
 
 **Migración 52** (`52_TriggersAuditoriaHeredados.sql`, E3-1): crea los 11 triggers `TR_<tabla>_Auditoria` heredados (llenan `Auditoria`; `sp_DC_GenerarNumeroOrden` la lee) solo si faltan; donde ya existen no hace nada y solo queda registrada. Ensayada antes con `herramientas/respaldo/ensayar-migracion.ps1`. Control después (solo SELECT): `SELECT name, is_disabled FROM sys.triggers WHERE name LIKE 'TR[_]%[_]Auditoria'` → los 11 de la migración con `is_disabled = 0` (10 después de la 58, que borra `CPIC_Productos` con su trigger), y 9 después de la 60, que borra `GuiasTransportista` con el suyo; `TR_AbastecimientoCombustible_Auditoria` (sin archivo) también se va con su tabla en la 60. Si `aplicar-migraciones.ps1 -SoloListar` avisa de un hash distinto en `16_HoraPeru.sql`, comparar `dbo.fn_AhoraPeru` con el archivo antes de aceptarlo en `$HashesAceptados` (el de pruebas ya está aceptado, revisado el 2026-11-21).
 
@@ -299,6 +301,17 @@ SELECT definition, is_not_trusted FROM sys.check_constraints WHERE name = 'CK_Us
 SELECT idUsuario, rol, activo FROM dbo.Usuarios WHERE UPPER(LTRIM(RTRIM(rol))) = 'SUPERVISOR' AND activo = 1;
 -- Registrada: 1 fila.
 SELECT archivo, fechaAplicacion FROM dbo.SchemaVersion WHERE archivo = '63_RolSupervisorRetirado.sql';
+```
+
+**Migración 64** (`64_PlantaNombreUnico.sql`, E6-19, U-101 / DN-35): índice único `UX_Planta_Nombre_Ambito (nombre, esInternacional)`: el mismo nombre de planta se admite una vez como nacional y una como internacional. Además crea, con el mismo nombre y forma, `UQ_Cliente_Ruc` (como la 14, filtrado `ruc IS NOT NULL`) y `UK_EstacionesPeaje_Nombre` (restricción UNIQUE; en pruebas se creó a mano, ninguna migración la tenía) si faltan: desde E6-19 clientes, plantas y peajes no cuentan antes de escribir y el repetido lo frena el índice. **Antes**, los controles de la 14 y la 64 del paso 3: si falta un índice y hay repetidos, la migración se detiene (THROW 50064) sin cambiar nada. **Orden: los tres índices presentes (migración 64) → publicar el código de E6-19** (sin ellos, un nombre o RUC repetido entraría). No necesita SP. Control posterior (solo SELECT):
+
+```sql
+-- Exactamente 3 filas (todos los índices únicos que no son PK de las tres tablas): UX_Planta_Nombre_Ambito (nombre,esInternacional),
+-- UQ_Cliente_Ruc (ruc, filtro ([ruc] IS NOT NULL)) y UK_EstacionesPeaje_Nombre (nombre). Otro único con otro nombre: revisarlo antes de publicar
+-- (los servicios solo reconocen el repetido por esos tres nombres; el de otro índice saldría como error técnico).
+SELECT OBJECT_NAME(i.object_id) AS tabla, i.name, i.filter_definition, STRING_AGG(c.name, ',') WITHIN GROUP (ORDER BY ic.key_ordinal) AS columnas FROM sys.indexes i JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id AND ic.is_included_column = 0 JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE i.object_id IN (OBJECT_ID('dbo.Planta'), OBJECT_ID('dbo.Cliente'), OBJECT_ID('dbo.EstacionesPeaje')) AND i.is_unique = 1 AND i.is_primary_key = 0 GROUP BY i.object_id, i.name, i.filter_definition;
+-- Registrada: 1 fila.
+SELECT archivo, fechaAplicacion FROM dbo.SchemaVersion WHERE archivo = '64_PlantaNombreUnico.sql';
 ```
 
 ## 5. Procedimientos almacenados

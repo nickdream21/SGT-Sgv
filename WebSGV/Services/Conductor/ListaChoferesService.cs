@@ -469,6 +469,20 @@ namespace WebSGV.Services.Conductor
 
         // ── Base de datos ────────────────────────────────────────────────
 
+        /// <summary>
+        /// Grilla de <c>RegistroChoferes.aspx</c> (E6-19): todos los conductores con el documento a mostrar (DNI o
+        /// carnet), el nombre completo y los opcionales en "". Catálogo (no crece con el tiempo).
+        /// </summary>
+        public static DataTable ObtenerGrilla() =>
+            DbHelper.ConsultarTabla(@"SELECT idConductor,
+                    ISNULL(DNI, ISNULL(carnetExtranjeria, '')) AS documentoDisplay,
+                    ISNULL(nombre, '') AS nombre,
+                    ISNULL(apPaterno, '') AS apPaterno,
+                    ISNULL(apMaterno, '') AS apMaterno,
+                    " + RegistroConductorService.SqlNombreCompleto + @" AS nombreCompleto,
+                    ISNULL(telefono, '') AS telefono, activo
+                    FROM Conductor ORDER BY apPaterno, nombre");
+
         public static List<ConductorRegistrado> ObtenerRegistrados()
         {
             var dt = DbHelper.ConsultarTabla(@"

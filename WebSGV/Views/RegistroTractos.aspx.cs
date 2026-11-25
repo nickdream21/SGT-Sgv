@@ -37,7 +37,7 @@ namespace WebSGV.Views
             try
             {
                 // Incluye conHistorial (B5-4): con historial la placa sale de solo lectura en el modal.
-                DataTable dt = DbHelper.ConsultarTabla(VehiculoService.ConsultaGrilla(TipoVehiculo.Tracto));
+                DataTable dt = VehiculoService.ObtenerGrilla(TipoVehiculo.Tracto);
                 // El filtro es el que se aplicó con Buscar (hfFiltroAplicado), no lo que haya en la caja: paginar,
                 // registrar, editar o desactivar no filtran con un texto escrito sin pulsar Buscar.
                 string texto = hfFiltroAplicado.Value;

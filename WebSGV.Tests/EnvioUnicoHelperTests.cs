@@ -213,7 +213,7 @@ namespace WebSGV.Tests
             // página, manejador, campo oculto, clave, primera escritura
             new object[] { "Views/MovimientosViaje", "btnRegistrar_Click", "hfEnvioUnico", "ClaveEnvioUnico", "fuAdjunto.HasFile" },
             new object[] { "Views/RegistroDespacho", "btnCrearNuevoViaje_Click", "hfEnvioUnicoViaje", "ClaveEnvioUnicoViaje", "CrearNuevoViajeProgreso(" },
-            new object[] { "Views/RegistroPlantas", "btnRegistrar_Click", "hfEnvioUnico", "ClaveEnvioUnico", "INSERT INTO Planta" },
+            new object[] { "Views/RegistroPlantas", "btnRegistrar_Click", "hfEnvioUnico", "ClaveEnvioUnico", "PlantaService.Registrar(" },
         };
 
         [Theory]

@@ -1,25 +1,15 @@
 ﻿using System;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
-using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Catalogos;
 using WebSGV.Services.Common;
 
 namespace WebSGV.Views
 {
     public partial class RegistroPeajes : PaginaBase
     {
-        private const int LargoNombre = LargoColumnas.EstacionPeajeNombre;
-
-        private static readonly Regex RxNombre =
-            new Regex("^[A-ZÁÉÍÓÚÑ0-9\\s\\-\\.,]{3," + LargoNombre + "}$", RegexOptions.Compiled);
-
-        private static readonly string MensajeNombreInvalido =
-            $"Nombre de estación inválido: use entre 3 y {LargoNombre} letras, números, espacios, guion, punto o coma.";
-
         protected void Page_Load(object sender, EventArgs e)
         {
             RolesHelper.ValidarAccesoSeccion("REGISTRO");
@@ -45,8 +35,7 @@ namespace WebSGV.Views
             _grillaEnlazada = true;
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    "SELECT idEstacion, nombre, activo FROM EstacionesPeaje ORDER BY nombre");
+                DataTable dt = EstacionPeajeService.ObtenerGrilla();
                 // El filtro es el que se aplicó con Buscar (hfFiltroAplicado), no lo que haya en la caja.
                 string texto = hfFiltroAplicado.Value;
                 texto = ListaCatalogo.RecortarBusqueda(texto);   // el campo oculto lo puede cambiar el usuario
@@ -89,40 +78,18 @@ namespace WebSGV.Views
                 return;
             }
 
-            string nombre = txtNombre.Text.Trim().ToUpper();
-
-            if (string.IsNullOrWhiteSpace(nombre))
-            {
-                MostrarMensaje("Debe ingresar el nombre de la estación de peaje.");
-                return;
-            }
-            if (!RxNombre.IsMatch(nombre))
-            {
-                MostrarMensaje(MensajeNombreInvalido);
-                return;
-            }
-
             try
             {
-                int existe = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM EstacionesPeaje WHERE UPPER(nombre) = @nombre",
-                    DbHelper.Param("@nombre", nombre)));
-                if (existe > 0)
-                {
-                    MostrarMensaje("Ya existe una estación de peaje con ese nombre.");
-                    return;
-                }
-
-                int idEstacion = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "INSERT INTO EstacionesPeaje (nombre, activo) VALUES (@nombre, 1); SELECT CAST(SCOPE_IDENTITY() AS INT);",
-                    DbHelper.Param("@nombre", nombre)));
-
-                AuditoriaHelper.Registrar("INSERT", "EstacionesPeaje", idEstacion,
-                    $"Estacion de peaje registrada - Nombre: {nombre}");
+                // El nombre repetido lo rechaza el índice único UK_EstacionesPeaje_Nombre.
+                EstacionPeajeService.Registrar(txtNombre.Text);
 
                 txtNombre.Text = "";
                 MostrarMensaje("Estación de peaje registrada correctamente.", true);
                 CargarPeajes();
+            }
+            catch (ErrorNegocioException ex)
+            {
+                MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex));
             }
             catch (Exception ex)
             {
@@ -187,50 +154,16 @@ namespace WebSGV.Views
                 return;
             }
 
-            string nombre = txtEditarNombre.Text.Trim().ToUpper();
-
-            if (string.IsNullOrWhiteSpace(nombre))
-            {
-                MostrarErrorModal("Debe ingresar el nombre de la estación.");
-                return;
-            }
-
             try
             {
-                // Mismas reglas que el alta; un nombre antiguo que no cambia (p. ej. con "+") se conserva.
-                string anterior = DbHelper.EjecutarEscalar(
-                    "SELECT nombre FROM EstacionesPeaje WHERE idEstacion = @id", DbHelper.Param("@id", idEstacion)) as string;
-                if (anterior == null)
-                {
-                    MostrarErrorModal("La estación ya no existe; recargue la página.");
-                    return;
-                }
-                if (nombre != anterior.Trim().ToUpper() && !RxNombre.IsMatch(nombre))
-                {
-                    MostrarErrorModal(MensajeNombreInvalido);
-                    return;
-                }
-
-                int dup = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM EstacionesPeaje WHERE UPPER(nombre)=@nombre AND idEstacion<>@id",
-                    DbHelper.Param("@nombre", nombre),
-                    DbHelper.Param("@id", idEstacion)));
-                if (dup > 0)
-                {
-                    MostrarErrorModal("Ya existe otra estación de peaje con ese nombre.");
-                    return;
-                }
-
-                DbHelper.EjecutarNonQuery(
-                    "UPDATE EstacionesPeaje SET nombre=@nombre WHERE idEstacion=@id",
-                    DbHelper.Param("@nombre", nombre),
-                    DbHelper.Param("@id", idEstacion));
-
-                AuditoriaHelper.Registrar("UPDATE", "EstacionesPeaje", idEstacion,
-                    $"Estación de peaje editada — Nombre:{nombre}");
+                EstacionPeajeService.Actualizar(idEstacion, txtEditarNombre.Text);
                 hfIdEstacion.Value = "";
                 MostrarMensaje("Estación de peaje actualizada correctamente.", true);
                 CargarPeajes();
+            }
+            catch (ErrorNegocioException ex)
+            {
+                MostrarErrorModal(MensajeErrorHelper.ParaUsuario(ex));
             }
             catch (Exception ex)
             {

@@ -1,13 +1,11 @@
 using System;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
-using System.Text.RegularExpressions;
 using System.Web.Script.Services;
 using System.Web.Services;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Clientes;
 using WebSGV.Services.Common;
 using WebSGV.Services.Consultas;
 
@@ -16,14 +14,6 @@ namespace WebSGV.Views
     [ScriptService]
     public partial class RegistroClientes : PaginaBase
     {
-        private const int LargoNombre = LargoColumnas.ClienteNombre;
-
-        private static readonly Regex RxNombre =
-            new Regex("^[A-Za-zÁÉÍÓÚÑáéíóú0-9\\s\\-\\.&]{3," + LargoNombre + "}$", RegexOptions.Compiled);
-
-        private static readonly string MensajeNombreInvalido =
-            $"Nombre/Razón Social inválido: use entre 3 y {LargoNombre} letras, números, espacios, guion, punto o &.";
-
         protected void Page_Load(object sender, EventArgs e)
         {
             RolesHelper.ValidarAccesoSeccion("REGISTRO");
@@ -49,20 +39,7 @@ namespace WebSGV.Views
             _grillaEnlazada = true;
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    @"SELECT idCliente,
-                             ISNULL(ruc, '')               AS ruc,
-                             nombre,
-                             ISNULL(direccion, '')         AS direccion,
-                             ISNULL(contacto, '')          AS contacto,
-                             ISNULL(telefono, '')          AS telefono,
-                             ISNULL(correo, '')            AS correo,
-                             ISNULL(observaciones, '')     AS observaciones,
-                             monedaFacturacion,
-                             esExportador,
-                             activo
-                        FROM Cliente
-                    ORDER BY activo DESC, nombre");
+                DataTable dt = ClienteService.ObtenerGrilla();
                 // El filtro es el que se aplicó con Buscar (hfFiltroAplicado), no lo que haya en la caja.
                 string texto = hfFiltroAplicado.Value;
                 texto = ListaCatalogo.RecortarBusqueda(texto);   // el campo oculto lo puede cambiar el usuario
@@ -105,72 +82,29 @@ namespace WebSGV.Views
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(txtNombre.Text))
-            {
-                MostrarMensaje("El nombre del cliente es obligatorio.");
-                return;
-            }
-
-            string ruc = txtRUC.Text.Trim();
-            if (!string.IsNullOrWhiteSpace(ruc))
-            {
-                if (ruc.Length != 11 || !EsNumerico(ruc))
-                {
-                    MostrarMensaje("El RUC debe contener 11 dígitos numéricos.");
-                    return;
-                }
-            }
-
-            if (!RxNombre.IsMatch(txtNombre.Text.Trim()))
-            {
-                MostrarMensaje(MensajeNombreInvalido);
-                return;
-            }
-
             try
             {
-                if (!string.IsNullOrWhiteSpace(ruc))
+                ClienteService.Registrar(new ClienteService.DatosCliente
                 {
-                    int existeRuc = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                        "SELECT COUNT(*) FROM Cliente WHERE ruc = @ruc",
-                        DbHelper.Param("@ruc", ruc)));
-                    if (existeRuc > 0)
-                    {
-                        MostrarMensaje("Ya existe un cliente registrado con ese RUC.");
-                        return;
-                    }
-                }
-
-                int idCliente = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    @"INSERT INTO Cliente
-                          (ruc, nombre, direccion, contacto, telefono, correo,
-                           monedaFacturacion, esExportador, observaciones,
-                           usuarioRegistro, activo)
-                      VALUES
-                          (@ruc, @nombre, @direccion, @contacto, @telefono, @correo,
-                           @moneda, @esExportador, @observaciones,
-                           @usuarioRegistro, 1);
-                      SELECT CAST(SCOPE_IDENTITY() AS INT);",
-                    DbHelper.Param("@ruc",             TextoONull(ruc)),
-                    DbHelper.Param("@nombre",          txtNombre.Text.Trim()),
-                    DbHelper.Param("@direccion",       TextoONull(txtDireccion.Text)),
-                    DbHelper.Param("@contacto",        TextoONull(txtContacto.Text)),
-                    DbHelper.Param("@telefono",        TextoONull(txtTelefono.Text)),
-                    DbHelper.Param("@correo",          TextoONull(txtCorreo.Text)),
-                    DbHelper.Param("@moneda",          ddlMoneda.SelectedValue),
-                    DbHelper.Param("@esExportador",    chkEsExportador.Checked),
-                    DbHelper.Param("@observaciones",   TextoONull(txtObservaciones.Text)),
-                    DbHelper.Param("@usuarioRegistro", ObtenerUsuarioActual())));
-
-                AuditoriaHelper.Registrar("INSERT", "Cliente", idCliente,
-                    $"Cliente registrado - Nombre: {txtNombre.Text.Trim()}, " +
-                                 $"RUC: {(string.IsNullOrWhiteSpace(ruc) ? "Sin RUC" : ruc)}, " +
-                                 $"Moneda: {ddlMoneda.SelectedValue}, " +
-                                 $"Exportador: {(chkEsExportador.Checked ? "Si" : "No")}");
+                    Ruc = txtRUC.Text,
+                    Nombre = txtNombre.Text,
+                    Direccion = txtDireccion.Text,
+                    Contacto = txtContacto.Text,
+                    Telefono = txtTelefono.Text,
+                    Correo = txtCorreo.Text,
+                    Moneda = ddlMoneda.SelectedValue,
+                    EsExportador = chkEsExportador.Checked,
+                    Observaciones = txtObservaciones.Text
+                }, ObtenerUsuarioActual());
 
                 LimpiarFormulario();
                 MostrarMensaje("Cliente registrado correctamente.", true);
                 CargarClientes();
+            }
+            catch (ErrorNegocioException ex)
+            {
+                // Validación o RUC repetido: el texto solo, como antes de E6-19.
+                MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex));
             }
             catch (Exception ex)
             {
@@ -235,89 +169,34 @@ namespace WebSGV.Views
                 return;
             }
 
-            string ruc = txtEditarRUC.Text.Trim();
-            string nombre = txtEditarNombre.Text.Trim();
-
-            if (string.IsNullOrWhiteSpace(nombre))
-            {
-                MostrarErrorModal("El nombre del cliente es obligatorio.");
-                return;
-            }
-
-            if (!string.IsNullOrWhiteSpace(ruc) && (ruc.Length != 11 || !EsNumerico(ruc)))
-            {
-                MostrarErrorModal("El RUC debe contener 11 dígitos numéricos.");
-                return;
-            }
-
             try
             {
-                // Mismas reglas que el alta; un nombre antiguo que no cambia se conserva aunque no las cumpla.
-                string nombreAnterior = DbHelper.EjecutarEscalar(
-                    "SELECT nombre FROM Cliente WHERE idCliente = @id", DbHelper.Param("@id", idCliente)) as string;
-                if (nombre != (nombreAnterior ?? "").Trim() && !RxNombre.IsMatch(nombre))
+                ClienteService.Actualizar(idCliente, new ClienteService.DatosCliente
                 {
-                    MostrarErrorModal(MensajeNombreInvalido);
-                    return;
-                }
-
-                if (!string.IsNullOrWhiteSpace(ruc))
-                {
-                    int dup = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                        "SELECT COUNT(*) FROM Cliente WHERE ruc=@ruc AND idCliente<>@id",
-                        DbHelper.Param("@ruc", ruc),
-                        DbHelper.Param("@id", idCliente)));
-                    if (dup > 0)
-                    {
-                        MostrarErrorModal("Ya existe otro cliente registrado con ese RUC.");
-                        return;
-                    }
-                }
-
-                DbHelper.EjecutarNonQuery(
-                    @"UPDATE Cliente SET
-                          ruc               = @ruc,
-                          nombre            = @nombre,
-                          direccion         = @direccion,
-                          contacto          = @contacto,
-                          telefono          = @telefono,
-                          correo            = @correo,
-                          monedaFacturacion = @moneda,
-                          esExportador      = @esExportador,
-                          observaciones     = @observaciones
-                      WHERE idCliente = @id",
-                    DbHelper.Param("@ruc",           TextoONull(ruc)),
-                    DbHelper.Param("@nombre",        nombre),
-                    DbHelper.Param("@direccion",     TextoONull(txtEditarDireccion.Text)),
-                    DbHelper.Param("@contacto",      TextoONull(txtEditarContacto.Text)),
-                    DbHelper.Param("@telefono",      TextoONull(txtEditarTelefono.Text)),
-                    DbHelper.Param("@correo",        TextoONull(txtEditarCorreo.Text)),
-                    DbHelper.Param("@moneda",        ddlEditarMoneda.SelectedValue),
-                    DbHelper.Param("@esExportador",  chkEditarEsExportador.Checked),
-                    DbHelper.Param("@observaciones", TextoONull(txtEditarObservaciones.Text)),
-                    DbHelper.Param("@id",            idCliente));
-
-                AuditoriaHelper.Registrar("UPDATE", "Cliente", idCliente,
-                    $"Cliente editado — Nombre:{nombre}, RUC:{(string.IsNullOrWhiteSpace(ruc) ? "Sin RUC" : ruc)}, " +
-                    $"Moneda:{ddlEditarMoneda.SelectedValue}, Exportador:{(chkEditarEsExportador.Checked ? "Si" : "No")}");
+                    Ruc = txtEditarRUC.Text,
+                    Nombre = txtEditarNombre.Text,
+                    Direccion = txtEditarDireccion.Text,
+                    Contacto = txtEditarContacto.Text,
+                    Telefono = txtEditarTelefono.Text,
+                    Correo = txtEditarCorreo.Text,
+                    Moneda = ddlEditarMoneda.SelectedValue,
+                    EsExportador = chkEditarEsExportador.Checked,
+                    Observaciones = txtEditarObservaciones.Text
+                });
 
                 hfIdCliente.Value = "";
                 MostrarMensaje("Cliente actualizado correctamente.", true);
                 CargarClientes();
             }
+            catch (ErrorNegocioException ex)
+            {
+                // Validación o RUC repetido: el texto solo, como antes de E6-19.
+                MostrarErrorModal(MensajeErrorHelper.ParaUsuario(ex));
+            }
             catch (Exception ex)
             {
                 MostrarErrorModal("Error al actualizar el cliente: " + MensajeErrorHelper.ParaUsuario(ex));
             }
-        }
-
-        private bool EsNumerico(string texto)
-        {
-            foreach (char c in texto)
-            {
-                if (!char.IsDigit(c)) return false;
-            }
-            return true;
         }
 
         private void LimpiarFormulario()
@@ -332,15 +211,6 @@ namespace WebSGV.Views
             ddlMoneda.SelectedValue = "PEN";
             chkEsExportador.Checked = false;
         }
-
-        /// <summary>
-        /// Devuelve <c>DBNull</c> para un campo opcional vacío, en lugar de una cadena
-        /// vacía. Importa: el índice único del RUC es filtrado por <c>ruc IS NOT NULL</c>,
-        /// de modo que varias cadenas vacías chocarían entre sí mientras que varios NULL
-        /// conviven sin problema.
-        /// </summary>
-        private static object TextoONull(string valor) =>
-            string.IsNullOrWhiteSpace(valor) ? (object)DBNull.Value : valor.Trim();
 
         private string ObtenerUsuarioActual()
         {
@@ -392,34 +262,13 @@ namespace WebSGV.Views
             try
             {
                 var limite = LimiteConsultasSesion.DeSesionActual();
-                return ConsultaDocumentoService.DesdeConfiguracion().BuscarRuc(numero, ClienteConRuc,
+                return ConsultaDocumentoService.DesdeConfiguracion().BuscarRuc(numero, ClienteService.AvisoRucRegistrado,
                     () => limite != null && limite.Permitir());
             }
             catch (Exception ex)
             {
                 return RespuestaConsultaDocumento.Error(MensajeErrorHelper.ParaUsuario(ex));
             }
-        }
-
-        /// <summary>
-        /// Aviso si ya hay un cliente (activo o inactivo) con ese RUC, con la misma comparación que la
-        /// validación de duplicado del alta (<c>ruc = @ruc</c> con el RUC recortado); null si está libre.
-        /// </summary>
-        private static string ClienteConRuc(string ruc)
-        {
-            object nombre = DbHelper.EjecutarEscalar(
-                "SELECT TOP 1 LTRIM(RTRIM(ISNULL(nombre, ''))) FROM Cliente WHERE ruc = @ruc ORDER BY idCliente",
-                DbHelper.Param("@ruc", ruc));
-            if (nombre == null || nombre == DBNull.Value) return null;
-            string texto = Convert.ToString(nombre);
-            return MensajeRucRegistrado(texto);
-        }
-
-        internal static string MensajeRucRegistrado(string nombreCliente)
-        {
-            string nombre = string.IsNullOrWhiteSpace(nombreCliente) ? "(sin nombre)" : nombreCliente.Trim();
-            // "VITAPRO S.A." ya termina en punto: no se agrega otro
-            return "Ya existe un cliente registrado con ese RUC: " + nombre + (nombre.EndsWith(".") ? "" : ".");
         }
     }
 }

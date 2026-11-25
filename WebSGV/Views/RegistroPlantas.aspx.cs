@@ -1,11 +1,9 @@
 using System;
-using System.Configuration;
 using System.Data;
-using System.Data.SqlClient;
-using System.Text.RegularExpressions;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
+using WebSGV.Services.Catalogos;
 using WebSGV.Services.Common;
 
 namespace WebSGV.Views
@@ -40,8 +38,7 @@ namespace WebSGV.Views
             _grillaEnlazada = true;
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(
-                    "SELECT idPlanta, nombre, esInternacional, activo FROM Planta ORDER BY esInternacional, nombre");
+                DataTable dt = PlantaService.ObtenerGrilla();
                 // El filtro es el que se aplicó con Buscar (hfFiltroAplicado), no lo que haya en la caja.
                 string texto = hfFiltroAplicado.Value;
                 texto = ListaCatalogo.RecortarBusqueda(texto);   // el campo oculto lo puede cambiar el usuario
@@ -91,17 +88,14 @@ namespace WebSGV.Views
                 return;
             }
 
-            string nombre = txtNombre.Text.Trim().ToUpper();
             bool esInternacional = ddlAmbito.SelectedValue == "1";
-
-            if (string.IsNullOrWhiteSpace(nombre))
+            try
             {
-                MostrarMensaje("Debe ingresar el nombre de la planta.");
-                return;
+                PlantaService.ValidarAlta(txtNombre.Text);
             }
-            if (!Regex.IsMatch(nombre, "^[A-ZÁÉÍÓÚÑ0-9\\s\\-\\.,]{3,200}$"))
+            catch (ErrorNegocioException ex)
             {
-                MostrarMensaje("Nombre de planta inválido: use entre 3 y 200 caracteres válidos.");
+                MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex));
                 return;
             }
 
@@ -116,29 +110,17 @@ namespace WebSGV.Views
 
             try
             {
-                int existe = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM Planta WHERE UPPER(nombre) = @nombre AND esInternacional = @esInternacional",
-                    DbHelper.Param("@nombre", nombre),
-                    DbHelper.Param("@esInternacional", esInternacional)));
-                if (existe > 0)
-                {
-                    MostrarMensaje("Ya existe una planta con ese nombre en el mismo ámbito.");
-                    return;
-                }
-
-                int idPlanta = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "INSERT INTO Planta (nombre, esInternacional, activo) VALUES (@nombre, @esInternacional, 1); " +
-                    "SELECT CAST(SCOPE_IDENTITY() AS INT);",
-                    DbHelper.Param("@nombre", nombre),
-                    DbHelper.Param("@esInternacional", esInternacional)));
-
-                AuditoriaHelper.Registrar("INSERT", "Planta", idPlanta,
-                    $"Planta registrada - Nombre: {nombre}, Ámbito: {(esInternacional ? "Internacional" : "Nacional")}");
+                // El nombre repetido en el mismo ámbito lo rechaza el índice único (migración 64).
+                PlantaService.Registrar(txtNombre.Text, esInternacional);
 
                 txtNombre.Text = "";
                 ddlAmbito.SelectedIndex = 0;
                 MostrarMensaje("Planta registrada correctamente.", true);
                 CargarPlantas();
+            }
+            catch (ErrorNegocioException ex)
+            {
+                MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex));
             }
             catch (Exception ex)
             {
@@ -215,39 +197,18 @@ namespace WebSGV.Views
                 return;
             }
 
-            string nombre = txtEditarNombre.Text.Trim().ToUpper();
             bool esInternacional = ddlEditarAmbito.SelectedValue == "1";
-
-            if (string.IsNullOrWhiteSpace(nombre))
-            {
-                MostrarErrorModal("Debe ingresar el nombre de la planta.");
-                return;
-            }
 
             try
             {
-                int dup = Convert.ToInt32(DbHelper.EjecutarEscalar(
-                    "SELECT COUNT(*) FROM Planta WHERE UPPER(nombre)=@nombre AND esInternacional=@esInt AND idPlanta<>@id",
-                    DbHelper.Param("@nombre", nombre),
-                    DbHelper.Param("@esInt", esInternacional),
-                    DbHelper.Param("@id", idPlanta)));
-                if (dup > 0)
-                {
-                    MostrarErrorModal("Ya existe otra planta con ese nombre en el mismo ámbito.");
-                    return;
-                }
-
-                DbHelper.EjecutarNonQuery(
-                    "UPDATE Planta SET nombre=@nombre, esInternacional=@esInt WHERE idPlanta=@id",
-                    DbHelper.Param("@nombre", nombre),
-                    DbHelper.Param("@esInt", esInternacional),
-                    DbHelper.Param("@id", idPlanta));
-
-                AuditoriaHelper.Registrar("UPDATE", "Planta", idPlanta,
-                    $"Planta editada — Nombre:{nombre}, Ámbito:{(esInternacional ? "Internacional" : "Nacional")}");
+                PlantaService.Actualizar(idPlanta, txtEditarNombre.Text, esInternacional);
                 hfIdPlanta.Value = "";
                 MostrarMensaje("Planta actualizada correctamente.", true);
                 CargarPlantas();
+            }
+            catch (ErrorNegocioException ex)
+            {
+                MostrarErrorModal(MensajeErrorHelper.ParaUsuario(ex));
             }
             catch (Exception ex)
             {

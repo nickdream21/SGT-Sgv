@@ -61,14 +61,7 @@ namespace WebSGV.Views
             _grillaEnlazada = true;
             try
             {
-                DataTable dt = DbHelper.ConsultarTabla(@"SELECT idConductor,
-                    ISNULL(DNI, ISNULL(carnetExtranjeria, '')) AS documentoDisplay,
-                    ISNULL(nombre, '') AS nombre,
-                    ISNULL(apPaterno, '') AS apPaterno,
-                    ISNULL(apMaterno, '') AS apMaterno,
-                    " + RegistroConductorService.SqlNombreCompleto + @" AS nombreCompleto,
-                    ISNULL(telefono, '') AS telefono, activo
-                    FROM Conductor ORDER BY apPaterno, nombre");
+                DataTable dt = ListaChoferesService.ObtenerGrilla();
                 // El filtro es el que se aplicó con Buscar (hfFiltroAplicado), no lo que haya en la caja.
                 string texto = hfFiltroAplicado.Value;
                 texto = ListaCatalogo.RecortarBusqueda(texto);   // el campo oculto lo puede cambiar el usuario

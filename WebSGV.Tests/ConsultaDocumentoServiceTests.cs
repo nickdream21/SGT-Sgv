@@ -279,10 +279,12 @@ namespace WebSGV.Tests
 
             Assert.Contains("[WebMethod(EnableSession = true)]", clientes);
             Assert.Contains("RolesHelper.TienePermiso(\"REGISTRO\")", clientes);
-            Assert.Contains("ConsultaDocumentoService.DesdeConfiguracion().BuscarRuc(numero, ClienteConRuc,", clientes);
-            // Misma comparación que la validación de duplicado del alta
-            Assert.Contains("SELECT COUNT(*) FROM Cliente WHERE ruc = @ruc", clientes);
-            Assert.Contains("FROM Cliente WHERE ruc = @ruc ORDER BY idCliente", clientes);
+            Assert.Contains("ConsultaDocumentoService.DesdeConfiguracion().BuscarRuc(numero, ClienteService.AvisoRucRegistrado,", clientes);
+            // Misma comparación que el duplicado del alta (E6-19: el índice único UQ_Cliente_Ruc, ruc exacto ya recortado)
+            string servicio = File.ReadAllText(Path.Combine(BaseDePruebas.RaizRepo, "WebSGV", "Services", "Clientes", "ClienteService.cs"));
+            Assert.Contains("FROM Cliente WHERE ruc = @ruc ORDER BY idCliente", servicio);
+            Assert.Contains("throw new ErrorNegocioException(MensajeRucDuplicadoAlta, ex);", servicio);
+            Assert.Contains("DbHelper.Param(\"@ruc\", TextoONull(ruc))", servicio);
 
             foreach (string codigo in new[] { choferes, clientes })
             {
@@ -359,7 +361,7 @@ namespace WebSGV.Tests
             var limite = new Contador();
 
             var r = Servicio(http).BuscarRuc("20123456789",
-                ruc => WebSGV.Views.RegistroClientes.MensajeRucRegistrado(" VITAPRO S.A. "), limite.Permitir);
+                ruc => WebSGV.Services.Clientes.ClienteService.MensajeRucRegistrado(" VITAPRO S.A. "), limite.Permitir);
 
             Assert.False(r.exito);
             Assert.Equal("Ya existe un cliente registrado con ese RUC: VITAPRO S.A.", r.mensaje);
@@ -374,7 +376,7 @@ namespace WebSGV.Tests
         [InlineData(null, "Ya existe un cliente registrado con ese RUC: (sin nombre).")]
         public void Mensaje_de_ruc_registrado(string nombre, string esperado)
         {
-            Assert.Equal(esperado, WebSGV.Views.RegistroClientes.MensajeRucRegistrado(nombre));
+            Assert.Equal(esperado, WebSGV.Services.Clientes.ClienteService.MensajeRucRegistrado(nombre));
         }
 
         [Fact]

@@ -80,7 +80,6 @@ namespace WebSGV.Tests
             ["Services/GpsIntegracion/ReporteHistorialGpsService.cs::Generar"] = 92,
             ["Views/RegistroDespacho.aspx.cs::btnLeerProgramacionDescarga_Click"] = 91,
             ["Services/Despachos/Importacion/ImportacionPedidoService.cs::PdfsDelZip"] = 91,
-            ["Views/RegistroClientes.aspx.cs::btnActualizarCliente_Click"] = 90,
             ["Global.asax.cs::Application_AcquireRequestState"] = 90,
             ["Services/Despachos/BandejaDocumentosService.cs::ResolverCpic"] = 89,
             ["Services/Despachos/Importacion/ImportacionPedidoService.cs::Leer(IEnumerable<ArchivoSubido>, ArchivoSubido, Dictionary<string, ArchivoSubido>, PresupuestoLectura)"] = 89,

@@ -79,6 +79,45 @@ namespace WebSGV.Tests.Integracion
                 "Migraciones sin aplicar en pruebas (correr Database/aplicar-migraciones.ps1): " + string.Join(", ", pendientes));
         }
 
+        /// <summary>
+        /// E6-19: los catálogos ya no cuentan antes de escribir; el duplicado lo frenan estos índices únicos (la
+        /// migración 64 los crea si faltan) y los servicios lo reconocen por su nombre.
+        /// </summary>
+        [FactBD]
+        public void IndicesUnicosDeLosCatalogos_ExistenConSusColumnas()
+        {
+            var esperados = new[]
+            {
+                (Tabla: "dbo.Planta", Indice: WebSGV.Services.Catalogos.PlantaService.IndiceNombreAmbito, Columnas: "nombre,esInternacional", Filtro: (string)null),
+                (Tabla: "dbo.Cliente", Indice: WebSGV.Services.Clientes.ClienteService.IndiceRuc, Columnas: "ruc", Filtro: "([ruc] IS NOT NULL)"),
+                (Tabla: "dbo.EstacionesPeaje", Indice: WebSGV.Services.Catalogos.EstacionPeajeService.IndiceNombre, Columnas: "nombre", Filtro: (string)null),
+            };
+            foreach (var e in esperados)
+            {
+                DataTable dt = DbHelper.ConsultarTabla(
+                    @"SELECT c.name, i.filter_definition, i.is_disabled FROM sys.indexes i
+                      JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id AND ic.is_included_column = 0
+                      JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
+                      WHERE i.object_id = OBJECT_ID(@t) AND i.name = @i AND i.is_unique = 1
+                      ORDER BY ic.key_ordinal",
+                    DbHelper.Param("@t", e.Tabla), DbHelper.Param("@i", e.Indice));
+                Assert.True(dt.Rows.Count > 0, $"Falta el índice único {e.Indice} en {e.Tabla} (migración 64).");
+                Assert.Equal(e.Columnas, string.Join(",", dt.Rows.Cast<DataRow>().Select(r => (string)r["name"])));
+                Assert.False(Convert.ToBoolean(dt.Rows[0]["is_disabled"]), e.Indice + " está deshabilitado.");
+                Assert.Equal(e.Filtro, dt.Rows[0]["filter_definition"] as string);
+            }
+
+            // Exactamente esos tres únicos (sin contar las PK): otro único con otro nombre no lo reconocería
+            // EsClaveDuplicada y su violación saldría como error técnico.
+            var unicos = DbHelper.ConsultarTabla(
+                    @"SELECT i.name FROM sys.indexes i
+                      WHERE i.object_id IN (OBJECT_ID('dbo.Planta'), OBJECT_ID('dbo.Cliente'), OBJECT_ID('dbo.EstacionesPeaje'))
+                        AND i.is_unique = 1 AND i.is_primary_key = 0
+                      ORDER BY i.name")
+                .Rows.Cast<DataRow>().Select(r => (string)r["name"]).ToArray();
+            Assert.Equal(esperados.Select(e => e.Indice).OrderBy(n => n, StringComparer.Ordinal).ToArray(), unicos);
+        }
+
         [FactBD]
         public void ColumnasDeTextosDeLaLiquidacion_AlcanzanLoQueValidaElServidor()
         {

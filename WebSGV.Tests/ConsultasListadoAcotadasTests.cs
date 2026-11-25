@@ -53,10 +53,10 @@ namespace WebSGV.Tests
             { "Views/DashboardAdminSistema.aspx.cs::CargarRoles",                  "una fila por rol (GROUP BY rol)" },
             { "Services/Usuarios/GestionUsuariosService.cs::ConductoresParaVincular", "catálogo de conductores para vincular" },
             { "Services/Usuarios/GestionUsuariosService.cs::Listar",               "usuarios del sistema (decenas)" },
-            { "Views/RegistroChoferes.aspx.cs::CargarConductores",                  "catálogo de conductores" },
-            { "Views/RegistroClientes.aspx.cs::CargarClientes",                     "catálogo de clientes" },
-            { "Views/RegistroPeajes.aspx.cs::CargarPeajes",                         "catálogo de estaciones de peaje" },
-            { "Views/RegistroPlantas.aspx.cs::CargarPlantas",                       "catálogo de plantas" },
+            { "Services/Conductor/ListaChoferesService.cs::ObtenerGrilla",          "catálogo de conductores" },
+            { "Services/Clientes/ClienteService.cs::ObtenerGrilla",                 "catálogo de clientes" },
+            { "Services/Catalogos/EstacionPeajeService.cs::ObtenerGrilla",         "catálogo de estaciones de peaje" },
+            { "Services/Catalogos/PlantaService.cs::ObtenerGrilla",                 "catálogo de plantas" },
         };
 
         /// <summary>SP de listado sin límite permitidos → motivo.</summary>
