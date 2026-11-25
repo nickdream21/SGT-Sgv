@@ -115,6 +115,13 @@ namespace WebSGV.Models.Despachos
         /// <summary>El Word no trae secciones de carga, solo entregas de terceros.</summary>
         public bool SinCarga { get; set; }
 
+        /// <summary>
+        /// Marca de esta vista previa (E6-23): nueva al leer el Word y al cambiar de sección (cada una es otro objeto). La
+        /// página la pinta en un campo oculto; si el formulario enviado trae otra, la vista previa de la sesión la cambió
+        /// otra pestaña y sus filas no son las que el usuario tenía a la vista.
+        /// </summary>
+        public string Marca { get; set; } = Guid.NewGuid().ToString("N");
+
         /// <summary>Filas de las secciones de descarga de terceros (POLINPLAST-VIRU, GUAYAQUIL-AZUCAR…) con su viaje del seguimiento.</summary>
         public List<EntregaTercero> Entregas { get; set; } = new List<EntregaTercero>();
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -489,7 +489,7 @@ namespace WebSGV.Tests
         [InlineData("Views/GestionUsuarios.aspx", "btnConfirmarReaut", "vgReaut", true)]
         [InlineData("Views/ListaDespachos.aspx", "btnRegistrarFactura", "vgFacturaLote", true)]
         [InlineData("Views/ListaDespachos.aspx", "btnRegistrarCpic", "vgCpicLote", true)]
-        [InlineData("Views/RegistroDespacho.aspx", "btnProgramarDespachos", "vgProgramar", true)]
+        [InlineData("Views/Controles/Despachos/ProgramacionWord.ascx", "btnProgramarDespachos", "vgProgramar", true)]
         [InlineData("Views/RegistroDespacho.aspx", "btnAplicarImportacion", "vgImportar", true)]
         [InlineData("Views/RegistroDespacho.aspx", "btnAplicarDescarga", "vgDescarga", true)]
         public void H_BotonesConSuGrupo_YPageIsValidEnElServidor(string ruta, string id, string grupo, bool revisaIsValid)

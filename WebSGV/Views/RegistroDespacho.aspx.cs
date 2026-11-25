@@ -14,6 +14,7 @@ using WebSGV.Models.Despachos;
 using WebSGV.Services.Common;
 using WebSGV.Services.Despachos;
 using WebSGV.Services.Despachos.Importacion;
+using WebSGV.Views.Controles.Despachos;
 
 namespace WebSGV.Views
 {
@@ -28,16 +29,14 @@ namespace WebSGV.Views
 
         #region Propiedades para Manejo de Estado
 
+        // Las 7 claves de sesión de la página y de sus controles, con sus nombres de siempre (E6-23).
+        private EstadoRegistroDespacho _estado;
+        private EstadoRegistroDespacho Estado => _estado ?? (_estado = EstadoRegistroDespacho.De(Session));
+
         private LoteDespachos LoteActual
         {
-            get
-            {
-                return Session["LoteActual"] as LoteDespachos;
-            }
-            set
-            {
-                Session["LoteActual"] = value;
-            }
+            get => Estado.Lote;
+            set => Estado.Lote = value;
         }
 
         private bool TieneLoteActivo => LoteActual != null;
@@ -72,6 +71,46 @@ namespace WebSGV.Views
         #endregion
 
         #region Eventos de Página
+
+        protected override void OnInit(EventArgs e)
+        {
+            base.OnInit(e);
+            RegistrarDisparadores();
+            ConectarProgramacionWord();
+        }
+
+        /// <summary>
+        /// Disparadores de UpdatePanelMain, en código (E6-23): los botones de un control .ascx no se pueden nombrar en el
+        /// &lt;Triggers&gt; del marcado. Van en OnInit, antes de que el UpdatePanel los inicialice. Los botones que suben
+        /// archivos son PostBackTrigger: UpdatePanel no sube un FileUpload por AJAX (llegaría vacío). Los demás refrescan
+        /// el panel aunque estén dentro de UpdatePanelViajes o del control.
+        /// </summary>
+        private void RegistrarDisparadores()
+        {
+            foreach (Control c in new Control[] { btnIniciarLote, btnLeerDocumentos, btnLeerProgramacionDescarga })
+                UpdatePanelMain.Triggers.Add(new PostBackTrigger { ControlID = IdDesdeElPanel(c) });
+
+            var clic = new Control[]
+            {
+                btnAplicarImportacion, btnCorregirImportacion, btnVerCargasPendientes, btnAplicarDescarga, btnDescartarDescarga,
+                btnQuitarDescarga, btnDescartarImportacion, btnQuitarImportacion, btnCancelarLote, btnFinalizarLote,
+                btnAgregarConductor, btnCancelarEdicion, btnLimpiarConductor, btnCrearNuevoViaje, btnVerHistorialViajes,
+            }.Concat(ucProgramacionWord.DisparadoresAsincronos);
+            foreach (Control c in clic)
+                UpdatePanelMain.Triggers.Add(new AsyncPostBackTrigger { ControlID = IdDesdeElPanel(c), EventName = "Click" });
+            foreach (Control c in new Control[] { ddlTipoOperacionBase, rblAmbitoOperacionBase })
+                UpdatePanelMain.Triggers.Add(new AsyncPostBackTrigger { ControlID = IdDesdeElPanel(c), EventName = "SelectedIndexChanged" });
+            UpdatePanelMain.Triggers.Add(new AsyncPostBackTrigger { ControlID = IdDesdeElPanel(gvConductoresLote), EventName = "RowCommand" });
+        }
+
+        /// <summary>Id de <paramref name="c"/> visto desde el contenedor de nombres del panel ("ucProgramacionWord$btnX" dentro de un control).</summary>
+        private string IdDesdeElPanel(Control c)
+        {
+            var partes = new List<string>();
+            for (Control x = c; x != null && x != UpdatePanelMain.NamingContainer; x = x.NamingContainer)
+                partes.Insert(0, x.ID);
+            return string.Join("$", partes);
+        }
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -1242,21 +1281,21 @@ namespace WebSGV.Views
 
         #region Importación de documentos del pedido
 
-        // Flujo: Leer documentos → vista previa (Session["ImportacionPedido"]) → el usuario
+        // Flujo: Leer documentos → vista previa (Estado.Importacion) → el usuario
         // corrige/aprueba → "Usar estos datos" registra las altas aprobadas, rellena la
-        // configuración base y deja los conductores en Session["ImportacionConductores"],
+        // configuración base y deja los conductores en Estado.ConductoresImportados,
         // que se agregan al lote al pulsar "Iniciar lote".
 
         private ImportacionPedido ImportacionActual
         {
-            get { return Session["ImportacionPedido"] as ImportacionPedido; }
-            set { Session["ImportacionPedido"] = value; }
+            get => Estado.Importacion;
+            set => Estado.Importacion = value;
         }
 
         private List<ConductorLote> ConductoresImportados
         {
-            get { return Session["ImportacionConductores"] as List<ConductorLote>; }
-            set { Session["ImportacionConductores"] = value; }
+            get => Estado.ConductoresImportados;
+            set => Estado.ConductoresImportados = value;
         }
 
         private const string VALOR_CONDUCTOR_NUEVO = ArmadoLoteImportado.ValorConductorNuevo;
@@ -1287,7 +1326,7 @@ namespace WebSGV.Views
                     if (words.Count == 1)
                     {
                         DescartarImportacion();
-                        LeerProgramacionNueva(words[0]);
+                        ucProgramacionWord.Leer(words[0]);
                         return;
                     }
                     MostrarMensajeImportacion(words.Count > 1
@@ -1315,7 +1354,7 @@ namespace WebSGV.Views
                     importacion.ArchivosIgnorados.AddRange(words.Skip(1).Select(w => $"{w.Nombre}: se usa una sola programación ({words[0].Nombre})"));
                 if (words.Count > 0)
                 {
-                    string errorWord = ValidarWordProgramacion(words[0]);
+                    string errorWord = ProgramacionWord.ValidarWord(words[0]);
                     if (errorWord != null)
                         importacion.Advertencias.Add($"El Word {words[0].Nombre} no se usó: {errorWord}.");
                     else
@@ -1738,7 +1777,6 @@ namespace WebSGV.Views
         private static List<OpcionElegida> Opciones(DropDownList ddl) =>
             ddl.Items.Cast<ListItem>().Select(i => new OpcionElegida { Valor = i.Value, Texto = i.Text }).ToList();
 
-        private static bool HayRepetidos(IEnumerable<string> valores) => ArmadoLoteImportado.HayRepetidos(valores);
 
         /// <summary>
         /// Rellena la configuración base con lo leído. El packing list es la operación de
@@ -1800,321 +1838,33 @@ namespace WebSGV.Views
                 : "Importación descartada.", "info");
         }
 
-        #region Programar con el Word (antes de los documentos)
+        #region Programar con el Word (ProgramacionWord.ascx, E6-23)
 
-        // Flujo: Leer documentos con solo el Word → vista previa (Session["ProgramacionNueva"])
-        // → "Programar despachos" crea las cargas sin documentos y el viaje del seguimiento.
-        // Cuando llega el correo, "Leer documentos" une cada guía con su despacho programado.
-
-        /// <summary>Word de la programación: .docx de hasta 5 MB que sea de verdad un .docx. Null si está bien.</summary>
-        private static string ValidarWordProgramacion(ImportacionPedidoService.ArchivoSubido word) =>
-            ArchivoSubidoHelper.Validar(word.Nombre, word.Contenido?.LongLength ?? 0, word.Contenido, ArchivoSubidoHelper.MaxWord, ".docx");
-
-        private ProgramacionNueva ProgramacionNuevaActual
+        /// <summary>Los avisos y lo que la página muestra u oculta cuando el control abre o cierra su vista previa.</summary>
+        private void ConectarProgramacionWord()
         {
-            get { return Session["ProgramacionNueva"] as ProgramacionNueva; }
-            set { Session["ProgramacionNueva"] = value; }
-        }
-
-        private void LeerProgramacionNueva(ImportacionPedidoService.ArchivoSubido word)
-        {
-            string errorWord = ValidarWordProgramacion(word);
-            if (errorWord != null)
+            ucProgramacionWord.Aviso += (s, a) => MostrarMensajeImportacion(a.Mensaje, a.Tipo);
+            ucProgramacionWord.Abierta += (s, a) =>
             {
-                MostrarMensajeImportacion($"El Word {word.Nombre} no se puede usar: {errorWord}.", "warning");
-                return;
-            }
-
-            ProgramacionNueva p;
-            try { p = ProgramacionDespachoService.LeerWord(word.Contenido, word.Nombre); }
-            catch (Exception ex)
-            {
-                MostrarMensajeImportacion("No se pudo leer la programación. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "LeerProgramacionNueva"), "warning");
-                return;
-            }
-
-            ProgramacionNuevaActual = p;
-            MostrarVistaPreviaProgramacion(p);
-        }
-
-        private void MostrarVistaPreviaProgramacion(ProgramacionNueva p)
-        {
-            pnlMensajeImportacion.Visible = false;
-            pnlVistaPreviaImportacion.Visible = false;
-            pnlConfiguracionBase.Visible = false;
-            pnlProgramacionNueva.Visible = true;
-
-            pnlSeccionProg.Visible = p.SeccionesCarga.Count > 1;
-            ddlSeccionProg.Items.Clear();
-            for (int i = 0; i < p.SeccionesCarga.Count; i++)
-                ddlSeccionProg.Items.Add(new ListItem(p.SeccionesCarga[i], i.ToString()));
-            RestaurarSeleccion(ddlSeccionProg, p.IndiceSeccion.ToString());
-
-            MostrarEntregasTerceros(p);
-            pnlCargaProg.Visible = btnProgramarDespachos.Visible = !p.SinCarga;
-            if (p.SinCarga)
-            {
+                pnlMensajeImportacion.Visible = false;
+                pnlVistaPreviaImportacion.Visible = false;
+                pnlConfiguracionBase.Visible = false;
                 UpdatePanelMain.Update();
-                return;
-            }
-
-            litProgTitulo.Text = Html(p.Titulo);
-            litProgArchivo.Text = Html(p.NombreArchivo);
-            litProgUnidades.Text = $"{p.Filas.Count(f => !f.IdDespachoExistente.HasValue)} por programar" +
-                (p.Filas.Any(f => f.IdDespachoExistente.HasValue) ? $" · {p.Filas.Count(f => f.IdDespachoExistente.HasValue)} ya programada(s)" : "");
-
-            ddlClienteProg.Items.Clear();
-            ddlClienteProg.Items.Add(new ListItem("-- Seleccione un cliente --", "0"));
-            foreach (DataRow r in RegistroDespachoService.ObtenerClientesActivos().Rows)
-                ddlClienteProg.Items.Add(new ListItem(r["nombre"].ToString(), r["idCliente"].ToString()));
-            RestaurarSeleccion(ddlClienteProg, p.IdCliente?.ToString());
-
-            ddlPlantaProg.Items.Clear();
-            ddlPlantaProg.Items.Add(new ListItem("-- Seleccione planta --", "0"));
-            foreach (DataRow r in RegistroDespachoService.ObtenerPlantasPorAmbito(p.EsInternacional).Rows)
-                ddlPlantaProg.Items.Add(new ListItem(r["nombre"].ToString(), r["idPlanta"].ToString()));
-            RestaurarSeleccion(ddlPlantaProg, p.IdPlanta?.ToString());
-
-            txtFechaProg.Text = p.FechaCarga?.ToString("yyyy-MM-dd") ?? string.Empty;
-            chkExportacionProg.Checked = p.EsExportacion;
-
-            pnlAvisosProg.Visible = p.AvisosGenerales.Count > 0;
-            litAvisosProg.Text = "<ul class=\"mb-0 mt-1\">" + string.Concat(p.AvisosGenerales.Select(a => $"<li>{Html(a)}</li>")) + "</ul>";
-
-            _conductoresImp = RegistroDespachoService.ObtenerConductoresActivos();
-            _tractosImp = RegistroDespachoService.ObtenerTractosActivos();
-            _carretasImp = RegistroDespachoService.ObtenerCarretasActivas();
-            rptProgramacionNueva.DataSource = p.Filas;
-            rptProgramacionNueva.DataBind();
-            UpdatePanelMain.Update();
-        }
-
-        protected void ddlSeccionProg_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            var actual = ProgramacionNuevaActual;
-            if (actual?.Programacion == null)
+            };
+            ucProgramacionWord.Cerrada += (s, a) => pnlConfiguracionBase.Visible = !TieneLoteActivo;
+            ucProgramacionWord.Programada += (s, a) => CargarDatos();
+            ucProgramacionWord.Descartada += (s, a) =>
             {
-                MostrarMensajeImportacion("La programación expiró. Vuelva a subir el Word.", "warning");
-                pnlProgramacionNueva.Visible = false;
-                pnlConfiguracionBase.Visible = !TieneLoteActivo;
-                return;
-            }
-            try
-            {
-                int.TryParse(ddlSeccionProg.SelectedValue, out int indice);
-                var p = ProgramacionDespachoService.Proponer(actual.Programacion, actual.NombreArchivo, indice);
-                ProgramacionNuevaActual = p;
-                MostrarVistaPreviaProgramacion(p);
-            }
-            catch (Exception ex)
-            {
-                MostrarMensajeImportacion("No se pudo mostrar esa sección. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "ddlSeccionProg_SelectedIndexChanged"), "warning");
-            }
-        }
-
-        protected void rptProgramacionNueva_ItemDataBound(object sender, RepeaterItemEventArgs e)
-        {
-            if (e.Item.ItemType != ListItemType.Item && e.Item.ItemType != ListItemType.AlternatingItem) return;
-            var f = (FilaProgramacionNueva)e.Item.DataItem;
-
-            var ddlConductor = (DropDownList)e.Item.FindControl("ddlConductorProg");
-            ddlConductor.Items.Add(new ListItem("-- Seleccione --", "0"));
-            foreach (DataRow r in _conductoresImp.Rows)
-                ddlConductor.Items.Add(new ListItem(r["NombreCompleto"].ToString(), r["idConductor"].ToString()));
-            RestaurarSeleccion(ddlConductor, f.IdConductor?.ToString());
-
-            var ddlTracto = (DropDownList)e.Item.FindControl("ddlTractoProg");
-            ddlTracto.Items.Add(new ListItem("-- Seleccione --", "0"));
-            foreach (DataRow r in _tractosImp.Rows)
-                ddlTracto.Items.Add(new ListItem(r["placaTracto"].ToString(), r["idTracto"].ToString()));
-            RestaurarSeleccion(ddlTracto, f.IdTracto?.ToString());
-
-            var ddlCarreta = (DropDownList)e.Item.FindControl("ddlCarretaProg");
-            ddlCarreta.Items.Add(new ListItem("-- Seleccione --", "0"));
-            foreach (DataRow r in _carretasImp.Rows)
-                ddlCarreta.Items.Add(new ListItem(r["placaCarreta"].ToString(), r["idCarreta"].ToString()));
-            RestaurarSeleccion(ddlCarreta, f.IdCarreta?.ToString());
-
-            if (!f.IdConductor.HasValue) ddlConductor.CssClass += " is-invalid";
-            if (!f.IdTracto.HasValue) ddlTracto.CssClass += " is-invalid";
-            if (!f.IdCarreta.HasValue) ddlCarreta.CssClass += " is-invalid";
-
-            ((TextBox)e.Item.FindControl("txtHoraProg")).Text = f.Hora?.ToString(@"hh\:mm") ?? string.Empty;
-
-            bool existe = f.IdDespachoExistente.HasValue;
-            var chk = (CheckBox)e.Item.FindControl("chkIncluirProg");
-            chk.Checked = chk.Enabled = !existe;
-            ddlConductor.Enabled = ddlTracto.Enabled = ddlCarreta.Enabled = !existe;
-
-            var sb = new StringBuilder();
-            if (existe)
-                sb.Append(EstadoUiHelper.Sello("Ya programado", TonoEstado.Alerta) +
-                          $"<small class=\"sgv-suave d-block mt-1\">El tracto o la carreta ya tiene despacho ese día (N° {f.IdDespachoExistente}).</small>");
-            sb.Append(RegistroDespachoReglas.AvisosHtml(f.Avisos));
-            if (sb.Length == 0) sb.Append(EstadoUiHelper.Sello("Listo", TonoEstado.Ok));
-            ((Literal)e.Item.FindControl("litEstadoProg")).Text = sb.ToString();
-        }
-
-        protected void btnProgramarDespachos_Click(object sender, EventArgs e)
-        {
-            if (!Page.IsValid) return;
-            try
-            {
-                var p = ProgramacionNuevaActual;
-                if (p == null)
-                {
-                    MostrarMensajeImportacion("La programación expiró. Vuelva a subir el Word.", "warning");
-                    pnlProgramacionNueva.Visible = false;
-                    pnlConfiguracionBase.Visible = !TieneLoteActivo;
-                    return;
-                }
-
-                var errores = new List<string>();
-                if (!int.TryParse(ddlClienteProg.SelectedValue, out int idCliente) || idCliente <= 0) errores.Add("Elija el cliente.");
-                if (!int.TryParse(ddlPlantaProg.SelectedValue, out int idPlanta) || idPlanta <= 0) errores.Add("Elija la planta de carga.");
-                if (!DespachoValidaciones.TryParseFechaIso(txtFechaProg.Text, out DateTime fecha)
-                    || fecha < FechaHelper.Hoy().AddDays(-7) || fecha > FechaHelper.Hoy().AddDays(7))
-                    errores.Add("La fecha de carga no es válida (hasta 7 días antes o después de hoy).");
-
-                var filas = new List<ProgramacionDespachoService.FilaElegida>();
-                foreach (RepeaterItem item in rptProgramacionNueva.Items)
-                {
-                    if (item.ItemIndex >= p.Filas.Count) break;
-                    var f = p.Filas[item.ItemIndex];
-                    if (f.IdDespachoExistente.HasValue || !((CheckBox)item.FindControl("chkIncluirProg")).Checked) continue;
-
-                    string etiqueta = $"{f.Chofer ?? "(sin chofer)"} / {f.Tracto ?? "(sin tracto)"}";
-                    int.TryParse(((DropDownList)item.FindControl("ddlConductorProg")).SelectedValue, out int idConductor);
-                    int.TryParse(((DropDownList)item.FindControl("ddlTractoProg")).SelectedValue, out int idTracto);
-                    int.TryParse(((DropDownList)item.FindControl("ddlCarretaProg")).SelectedValue, out int idCarreta);
-                    string hora = ((TextBox)item.FindControl("txtHoraProg")).Text.Trim();
-
-                    if (idConductor <= 0) errores.Add($"{etiqueta}: elija el conductor.");
-                    if (idTracto <= 0) errores.Add($"{etiqueta}: elija el tracto.");
-                    if (idCarreta <= 0) errores.Add($"{etiqueta}: elija la carreta.");
-                    TimeSpan? horaProgramada = ProgramacionCarga.HoraDelHorario(hora);
-                    if (hora.Length > 0 && !horaProgramada.HasValue) errores.Add($"{etiqueta}: la hora {hora} no es válida.");
-
-                    filas.Add(new ProgramacionDespachoService.FilaElegida
-                    {
-                        IdConductor = idConductor, IdTracto = idTracto, IdCarreta = idCarreta,
-                        Hora = horaProgramada, Etiqueta = etiqueta
-                    });
-                }
-
-                if (filas.Count == 0 && errores.Count == 0) errores.Add("No hay unidades marcadas para programar.");
-                if (HayRepetidos(filas.Select(f => f.IdConductor.ToString()))) errores.Add("Hay un conductor repetido en más de una unidad.");
-                if (HayRepetidos(filas.Select(f => f.IdTracto.ToString()))) errores.Add("Hay un tracto repetido en más de una fila.");
-                if (HayRepetidos(filas.Select(f => f.IdCarreta.ToString()))) errores.Add("Hay una carreta repetida en más de una fila.");
-
-                if (errores.Count > 0)
-                {
-                    MostrarMensajeImportacion("Revise estos datos: " + string.Join(" ", errores), "warning");
-                    return;
-                }
-
-                // Leído antes de mostrar la sección siguiente, que cambia la casilla (el mensaje decía
-                // "seguimiento de exportación" al programar el afrecho del 24/10/2026 sin exportación).
-                bool esExportacion = chkExportacionProg.Checked;
-                var rutaProgramada = RutaProgramacion.Reconocer(p.Titulo);
-                var r = ProgramacionDespachoService.Programar(filas, idCliente, idPlanta, fecha, esExportacion, ObtenerUsuarioActual(), p.EsInternacional);
-
-                if (r.Creados.Count == 0)
-                {
-                    MostrarMensajeImportacion("No se programó ningún despacho. " + string.Join(" ", r.Errores), "danger");
-                    return;
-                }
-                // M-086: el paso siguiente del día es revisar lo que les falta a los lotes.
-                hlVerLotesPendientes.Visible = true;
-
-                ProgramacionNuevaActual = null;
-                pnlProgramacionNueva.Visible = false;
-                pnlConfiguracionBase.Visible = !TieneLoteActivo;
-                CargarDatos();
-                // El Word trae otras secciones de carga (otro cliente): se pasa a la siguiente sin volver a subirlo.
-                if (p.Programacion != null && p.SeccionesCarga.Count > 1)
-                {
-                    try
-                    {
-                        var siguiente = ProgramacionDespachoService.Proponer(p.Programacion, p.NombreArchivo, (p.IndiceSeccion + 1) % p.SeccionesCarga.Count);
-                        ProgramacionNuevaActual = siguiente;
-                        MostrarVistaPreviaProgramacion(siguiente);
-                    }
-                    catch (Exception ex) { RegistrarError("btnProgramarDespachos_Click (siguiente sección)", ex); }
-                }
-                MostrarMensajeImportacion($"Se programaron {r.Creados.Count} despacho(s) de carga del {fecha:dd/MM/yyyy}" +
-                    (rutaProgramada != null ? " y su seguimiento ya está en el tablero (" + rutaProgramada.Cliente + ")"
-                     : esExportacion ? " y su seguimiento de exportación ya está en el tablero (pedido PENDIENTE)" : "") +
-                    ". Cuando llegue el correo, suba el ZIP aquí: cada guía completará su despacho." +
-                    (r.Errores.Count > 0 ? " No se pudieron programar: " + string.Join(" ", r.Errores) : ""),
-                    r.Errores.Count > 0 ? "warning" : "success");
-            }
-            catch (Exception ex)
-            {
-                MostrarMensajeImportacion("No se pudieron programar los despachos. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "btnProgramarDespachos_Click"), "danger");
-            }
-        }
-
-        private void MostrarEntregasTerceros(ProgramacionNueva p)
-        {
-            pnlEntregasTerceros.Visible = p.Entregas.Count > 0;
-            btnRegistrarEntregas.Visible = p.Entregas.Any(x => x.IdSeguimiento.HasValue && !x.YaRegistrada);
-            rptEntregasTerceros.DataSource = p.Entregas.Select(x => new
-            {
-                x.Seccion,
-                Horario = string.IsNullOrEmpty(x.Horario) ? "" : "Hora " + x.Horario,
-                x.Chofer,
-                CambioTexto = string.IsNullOrEmpty(x.Cambio) ? (x.Relevo ? "Relevo" : "") : "Cambio: " + x.Cambio,
-                x.Tracto,
-                x.Carreta,
-                Estado = !x.IdSeguimiento.HasValue ? (x.EsRetorno ? "Sin viaje de ida" : "Sin viaje de carga") : x.YaRegistrada ? "Ya registrada"
-                    : x.EsRetorno ? "Retorno con carga" : x.EsDescargaVitapro ? "Pedido y descarga" : x.Relevo ? "Lugar y relevo" : "Lugar de entrega",
-                Tono = !x.IdSeguimiento.HasValue ? TonoEstado.Alerta : x.YaRegistrada ? TonoEstado.Ok : TonoEstado.Info,
-                x.YaRegistrada,
-                Viaje = x.IdSeguimiento.HasValue ? x.Viaje
-                    : x.EsRetorno ? "No hay un viaje de ida de Vitapro con esta carreta o tracto en los 10 días anteriores."
-                    : x.EsDescargaVitapro ? $"No hay una carga de Vitapro con esta carreta hasta el día del Word (pendiente o con el pedido {x.Pedido}) en los 10 días anteriores."
-                    : "No hay una carga de " + x.Cliente + " con esta carreta o tracto en los 10 días anteriores.",
-            }).ToList();
-            rptEntregasTerceros.DataBind();
-        }
-
-        protected void btnRegistrarEntregas_Click(object sender, EventArgs e)
-        {
-            var p = ProgramacionNuevaActual;
-            if (p == null)
-            {
-                MostrarMensajeImportacion("La programación expiró. Vuelva a subir el Word.", "warning");
-                pnlProgramacionNueva.Visible = false;
-                pnlConfiguracionBase.Visible = !TieneLoteActivo;
-                return;
-            }
-            try
-            {
-                int n = ProgramacionDespachoService.RegistrarEntregas(p.Entregas.Where(x => !x.YaRegistrada), SesionHelper.IdUsuario(Session));
-                if (p.Programacion != null) p.Entregas = ProgramacionDespachoService.ProponerEntregas(p.Programacion);
-                ProgramacionNuevaActual = p;
-                MostrarVistaPreviaProgramacion(p);
-                MostrarMensajeImportacion($"Se completaron {n} viaje(s) con su descarga, lugar de entrega o retorno con carga. Véalos en el seguimiento.", "success");
-            }
-            catch (Exception ex)
-            {
-                MostrarMensajeImportacion("No se pudieron registrar las entregas. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "btnRegistrarEntregas_Click"), "danger");
-            }
-        }
-
-        protected void btnDescartarProgramacion_Click(object sender, EventArgs e)
-        {
-            DescartarImportacion();
-            MostrarMensajeImportacion("Programación descartada.", "info");
+                DescartarImportacion();
+                MostrarMensajeImportacion("Programación descartada.", "info");
+            };
         }
 
         #endregion
 
         private void DescartarImportacion()
         {
-            ProgramacionNuevaActual = null;
-            pnlProgramacionNueva.Visible = false;
+            ucProgramacionWord.Cerrar();
             LimpiarImportacion(borrarArchivos: true);
             pnlVistaPreviaImportacion.Visible = false;
             pnlImportacionAplicada.Visible = false;
@@ -2133,11 +1883,8 @@ namespace WebSGV.Views
         /// <summary>Al volver a la página con una importación en curso, la muestra donde quedó.</summary>
         private void RestaurarEstadoImportacion()
         {
-            if (!TieneLoteActivo && ImportacionActual == null && ProgramacionNuevaActual != null)
-            {
-                MostrarVistaPreviaProgramacion(ProgramacionNuevaActual);
+            if (!TieneLoteActivo && ImportacionActual == null && ucProgramacionWord.Restaurar())
                 return;
-            }
             if (TieneLoteActivo || ImportacionActual == null) return;
 
             if (ConductoresImportados != null)
@@ -2220,20 +1967,20 @@ namespace WebSGV.Views
         // Flujo: elegir pedido → vista previa de sus cargas sin descarga (Session) → el
         // usuario confirma conductor/tracto/carreta (por defecto los de la carga) →
         // "Usar en el lote" rellena la configuración base (DESCARGA) y deja los
-        // conductores en Session["DescargaConductores"], que entran al "Iniciar lote".
+        // conductores en Estado.ConductoresDescarga, que entran al "Iniciar lote".
         // Se pasa por la configuración base porque la descarga internacional pide el
         // CPIC, que se hace después de la carga.
 
         private List<DescargaPedidoService.CargaPendiente> CargasPendientesActuales
         {
-            get { return Session["DescargaCargas"] as List<DescargaPedidoService.CargaPendiente>; }
-            set { Session["DescargaCargas"] = value; }
+            get => Estado.CargasDescarga;
+            set => Estado.CargasDescarga = value;
         }
 
         private List<ConductorLote> ConductoresDescarga
         {
-            get { return Session["DescargaConductores"] as List<ConductorLote>; }
-            set { Session["DescargaConductores"] = value; }
+            get => Estado.ConductoresDescarga;
+            set => Estado.ConductoresDescarga = value;
         }
 
         /// <summary>Ya se leyó la programación de la descarga: la tabla muestra la columna Estado (M-081).</summary>
@@ -2242,8 +1989,8 @@ namespace WebSGV.Views
         /// <summary>Lo que propuso la programación en Word para cada carga (por IdDespacho de la carga).</summary>
         private Dictionary<int, PropuestaDescarga> PropuestasDescarga
         {
-            get { return Session["DescargaPropuestas"] as Dictionary<int, PropuestaDescarga>; }
-            set { Session["DescargaPropuestas"] = value; }
+            get => Estado.PropuestasDescarga;
+            set => Estado.PropuestasDescarga = value;
         }
 
         private void CargarPedidosPendientesDescarga()
@@ -2865,7 +2612,7 @@ namespace WebSGV.Views
 
         /// <summary>Atributos del paso <paramref name="paso"/> de la tira del día (M-086): activo según la vista previa a la vista.</summary>
         protected string AtributosPaso(int paso) => RegistroDespachoReglas.AtributosPaso(paso,
-            RegistroDespachoReglas.PasoActivo(pnlProgramacionNueva.Visible, pnlVistaPreviaImportacion.Visible));
+            RegistroDespachoReglas.PasoActivo(ucProgramacionWord.VistaPreviaVisible, pnlVistaPreviaImportacion.Visible));
 
         /// <summary>
         /// Éxito flotante (AvisoHelper.Avisar); errores y advertencias arriba de la página, sin ocultarse solos.

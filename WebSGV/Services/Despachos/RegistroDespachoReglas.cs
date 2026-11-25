@@ -172,5 +172,46 @@ namespace WebSGV.Services.Despachos
         /// <summary>Fila de descargas y entregas del Word: sin viaje ámbar, ya registrada verde, por registrar azul.</summary>
         public static string SelloEntrega(object estado, object tono) =>
             EstadoUiHelper.Sello(Convert.ToString(estado), tono is TonoEstado t ? t : TonoEstado.Neutro);
+
+        /// <summary>
+        /// El formulario enviado es de la vista previa del Word que está en la sesión (E6-23): misma marca. Con dos
+        /// pestañas, la otra pudo leer otro Word o cambiar de sección; entonces no se programa ni se registra nada.
+        /// </summary>
+        public static bool ProgramacionVigente(string marcaEnviada, ProgramacionNueva enSesion) =>
+            enSesion != null && !string.IsNullOrEmpty(marcaEnviada) && string.Equals(marcaEnviada, enSesion.Marca, StringComparison.Ordinal);
+
+        /// <summary>Una fila de "Descargas, entregas y retornos con carga en este Word" como se muestra.</summary>
+        public sealed class FilaEntregaVista
+        {
+            public string Seccion { get; set; }
+            public string Horario { get; set; }
+            public string Chofer { get; set; }
+            public string CambioTexto { get; set; }
+            public string Tracto { get; set; }
+            public string Carreta { get; set; }
+            public string Estado { get; set; }
+            public TonoEstado Tono { get; set; }
+            public bool YaRegistrada { get; set; }
+            public string Viaje { get; set; }
+        }
+
+        /// <summary>Estado, tono y viaje (o por qué no se encontró) de una entrega del Word.</summary>
+        public static FilaEntregaVista VistaEntrega(EntregaTercero x) => new FilaEntregaVista
+        {
+            Seccion = x.Seccion,
+            Horario = string.IsNullOrEmpty(x.Horario) ? "" : "Hora " + x.Horario,
+            Chofer = x.Chofer,
+            CambioTexto = string.IsNullOrEmpty(x.Cambio) ? (x.Relevo ? "Relevo" : "") : "Cambio: " + x.Cambio,
+            Tracto = x.Tracto,
+            Carreta = x.Carreta,
+            Estado = !x.IdSeguimiento.HasValue ? (x.EsRetorno ? "Sin viaje de ida" : "Sin viaje de carga") : x.YaRegistrada ? "Ya registrada"
+                : x.EsRetorno ? "Retorno con carga" : x.EsDescargaVitapro ? "Pedido y descarga" : x.Relevo ? "Lugar y relevo" : "Lugar de entrega",
+            Tono = !x.IdSeguimiento.HasValue ? TonoEstado.Alerta : x.YaRegistrada ? TonoEstado.Ok : TonoEstado.Info,
+            YaRegistrada = x.YaRegistrada,
+            Viaje = x.IdSeguimiento.HasValue ? x.Viaje
+                : x.EsRetorno ? "No hay un viaje de ida de Vitapro con esta carreta o tracto en los 10 días anteriores."
+                : x.EsDescargaVitapro ? $"No hay una carga de Vitapro con esta carreta hasta el día del Word (pendiente o con el pedido {x.Pedido}) en los 10 días anteriores."
+                : "No hay una carga de " + x.Cliente + " con esta carreta o tracto en los 10 días anteriores.",
+        };
     }
 }

@@ -36,6 +36,17 @@ namespace WebSGV.Tests
 
         private static string Script() => File.ReadAllText(RutaScript());
 
+        /// <summary>
+        /// Marcado de RegistroDespacho.aspx y de los controles .ascx que registra (E6-23 en adelante parte la página): un
+        /// botón movido a un control sigue contando.
+        /// </summary>
+        private static string MarcadoDeLaPagina()
+        {
+            string web = Path.Combine(RaizRepo(), "WebSGV");
+            string pagina = Path.Combine(web, "Views", "RegistroDespacho.aspx");
+            return string.Join("\n", new[] { pagina }.Concat(FuentesWeb.ControlesRegistrados(web, pagina)).Select(File.ReadAllText));
+        }
+
         private static string ListaBlanca()
         {
             var m = Regex.Match(Script(), @"\$PostsPermitidos\s*=\s*\[ordered\]@\{(.*?)\r?\n\}", RegexOptions.Singleline);
@@ -58,11 +69,11 @@ namespace WebSGV.Tests
                 .Cast<Match>().ToDictionary(m => m.Groups[1].Value, m => m.Groups[2].Value);
             Assert.Equal(BotonesDeLectura.OrderBy(b => b), claves.Keys.OrderBy(b => b));
 
-            string aspx = File.ReadAllText(Path.Combine(RaizRepo(), "WebSGV", "Views", "RegistroDespacho.aspx"));
+            string aspx = MarcadoDeLaPagina();
             foreach (var par in claves)
             {
                 var boton = Regex.Match(aspx, "<asp:Button ID=\"" + par.Key + "\"[^>]*?Text=\"([^\"]+)\"", RegexOptions.Singleline);
-                Assert.True(boton.Success, par.Key + " ya no está en RegistroDespacho.aspx.");
+                Assert.True(boton.Success, par.Key + " ya no está en RegistroDespacho.aspx ni en sus controles.");
                 Assert.Equal(boton.Groups[1].Value, par.Value);
             }
         }
@@ -70,7 +81,7 @@ namespace WebSGV.Tests
         [Fact]
         public void Script_NoNombraNingunBotonDeEscrituraDeLaPagina()
         {
-            string aspx = File.ReadAllText(Path.Combine(RaizRepo(), "WebSGV", "Views", "RegistroDespacho.aspx"));
+            string aspx = MarcadoDeLaPagina();
             var otros = Regex.Matches(aspx, "<asp:(?:Button|LinkButton|ImageButton)\\b[^>]*?ID=\"(\\w+)\"", RegexOptions.Singleline)
                 .Cast<Match>().Select(m => m.Groups[1].Value).Except(BotonesDeLectura).ToList();
             Assert.Contains("btnAplicarImportacion", otros);
