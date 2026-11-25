@@ -135,6 +135,11 @@ namespace WebSGV.Tests
             return Normalizar(Regex.Replace(t, @"<[^>]*>", ""));
         }
 
+        /// <summary>
+        /// Páginas .aspx con master. Las reglas 1, 2 y 7 (plantilla, lista cerrada, h1 igual al Title) son solo de
+        /// páginas: un control .ascx no tiene Title ni encabezado propio (lo pone la página que lo contiene; la regla
+        /// 11 lo exige). Las reglas 3, 4, 8 y 9 sí leen los .ascx (<see cref="Paginas"/> los incluye).
+        /// </summary>
         private static IEnumerable<Pagina> ConMaster() =>
             Paginas().Where(p => p.Ruta.EndsWith(".aspx", StringComparison.OrdinalIgnoreCase)
                               && Regex.IsMatch(p.Texto, @"\bMasterPageFile\s*=", RegexOptions.IgnoreCase));
@@ -298,7 +303,7 @@ namespace WebSGV.Tests
             var clase = new Regex(@"(?<![\w-])(" + string.Join("|", ClasesRetiradas.OrderByDescending(c => c.Length).Select(Regex.Escape)) + @")(?![\w-])");
             var archivos = new[]
             {
-                new { Carpeta = "Views", Patrones = new[] { "*.aspx", "*.cs" } },
+                new { Carpeta = "Views", Patrones = new[] { "*.aspx", "*.ascx", "*.cs" } },
                 new { Carpeta = "Content", Patrones = new[] { "*.css" } },
                 new { Carpeta = Path.Combine("Scripts", "paginas"), Patrones = new[] { "*.js" } },
             }
@@ -315,6 +320,21 @@ namespace WebSGV.Tests
                         casos.Add(f.Substring(web.Length + 1).Replace('\\', '/') + ":" + (i + 1) + " " + m.Value);
             }
             SinCasos("Clase de encabezado retirada en E5-15 (use sgv-encabezado)", casos);
+        }
+
+        /// <summary>
+        /// Un control de usuario (.ascx) no trae encabezado propio ni &lt;h1&gt;: la página que lo contiene ya tiene el
+        /// suyo (uno solo por página) y un segundo encabezado partiría la plantilla (E6-4: RegistroDespacho y
+        /// ListaDespachos se parten en controles).
+        /// </summary>
+        [Fact]
+        public void Regla11_ControlDeUsuario_SinEncabezadoNiH1()
+        {
+            var casos = Paginas().Where(p => FuentesWeb.EsControl(p.Ruta))
+                .SelectMany(p => Plantilla.Matches(p.Texto).Cast<Match>().Concat(H1.Matches(p.Texto).Cast<Match>())
+                    .Select(m => p.Ruta + ":" + p.Linea(m.Index)))
+                .ToList();
+            SinCasos("Control .ascx con sgv-encabezado o <h1> (el encabezado es de la página)", casos);
         }
 
         // ── Las expresiones mismas ───────────────────────────────────────────────────────────

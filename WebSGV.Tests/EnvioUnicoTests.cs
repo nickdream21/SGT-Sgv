@@ -201,7 +201,8 @@ namespace WebSGV.Tests
             // Un segundo botón de descarga en una página que ya está en la lista también tiene que entrar.
             string raiz = RaizWeb();
             var listados = new HashSet<string>(Descargas.Select(d => d.Pagina + ".cs#" + d.Manejador), StringComparer.OrdinalIgnoreCase);
-            var nuevos = Directory.GetFiles(Path.Combine(raiz, "Views"), "*.aspx.cs", SearchOption.AllDirectories)
+            // Páginas y controles (.ascx.cs): un manejador de descarga movido a un control también entra (E6-4).
+            var nuevos = FuentesWeb.CodigoDeMarcado(Path.Combine(raiz, "Views"))
                 .SelectMany(f => ManejadoresQueDescargan(File.ReadAllText(f)).Select(m => Relativo(raiz, f) + "#" + m))
                 .Where(x => !listados.Contains(x))
                 .ToList();

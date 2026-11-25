@@ -147,7 +147,10 @@ namespace WebSGV.Tests
         public void AjaxDePaginas_MandanLosParametrosDelWebMethod()
         {
             string raiz = RaizWeb();
-            var codigos = Directory.GetFiles(Path.Combine(raiz, "Views"), "*.aspx.cs", SearchOption.AllDirectories)
+            // Solo páginas: 'X.aspx/Metodo' se busca en X.aspx.cs (los controles no publican [WebMethod]; lo fija
+            // ControlesDeUsuario_NoTienenWebMethod).
+            var codigos = FuentesWeb.CodigoDeMarcado(Path.Combine(raiz, "Views"))
+                .Where(f => !FuentesWeb.EsControl(f))
                 .GroupBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.Select(File.ReadAllText).ToList(), StringComparer.OrdinalIgnoreCase);
 
@@ -176,6 +179,23 @@ namespace WebSGV.Tests
                                 + string.Join(", ", esperados) + ")");
             }
             Assert.True(errores.Count == 0, string.Join(Environment.NewLine, errores));
+        }
+
+        /// <summary>
+        /// Un [WebMethod] en un control de usuario (.ascx.cs) no se publica: ASP.NET solo busca los métodos de página
+        /// en la clase de la página, y la llamada 'Pagina.aspx/Metodo' daría 500. Al partir una página en controles
+        /// (E6-4), sus [WebMethod] se quedan en el .aspx.cs.
+        /// </summary>
+        [Fact]
+        public void ControlesDeUsuario_NoTienenWebMethod()
+        {
+            string raiz = RaizWeb();
+            var malos = FuentesWeb.CodigoDeMarcado(Path.Combine(raiz, "Views"))
+                .Where(FuentesWeb.EsControl)
+                .Where(f => Regex.IsMatch(File.ReadAllText(f), @"\[\s*(System\.Web\.Services\.)?WebMethod\b"))
+                .Select(f => FuentesWeb.Relativo(raiz, f))
+                .ToList();
+            Assert.True(malos.Count == 0, "[WebMethod] en un control .ascx (no se publica; muévalo a la página):\n" + string.Join("\n", malos));
         }
     }
 }

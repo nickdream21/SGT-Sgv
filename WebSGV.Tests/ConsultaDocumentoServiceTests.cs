@@ -252,8 +252,7 @@ namespace WebSGV.Tests
         {
             string web = Path.Combine(BaseDePruebas.RaizRepo, "WebSGV");
             var archivos = Directory.GetFiles(Path.Combine(web, "Scripts"), "*.js", SearchOption.AllDirectories)
-                .Concat(Directory.GetFiles(Path.Combine(web, "Views"), "*.aspx", SearchOption.AllDirectories))
-                .Concat(Directory.GetFiles(Path.Combine(web, "Views"), "*.ascx", SearchOption.AllDirectories))
+                .Concat(FuentesWeb.Marcado(Path.Combine(web, "Views")))   // páginas y controles .ascx
                 .Concat(Directory.GetFiles(web, "*.Master", SearchOption.TopDirectoryOnly));
 
             var malos = new List<string>();

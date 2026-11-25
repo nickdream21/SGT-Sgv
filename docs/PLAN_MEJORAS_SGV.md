@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-25**, commit anterior `6c93438` — **Etapa 6 en ejecución**: E6-3 (NetAnalyzers: 6 reglas de seguridad en error y 5 con trinquete en CI, `herramientas/calidad/contar-avisos.ps1`). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-25**, commit anterior `5e06a6e` — **Etapa 6 en ejecución**: E6-4 (topes de SQL en páginas y de tamaño de archivos y métodos: `AccesoDatosEnVistasTests`, `TamanoCodigoTests`). No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-186 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

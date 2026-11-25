@@ -234,11 +234,16 @@ namespace WebSGV.Tests
         public void Menu_PaginasSinEntrada_SonLasDeLaLista()
         {
             string raiz = RaizWeb();
-            var todas = Directory.GetFiles(Path.Combine(raiz, "Views"), "*.aspx", SearchOption.AllDirectories)
-                .Select(f => f.Substring(raiz.Length + 1).Replace('\\', '/'))
+            // Solo páginas: un control .ascx no tiene URL (IIS no lo sirve) y nunca va en el menú ni en la lista (E6-4).
+            var marcado = FuentesWeb.Marcado(Path.Combine(raiz, "Views"));
+            var todas = marcado.Where(f => !FuentesWeb.EsControl(f))
+                .Select(f => FuentesWeb.Relativo(raiz, f))
                 .ToList();
             var enMenu = new HashSet<string>(MenuSitio.Completo.SelectMany(g => g.Entradas).Concat(MenuSitio.Configuracion)
                 .Select(e => Pagina(e.Url)), StringComparer.OrdinalIgnoreCase);
+
+            Assert.DoesNotContain(enMenu, p => p.EndsWith(".ascx", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(PaginasSinEntrada.Keys, p => p.EndsWith(".ascx", StringComparison.OrdinalIgnoreCase));
 
             foreach (string p in enMenu)
                 Assert.True(todas.Contains(p, StringComparer.OrdinalIgnoreCase), "El menú enlaza a una página que no existe: " + p);

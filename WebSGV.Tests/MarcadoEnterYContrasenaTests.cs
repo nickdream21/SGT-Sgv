@@ -59,7 +59,8 @@ namespace WebSGV.Tests
         public void DataEnter_ApuntaABotonesQueExistenEnLaMismaPagina()
         {
             string raiz = RaizWeb();
-            var archivos = Directory.EnumerateFiles(Path.Combine(raiz, "Views"), "*.aspx", SearchOption.AllDirectories)
+            // Páginas y controles (.ascx): el botón de un data-enter de un control vive en el mismo control (E6-4).
+            var archivos = FuentesWeb.Marcado(Path.Combine(raiz, "Views"))
                 .Concat(new[] { Path.Combine(raiz, "Site.Master") })
                 .ToList();
 

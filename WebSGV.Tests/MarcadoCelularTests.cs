@@ -68,7 +68,8 @@ namespace WebSGV.Tests
 
             var fallas = new List<string>();
             int revisadas = 0;
-            foreach (string archivo in Directory.GetFiles(vistas, "*.aspx", SearchOption.AllDirectories))
+            // Páginas y controles (.ascx): una tabla movida a un control sigue revisada (E6-4).
+            foreach (string archivo in FuentesWeb.Marcado(vistas))
             {
                 string texto = SinCodigoNiComentarios(File.ReadAllText(archivo));
 

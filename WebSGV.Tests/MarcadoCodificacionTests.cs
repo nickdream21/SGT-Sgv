@@ -29,15 +29,14 @@ namespace WebSGV.Tests
             return Path.Combine(dir.FullName, "WebSGV");
         }
 
-        /// <summary>Páginas de Views, Site.Master y los controles .ascx (si hay).</summary>
+        /// <summary>Páginas y controles .ascx de Views, Site.Master y los .ascx del resto del sitio (si hay).</summary>
         private static IEnumerable<string> ArchivosDeMarcado()
         {
             string raiz = RaizWeb();
-            return Directory.GetFiles(Path.Combine(raiz, "Views"), "*.aspx", SearchOption.AllDirectories)
+            return FuentesWeb.Marcado(Path.Combine(raiz, "Views"))
                 .Concat(Directory.GetFiles(raiz, "*.Master", SearchOption.TopDirectoryOnly))
-                .Concat(Directory.GetFiles(raiz, "*.ascx", SearchOption.AllDirectories)
-                    .Where(a => a.IndexOf(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) < 0
-                             && a.IndexOf(Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) < 0));
+                .Concat(FuentesWeb.Archivos(raiz, "*.ascx"))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>

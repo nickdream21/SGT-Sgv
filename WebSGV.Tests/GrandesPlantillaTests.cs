@@ -49,9 +49,50 @@ namespace WebSGV.Tests
             return Path.Combine(dir.FullName, "WebSGV");
         }
 
-        private static string Aspx(string pagina) => PaginaDe("Views/" + pagina + ".aspx").Texto;
+        /// <summary>
+        /// Controles .ascx que registra la página (<c>&lt;%@ Register Src %&gt;</c>). E6-21 a E6-28 parten RegistroDespacho y
+        /// ListaDespachos en controles: lo que se mueva a un control sigue bajo estas reglas porque <see cref="Aspx"/> y
+        /// <see cref="Cs"/> leen la página junto con sus controles.
+        /// </summary>
+        private static List<string> Controles(string pagina) =>
+            FuentesWeb.ControlesRegistrados(RaizWeb(), Path.Combine(RaizWeb(), "Views", pagina + ".aspx"));
 
-        private static string Cs(string pagina) => File.ReadAllText(Path.Combine(RaizWeb(), "Views", pagina + ".aspx.cs"));
+        /// <summary>Marcado de la página y de sus controles, sin comentarios.</summary>
+        private static string Aspx(string pagina) =>
+            string.Join("\n", new[] { PaginaDe("Views/" + pagina + ".aspx").Texto }
+                .Concat(Controles(pagina).Select(c => SinComentarios(File.ReadAllText(c)))));
+
+        /// <summary>Code-behind de la página y de sus controles.</summary>
+        private static string Cs(string pagina) =>
+            string.Join("\n", new[] { Path.Combine(RaizWeb(), "Views", pagina + ".aspx.cs") }
+                .Concat(Controles(pagina).Select(c => c + ".cs").Where(File.Exists))
+                .Select(File.ReadAllText));
+
+        [Fact]
+        public void Lector_JuntaLaPaginaConLosControlesQueRegistra()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "sgv-e6-4-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                Directory.CreateDirectory(Path.Combine(dir, "Views", "Controles"));
+                string pagina = Path.Combine(dir, "Views", "P.aspx");
+                File.WriteAllText(pagina,
+                    "<%@ Page Language=\"C#\" %>\n" +
+                    "<%@ Register Src=\"~/Views/Controles/A.ascx\" TagPrefix=\"sgv\" TagName=\"A\" %>\n" +
+                    "<%@ Register TagPrefix=\"sgv\" TagName=\"B\" Src=\"Controles/B.ascx\" %>\n" +
+                    "<%@ Register Assembly=\"X\" Namespace=\"Y\" TagPrefix=\"z\" %>\n");
+                var controles = FuentesWeb.ControlesRegistrados(dir, pagina);
+                Assert.Equal(new[]
+                {
+                    Path.Combine(dir, "Views", "Controles", "A.ascx"),
+                    Path.Combine(dir, "Views", "Controles", "B.ascx"),
+                }, controles);
+            }
+            finally
+            {
+                Directory.Delete(dir, true);
+            }
+        }
 
         private static string SiHay(params string[] ruta)
         {

@@ -318,7 +318,10 @@ namespace WebSGV.Tests
         public void F_PaginasSinMasterEnlazanSgvBase()
         {
             var raiz = RaizWeb();
-            var paginas = Directory.GetFiles(Path.Combine(raiz, "Views"), "*.aspx", SearchOption.AllDirectories)
+            // Solo páginas: un control .ascx nunca lleva MasterPageFile ni se sirve solo; sus estilos los enlaza la
+            // página que lo contiene (E6-4).
+            var paginas = FuentesWeb.Marcado(Path.Combine(raiz, "Views"))
+                .Where(f => !FuentesWeb.EsControl(f))
                 .Where(f => !File.ReadAllText(f).Contains("MasterPageFile"))
                 .Select(f => Relativo(raiz, f))
                 .ToList();
