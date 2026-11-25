@@ -57,6 +57,19 @@ namespace WebSGV.Helpers
         }
 
         /// <summary>
+        /// Como <see cref="ParaUsuario(Exception, string, object[])"/> (registra una sola vez con la misma plantilla), pero
+        /// un error técnico se muestra con <paramref name="textoSiEsTecnico"/> (el texto propio de la pantalla, p. ej.
+        /// "Error al crear nuevo viaje.") en lugar del genérico. Un error de negocio (<see cref="ErrorNegocioException"/>
+        /// o RAISERROR/THROW de un SP) se muestra siempre con su texto (E6-13: antes el texto fijo lo tapaba).
+        /// </summary>
+        public static string ParaUsuarioOTexto(Exception ex, string textoSiEsTecnico, string plantilla, params object[] valores)
+        {
+            bool esNegocio = MensajeError.ExtraerMensajeDeNegocio(ex) != null;
+            string texto = ParaUsuario(ex, plantilla, valores ?? new object[0]);
+            return esNegocio || string.IsNullOrWhiteSpace(textoSiEsTecnico) ? texto : textoSiEsTecnico;
+        }
+
+        /// <summary>
         /// Código HTTP para responder un error en una descarga o llamada sin página: 400 si es un error de
         /// negocio (el usuario puede corregirlo), 500 si es técnico.
         /// </summary>

@@ -24,8 +24,12 @@ namespace WebSGV.Tests
                 var llamadas = c.Block.DescendantNodes().OfType<InvocationExpressionSyntax>()
                     .Select(i => i.Expression.ToString())
                     .ToList();
-                bool logError = llamadas.Any(e => e == "LogSGV.Error" || e.EndsWith(".LogSGV.Error", System.StringComparison.Ordinal));
-                bool paraUsuario = llamadas.Any(e => e == "ParaUsuario" || e.EndsWith(".ParaUsuario", System.StringComparison.Ordinal));
+                // RegistrarError es el envoltorio de RegistroDespacho (LogSGV.Error con el contexto): E6-13 quitó 14 pares
+                // RegistrarError + ParaUsuario que este detector no veía.
+                bool logError = llamadas.Any(e => e == "LogSGV.Error" || e.EndsWith(".LogSGV.Error", System.StringComparison.Ordinal)
+                    || e == "RegistrarError");
+                bool paraUsuario = llamadas.Any(e => e == "ParaUsuario" || e.EndsWith(".ParaUsuario", System.StringComparison.Ordinal)
+                    || e == "ParaUsuarioOTexto" || e.EndsWith(".ParaUsuarioOTexto", System.StringComparison.Ordinal));
                 if (logError && paraUsuario)
                     resultado.Add(relativo + ":" + (c.GetLocation().GetLineSpan().StartLinePosition.Line + 1));
             }
@@ -54,6 +58,10 @@ namespace WebSGV.Tests
                 "class A { void M() { try { } catch (System.Exception ex) { lbl.Text = MensajeErrorHelper.ParaUsuario(ex, \"x {Id}\", 1); } } }"));
             Assert.Empty(CatchConRegistroDoble("a.cs",
                 "class A { void M() { try { } catch (System.Exception ex) { LogSGV.Error(ex, \"x\"); } } }"));
+            Assert.Single(CatchConRegistroDoble("a.cs",
+                "class A { void M() { try { } catch (System.Exception ex) { RegistrarError(\"x\", ex); lbl.Text = MensajeErrorHelper.ParaUsuario(ex); } } }"));
+            Assert.Single(CatchConRegistroDoble("a.cs",
+                "class A { void M() { try { } catch (System.Exception ex) { LogSGV.Error(ex, \"x\"); t = MensajeErrorHelper.ParaUsuarioOTexto(ex, \"a\", \"b\"); } } }"));
             // Uno en el try y otro en el catch no es doble.
             Assert.Empty(CatchConRegistroDoble("a.cs",
                 "class A { void M() { try { LogSGV.Error(\"x\"); } catch (System.Exception ex) { lbl.Text = MensajeErrorHelper.ParaUsuario(ex); } } }"));

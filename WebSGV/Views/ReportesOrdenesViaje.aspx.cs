@@ -146,7 +146,7 @@ namespace WebSGV.Views
                         dr["NombreCompleto"].ToString().Trim(),
                         dr["idConductor"].ToString()));
             }
-            catch { /* silencioso: el combo sigue con "Todos" */ }
+            catch (Exception ex) { LogSGV.Advertencia(ex, "ReportesOrdenesViaje: no se pudo cargar la lista de conductores del reporte personalizado"); }
         }
 
         private void CargarClientesPersonalizado()
@@ -158,7 +158,7 @@ namespace WebSGV.Views
                     ddlPersCliente.Items.Add(new System.Web.UI.WebControls.ListItem(
                         dr["nombre"].ToString(), dr["idCliente"].ToString()));
             }
-            catch { /* silencioso */ }
+            catch (Exception ex) { LogSGV.Advertencia(ex, "ReportesOrdenesViaje: no se pudo cargar la lista de clientes del reporte personalizado"); }
         }
 
         #region LIQUIDACIONES

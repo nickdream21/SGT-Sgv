@@ -922,17 +922,16 @@ namespace WebSGV.Views
         private static string FormatoFechaHora(DateTime f) =>
             f.ToString("ddd dd/MM/yyyy · HH:mm", CultureInfo.GetCultureInfo("es-PE"));
 
+        /// <summary>Detalle de los peajes (prepararDatosFinancieros del JS); un JSON ilegible lanza ErrorNegocioException como los otros gastos (E6-13).</summary>
         private List<GastoFinanciero> ObtenerGastosFinancierosDeSession()
         {
             try
             {
-                string gastosJson = hfGastosFinancieros.Value ?? "[]";
-                return JsonConvert.DeserializeObject<List<GastoFinanciero>>(gastosJson) ?? new List<GastoFinanciero>();
+                return JsonConvert.DeserializeObject<List<GastoFinanciero>>(hfGastosFinancieros.Value ?? "[]") ?? new List<GastoFinanciero>();
             }
-            catch (Exception ex)
+            catch (JsonException)
             {
-                LogSGV.Error(ex, "Error al obtener gastos financieros en DashboardConductor");
-                return new List<GastoFinanciero>();
+                throw new ErrorNegocioException("No se pudo leer el detalle de los peajes. Revísalos e intenta de nuevo.");
             }
         }
 
@@ -1276,8 +1275,8 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al retirar la liquidación (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error al retirar la liquidación. Inténtalo de nuevo." };
+                return new { success = false, message = MensajeErrorHelper.ParaUsuarioOTexto(ex,
+                    "Error al retirar la liquidación. Inténtalo de nuevo.", "Error al retirar la liquidación (orden {IdOrden})", idOrdenViaje) };
             }
         }
 

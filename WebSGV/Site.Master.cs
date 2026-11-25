@@ -283,8 +283,10 @@ namespace WebSGV
                 MuestraMiSeguridad = RolesHelper.ExigeSegundoFactor(RolesHelper.ObtenerRolActual());
                 UrlInicio = RolesHelper.UrlInicioSegunRol(RolUsuario) ?? "~/Views/Login.aspx";
             }
-            catch
+            catch (Exception ex)
             {
+                // Sin menú ni rol a la vista; que quede en el log (E6-13: antes no dejaba rastro).
+                LogSGV.Error(ex, "Site.Master: no se pudo armar el menú y los datos del usuario");
                 InicializarPropiedadesVacias();
             }
         }
@@ -369,9 +371,7 @@ namespace WebSGV
                     SesionVigenteHelper.InvalidarCache(IdUsuarioActual);
                 }
 
-                txtContrasenaActual.Text = "";
-                txtNuevaContrasena.Text = "";
-                txtConfirmarContrasena.Text = "";
+                txtContrasenaActual.Text = txtNuevaContrasena.Text = txtConfirmarContrasena.Text = "";
                 pnlMensajeContrasena.Visible = false;
                 Session["RequiereCambioContrasena"] = false;
                 SesionVigenteHelper.MarcarContrasenaFueraDePolitica(Session, false);
@@ -381,8 +381,9 @@ namespace WebSGV
                 ScriptManager.RegisterStartupScript(this, GetType(), "SuccessContrasena",
                     "$('#modalCambiarContrasena').modal('hide'); SGV.avisar('Contraseña cambiada correctamente.', { tipo: 'success' });", true);
             }
-            catch
+            catch (Exception ex)
             {
+                LogSGV.Error(ex, "Error al cambiar la contraseña del usuario {IdUsuario}", IdUsuarioActual);
                 MostrarMensajeContrasena("Ocurrió un error al cambiar la contraseña. Inténtalo de nuevo.", "danger");
                 AbrirModalContrasena();
             }

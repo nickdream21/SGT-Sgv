@@ -544,9 +544,15 @@ var MINIMO_MOTIVO = 10;
 
 // null = la revisión no cargó movimientos (no se tocan los ya unidos a la liquidación).
 var _movimientosRevision = null;
+// true = la consulta de las entregas falló (E6-13): aprobar no debe decir "todavía se están cargando".
+var _movimientosRevisionFallo = false;
+// true = MovimientosViaje está apagado (Web.config): no aplica; _movimientosRevision sigue null (no se envían ids).
+var _movimientosRevisionNoAplica = false;
 
 function cargarMovimientosRevision(idOrden) {
     _movimientosRevision = null;
+    _movimientosRevisionFallo = false;
+    _movimientosRevisionNoAplica = false;
     $('#panelMovimientos').hide();
     $('#tbodyMovimientos').html('');
     $.ajax({
@@ -557,7 +563,12 @@ function cargarMovimientosRevision(idOrden) {
         dataType: "json",
         success: function (response) {
             var r = response.d;
-            if (!r || !r.success) return;
+            if (r && r.desactivada) { _movimientosRevisionNoAplica = true; return; }
+            if (!r || !r.success) {
+                _movimientosRevisionFallo = true;
+                SGV.avisar((r && r.message) || 'Error al cargar las entregas registradas de este viaje.', { tipo: 'danger' });
+                return;
+            }
             _movimientosRevision = r.movimientos || [];
             if (_movimientosRevision.length === 0) return;
 
@@ -581,6 +592,10 @@ function cargarMovimientosRevision(idOrden) {
             $('#tbodyMovimientos').html(html);
             $('#panelMovimientos').show();
             aplicarEntregasALaTabla();
+        },
+        error: function () {
+            _movimientosRevisionFallo = true;
+            SGV.avisar('Error al cargar las entregas registradas de este viaje. Cierre y vuelva a abrir la revisión.', { tipo: 'danger' });
         }
     });
 }
@@ -637,8 +652,10 @@ function aprobarDesdeModal() {
     limpiarErroresFormulario();
 
     // Sin las entregas cargadas, "Dinero entregado" saldría sin lo registrado durante el viaje.
-    if (_movimientosRevision === null) {
-        SGV.avisar('Todavía se están cargando las entregas registradas de este viaje. Espere un momento; si no aparecen, cierre y vuelva a abrir la revisión.');
+    if (_movimientosRevision === null && !_movimientosRevisionNoAplica) {
+        SGV.avisar(_movimientosRevisionFallo
+            ? 'Error al cargar las entregas registradas de este viaje: cierre y vuelva a abrir la revisión antes de aprobar.'
+            : 'Todavía se están cargando las entregas registradas de este viaje. Espere un momento; si no aparecen, cierre y vuelva a abrir la revisión.');
         return;
     }
 
@@ -1177,6 +1194,9 @@ function initConductorAutocomplete(inputId, suggestionsId, hiddenId) {
                         $sugg.append($item);
                     });
                     $sugg.show();
+                },
+                error: function () {
+                    $sugg.empty().append('<div class="autocomplete-no-results text-danger">No se pudo buscar conductores. Intente de nuevo.</div>').show();
                 }
             });
         }, 280);

@@ -19,9 +19,11 @@ BuscarConductores
 CNG
 CPIC
 CSP
+CancelarLote
 CatalogoCliente
 Cierre
 Consulta
+Contacte
 Correo
 Dashboard
 DashboardAdminSistema
@@ -49,7 +51,10 @@ IP
 Inicio
 Integridad
 IntentoAcceso
+Inténtalo
 JSON
+LeerProgramacion
+LeerProgramacionNueva
 LiquidacionesAprobadasContabilidad
 LiquidacionesPendientes
 ListaDespachos
@@ -70,8 +75,10 @@ Query
 Recuperar
 Recurso
 Reporte
+ReportesOrdenesViaje
 Restablecer
 Resumen
+RolesHelper
 Ruta
 SGV
 SMTP
@@ -81,6 +88,7 @@ Segundo
 Seguridad.ClaveSegundoFactor
 Seguridad.ExigirSegundoFactor
 Sesión
+Site.Master
 Store
 Temporales
 ValidarOwnershipOrden
@@ -132,6 +140,15 @@ bloqueada
 bloqueó
 borrado(s
 borrar
+btnAplicarDescarga_Click
+btnAplicarImportacion_Click
+btnCorregirImportacion_Click
+btnFinalizarLote_Click
+btnLeerDocumentos_Click
+btnLeerProgramacionDescarga_Click
+btnProgramarDespachos_Click
+btnRegistrarEntregas_Click
+btnVerCargasPendientes_Click
 buscar
 bytes
 caché
@@ -151,6 +168,7 @@ cifrado
 clave
 cliente
 clientes
+columna
 commit
 como
 comprimir
@@ -190,6 +208,7 @@ datos
 dañado
 dbo.UsuarioSegundoFactor
 dd/MM
+ddlSeccionProg_SelectedIndexChanged
 de
 debe
 deja
@@ -205,6 +224,7 @@ detalle
 detiene
 devolver
 devolvió
+devuelve
 dinero
 disponible
 documento
@@ -263,13 +283,11 @@ fijo
 fila
 filtro
 filtros
-financieros
 firma
 firmar
 flete
 flota
 fuera
-gastos
 generado
 generador
 general
@@ -283,6 +301,7 @@ guardar
 guardó
 guía
 guías
+gvHistorialViajes_RowCommand
 habilitar
 hash
 historial
@@ -300,6 +319,7 @@ iniciar
 inicio
 instantánea
 intento
+interno
 inválida
 inválido
 inválidos
@@ -318,6 +338,7 @@ limpiar
 limpieza
 liquidaciones
 liquidación
+lista
 listar
 llamada
 llave
@@ -334,6 +355,7 @@ manifiestos
 medias
 memoria
 mensaje
+menú
 mientras
 migración
 min
@@ -374,6 +396,7 @@ pedido
 pendiente
 pendientes
 permiso
+personalizado
 pertenece
 pertenecen
 petición
@@ -388,6 +411,7 @@ postback
 precalentado
 precalentar
 precargar
+predeterminado
 preparar
 primer
 procesar
@@ -433,6 +457,7 @@ retiro
 revisar
 revisión
 rol
+roles
 ruta
 s
 salen
@@ -493,3 +518,5 @@ y
 yyyy-MM-dd
 órdenes
 última
+últimos
+único

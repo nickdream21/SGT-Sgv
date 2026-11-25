@@ -768,32 +768,8 @@ namespace WebSGV.Services.Despachos
             }
         }
 
-        private static T GetSafeValue<T>(SqlDataReader reader, string columnName, T defaultValue = default(T))
-        {
-            try
-            {
-                if (reader[columnName] == DBNull.Value)
-                    return defaultValue;
-
-                if (typeof(T) == typeof(string))
-                    return (T)(object)reader[columnName].ToString();
-                else if (typeof(T) == typeof(DateTime?))
-                    return (T)(object)Convert.ToDateTime(reader[columnName]);
-                else if (typeof(T) == typeof(decimal?))
-                    return (T)(object)Convert.ToDecimal(reader[columnName]);
-                else if (typeof(T) == typeof(bool))
-                    return (T)(object)Convert.ToBoolean(reader[columnName]);
-                else if (typeof(T) == typeof(int))
-                    return (T)(object)Convert.ToInt32(reader[columnName]);
-                else if (typeof(T) == typeof(DateTime))
-                    return (T)(object)Convert.ToDateTime(reader[columnName]);
-                else
-                    return (T)Convert.ChangeType(reader[columnName], typeof(T));
-            }
-            catch
-            {
-                return defaultValue;
-            }
-        }
+        /// <summary>Lectura tolerante de una columna (E6-13: una columna inexistente deja una advertencia por columna).</summary>
+        private static T GetSafeValue<T>(SqlDataReader reader, string columnName, T defaultValue = default(T)) =>
+            LecturaSegura.Leer(c => reader[c], columnName, nameof(ListaDespachosService), defaultValue);
     }
 }

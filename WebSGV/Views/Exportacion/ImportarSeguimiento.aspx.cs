@@ -384,17 +384,14 @@ namespace WebSGV.Views.Exportacion
                 }
             }
 
-            try
-            {
-                AuditoriaHelper.Registrar(
-                    accion: "IMPORT",
-                    tablaAfectada: "SeguimientoExportacion",
-                    idRegistroAfectado: "BULK",
-                    descripcion: $"Importación Excel: {_importInsertados} nuevos, {_importActualizados} actualizados, " +
-                                 $"{_importOmitidos} omitidos (de despachos o creados a mano), " +
-                                 $"{_filasSinProgramacion} sin F.H. PROGRAMACION, {_rechazadas.Count} celdas ilegibles.");
-            }
-            catch { /* No bloquear */ }
+            // AuditoriaHelper.Registrar ya captura y registra sus propias fallas: no frena la importación.
+            AuditoriaHelper.Registrar(
+                accion: "IMPORT",
+                tablaAfectada: "SeguimientoExportacion",
+                idRegistroAfectado: "BULK",
+                descripcion: $"Importación Excel: {_importInsertados} nuevos, {_importActualizados} actualizados, " +
+                             $"{_importOmitidos} omitidos (de despachos o creados a mano), " +
+                             $"{_filasSinProgramacion} sin F.H. PROGRAMACION, {_rechazadas.Count} celdas ilegibles.");
 
             return tabla.Rows.Count;
         }

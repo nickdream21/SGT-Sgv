@@ -321,7 +321,7 @@ function verDetalle(idOrdenViaje) {
         data: JSON.stringify({ idOrdenViaje: idOrdenViaje }),
         success: function (response) {
             var d = response && response.d ? response.d : null;
-            if (!d) return;
+            if (!d) { SGV.avisar('Error al cargar el detalle de la liquidación. Intente de nuevo.', { tipo: 'danger' }); return; }
 
             $('#detalleNumero').text(d.NumeroOrdenViaje || '');
             $('#detalleConductor').text(d.NombreConductor || '');
@@ -339,6 +339,9 @@ function verDetalle(idOrdenViaje) {
             renderDetallePeajes(d);
 
             $('#modalDetalleLiquidacion').modal('show');
+        },
+        error: function () {
+            SGV.avisar('Error al cargar el detalle de la liquidación. Intente de nuevo.', { tipo: 'danger' });
         }
     });
 }
@@ -424,6 +427,10 @@ $('#txtConductor').on('input', function () {
                     html += '<div class="autocomplete-item" data-id="' + item.IdConductor + '" data-text="' + SGV.escaparHtml(item.NombreCompleto) + '">' + SGV.escaparHtml(item.NombreCompleto) + '</div>';
                 }
                 $('#conductorSugg').html(html).show();
+            },
+            error: function () {
+                // Sin elemento seleccionable: que no parezca "sin resultados".
+                $('#conductorSugg').html('<div class="px-3 py-2 small text-danger">No se pudo buscar conductores. Intente de nuevo.</div>').show();
             }
         });
 

@@ -429,7 +429,7 @@ namespace WebSGV.Tests
             Path.Combine(BaseDePruebas.RaizRepo, "WebSGV", "Services", "Operacion", EstadoSistemaService.RecursoVocabulario);
 
         private static readonly Regex InicioLlamada = new Regex(
-            @"(?:\bLogSGV\.(?:Info|Advertencia|Error|InfoCon|AdvertenciaCon)|\bParaUsuario)\s*\(", RegexOptions.Compiled);
+            @"(?:\bLogSGV\.(?:Info|Advertencia|Error|InfoCon|AdvertenciaCon)|\bParaUsuario(?:OTexto)?)\s*\(", RegexOptions.Compiled);
 
         /// <summary>
         /// Los textos literales de los argumentos de cada llamada a LogSGV y ParaUsuario del código (WebSGV/**/*.cs),

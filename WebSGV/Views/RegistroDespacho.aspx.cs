@@ -1139,8 +1139,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("CancelarLote", ex);
-                MostrarMensaje("Error al cancelar lote: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al cancelar lote: " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "CancelarLote"), "danger");
             }
         }
 
@@ -1206,8 +1205,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("btnFinalizarLote_Click", ex);
-                MostrarMensaje("Error al finalizar lote: " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensaje("Error al finalizar lote: " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "btnFinalizarLote_Click"), "danger");
             }
         }
 
@@ -1325,9 +1323,8 @@ namespace WebSGV.Views
                         try { ImportacionPedidoService.LeerProgramacion(importacion, words[0]); }
                         catch (Exception ex)
                         {
-                            RegistrarError("LeerProgramacion", ex);
                             importacion.Advertencias.Add($"No se pudo leer la programación {words[0].Nombre}: se usaron los datos de las guías. " +
-                                                         MensajeErrorHelper.ParaUsuario(ex));
+                                                         MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "LeerProgramacion"));
                         }
                     }
                 }
@@ -1345,8 +1342,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("btnLeerDocumentos_Click", ex);
-                MostrarMensajeImportacion("No se pudieron leer los documentos. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeImportacion("No se pudieron leer los documentos. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "btnLeerDocumentos_Click"), "danger");
             }
         }
 
@@ -1671,8 +1667,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("btnAplicarImportacion_Click", ex);
-                MostrarMensajeImportacion("No se pudo crear el lote. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeImportacion("No se pudo crear el lote. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "btnAplicarImportacion_Click"), "danger");
             }
         }
 
@@ -1703,8 +1698,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("btnCorregirImportacion_Click", ex);
-                MostrarMensajeImportacion("No se pudo pasar la importación al formulario. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeImportacion("No se pudo pasar la importación al formulario. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "btnCorregirImportacion_Click"), "danger");
             }
         }
 
@@ -2146,8 +2140,7 @@ namespace WebSGV.Views
             try { p = ProgramacionDespachoService.LeerWord(word.Contenido, word.Nombre); }
             catch (Exception ex)
             {
-                RegistrarError("LeerProgramacionNueva", ex);
-                MostrarMensajeImportacion("No se pudo leer la programación. " + MensajeErrorHelper.ParaUsuario(ex), "warning");
+                MostrarMensajeImportacion("No se pudo leer la programación. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "LeerProgramacionNueva"), "warning");
                 return;
             }
 
@@ -2226,8 +2219,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("ddlSeccionProg_SelectedIndexChanged", ex);
-                MostrarMensajeImportacion("No se pudo mostrar esa sección. " + MensajeErrorHelper.ParaUsuario(ex), "warning");
+                MostrarMensajeImportacion("No se pudo mostrar esa sección. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "ddlSeccionProg_SelectedIndexChanged"), "warning");
             }
         }
 
@@ -2370,8 +2362,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("btnProgramarDespachos_Click", ex);
-                MostrarMensajeImportacion("No se pudieron programar los despachos. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeImportacion("No se pudieron programar los despachos. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "btnProgramarDespachos_Click"), "danger");
             }
         }
 
@@ -2419,8 +2410,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("btnRegistrarEntregas_Click", ex);
-                MostrarMensajeImportacion("No se pudieron registrar las entregas. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeImportacion("No se pudieron registrar las entregas. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "btnRegistrarEntregas_Click"), "danger");
             }
         }
 
@@ -2617,8 +2607,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("btnVerCargasPendientes_Click", ex);
-                MostrarMensajeDescarga("No se pudieron obtener las cargas del pedido. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeDescarga("No se pudieron obtener las cargas del pedido. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "btnVerCargasPendientes_Click"), "danger");
             }
         }
 
@@ -2833,8 +2822,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("btnLeerProgramacionDescarga_Click", ex);
-                MostrarAvisoProgramacion("No se pudo leer la programación. " + MensajeErrorHelper.ParaUsuario(ex), "rd-notice-warn");
+                MostrarAvisoProgramacion("No se pudo leer la programación. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "btnLeerProgramacionDescarga_Click"), "rd-notice-warn");
             }
         }
 
@@ -2965,8 +2953,7 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                RegistrarError("btnAplicarDescarga_Click", ex);
-                MostrarMensajeDescarga("No se pudo preparar la descarga. " + MensajeErrorHelper.ParaUsuario(ex), "danger");
+                MostrarMensajeDescarga("No se pudo preparar la descarga. " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "btnAplicarDescarga_Click"), "danger");
             }
         }
 
@@ -3253,8 +3240,7 @@ namespace WebSGV.Views
             catch (SqlException ex) when (ex.Number == 50000)
             {
                 // Validaciones de negocio de sp_ReabrirViajeProgreso (RAISERROR): mostrar el motivo.
-                RegistrarError("gvHistorialViajes_RowCommand", ex);
-                MostrarMensaje("No se pudo reabrir el viaje: " + MensajeErrorHelper.ParaUsuario(ex), "warning");
+                MostrarMensaje("No se pudo reabrir el viaje: " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "gvHistorialViajes_RowCommand"), "warning");
             }
             catch (Exception ex)
             {
@@ -3422,11 +3408,16 @@ namespace WebSGV.Views
             LogSGV.Error(ex, "Error en {Contexto}", contexto);
         }
 
-        private void MostrarErrorOperacion(string mensajeUsuario, string contexto, Exception ex)
-        {
-            RegistrarError(contexto, ex);
-            MostrarMensaje(mensajeUsuario, "danger");
-        }
+        private void MostrarErrorOperacion(string mensajeUsuario, string contexto, Exception ex) =>
+            MostrarMensaje(TextoErrorOperacion(mensajeUsuario, contexto, ex), "danger");
+
+        /// <summary>
+        /// Texto del aviso de un error de operación (E6-13): el mensaje de negocio (ErrorNegocioException o RAISERROR/THROW
+        /// del SP) tal cual, o <paramref name="mensajeUsuario"/> si es técnico. Registra una sola vez: el técnico como
+        /// ERR con la pila y el de negocio como INF (antes se mostraba siempre el texto fijo y todo quedaba como ERR).
+        /// </summary>
+        internal static string TextoErrorOperacion(string mensajeUsuario, string contexto, Exception ex) =>
+            MensajeErrorHelper.ParaUsuarioOTexto(ex, mensajeUsuario, "Error en {Contexto}", contexto);
 
         #endregion
     }

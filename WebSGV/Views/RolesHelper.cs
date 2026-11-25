@@ -228,9 +228,10 @@ namespace WebSGV.Helpers
                 foreach (DataRow row in dt.Rows)
                     rolesBd.Add(row["rol"].ToString());
             }
-            catch
+            catch (Exception ex)
             {
-                // Si la BD no responde, se mantiene el catálogo base para no romper la UI.
+                // Si la BD no responde, se mantiene el catálogo base para no romper la UI; la falla queda en el log (E6-13).
+                LogSGV.Advertencia(ex, "RolesHelper: no se pudieron leer los roles de la base de datos; se usa el catálogo base");
             }
 
             return CombinarRolesDisponibles(rolesBd);

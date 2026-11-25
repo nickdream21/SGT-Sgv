@@ -110,8 +110,10 @@ namespace WebSGV.Views
                     pnlSinAuditoria.Visible = true;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                // Se muestra "sin auditoría", pero la falla queda en el log (E6-13).
+                LogSGV.Advertencia(ex, "DashboardAdminSistema: no se pudieron leer los últimos eventos de auditoría");
                 pnlSinAuditoria.Visible = true;
             }
         }

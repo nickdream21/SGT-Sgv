@@ -718,8 +718,8 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al corregir salida pendiente (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error interno al corregir la salida. Contacte al administrador." };
+                return new { success = false, message = MensajeErrorHelper.ParaUsuarioOTexto(ex,
+                    "Error interno al corregir la salida. Contacte al administrador.", "Error al corregir salida pendiente (orden {IdOrden})", idOrdenViaje) };
             }
         }
 
@@ -745,8 +745,8 @@ namespace WebSGV.Views
             }
             catch (Exception ex)
             {
-                LogSGV.Error(ex, "Error al consultar hora de llegada GPS (orden {IdOrden})", idOrdenViaje);
-                return new { success = false, message = "Error interno al consultar el GPS. Contacte al administrador." };
+                return new { success = false, message = MensajeErrorHelper.ParaUsuarioOTexto(ex,
+                    "Error interno al consultar el GPS. Contacte al administrador.", "Error al consultar hora de llegada GPS (orden {IdOrden})", idOrdenViaje) };
             }
         }
 
@@ -938,9 +938,9 @@ namespace WebSGV.Views
             {
                 if (!PuedeGestionarLiquidaciones())
                     return new { success = false, message = "No tiene permisos." };
-                // Apagada: la revisión no muestra la tabla ni envía ids, así que no se tocan los ya unidos.
+                // Apagada: sin tabla ni ids (null: no se tocan los ya unidos); éxito para que Aprobar no espere (E6-13).
                 if (!MovimientosViajeService.Habilitado)
-                    return new { success = false, message = "Funcionalidad desactivada." };
+                    return new { success = true, desactivada = true, movimientos = new object[0] };
                 var lista = MovimientosViajeService.ObtenerParaRevision(idOrdenViaje).Select(m => new
                 {
                     m.IdMovimiento,

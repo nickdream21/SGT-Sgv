@@ -86,6 +86,10 @@ namespace WebSGV.Helpers
         public static void Advertencia(string mensaje, params object[] valores) =>
             Log.Warning(mensaje, valores);
 
+        /// <summary>Advertencia con la excepción y su pila: una falla que no frena la operación pero no debe pasar en silencio.</summary>
+        public static void Advertencia(Exception ex, string mensaje, params object[] valores) =>
+            Log.Warning(ex, mensaje, valores);
+
         public static void Error(string mensaje, params object[] valores) =>
             Log.Error(mensaje, valores);
 
