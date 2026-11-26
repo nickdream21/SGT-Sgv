@@ -26,6 +26,8 @@ namespace WebSGV.Services.Despachos
         /// El PDF está registrado pero su archivo no está en este servidor (se registró desde otra PC y no se subió):
         /// se avisa junto al nombre para que se vuelva a adjuntar, en vez de dar el documento por completo.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+            Justification = "Solo decide un aviso junto al nombre del archivo: cualquier fallo al comprobar el disco se registra y no debe cortar la página.")]
         public static string AvisoSiNoEstaEnServidor(string rutaVirtual, Func<string, string> mapPath)
         {
             try
@@ -81,6 +83,8 @@ namespace WebSGV.Services.Despachos
         /// Guarda el manifiesto y devuelve el id del que estaba vigente de ese tipo (null si no había): el anterior no
         /// se borra, queda como historial y deja de mostrarse (<see cref="ManifiestoService.Vigentes"/>).
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+            Justification = "Borrar el archivo huérfano es una limpieza mientras sube el error original (throw): un fallo al borrar se registra y no debe taparlo.")]
         public static int? GuardarManifiesto(HttpPostedFile archivo, int idDespacho, string tipo,
             string usuario, Func<string, string> mapPath)
         {

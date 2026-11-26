@@ -165,6 +165,7 @@ namespace WebSGV.Views.Controles.Despachos
         /// </summary>
         public void Aplicar(PropuestaConfiguracionBase p)
         {
+            if (p == null) throw new ArgumentNullException(nameof(p));
             RestaurarSeleccion(ddlClienteBase, p.IdCliente?.ToString());
             ddlTipoOperacionBase.SelectedValue = p.TipoOperacion;
             rblAmbitoOperacionBase.SelectedValue = p.EsInternacional ? "1" : "0";

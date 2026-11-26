@@ -36,8 +36,11 @@ namespace WebSGV.Views.Controles.Despachos
         public string ViajeElegido => ddlViajesActivos.SelectedValue;
 
         /// <summary>Que <paramref name="c"/> (de la página) refresque este panel en su evento <paramref name="evento"/>.</summary>
-        public void RefrescarCon(Control c, string evento) =>
+        public void RefrescarCon(Control c, string evento)
+        {
+            if (c == null) throw new ArgumentNullException(nameof(c));
             UpdatePanelViajes.Triggers.Add(new AsyncPostBackTrigger { ControlID = c.UniqueID, EventName = evento });
+        }
 
         protected void Page_Load(object sender, EventArgs e)
         {

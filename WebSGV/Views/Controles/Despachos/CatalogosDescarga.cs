@@ -32,6 +32,8 @@ namespace WebSGV.Views.Controles.Despachos
         }
 
         /// <summary>Destinos vigentes del pedido por carreta (sin guion), de la lista del cliente. Sin lista o con error, vacío.</summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+            Justification = "Los destinos solo proponen la planta de la vista previa: con error se registra y se sigue con la lista vacía (el usuario elige a mano).")]
         public Dictionary<string, DestinoDescargaService.DestinoVigente> Destinos(string pedido)
         {
             if (_destinos != null && _pedidoDestinos == pedido) return _destinos;

@@ -42,9 +42,13 @@ namespace WebSGV.Services.Despachos
         /// Id que tendrá el lote tras guardar <paramref name="input"/>: el cliente no se edita (el de <paramref name="antes"/>)
         /// y un pedido vacío se guarda como NULL (como hace <c>ListaDespachosService.GuardarCambiosLote</c>).
         /// </summary>
-        public static string IdTrasGuardar(LoteRegistrado antes, GuardarCambiosLoteInput input) =>
-            IdLoteVirtual(antes.IdCliente, string.IsNullOrEmpty(input.NumeroPedido) ? null : input.NumeroPedido,
+        public static string IdTrasGuardar(LoteRegistrado antes, GuardarCambiosLoteInput input)
+        {
+            if (antes == null) throw new ArgumentNullException(nameof(antes));
+            if (input == null) throw new ArgumentNullException(nameof(input));
+            return IdLoteVirtual(antes.IdCliente, string.IsNullOrEmpty(input.NumeroPedido) ? null : input.NumeroPedido,
                 input.FechaDespacho, input.TipoOperacion, input.EsInternacional, input.IdPlanta);
+        }
 
         /// <summary>
         /// A dónde vuelve "Guardar cambios": sin cambios, al detalle del lote original; con cambios, al detalle con el id
@@ -52,6 +56,7 @@ namespace WebSGV.Services.Despachos
         /// </summary>
         public static string DestinoTrasGuardar(string original, string candidato, bool sinCambios, Func<string, bool> existe)
         {
+            if (existe == null) throw new ArgumentNullException(nameof(existe));
             if (sinCambios) return Detalle(original, AvisoSinCambios);
             if (!string.IsNullOrEmpty(candidato) && existe(candidato)) return Detalle(candidato, AvisoGuardado);
             if (!string.IsNullOrEmpty(original) && existe(original)) return Detalle(original, AvisoGuardado);
@@ -79,6 +84,8 @@ namespace WebSGV.Services.Despachos
         /// <summary>Descripción de la auditoría del lote editado: despachos, conductores cambiados y documentos tocados.</summary>
         public static string DescripcionAuditoria(string idsCsv, GuardarCambiosLoteInput input, ResultadoEdicionLote resultado)
         {
+            if (input == null) throw new ArgumentNullException(nameof(input));
+            if (resultado == null) throw new ArgumentNullException(nameof(resultado));
             string documentos = "";
             if (resultado.Factura != null) documentos += $"; factura {input.NumeroFactura?.Trim()} (id {resultado.Factura.Id}, {resultado.Factura.Accion})";
             if (resultado.Cpic != null) documentos += $"; CPIC {input.NumeroCPIC?.Trim()} (id {resultado.Cpic.Id}, {resultado.Cpic.Accion})";
@@ -92,6 +99,7 @@ namespace WebSGV.Services.Despachos
         /// <summary>Monto obligatorio del formulario: vacío, no numérico, negativo o sobre el tope agrega el error del campo.</summary>
         public static void ValidarMontoObligatorio(string texto, string campo, List<string> errores)
         {
+            if (errores == null) throw new ArgumentNullException(nameof(errores));
             if (string.IsNullOrWhiteSpace(texto))
             {
                 errores.Add($"El campo «{campo}» es obligatorio");

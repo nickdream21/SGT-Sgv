@@ -90,12 +90,16 @@ namespace WebSGV.Views.Controles.Despachos
         #region Lo que llama la página
 
         /// <summary>Word de la programación: .docx de hasta 5 MB que sea de verdad un .docx. Null si está bien.</summary>
-        public static string ValidarWord(ImportacionPedidoService.ArchivoSubido word) =>
-            ArchivoSubidoHelper.Validar(word.Nombre, word.Contenido?.LongLength ?? 0, word.Contenido, ArchivoSubidoHelper.MaxWord, ".docx");
+        public static string ValidarWord(ImportacionPedidoService.ArchivoSubido word)
+        {
+            if (word == null) throw new ArgumentNullException(nameof(word));
+            return ArchivoSubidoHelper.Validar(word.Nombre, word.Contenido?.LongLength ?? 0, word.Contenido, ArchivoSubidoHelper.MaxWord, ".docx");
+        }
 
         /// <summary>Lee el Word (solo, sin documentos del correo) y muestra su vista previa.</summary>
         public void Leer(ImportacionPedidoService.ArchivoSubido word)
         {
+            if (word == null) throw new ArgumentNullException(nameof(word));
             string errorWord = ValidarWord(word);
             if (errorWord != null)
             {

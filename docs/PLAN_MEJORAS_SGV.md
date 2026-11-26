@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-26**, commit anterior `7d968a0` — **Etapa 6 en ejecución**: E6-29 (contadores de lotes de ListaDespachos e Inicio con su propia consulta, `sp_LD_ContarLotesActivos` (nuevo), en vez de traer todos los lotes; `sp_LD_ObtenerLotesRegistrados` gana `@maxFilas`, `TotalLotes` y un orden estable, y la lista se corta a 500 lotes con aviso; las reglas de documentos copiadas en los dos SP entre marcadores, con `ReglasDocumentosSpTests` que exige texto idéntico; `ContadoresLotesBdTests` compara con el cálculo de antes; los dos SP aplicados en `sgvActualizada` (108 / 6 / 6 / 12, los mismos números) y en la copia local, pendientes en producción; cierra M-138; nuevos M-232 a M-235 y P-117). No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-26**, commit anterior `b667a3e` — **Etapa 6 en ejecución**: el trinquete de analizadores, que tenía el CI de master en rojo desde E6-25 (CA1031 317 → 321 y CA1062 197 → 214 con el código partido en E6-23 a E6-28), vuelve a pasar: verificación de argumentos en 17 métodos públicos (sin cambio de conducta: el revisor buscó cada llamada) y `SuppressMessage` justificado en 5 `catch` de mejor esfuerzo; base nueva 316 / 193 / 191 / 30 / 11 (`avisos-base.json`) y mínimo de cobertura total 38 → 41 (`cobertura-minima.json`); los pasos de `build.yml` corren bien en local; falta ver la primera corrida en GitHub tras subir. No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-235 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

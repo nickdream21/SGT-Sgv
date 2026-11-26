@@ -53,6 +53,8 @@ namespace WebSGV.Views.Controles.Despachos
         }
 
         /// <summary>Borra un archivo temporal (manifiesto, factura o CPIC) si existe (sin lanzar si falla).</summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+            Justification = "Borrar un temporal es limpieza: un fallo se registra y nunca debe cortar la operación que ya terminó.")]
         public static void EliminarArchivoTemporal(string rutaTemp)
         {
             try

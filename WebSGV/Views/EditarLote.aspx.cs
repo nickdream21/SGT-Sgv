@@ -342,6 +342,8 @@ namespace WebSGV.Views
         /// Para elegir a dónde volver tras guardar: si la lectura falla, el cambio ya está guardado, así que no se muestra un
         /// error sino que se da el lote por no encontrado (DestinoTrasGuardar termina en la lista con "Cambios guardados").
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1031:Do not catch general exception types",
+            Justification = "El cambio ya está guardado: si la relectura falla se registra y se vuelve a la lista con el aviso de guardado, sin mostrar un error.")]
         private static bool ExisteLote(string id)
         {
             try { return ListaDespachosService.ObtenerLotePorId(id) != null; }

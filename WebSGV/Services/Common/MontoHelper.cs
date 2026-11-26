@@ -77,6 +77,7 @@ namespace WebSGV.Services.Common
         public static decimal? LeerMontoOpcional(string texto, string campo, List<string> errores)
         {
             if (string.IsNullOrWhiteSpace(texto)) return null;
+            if (errores == null) throw new ArgumentNullException(nameof(errores));
             try { return LeerMonto(texto, campo); }
             catch (ErrorNegocioException ex)
             {

@@ -133,6 +133,7 @@ namespace WebSGV.Views.Controles.Despachos
             var cargas = Cargas;
             if (conductores == null || cargas == null) return;
             if (!RegistroDespachoReglas.AplicadaVigente(Request.Form[hfMarcaDescAplicada.UniqueID], MarcaAplicadaEnSesion())) return;
+            if (lote == null) throw new ArgumentNullException(nameof(lote));
 
             ArmadoDescarga.IncorporarAlLote(lote, conductores, cargas);
             Limpiar();

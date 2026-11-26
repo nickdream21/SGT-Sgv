@@ -47,19 +47,23 @@ namespace WebSGV.Views.Controles.Despachos
         /// aunque la carga vaya a Ecuador (el destino viaja como dato de la carga); con la fecha y la planta que el usuario
         /// dejó en "Datos del lote" de la vista previa, y el pedido y la factura leídos.
         /// </summary>
-        public static PropuestaConfiguracionBase DeImportacion(ImportacionPedido imp, string idPlanta, string fecha) => new PropuestaConfiguracionBase
+        public static PropuestaConfiguracionBase DeImportacion(ImportacionPedido imp, string idPlanta, string fecha)
         {
-            IdCliente = imp.IdCliente,
-            TipoOperacion = "CARGA",
-            EsInternacional = false,
-            IdPlanta = idPlanta,
-            Fecha = fecha,
-            MonedaFactura = imp.Factura?.Moneda,
-            NumeroPedido = imp.NumeroPedido,
-            NumeroFactura = imp.Factura == null ? null : imp.Factura.NumeroFactura ?? string.Empty,
-            FechaEmisionFactura = imp.Factura?.FechaEmision?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-            ValorTotalFactura = imp.Factura?.ValorTotal?.ToString("0.00", CultureInfo.InvariantCulture),
-        };
+            if (imp == null) throw new ArgumentNullException(nameof(imp));
+            return new PropuestaConfiguracionBase
+            {
+                IdCliente = imp.IdCliente,
+                TipoOperacion = "CARGA",
+                EsInternacional = false,
+                IdPlanta = idPlanta,
+                Fecha = fecha,
+                MonedaFactura = imp.Factura?.Moneda,
+                NumeroPedido = imp.NumeroPedido,
+                NumeroFactura = imp.Factura == null ? null : imp.Factura.NumeroFactura ?? string.Empty,
+                FechaEmisionFactura = imp.Factura?.FechaEmision?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                ValorTotalFactura = imp.Factura?.ValorTotal?.ToString("0.00", CultureInfo.InvariantCulture),
+            };
+        }
     }
 
     /// <summary>El evento que entrega una <see cref="PropuestaConfiguracionBase"/> a la página.</summary>

@@ -182,6 +182,8 @@ namespace WebSGV.Services.Despachos
         /// </summary>
         public static int CrearDespachoIndividual(LoteDespachos lote, ConductorLote conductor, int? idFactura, int? idCPIC)
         {
+            if (lote == null) throw new ArgumentNullException(nameof(lote));
+            if (conductor == null) throw new ArgumentNullException(nameof(conductor));
             using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
             {
                 using (SqlCommand cmd = new SqlCommand("sp_CrearDespacho", conn))
@@ -239,6 +241,8 @@ namespace WebSGV.Services.Despachos
         /// </summary>
         public static int CompletarDespachoProgramado(LoteDespachos lote, ConductorLote conductor, int? idFactura, int? idCPIC)
         {
+            if (lote == null) throw new ArgumentNullException(nameof(lote));
+            if (conductor == null) throw new ArgumentNullException(nameof(conductor));
             DbHelper.EjecutarNonQuerySp("sp_CompletarDespachoProgramado",
                 DbHelper.Param("@idDespacho", conductor.IdDespachoProgramado.Value),
                 DbHelper.Param("@numeroPedido", string.IsNullOrWhiteSpace(lote.NumeroPedido) ? null : lote.NumeroPedido),

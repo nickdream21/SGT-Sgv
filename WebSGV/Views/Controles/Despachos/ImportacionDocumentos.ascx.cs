@@ -130,6 +130,7 @@ namespace WebSGV.Views.Controles.Despachos
             }
 
             ImportacionPedidoService.Asociar(importacion);
+            if (words == null) throw new ArgumentNullException(nameof(words));
             if (words.Count > 1)
                 importacion.ArchivosIgnorados.AddRange(words.Skip(1).Select(w => $"{w.Nombre}: se usa una sola programación ({words[0].Nombre})"));
             if (words.Count > 0) LeerProgramacion(importacion, words[0]);
@@ -211,7 +212,7 @@ namespace WebSGV.Views.Controles.Despachos
             var imp = Actual;
             if (conductores == null || imp == null) return;
             if (!RegistroDespachoReglas.AplicadaVigente(Request.Form[hfMarcaImpAplicada.UniqueID], MarcaAplicadaEnSesion())) return;
-
+            if (lote == null) throw new ArgumentNullException(nameof(lote));
             ArmadoLoteImportado.IncorporarAlLote(lote, imp, conductores);
             LimpiarImportacion(borrarArchivos: true);
             // M-201: ya están en el lote; el recuadro "se agregarán al pulsar Iniciar lote" no queda a la vista.

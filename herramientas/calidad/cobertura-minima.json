@@ -1,8 +1,8 @@
 {
   "nota": "Mínimo de cobertura de líneas (%) de WebSGV.dll que exige el CI (E6-1). Es la cifra del CI (Release, sin BD) redondeada hacia abajo al entero. Solo sube: si una carpeta gana un entero, se sube aquí en el mismo commit; nunca se baja.",
-  "medido": "2026-11-25 (E6-8), Release sin BD: total 38,2 % (13003 de 33954 líneas); Services 56,0 % (9787 de 17449); Helpers 70,7 % (1782 de 2519)",
+  "medido": "2026-11-26 (tras E6-29), Release sin BD: total 41,4 % (14805 de 35727 líneas); Services 56,0 % (11064 de 19753); Helpers 71,0 % (2053 de 2888; se deja en 70 hasta ver la cifra del CI: margen de 2 líneas)",
   "minimos": {
-    "total": 38,
+    "total": 41,
     "Services": 56,
     "Helpers": 70
   }
