@@ -111,10 +111,11 @@ document.addEventListener('submit', function (e) {
 
 function _guardiaLote(e) {
     if (_postbackEnCurso) return;
-    // Postback a esta misma página por form.submit() (AutoPostBack, LinkButton): no dispara el evento
-    // submit, pero SiteMaster.js lo marca como envío en curso. El lote sigue en el servidor. Cerrar
-    // sesión sí pregunta (SGV.sesionCerrandose).
-    if (SGV.envioEnCurso && SGV.envioEnCurso() && !SGV.sesionCerrandose) return;
+    // Postback completo a esta misma página por form.submit() (AutoPostBack, LinkButton): no dispara el
+    // evento submit, pero SiteMaster.js lo marca como envío en curso. El lote sigue en el servidor. Durante
+    // un postback parcial la página no se va: cerrar la pestaña o F5 sí pregunta (M-131). Cerrar sesión
+    // también pregunta (SGV.sesionCerrandose).
+    if (SGV.envioCompletoEnCurso && SGV.envioCompletoEnCurso() && !SGV.sesionCerrandose) return;
     e.preventDefault();
     e.returnValue = '';
     return '';

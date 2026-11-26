@@ -48,6 +48,8 @@ namespace WebSGV.Tests
         private static string ControlCs() => Leer("Views", "Controles", "Despachos", "ProgramacionWord.ascx.cs");
         private static string Descarga() => Leer("Views", "Controles", "Despachos", "DescargaPedido.ascx");
         private static string DescargaCs() => Leer("Views", "Controles", "Despachos", "DescargaPedido.ascx.cs");
+        private static string ConfiguracionBase() => Leer("Views", "Controles", "Despachos", "ConfiguracionBaseLote.ascx");
+        private static string ConfiguracionBaseCs() => Leer("Views", "Controles", "Despachos", "ConfiguracionBaseLote.ascx.cs");
 
         /// <summary>Cuerpo del método cuya firma empieza con <paramref name="firma"/> (de su primera llave a la que la cierra).</summary>
         private static string Cuerpo(string cs, string firma)
@@ -168,10 +170,12 @@ namespace WebSGV.Tests
             Assert.Contains("ConectarProgramacionWord();", init);
 
             string disparadores = Cuerpo(cs, "private void RegistrarDisparadores()");
-            // "Leer programación" de la descarga vive en DescargaPedido.ascx desde E6-24: llega por DisparadoresCompletos.
-            Assert.Matches(@"foreach \(Control c in new Control\[\] \{ btnIniciarLote, btnLeerDocumentos \}\.Concat\(ucDescargaPedido\.DisparadoresCompletos\)\)\s*" +
+            // "Leer programación" de la descarga vive en DescargaPedido.ascx desde E6-24 e "Iniciar lote" en
+            // ConfiguracionBaseLote.ascx desde E6-26: llegan por DisparadoresCompletos.
+            Assert.Matches(@"foreach \(Control c in ucConfiguracionBase\.DisparadoresCompletos\.Concat\(new Control\[\] \{ btnLeerDocumentos \}\)\.Concat\(ucDescargaPedido\.DisparadoresCompletos\)\)\s*" +
                            @"UpdatePanelMain\.Triggers\.Add\(new PostBackTrigger \{ ControlID = IdDesdeElPanel\(c\) \}\);", disparadores);
             Assert.Matches(@"DisparadoresCompletos => new Control\[\] \{ btnLeerProgramacionDescarga \};", DescargaCs());
+            Assert.Matches(@"DisparadoresCompletos => new Control\[\] \{ btnIniciarLote \};", ConfiguracionBaseCs());
             // Ninguno de los tres va además como asíncrono (el FileUpload llegaría vacío).
             string asincronos = disparadores.Substring(disparadores.IndexOf("var clic", StringComparison.Ordinal));
             foreach (string boton in new[] { "btnIniciarLote", "btnLeerDocumentos", "btnLeerProgramacionDescarga", "DisparadoresCompletos" })
@@ -194,7 +198,10 @@ namespace WebSGV.Tests
         {
             // Los 4 selectores de archivo y el botón (PostBackTrigger) que los envía. Uno nuevo obliga a revisar esta lista.
             var subidas = Regex.Matches(Pagina(), @"<asp:FileUpload ID=""(\w+)""").Cast<Match>().Select(m => m.Groups[1].Value);
-            Assert.Equal(new[] { "fileDocumentosPedido", "fileFacturaBase", "fileCPICBase" }, subidas);
+            Assert.Equal(new[] { "fileDocumentosPedido" }, subidas);
+            // Los de la factura y la CPIC, en la configuración base (E6-26), que envía "Iniciar lote" (PostBackTrigger).
+            var enConfiguracion = Regex.Matches(ConfiguracionBase(), @"<asp:FileUpload ID=""(\w+)""").Cast<Match>().Select(m => m.Groups[1].Value);
+            Assert.Equal(new[] { "fileFacturaBase", "fileCPICBase" }, enConfiguracion);
             // El de la programación de la descarga, en su control (E6-24), junto al botón que es PostBackTrigger.
             var enDescarga = Regex.Matches(Descarga(), @"<asp:FileUpload ID=""(\w+)""").Cast<Match>().Select(m => m.Groups[1].Value);
             Assert.Equal(new[] { "fileProgramacionDescarga" }, enDescarga);

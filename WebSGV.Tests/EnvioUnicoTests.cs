@@ -304,7 +304,7 @@ namespace WebSGV.Tests
             ("Views/MovimientosViaje.aspx", "btnRegistrar", 60, 600),
             ("Views/RegistroDespacho.aspx", "btnLeerDocumentos", 60, 600),
             ("Views/Controles/Despachos/DescargaPedido.ascx", "btnLeerProgramacionDescarga", 60, 600),
-            ("Views/RegistroDespacho.aspx", "btnIniciarLote", 60, 600),
+            ("Views/Controles/Despachos/ConfiguracionBaseLote.ascx", "btnIniciarLote", 60, 600),
             ("Views/BandejaDocumentos.aspx", "btnLeer", 60, 600),
             ("Views/BandejaDocumentos.aspx", "btnRegistrar", 60, 600),
             ("Views/ReporteGps.aspx", "btnGenerar", 60, 600),
@@ -450,6 +450,34 @@ namespace WebSGV.Tests
             int anula = js.IndexOf("if (bloqueado) { if (!enAvisos(e)) anular(e); return; }", StringComparison.Ordinal);
             int montos = js.IndexOf("var boton = botonQueEnvia(e);", StringComparison.Ordinal);
             Assert.True(anula > 0 && montos > anula, "El bloqueo de clics debe registrarse antes que el de montos.");
+        }
+
+        /// <summary>
+        /// M-131 (punto 1, E6-26): la guardia "¿salir?" de RegistroDespacho con un lote a medio armar no pregunta durante
+        /// un postback completo (la página se va a recargar y el lote sigue en el servidor), pero sí durante uno parcial
+        /// (UpdatePanel): la página se queda y cerrar la pestaña o F5 perdería lo que no se guardó.
+        /// </summary>
+        [Fact]
+        public void LaGuardiaDelLote_SoloCallaDuranteUnPostbackCompleto()
+        {
+            string raiz = RaizWeb();
+            string sitio = Leer(raiz, "Scripts/paginas/SiteMaster.js");
+            Assert.Contains("var bloqueado = false, completo = false,", sitio);
+            string bloquear = sitio.Substring(sitio.IndexOf("function bloquear(el, asincrono)", StringComparison.Ordinal));
+            bloquear = bloquear.Substring(0, bloquear.IndexOf("\n    }", StringComparison.Ordinal));
+            Assert.True(bloquear.IndexOf("bloqueado = true;", StringComparison.Ordinal) < bloquear.IndexOf("completo = !asincrono;", StringComparison.Ordinal));
+            string liberar = sitio.Substring(sitio.IndexOf("function liberar()", StringComparison.Ordinal));
+            liberar = liberar.Substring(0, liberar.IndexOf("\n    }", StringComparison.Ordinal));
+            Assert.Contains("completo = false;", liberar);
+            Assert.Contains("SGV.envioCompletoEnCurso = function () { return bloqueado && completo; };", sitio);
+            // envioEnCurso sigue igual para las demás páginas (DashboardConductor).
+            Assert.Contains("SGV.envioEnCurso = function () { return bloqueado; };", sitio);
+
+            string js = Leer(raiz, "Scripts/paginas/RegistroDespacho.js");
+            string guardia = js.Substring(js.IndexOf("function _guardiaLote(e)", StringComparison.Ordinal));
+            guardia = guardia.Substring(0, guardia.IndexOf("\n}", StringComparison.Ordinal));
+            Assert.Contains("if (SGV.envioCompletoEnCurso && SGV.envioCompletoEnCurso() && !SGV.sesionCerrandose) return;", guardia);
+            Assert.DoesNotContain("SGV.envioEnCurso", guardia);
         }
     }
 }

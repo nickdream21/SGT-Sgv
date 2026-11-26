@@ -32,6 +32,7 @@ namespace WebSGV.Tests
         private static string PaginaCs() => Leer("Views", "RegistroDespacho.aspx.cs");
         private static string Control() => Leer("Views", "Controles", "Despachos", "DescargaPedido.ascx");
         private static string ControlCs() => Leer("Views", "Controles", "Despachos", "DescargaPedido.ascx.cs");
+        private static string ConfiguracionBaseCs() => Leer("Views", "Controles", "Despachos", "ConfiguracionBaseLote.ascx.cs");
 
         /// <summary>Cuerpo del método cuya firma empieza con <paramref name="firma"/> (de su primera llave a la que la cierra).</summary>
         private static string Cuerpo(string cs, string firma)
@@ -87,7 +88,11 @@ namespace WebSGV.Tests
             Assert.Contains("ucDescargaPedido.Abierta += (s, a) => pnlConfiguracionBase.Visible = false;", conectar);
             Assert.Contains("ucDescargaPedido.Cerrada += (s, a) => pnlConfiguracionBase.Visible = !TieneLoteActivo;", conectar);
 
-            string aplicar = Cuerpo(cs, "private void AplicarPropuestaConfiguracionBase(PropuestaConfiguracionBase p)");
+            // E6-26: la página pasa la propuesta al control de la configuración base y abre su panel.
+            string pagina = Cuerpo(cs, "private void AplicarPropuestaConfiguracionBase(PropuestaConfiguracionBase p)");
+            Assert.Contains("ucConfiguracionBase.Aplicar(p);", pagina);
+            Assert.Contains("pnlConfiguracionBase.Visible = true;", pagina);
+            string aplicar = Cuerpo(ConfiguracionBaseCs(), "public void Aplicar(PropuestaConfiguracionBase p)");
             foreach (string linea in new[]
             {
                 "RestaurarSeleccion(ddlClienteBase, p.IdCliente?.ToString());",
@@ -96,7 +101,6 @@ namespace WebSGV.Tests
                 "ActualizarPlantasPorAmbito();",
                 "RestaurarSeleccion(ddlLugarOperacionBase, p.IdPlanta);",
                 "txtFechaDespachoBase.Text = p.Fecha;",
-                "pnlConfiguracionBase.Visible = true;",
             })
                 Assert.Contains(linea, aplicar);
             // Las plantas del ámbito se recargan antes de elegir la del lote.

@@ -542,9 +542,12 @@
     <Content Include="Views\RegistroChoferes.aspx" />
     <Content Include="Views\CatalogoCliente.aspx" />
     <Content Include="Views\RegistroClientes.aspx" />
+    <Content Include="Views\Controles\Despachos\ConfiguracionBaseLote.ascx" />
     <Content Include="Views\Controles\Despachos\DescargaPedido.ascx" />
+    <Content Include="Views\Controles\Despachos\HistorialViajes.ascx" />
     <Content Include="Views\Controles\Despachos\ImportacionDocumentos.ascx" />
     <Content Include="Views\Controles\Despachos\ProgramacionWord.ascx" />
+    <Content Include="Views\Controles\Despachos\ViajesConductor.ascx" />
     <Content Include="Views\RegistroDespacho.aspx" />
     <Content Include="Views\RegistroPeajes.aspx" />
     <Content Include="Views\RegistroPlantas.aspx" />
@@ -732,6 +735,7 @@
     <Compile Include="Models\Despachos\BandejaDocumentosModels.cs" />
     <Compile Include="Services\Despachos\ArmadoDescarga.cs" />
     <Compile Include="Services\Despachos\ArmadoLoteImportado.cs" />
+    <Compile Include="Services\Despachos\ArmadoLoteManual.cs" />
     <Compile Include="Services\Despachos\BandejaDocumentosService.cs" />
     <Compile Include="Services\Despachos\CatalogoNuevoDespacho.cs" />
     <Compile Include="Services\Despachos\Importacion\LectorDocumentosAduana.cs" />
@@ -1001,6 +1005,13 @@
       <DependentUpon>RegistroClientes.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\Controles\Despachos\CatalogosDescarga.cs" />
+    <Compile Include="Views\Controles\Despachos\ConfiguracionBaseLote.ascx.cs">
+      <DependentUpon>ConfiguracionBaseLote.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Controles\Despachos\ConfiguracionBaseLote.ascx.designer.cs">
+      <DependentUpon>ConfiguracionBaseLote.ascx</DependentUpon>
+    </Compile>
     <Compile Include="Views\Controles\Despachos\ControlesFormulario.cs" />
     <Compile Include="Views\Controles\Despachos\DescargaPedido.ascx.cs">
       <DependentUpon>DescargaPedido.ascx</DependentUpon>
@@ -1010,6 +1021,13 @@
       <DependentUpon>DescargaPedido.ascx</DependentUpon>
     </Compile>
     <Compile Include="Views\Controles\Despachos\EstadoRegistroDespacho.cs" />
+    <Compile Include="Views\Controles\Despachos\HistorialViajes.ascx.cs">
+      <DependentUpon>HistorialViajes.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Controles\Despachos\HistorialViajes.ascx.designer.cs">
+      <DependentUpon>HistorialViajes.ascx</DependentUpon>
+    </Compile>
     <Compile Include="Views\Controles\Despachos\ProgramacionWord.ascx.cs">
       <DependentUpon>ProgramacionWord.ascx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -1025,6 +1043,13 @@
       <DependentUpon>ImportacionDocumentos.ascx</DependentUpon>
     </Compile>
     <Compile Include="Views\Controles\Despachos\PropuestaConfiguracionBase.cs" />
+    <Compile Include="Views\Controles\Despachos\ViajesConductor.ascx.cs">
+      <DependentUpon>ViajesConductor.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\Controles\Despachos\ViajesConductor.ascx.designer.cs">
+      <DependentUpon>ViajesConductor.ascx</DependentUpon>
+    </Compile>
     <Compile Include="Views\RegistroDespacho.aspx.cs">
       <DependentUpon>RegistroDespacho.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

@@ -77,7 +77,7 @@ namespace WebSGV.Tests.Integracion
                 int idConductor = ConductorExistente();
                 string marca = "Prueba E5-3 " + Guid.NewGuid().ToString("N");
                 var sesion = EnvioUnicoHelperTests.SesionFalsa.ConUsuario(UsuarioExistente());
-                string clave = WebSGV.Views.RegistroDespacho.ClaveEnvioUnicoViaje;
+                string clave = WebSGV.Views.Controles.Despachos.ViajesConductor.ClaveEnvioUnicoViaje;
                 string token = EnvioUnicoHelper.Emitir(sesion, clave);
                 Action crear = () => RegistroDespachoService.CrearNuevoViajeProgreso(idConductor, marca, "PRUEBA");
 

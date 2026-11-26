@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
-using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using WebSGV.Helpers;
@@ -11,6 +10,7 @@ using WebSGV.Models.Despachos;
 using WebSGV.Services.Common;
 using WebSGV.Services.Despachos;
 using WebSGV.Services.Despachos.Importacion;
+using static WebSGV.Views.Controles.Despachos.ControlesFormulario;
 
 namespace WebSGV.Views.Controles.Despachos
 {
@@ -293,7 +293,7 @@ namespace WebSGV.Views.Controles.Despachos
                 // "seguimiento de exportación" al programar el afrecho del 24/10/2026 sin exportación).
                 bool esExportacion = chkExportacionProg.Checked;
                 var rutaProgramada = RutaProgramacion.Reconocer(p.Titulo);
-                var r = ProgramacionDespachoService.Programar(filas, idCliente, idPlanta, fecha, esExportacion, UsuarioActual(), p.EsInternacional);
+                var r = ProgramacionDespachoService.Programar(filas, idCliente, idPlanta, fecha, esExportacion, UsuarioActual(Page), p.EsInternacional);
 
                 if (r.Creados.Count == 0)
                 {
@@ -423,24 +423,6 @@ namespace WebSGV.Views.Controles.Despachos
         }
 
         private void Avisar(string mensaje, string tipo) => Aviso?.Invoke(this, new AvisoEventArgs(mensaje, tipo));
-
-        private static void RegistrarError(string contexto, Exception ex) => LogSGV.Error(ex, "Error en {Contexto}", contexto);
-
-        private string UsuarioActual()
-        {
-            // Como RegistroDespacho.ObtenerUsuarioActual (MAJ-004): el nombre de la sesión.
-            string nombre = SesionHelper.Nombre(Session);
-            if (nombre.Length > 0) return nombre;
-            return Page.User?.Identity?.IsAuthenticated == true ? Page.User.Identity.Name : "Sistema";
-        }
-
-        private static void RestaurarSeleccion(DropDownList ddl, string valor)
-        {
-            if (string.IsNullOrEmpty(valor)) return;
-            if (ddl.Items.FindByValue(valor) != null) ddl.SelectedValue = valor;
-        }
-
-        private static string Html(string texto) => HttpUtility.HtmlEncode(texto ?? string.Empty);
 
         #endregion
     }

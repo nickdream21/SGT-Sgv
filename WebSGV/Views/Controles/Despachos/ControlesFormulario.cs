@@ -82,6 +82,25 @@ namespace WebSGV.Views.Controles.Despachos
             ScriptManager.RegisterStartupScript(pagina, pagina.GetType(), clave,
                 $"setTimeout(function(){{var m=document.getElementById('{idCliente}');if(m)m.scrollIntoView({{behavior:'smooth',block:'center'}});}},50);", true);
 
+        /// <summary>
+        /// Llama a una función de <c>Scripts/paginas/RegistroDespacho.js</c> desde el servidor. En un postback completo
+        /// el startup script se pinta dentro del form, antes de que cargue ese .js (va al final de la página): se
+        /// espera al "load" (también deja actuar antes a MaintainScrollPositionOnPostback). En un postback parcial
+        /// la página ya está cargada y se llama enseguida. <paramref name="funcion"/> es un nombre fijo, nunca dato.
+        /// </summary>
+        public static void LlamarFuncionJsAlCargar(Page pagina, string clave, string funcion) =>
+            ScriptManager.RegisterStartupScript(pagina, pagina.GetType(), clave,
+                $"(function(){{function ir(){{if(typeof window['{funcion}']==='function')window['{funcion}']();}}" +
+                "if(document.readyState==='complete')ir();else window.addEventListener('load',ir);})();", true);
+
+        /// <summary>
+        /// Texto del aviso de un error de operación (E6-13): el mensaje de negocio (ErrorNegocioException o RAISERROR/THROW
+        /// del SP) tal cual, o <paramref name="mensajeUsuario"/> si es técnico. Registra una sola vez: el técnico como
+        /// ERR con la pila y el de negocio como INF (antes se mostraba siempre el texto fijo y todo quedaba como ERR).
+        /// </summary>
+        public static string TextoErrorOperacion(string mensajeUsuario, string contexto, Exception ex) =>
+            MensajeErrorHelper.ParaUsuarioOTexto(ex, mensajeUsuario, "Error en {Contexto}", contexto);
+
         /// <summary>Refresca el UpdatePanel condicional que contiene a <paramref name="control"/> (UpdatePanelMain).</summary>
         public static void RefrescarPanel(Control control)
         {

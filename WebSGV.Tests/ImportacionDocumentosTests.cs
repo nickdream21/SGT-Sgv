@@ -34,6 +34,8 @@ namespace WebSGV.Tests
         private static string ControlCs() => Leer("Views", "Controles", "Despachos", "ImportacionDocumentos.ascx.cs");
         private static string Descarga() => Leer("Views", "Controles", "Despachos", "DescargaPedido.ascx");
         private static string DescargaCs() => Leer("Views", "Controles", "Despachos", "DescargaPedido.ascx.cs");
+        private static string ConfiguracionBase() => Leer("Views", "Controles", "Despachos", "ConfiguracionBaseLote.ascx");
+        private static string ConfiguracionBaseCs() => Leer("Views", "Controles", "Despachos", "ConfiguracionBaseLote.ascx.cs");
 
         /// <summary>Cuerpo del método cuya firma empieza con <paramref name="firma"/> (de su primera llave a la que la cierra).</summary>
         private static string Cuerpo(string cs, string firma)
@@ -129,8 +131,8 @@ namespace WebSGV.Tests
             var botones = Regex.Match(ControlCs(), @"DisparadoresAsincronos => new Control\[\] \{(?<b>[^}]*)\};").Groups["b"].Value;
             Assert.Equal(new[] { "btnAplicarImportacion", "btnCorregirImportacion", "btnDescartarImportacion", "btnQuitarImportacion" },
                 botones.Split(',').Select(b => b.Trim()));
-            // "Leer documentos" sigue siendo PostBackTrigger, en la página.
-            Assert.Contains("new Control[] { btnIniciarLote, btnLeerDocumentos }", disparadores);
+            // "Leer documentos" sigue siendo PostBackTrigger, en la página ("Iniciar lote" llega del control de la configuración base).
+            Assert.Contains("ucConfiguracionBase.DisparadoresCompletos.Concat(new Control[] { btnLeerDocumentos })", disparadores);
         }
 
         // ── La propuesta ampliada (factura y pedido) ────────────────────────────────────
@@ -142,7 +144,10 @@ namespace WebSGV.Tests
             Assert.Contains("PropuestaConfiguracionBase.DeImportacion(imp, ddlPlantaImp.SelectedValue, txtFechaProgramacionImp.Text)", corregir);
             Assert.True(Pos(corregir, "if (!Disponible(imp) || ClienteCambiado(imp)) return;") < Pos(corregir, "Preparar(imp,"));
 
-            string aplicar = Cuerpo(PaginaCs(), "private void AplicarPropuestaConfiguracionBase(PropuestaConfiguracionBase p)");
+            // E6-26: la página pasa la propuesta al control de la configuración base y abre su panel.
+            string pagina = Cuerpo(PaginaCs(), "private void AplicarPropuestaConfiguracionBase(PropuestaConfiguracionBase p)");
+            Assert.True(Pos(pagina, "ucConfiguracionBase.Aplicar(p);") < Pos(pagina, "pnlConfiguracionBase.Visible = true;"));
+            string aplicar = Cuerpo(ConfiguracionBaseCs(), "public void Aplicar(PropuestaConfiguracionBase p)");
             foreach (string linea in new[]
             {
                 "RestaurarSeleccion(ddlClienteBase, p.IdCliente?.ToString());",
@@ -155,7 +160,6 @@ namespace WebSGV.Tests
                 "txtNumeroFacturaBase.Text = p.NumeroFactura;",
                 "txtFechaEmisionFacturaBase.Text = p.FechaEmisionFactura;",
                 "txtValorTotalFacturaBase.Text = p.ValorTotalFactura;",
-                "pnlConfiguracionBase.Visible = true;",
             })
                 Assert.Contains(linea, aplicar);
             // La planta se elige después de recargar las del ámbito, y la factura después de mostrar su panel.
@@ -200,7 +204,7 @@ namespace WebSGV.Tests
             int incorpora = Pos(cuerpo, "ArmadoLoteImportado.IncorporarAlLote(lote, imp, conductores);");
             Assert.True(Pos(cuerpo, "LimpiarImportacion(borrarArchivos: true);") > incorpora);
             Assert.True(Pos(cuerpo, "pnlImportacionAplicada.Visible = false;") > incorpora);
-            Assert.Contains("ucImportacionDocumentos.IncorporarAlLote(lote);", Cuerpo(PaginaCs(), "private bool CrearNuevoLote()"));
+            Assert.Contains("ucImportacionDocumentos.IncorporarAlLote(lote);", Cuerpo(PaginaCs(), "private void IniciarLote()"));
             // Al volver a la configuración base (lote finalizado o cancelado) se pueden subir archivos otra vez.
             Assert.Contains("pnlSubirDocumentos.Visible = !ucImportacionDocumentos.Aplicada;", Cuerpo(PaginaCs(), "private void MostrarFaseConfiguracionBase()"));
             Assert.Contains("ucImportacionDocumentos.Aplicada", Cuerpo(PaginaCs(), "protected override void OnPreRender(EventArgs e)"));
@@ -374,10 +378,10 @@ namespace WebSGV.Tests
 
             // "Iniciar lote" pregunta a los dos controles (los dos, para que cada uno oculte su recuadro viejo) antes de validar
             // y de crear el lote.
-            string iniciar = Cuerpo(PaginaCs(), "protected void btnIniciarLote_Click(");
+            string iniciar = Cuerpo(PaginaCs(), "private void IniciarLote()");
             int pregunta = Pos(iniciar, "string avisoImportacion = ucImportacionDocumentos.AvisoAlIniciarLote(), avisoDescarga = ucDescargaPedido.AvisoAlIniciarLote();");
-            Assert.True(pregunta < Pos(iniciar, "ValidarConfiguracionBase()") && pregunta < Pos(iniciar, "CrearNuevoLote()"));
-            Assert.True(Pos(iniciar, "MostrarMensaje(avisoImportacion ?? avisoDescarga, \"warning\"); return; }") < Pos(iniciar, "CrearNuevoLote()"));
+            Assert.True(pregunta < Pos(iniciar, "ucConfiguracionBase.Validar()") && pregunta < Pos(iniciar, "ucConfiguracionBase.CrearLote("));
+            Assert.True(Pos(iniciar, "MostrarMensaje(avisoImportacion ?? avisoDescarga, \"warning\"); return; }") < Pos(iniciar, "ucConfiguracionBase.CrearLote("));
 
             // Ronda 2: con el aviso el recuadro viejo se OCULTA (sin tocar la sesión) y nunca recibe la marca vigente: su
             // configuración base es de otro pedido, y un segundo "Iniciar lote" incorporaría los tractos de la otra pestaña
@@ -439,7 +443,7 @@ namespace WebSGV.Tests
             Assert.Contains("pnlSubirDocumentos.Visible = !ucImportacionDocumentos.Aplicada;", PaginaCs());
             Assert.Contains("Page.Form.Enctype = \"multipart/form-data\";", Cuerpo(PaginaCs(), "protected override void OnPreRender(EventArgs e)"));
             // Los cuatro FileUpload de la página y de sus controles dependen de él.
-            foreach (var (marcado, id) in new[] { (Pagina(), "fileDocumentosPedido"), (Pagina(), "fileFacturaBase"), (Pagina(), "fileCPICBase"), (Descarga(), "fileProgramacionDescarga") })
+            foreach (var (marcado, id) in new[] { (Pagina(), "fileDocumentosPedido"), (ConfiguracionBase(), "fileFacturaBase"), (ConfiguracionBase(), "fileCPICBase"), (Descarga(), "fileProgramacionDescarga") })
                 Assert.Contains("<asp:FileUpload ID=\"" + id + "\"", marcado);
         }
 
@@ -492,7 +496,7 @@ namespace WebSGV.Tests
         [Fact]
         public void ElAvisoDelLoteIniciado_DiceSiEsDescarga()
         {
-            Assert.Contains("tracto(s) {(LoteActual.TipoOperacion == \"DESCARGA\" ? \"con su descarga\" : \"importados\")}", Cuerpo(PaginaCs(), "protected void btnIniciarLote_Click("));
+            Assert.Contains("tracto(s) {(LoteActual.TipoOperacion == \"DESCARGA\" ? \"con su descarga\" : \"importados\")}", Cuerpo(PaginaCs(), "private void IniciarLote()"));
         }
     }
 }

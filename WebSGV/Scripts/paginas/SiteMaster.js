@@ -124,7 +124,9 @@
 //     avisa a la página si el usuario se queda).
 // data-procesando="Leyendo…" en un botón cambia su texto mientras dura el envío.
 // SGV.envioEnCurso() dice si hay un envío en curso (lo usan los beforeunload de las páginas: un
-// LinkButton envía con form.submit(), que no dispara el evento submit).
+// LinkButton envía con form.submit(), que no dispara el evento submit). SGV.envioCompletoEnCurso()
+// solo si es un postback completo (la página se va a recargar): durante un postback parcial
+// (UpdatePanel) la página se queda, así que cerrar la pestaña o F5 sí debe preguntar "¿salir?" (M-131).
 // No cubre fetch ni PageMethods ($.ajax): tienen su propio bloqueo y no pasan por aquí.
 // SGV.avisar sigue mostrándose encima del velo; SGV.confirmar no se abre por clic durante el envío
 // (los clics no llegan) y, si un script lo abre, queda detrás del velo hasta que se libere.
@@ -132,7 +134,7 @@
     var SGV = window.SGV = window.SGV || {};
     var RETRASO_VELO = 300, ESPERA_DESCARGA = 3000, ESPERA_SUBIDA = 300000, ESPERA_SEGURIDAD = 20000;
     var TEXTO = 'Procesando…';
-    var bloqueado = false, temporizador = null, temporizadorVelo = null, velo = null, estado = null;
+    var bloqueado = false, completo = false, temporizador = null, temporizadorVelo = null, velo = null, estado = null;
     var ultimoElemento = null, ultimoMomento = 0;
     var textoCambiado = null;
 
@@ -214,6 +216,7 @@
     function bloquear(el, asincrono) {
         if (bloqueado || !document.body) return;
         bloqueado = true;
+        completo = !asincrono;
         crear();
         document.body.classList.add('sgv-procesando');
         if (document.forms[0]) document.forms[0].setAttribute('aria-busy', 'true');
@@ -225,6 +228,7 @@
     function liberar() {
         if (!bloqueado) return;
         bloqueado = false;
+        completo = false;
         clearTimeout(temporizador);
         clearTimeout(temporizadorVelo);
         document.body.classList.remove('sgv-procesando', 'sgv-procesando-velo-visible');
@@ -234,6 +238,7 @@
     }
 
     SGV.envioEnCurso = function () { return bloqueado; };
+    SGV.envioCompletoEnCurso = function () { return bloqueado && completo; };
 
     // Va antes que todos los demás listeners de clic (window, captura, registrado primero): durante el
     // envío ningún clic llega a data-confirmar, data-accion, los montos, WebForms ni la página. Los

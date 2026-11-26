@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -15,6 +14,7 @@ using WebSGV.Services.Common;
 using WebSGV.Services.Despachos;
 using WebSGV.Services.Despachos.Importacion;
 using WebSGV.Views.Controles.Despachos;
+using static WebSGV.Views.Controles.Despachos.ControlesFormulario;
 
 namespace WebSGV.Views
 {
@@ -79,29 +79,33 @@ namespace WebSGV.Views
             ConectarProgramacionWord();
             ConectarImportacionDocumentos();
             ConectarDescargaPedido();
+            ConectarViajes();
+            ConectarConfiguracionBase();
         }
 
         /// <summary>
         /// Disparadores de UpdatePanelMain, en código (E6-23): los botones de un control .ascx no se pueden nombrar en el
         /// &lt;Triggers&gt; del marcado. Van en OnInit, antes de que el UpdatePanel los inicialice. Los botones que suben
         /// archivos son PostBackTrigger: UpdatePanel no sube un FileUpload por AJAX (llegaría vacío). Los demás refrescan
-        /// el panel aunque estén dentro de UpdatePanelViajes o del control.
+        /// el panel aunque estén dentro del panel de los viajes o de un control. El selector de conductor refresca además el
+        /// panel de los viajes (ViajesConductor.RefrescarCon).
         /// </summary>
         private void RegistrarDisparadores()
         {
-            foreach (Control c in new Control[] { btnIniciarLote, btnLeerDocumentos }.Concat(ucDescargaPedido.DisparadoresCompletos))
+            foreach (Control c in ucConfiguracionBase.DisparadoresCompletos.Concat(new Control[] { btnLeerDocumentos }).Concat(ucDescargaPedido.DisparadoresCompletos))
                 UpdatePanelMain.Triggers.Add(new PostBackTrigger { ControlID = IdDesdeElPanel(c) });
 
             var clic = new Control[]
             {
-                btnCancelarLote, btnFinalizarLote, btnAgregarConductor, btnCancelarEdicion, btnLimpiarConductor, btnCrearNuevoViaje, btnVerHistorialViajes,
-            }.Concat(ucProgramacionWord.DisparadoresAsincronos).Concat(ucImportacionDocumentos.DisparadoresAsincronos)
-             .Concat(ucDescargaPedido.DisparadoresAsincronos);
+                btnCancelarLote, btnFinalizarLote, btnAgregarConductor, btnCancelarEdicion, btnLimpiarConductor,
+            }.Concat(ucViajesConductor.DisparadoresAsincronos).Concat(ucProgramacionWord.DisparadoresAsincronos)
+             .Concat(ucImportacionDocumentos.DisparadoresAsincronos).Concat(ucDescargaPedido.DisparadoresAsincronos);
             foreach (Control c in clic)
                 UpdatePanelMain.Triggers.Add(new AsyncPostBackTrigger { ControlID = IdDesdeElPanel(c), EventName = "Click" });
-            foreach (Control c in new Control[] { ddlTipoOperacionBase, rblAmbitoOperacionBase })
+            foreach (Control c in ucConfiguracionBase.DisparadoresCambio)
                 UpdatePanelMain.Triggers.Add(new AsyncPostBackTrigger { ControlID = IdDesdeElPanel(c), EventName = "SelectedIndexChanged" });
             UpdatePanelMain.Triggers.Add(new AsyncPostBackTrigger { ControlID = IdDesdeElPanel(gvConductoresLote), EventName = "RowCommand" });
+            ucViajesConductor.RefrescarCon(ddlConductor, "SelectedIndexChanged");
         }
 
         /// <summary>Id de <paramref name="c"/> visto desde el contenedor de nombres del panel ("ucProgramacionWord$btnX" dentro de un control).</summary>
@@ -120,11 +124,10 @@ namespace WebSGV.Views
 
             if (!Page.IsPostBack)
             {
-                EnvioUnicoHelper.Emitir(ClaveEnvioUnicoViaje, hfEnvioUnicoViaje);
                 CargarDatos();
-                EstablecerFechaPorDefecto();
+                ucConfiguracionBase.FechasPorDefecto();
                 ConfigurarEstadoPagina();
-                ActualizarVisibilidadNumeroPedido();
+                ucConfiguracionBase.ActualizarVisibilidadNumeroPedido();
                 RestaurarEstadoImportacion();
                 ucDescargaPedido.Limpiar();   // la descarga preparada no sobrevive a recargar la página (el formulario se reinicia)
 
@@ -142,25 +145,13 @@ namespace WebSGV.Views
             // Importación o descarga preparadas esperan "Iniciar lote", que está en el formulario manual.
             if (ucImportacionDocumentos.Aplicada || ucDescargaPedido.Aplicada)
                 hfManualAbierto.Value = "1";
-            AriaRequiredCpic();
+            ucConfiguracionBase.Abierto = ManualAbierto;
             // Siempre multipart: con el FileUpload oculto (importación aplicada, factura o CPIC) y vuelto a mostrar por AJAX, el formulario no subiría el archivo.
             Page.Form.Enctype = "multipart/form-data";
         }
 
-        /// <summary>
-        /// aria-required de los tres campos de la CPIC, en cada respuesta y no en el marcado: un atributo del marcado
-        /// que se quita en un postback vuelve en el siguiente (no queda en el ViewState). Sigue a los RFV: la CPIC es
-        /// opcional cuando están apagados (descarga internacional, MostrarOcultarPanelesBase).
-        /// </summary>
-        private void AriaRequiredCpic()
-        {
-            bool exigida = rfvNumeroCPICBase.Enabled;
-            foreach (var campo in new System.Web.UI.WebControls.WebControl[] { txtNumeroCPICBase, txtFechaEmisionCPICBase, txtValorFleteBase })
-                campo.Attributes["aria-required"] = exigida ? "true" : "false";
-        }
-
         /// <summary>El formulario manual (configuración base) se pinta abierto; si no, plegado.</summary>
-        protected bool ManualAbierto => hfManualAbierto.Value == "1";
+        private bool ManualAbierto => hfManualAbierto.Value == "1";
 
         private void ConfigurarEstadoPagina()
         {
@@ -189,29 +180,13 @@ namespace WebSGV.Views
                 CargarConductores();
                 CargarTractos();
                 CargarCarretas();
-                CargarClientes();
-                ActualizarPlantasPorAmbito();
+                ucConfiguracionBase.CargarCatalogos();
                 ucDescargaPedido.CargarPedidos();
             }
             catch (Exception ex)
             {
                 MostrarErrorOperacion("Error al cargar los datos. Intente nuevamente.", "CargarDatos", ex);
             }
-        }
-
-        private void EstablecerFechaPorDefecto()
-        {
-            string fechaHoy = FechaHelper.Hoy().ToString("yyyy-MM-dd");
-
-            // Para configuración base
-            if (string.IsNullOrEmpty(txtFechaDespachoBase.Text))
-                txtFechaDespachoBase.Text = fechaHoy;
-
-            if (string.IsNullOrEmpty(txtFechaEmisionFacturaBase.Text))
-                txtFechaEmisionFacturaBase.Text = fechaHoy;
-
-            if (string.IsNullOrEmpty(txtFechaEmisionCPICBase.Text))
-                txtFechaEmisionCPICBase.Text = fechaHoy;
         }
 
         private void CargarConductores()
@@ -282,69 +257,12 @@ namespace WebSGV.Views
             }
         }
 
-        private static void RestaurarSeleccion(DropDownList ddl, string valor)
-        {
-            if (string.IsNullOrEmpty(valor)) return;
-            var item = ddl.Items.FindByValue(valor);
-            if (item != null) ddl.SelectedValue = valor;
-        }
-
         /// <summary>Rearma los tres selectores tras cambiar la composición del lote o el modo de edición.</summary>
         private void RecargarSelectoresConductor()
         {
             CargarConductores();
             CargarTractos();
             CargarCarretas();
-        }
-
-        private void CargarClientes()
-        {
-            DataTable dt = RegistroDespachoService.ObtenerClientesActivos();
-
-            ddlClienteBase.Items.Clear();
-            ddlClienteBase.Items.Add(new ListItem("-- Seleccione un cliente --", "0"));
-            ddlClienteBase.DataSource = dt;
-            ddlClienteBase.DataTextField = "nombre";
-            ddlClienteBase.DataValueField = "idCliente";
-            ddlClienteBase.DataBind();
-        }
-
-        private void ActualizarPlantasPorAmbito()
-        {
-            bool esInternacional = rblAmbitoOperacionBase.SelectedValue == "1";
-            string selectedValue = ddlLugarOperacionBase.SelectedValue;
-
-            ddlLugarOperacionBase.Items.Clear();
-            ddlLugarOperacionBase.Items.Add(new ListItem("-- Seleccione planta --", ""));
-
-            try
-            {
-                DataTable dt = RegistroDespachoService.ObtenerPlantasPorAmbito(esInternacional);
-                foreach (DataRow row in dt.Rows)
-                {
-                    // El valor es idPlanta: el despacho se graba contra la FK, no contra
-                    // el texto del nombre (fase 0 / paso 3).
-                    ddlLugarOperacionBase.Items.Add(
-                        new ListItem(row["nombre"].ToString(), row["idPlanta"].ToString()));
-                }
-            }
-            catch (Exception ex)
-            {
-                // MAJ-005: Logging básico para diagnóstico en lugar de swallow silencioso
-                RegistrarError("ActualizarPlantasPorAmbito", ex);
-                // Antes había aquí un juego de plantas escritas a mano como respaldo.
-                // Desde que Planta es el catálogo único, ese respaldo era peligroso:
-                // dejaba registrar despachos con plantas que podían no existir en el
-                // catálogo, y esos valores son parte de la clave con que se agrupan los
-                // lotes. Es preferible que el desplegable quede vacío y el usuario vea
-                // el problema, a guardar un dato que después nadie puede encontrar.
-                MostrarMensaje(
-                    "No se pudo cargar el catálogo de plantas. Avise al administrador antes de registrar el despacho.",
-                    "danger");
-            }
-
-            if (ddlLugarOperacionBase.Items.FindByValue(selectedValue) != null)
-                ddlLugarOperacionBase.SelectedValue = selectedValue;
         }
 
         #endregion
@@ -365,7 +283,7 @@ namespace WebSGV.Views
             pnlResumenLote.Visible = false;
             pnlAdicionConductores.Visible = false;
             pnlListaConductores.Visible = false;
-            pnlViajesProgreso.Visible = false;
+            ucViajesConductor.Ocultar(refrescar: false);
 
             // Actualizar estado en header
             lblEstadoLote.Visible = false;
@@ -490,89 +408,19 @@ namespace WebSGV.Views
                 : "Ninguno";
         }
 
-        // NUEVO MÉTODO: Controlar visibilidad del panel N° de Pedido
-        private void ActualizarVisibilidadNumeroPedido()
-        {
-            // Mostrar N° de Pedido solo si es CARGA y NACIONAL
-            bool esCarga = ddlTipoOperacionBase.SelectedValue == "CARGA";
-            bool esNacional = rblAmbitoOperacionBase.SelectedValue == "0";
-
-            pnlNumeroPedido.Visible = (esCarga && esNacional);
-        }
-
         #endregion
 
-        #region Eventos de Configuración Base
+        #region Configuración base (ConfiguracionBaseLote.ascx, E6-26)
 
-        protected void ddlTipoOperacionBase_SelectedIndexChanged(object sender, EventArgs e)
+        /// <summary>Los avisos de la configuración base y su "Iniciar lote".</summary>
+        private void ConectarConfiguracionBase()
         {
-            MostrarOcultarPanelesBase();
-            ActualizarVisibilidadNumeroPedido(); // NUEVO: Controlar visibilidad de N° Pedido
+            ucConfiguracionBase.Aviso += (s, a) => MostrarMensaje(a.Mensaje, a.Tipo);
+            ucConfiguracionBase.IniciarLotePulsado += (s, a) => IniciarLote();
         }
 
-        protected void rblAmbitoOperacionBase_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            MostrarOcultarPanelesBase();
-            ActualizarVisibilidadNumeroPedido();
-            ActualizarPlantasPorAmbito();
-        }
-
-        private void MostrarOcultarPanelesBase()
-        {
-            string tipoOperacion = ddlTipoOperacionBase.SelectedValue;
-            bool esInternacional = rblAmbitoOperacionBase.SelectedValue == "1";
-
-            // Resetear paneles
-            pnlFacturaBase.Visible = false;
-            pnlCPICBase.Visible = false;
-
-            string ayuda = "";
-
-            if (!string.IsNullOrEmpty(tipoOperacion))
-            {
-                if (esInternacional)
-                {
-                    if (tipoOperacion == "CARGA")
-                    {
-                        pnlFacturaBase.Visible = true;
-                        pnlCPICBase.Visible = true;
-                        ayuda = "Internacional CARGA: Requiere N° Factura + CPIC (se reutilizarán para todos los conductores)";
-                    }
-                    else if (tipoOperacion == "DESCARGA")
-                    {
-                        pnlCPICBase.Visible = true;
-                        ayuda = "Internacional DESCARGA: CPIC opcional (se reutilizará para todos los conductores). Si aún no lo tiene, agréguelo después al lote en Lista de despachos.";
-                    }
-                }
-                else
-                {
-                    if (tipoOperacion == "CARGA")
-                    {
-                        pnlFacturaBase.Visible = true;
-                        ayuda = "Nacional CARGA: Requiere N° Factura (se reutilizará para todos los conductores)";
-                    }
-                    else if (tipoOperacion == "DESCARGA")
-                    {
-                        ayuda = "Nacional DESCARGA: Solo se requieren guías específicas por conductor";
-                    }
-                }
-            }
-            else
-            {
-                ayuda = "Seleccione el tipo de operación y ámbito para ver los documentos requeridos.";
-            }
-
-            // En la descarga el CPIC puede llegar después que la programación: no se exige
-            // (se agrega al lote desde ListaDespachos). Si se escribe el número, se piden fecha y flete.
-            bool cpicOpcional = esInternacional && tipoOperacion == "DESCARGA";
-            rfvNumeroCPICBase.Enabled = rfvFechaEmisionCPICBase.Enabled = rfvValorFleteBase.Enabled = !cpicOpcional;
-            pnlCPICBase.CssClass = "rd-doc-box mb-3" + (cpicOpcional ? " rd-cpic-opcional" : "");
-            // El asterisco se oculta por CSS (rd-cpic-opcional); aria-required lo pone OnPreRender (AriaRequiredCpic).
-
-            lblAyudaDocumentosBase.Text = ayuda;
-        }
-
-        protected void btnIniciarLote_Click(object sender, EventArgs e)
+        /// <summary>"Iniciar lote de despachos": el lote de la configuración base, con lo importado o la descarga preparada.</summary>
+        private void IniciarLote()
         {
             try
             {
@@ -580,10 +428,15 @@ namespace WebSGV.Views
                 string avisoImportacion = ucImportacionDocumentos.AvisoAlIniciarLote(), avisoDescarga = ucDescargaPedido.AvisoAlIniciarLote();
                 if ((avisoImportacion ?? avisoDescarga) != null) { MostrarMensaje(avisoImportacion ?? avisoDescarga, "warning"); return; }
 
-                if (Page.IsValid && ValidarConfiguracionBase())
+                if (Page.IsValid && ucConfiguracionBase.Validar())
                 {
-                    if (!CrearNuevoLote())
+                    var lote = ucConfiguracionBase.CrearLote(ObtenerUsuarioActual());
+                    if (lote == null)
                         return;
+
+                    ucImportacionDocumentos.IncorporarAlLote(lote);
+                    ucDescargaPedido.IncorporarAlLote(lote);
+                    LoteActual = lote;
 
                     MostrarFaseAdicionConductores();
                     ActualizarResumenLote();
@@ -599,7 +452,7 @@ namespace WebSGV.Views
                         MostrarMensaje("Lote iniciado. Ahora puede agregar conductores.", "success", enPagina: true);
 
                     // Scroll a la sección de conductores
-                    LlamarFuncionJsAlCargar("scrollToConductores", "scrollToConductores");
+                    LlamarFuncionJsAlCargar(Page, "scrollToConductores", "scrollToConductores");
                 }
             }
             catch (Exception ex)
@@ -607,223 +460,6 @@ namespace WebSGV.Views
                 MostrarErrorOperacion("Error al iniciar el lote. Intente nuevamente.", "btnIniciarLote_Click", ex);
             }
         }
-
-        private bool ValidarConfiguracionBase()
-        {
-            List<string> errores = new List<string>();
-
-            if (!TryParseFechaIso(txtFechaDespachoBase.Text, out DateTime fechaDespacho))
-                errores.Add("La fecha de programación no tiene un formato válido");
-
-            // Validaciones adicionales - solo si el campo es visible
-            if (pnlNumeroPedido.Visible && !string.IsNullOrEmpty(txtNumeroPedidoBase.Text) && !ValidarNumeroPedido(txtNumeroPedidoBase.Text))
-            {
-                errores.Add("El número de pedido debe tener exactamente 10 dígitos");
-            }
-
-            if (pnlFacturaBase.Visible && !string.IsNullOrWhiteSpace(txtFechaEmisionFacturaBase.Text))
-            {
-                if (!TryParseFechaIso(txtFechaEmisionFacturaBase.Text, out DateTime fechaFactura))
-                {
-                    errores.Add("La fecha de emisión de factura no tiene un formato válido");
-                }
-                else if (fechaFactura.Date > FechaHelper.Hoy())
-                {
-                    errores.Add("La fecha de emisión de factura no puede ser futura");
-                }
-            }
-
-            if (pnlCPICBase.Visible && !string.IsNullOrWhiteSpace(txtFechaEmisionCPICBase.Text))
-            {
-                if (!TryParseFechaIso(txtFechaEmisionCPICBase.Text, out DateTime fechaCpic))
-                {
-                    errores.Add("La fecha de emisión de CPIC no tiene un formato válido");
-                }
-                else if (fechaCpic.Date > FechaHelper.Hoy())
-                {
-                    errores.Add("La fecha de emisión de CPIC no puede ser futura");
-                }
-            }
-
-            // Documento adjunto (opcional) de factura/CPIC
-            if (pnlFacturaBase.Visible && fileFacturaBase.HasFile)
-            {
-                string errorArchivoFactura = ValidarArchivoDocumentoBase(fileFacturaBase);
-                if (!string.IsNullOrEmpty(errorArchivoFactura))
-                    errores.Add("Documento de factura: " + errorArchivoFactura);
-            }
-
-            if (pnlCPICBase.Visible && fileCPICBase.HasFile)
-            {
-                string errorArchivoCpic = ValidarArchivoDocumentoBase(fileCPICBase);
-                if (!string.IsNullOrEmpty(errorArchivoCpic))
-                    errores.Add("Documento de CPIC: " + errorArchivoCpic);
-            }
-
-            // NUEVA VALIDACIÓN: Verificar duplicados de Factura y CPIC
-            string mensajeErrorDuplicados;
-            if (!ValidarDocumentosDuplicados(out mensajeErrorDuplicados))
-            {
-                errores.Add(mensajeErrorDuplicados);
-            }
-
-            // Validar documentación requerida
-            string tipoOperacion = ddlTipoOperacionBase.SelectedValue;
-            bool esInternacional = rblAmbitoOperacionBase.SelectedValue == "1";
-
-            if (esInternacional && tipoOperacion == "CARGA")
-            {
-                if (string.IsNullOrEmpty(txtNumeroFacturaBase.Text))
-                    errores.Add("Número de factura requerido para carga internacional");
-                if (string.IsNullOrEmpty(txtNumeroCPICBase.Text))
-                    errores.Add("Número de CPIC requerido para carga internacional");
-            }
-            else if (esInternacional && tipoOperacion == "DESCARGA")
-            {
-                // CPIC opcional (puede llegar después): si se escribe, con su fecha y su flete
-                if (!string.IsNullOrWhiteSpace(txtNumeroCPICBase.Text))
-                {
-                    if (string.IsNullOrWhiteSpace(txtFechaEmisionCPICBase.Text))
-                        errores.Add("Con N° de CPIC, indique su fecha de emisión");
-                    if (string.IsNullOrWhiteSpace(txtValorFleteBase.Text))
-                        errores.Add("Con N° de CPIC, indique el valor del flete");
-                }
-            }
-            else if (!esInternacional && tipoOperacion == "CARGA")
-            {
-                if (string.IsNullOrEmpty(txtNumeroFacturaBase.Text))
-                    errores.Add("Número de factura requerido para carga nacional");
-            }
-
-            if (errores.Count > 0)
-            {
-                MostrarMensaje("Errores de validación: " + string.Join(". ", errores) + ".", "danger");
-                return false;
-            }
-
-            return true;
-        }
-
-        private bool CrearNuevoLote()
-        {
-            if (!TryParseFechaIso(txtFechaDespachoBase.Text, out DateTime fechaProgramacion))
-            {
-                MostrarMensaje("La fecha de programación no tiene un formato válido.", "danger");
-                return false;
-            }
-
-            // El RequiredFieldValidator ya cubre el caso normal; esta guarda evita una
-            // excepción de formato si el catálogo de plantas no llegó a cargar.
-            if (!int.TryParse(ddlLugarOperacionBase.SelectedValue, out int idPlanta) || idPlanta <= 0)
-            {
-                MostrarMensaje("Debe seleccionar una planta de operación válida.", "danger");
-                return false;
-            }
-
-            var lote = new LoteDespachos
-            {
-                FechaProgramacion = fechaProgramacion.ToString("yyyy-MM-dd"),
-                IdCliente = Convert.ToInt32(ddlClienteBase.SelectedValue),
-                NombreCliente = ddlClienteBase.SelectedItem.Text,
-                NumeroPedido = pnlNumeroPedido.Visible ? txtNumeroPedidoBase.Text.Trim() : string.Empty,
-                TipoOperacion = ddlTipoOperacionBase.SelectedValue,
-                EsInternacional = rblAmbitoOperacionBase.SelectedValue == "1",
-                IdPlanta = idPlanta,
-                PlantaOperacion = ddlLugarOperacionBase.SelectedItem.Text,
-                UsuarioCreacion = ObtenerUsuarioActual()
-            };
-
-            // Configurar documentación base
-            if (pnlFacturaBase.Visible && !string.IsNullOrEmpty(txtNumeroFacturaBase.Text))
-            {
-                // E5-1: coma o punto decimal, sin separador de miles ni exponente (MontoHelper.LeerMonto).
-                decimal valorFactura;
-                try { valorFactura = MontoHelper.LeerMonto(txtValorTotalFacturaBase.Text, "Valor total de la factura"); }
-                catch (ErrorNegocioException ex)
-                {
-                    MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex), "danger");
-                    return false;
-                }
-                if (valorFactura <= 0)
-                {
-                    MostrarMensaje("El valor total de la factura debe ser mayor a 0.", "danger");
-                    return false;
-                }
-
-                if (!TryParseFechaIso(txtFechaEmisionFacturaBase.Text, out DateTime fechaFactura))
-                {
-                    MostrarMensaje("La fecha de emisión de factura no tiene un formato válido.", "danger");
-                    return false;
-                }
-                lote.Documentacion.NumeroFactura = txtNumeroFacturaBase.Text.Trim();
-                lote.Documentacion.FechaEmisionFactura = fechaFactura;
-                lote.Documentacion.ValorTotalFactura = valorFactura;
-                lote.Documentacion.MonedaFactura = ddlMonedaFacturaBase.SelectedValue == "USD" ? "USD" : "PEN";
-
-                if (fileFacturaBase.HasFile)
-                {
-                    lote.Documentacion.FacturaArchivoRutaTemp = GuardarArchivoTemp(fileFacturaBase, "Factura");
-                    lote.Documentacion.FacturaArchivoNombreOriginal = Path.GetFileName(fileFacturaBase.FileName);
-                }
-            }
-
-            if (pnlCPICBase.Visible && !string.IsNullOrEmpty(txtNumeroCPICBase.Text))
-            {
-                // E5-1: coma o punto decimal, sin separador de miles ni exponente (MontoHelper.LeerMonto).
-                decimal valorFlete;
-                try { valorFlete = MontoHelper.LeerMonto(txtValorFleteBase.Text, "Valor del flete"); }
-                catch (ErrorNegocioException ex)
-                {
-                    MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex), "danger");
-                    return false;
-                }
-                if (valorFlete <= 0)
-                {
-                    MostrarMensaje("El valor del flete debe ser mayor a 0.", "danger");
-                    return false;
-                }
-
-                if (!TryParseFechaIso(txtFechaEmisionCPICBase.Text, out DateTime fechaCpic))
-                {
-                    MostrarMensaje("La fecha de emisión de CPIC no tiene un formato válido.", "danger");
-                    return false;
-                }
-                lote.Documentacion.NumeroCPIC = txtNumeroCPICBase.Text.Trim();
-                lote.Documentacion.FechaEmisionCPIC = fechaCpic;
-                lote.Documentacion.ValorFlete = valorFlete;
-
-                if (fileCPICBase.HasFile)
-                {
-                    lote.Documentacion.CPICArchivoRutaTemp = GuardarArchivoTemp(fileCPICBase, "CPIC");
-                    lote.Documentacion.CPICArchivoNombreOriginal = Path.GetFileName(fileCPICBase.FileName);
-                }
-            }
-
-            ucImportacionDocumentos.IncorporarAlLote(lote);
-            ucDescargaPedido.IncorporarAlLote(lote);
-
-            LoteActual = lote;
-            return true;
-        }
-
-        /// <summary>
-        /// Documento de Factura/CPIC adjunto al armar el lote: PDF, Word o foto de hasta 10 MB,
-        /// con el contenido que corresponde a su extensión (ArchivoSubidoHelper).
-        /// </summary>
-        private string ValidarArchivoDocumentoBase(FileUpload control) =>
-            ArchivoSubidoHelper.Validar(control.PostedFile, ArchivoSubidoHelper.MaxDocumento, ArchivoSubidoHelper.ExtensionesDocumento)
-            ?? string.Empty;
-
-        /// <summary>
-        /// Guarda el archivo subido en una carpeta temporal (fuera del árbol servido
-        /// públicamente) con nombre único, dentro de la subcarpeta del tipo de documento
-        /// (Factura/CPIC/Manifiesto). El id del documento definitivo (idFactura, idCPIC o
-        /// idDespacho, según el caso) todavía no existe en el momento de la subida, así que
-        /// no se puede archivar en su ubicación final todavía.
-        /// </summary>
-        private string GuardarArchivoTemp(FileUpload control, string subcarpeta) =>
-            ArchivosTemporalesHelper.Guardar(DocumentoHelper.RaizFisicaUploads(Server), subcarpeta + "/_temp",
-                control.FileBytes, Path.GetExtension(control.FileName));
 
         #endregion
 
@@ -836,11 +472,11 @@ namespace WebSGV.Views
                 if (ddlConductor.SelectedValue != "0")
                 {
                     int idConductor = Convert.ToInt32(ddlConductor.SelectedValue);
-                    CargarViajesEnProgreso(idConductor);
+                    ucViajesConductor.Mostrar(idConductor);
                 }
                 else
                 {
-                    OcultarPanelViajes();
+                    ucViajesConductor.Ocultar();
                 }
             }
             catch (Exception ex)
@@ -971,36 +607,6 @@ namespace WebSGV.Views
             return true;
         }
 
-        protected void cvFechaDespachoBase_ServerValidate(object source, ServerValidateEventArgs args)
-        {
-            args.IsValid = DespachoValidaciones.FechaDespachoEsValida(args.Value, FechaHelper.Hoy());
-        }
-
-        protected void cvFechaEmisionFacturaBase_ServerValidate(object source, ServerValidateEventArgs args)
-        {
-            if (!pnlFacturaBase.Visible)
-            {
-                args.IsValid = true;
-                return;
-            }
-
-            args.IsValid = DespachoValidaciones.FechaEmisionEsValida(args.Value, FechaHelper.Hoy());
-        }
-
-        protected void cvFechaEmisionCPICBase_ServerValidate(object source, ServerValidateEventArgs args)
-        {
-            if (!pnlCPICBase.Visible)
-            {
-                args.IsValid = true;
-                return;
-            }
-
-            args.IsValid = DespachoValidaciones.FechaEmisionEsValida(args.Value, FechaHelper.Hoy());
-        }
-
-        private bool TryParseFechaIso(string valor, out DateTime fecha) =>
-            DespachoValidaciones.TryParseFechaIso(valor, out fecha);
-
         /// <summary>
         /// Vuelca los datos del formulario en un <see cref="ConductorLote"/>. Los manifiestos
         /// no se leen acá: se adjuntan después desde Gestión de Despachos (las propiedades del
@@ -1074,8 +680,8 @@ namespace WebSGV.Views
             txtGuiaRemitente.Text = conductor.GuiaRemitente ?? string.Empty;
             txtGuiaTransportista.Text = conductor.GuiaTransportista ?? string.Empty;
 
-            CargarViajesEnProgreso(conductor.IdConductor);
-            UpdatePanelViajes.Update();
+            ucViajesConductor.Mostrar(conductor.IdConductor);
+            ucViajesConductor.Refrescar();
 
             ActualizarUiEdicion();
             ActualizarGridConductores();
@@ -1110,9 +716,6 @@ namespace WebSGV.Views
                 lblConductorEnEdicion.Text = HttpUtility.HtmlEncode(LoteActual.Conductores[IndiceEnEdicion].NombreConductor);
         }
 
-        /// <summary>Borra un archivo temporal (manifiesto, factura o CPIC) si existe (sin lanzar si falla).</summary>
-        private static void EliminarArchivoTemporal(string rutaTemp) => ControlesFormulario.EliminarArchivoTemporal(rutaTemp);
-
         private void QuitarConductorDelLote(int indice)
         {
             if (!TieneLoteActivo || indice < 0 || indice >= LoteActual.Conductores.Count)
@@ -1133,7 +736,7 @@ namespace WebSGV.Views
             txtGuiaRemitente.Text = string.Empty;
             txtGuiaTransportista.Text = string.Empty;
 
-            OcultarPanelViajes();
+            ucViajesConductor.Ocultar();
         }
 
         #endregion
@@ -1177,59 +780,18 @@ namespace WebSGV.Views
             {
                 IndiceEnEdicion = -1;   // se cierra el lote: no queda fila en edición
 
-                if (!TieneLoteActivo)
+                var lote = LoteActual;
+                string motivo = MotivoNoFinalizar(lote, out string tipo);
+                if (motivo != null)
                 {
-                    MostrarMensaje("No hay un lote activo para finalizar.", "warning");
-                    return;
-                }
-
-                if (LoteActual.CantidadConductores == 0)
-                {
-                    MostrarMensaje("Debe agregar al menos un conductor antes de finalizar el lote.", "warning");
+                    MostrarMensaje(motivo, tipo);
                     return;
                 }
 
                 // Todo o nada (FinalizarLoteService): si algo falla no se guarda nada y el lote sigue activo para reintentar.
-                var lote = LoteActual;
-
-                // Intento anterior sin confirmar: no se reintenta (duplicaría los despachos si sí se guardó)
-                string bloqueo = FinalizarLoteService.MotivoNoReintentar(lote);
-                if (bloqueo != null)
-                {
-                    MostrarMensaje(bloqueo, "danger");
-                    return;
-                }
-
-                var resultado = FinalizarLoteService.Finalizar(lote, DocumentoHelper.RaizFisicaUploads(Server));
-
-                if (!resultado.Ok)
-                {
-                    if (resultado.CommitEnDuda)
-                    {
-                        lote.CommitEnDuda = true;
-                        LoteActual = lote;   // la marca queda en el lote de sesión
-                    }
-                    MostrarMensaje("No se pudo finalizar el lote:", resultado.Errores, "danger");
-                    return;
-                }
-
-                for (int i = 0; i < lote.Conductores.Count && i < resultado.IdsPorConductor.Count; i++)
-                    lote.Conductores[i].IdDespachoGenerado = resultado.IdsPorConductor[i];
-                int creados = resultado.IdsCreados.Count;
-                int completados = resultado.IdsCompletados.Count;
-
-                // Limpiar lote y resetear página (antes del mensaje: LimpiarFormularioCompleto
-                // oculta el panel de mensajes y el aviso de éxito no llegaba a verse).
-                LoteActual = null;
-                MostrarFaseConfiguracionBase();
-                LimpiarFormularioCompleto();
-                CargarDatos();
-                EstablecerFechaPorDefecto();
-
-                MostrarMensaje(completados == 0
-                    ? $"Lote finalizado: se crearon {creados} despachos."
-                    : $"Lote finalizado: se completaron {completados} despacho(s) programado(s) con sus documentos" +
-                      (creados > 0 ? $" y se crearon {creados} nuevo(s)." : "."), "success");
+                var resultado = Finalizar(lote);
+                if (resultado != null)
+                    TrasFinalizar(lote, resultado);
             }
             catch (Exception ex)
             {
@@ -1237,33 +799,53 @@ namespace WebSGV.Views
             }
         }
 
-        private bool ValidarDocumentosDuplicados(out string mensajeError)
+        /// <summary>Por qué no se puede finalizar <paramref name="lote"/> y el tono del aviso; null si se puede.</summary>
+        private static string MotivoNoFinalizar(LoteDespachos lote, out string tipo)
         {
-            mensajeError = string.Empty;
-            List<string> errores = new List<string>();
+            tipo = "warning";
+            if (lote == null)
+                return "No hay un lote activo para finalizar.";
+            if (lote.CantidadConductores == 0)
+                return "Debe agregar al menos un conductor antes de finalizar el lote.";
 
-            string numeroFactura = (pnlFacturaBase.Visible && !string.IsNullOrEmpty(txtNumeroFacturaBase.Text))
-                ? txtNumeroFacturaBase.Text.Trim() : null;
-            string numeroCPIC = (pnlCPICBase.Visible && !string.IsNullOrEmpty(txtNumeroCPICBase.Text))
-                ? txtNumeroCPICBase.Text.Trim() : null;
+            // Intento anterior sin confirmar: no se reintenta (duplicaría los despachos si sí se guardó)
+            tipo = "danger";
+            return FinalizarLoteService.MotivoNoReintentar(lote);
+        }
 
-            // La factura es única por número y cliente (otro cliente puede usar el mismo número).
-            int? idCliente = int.TryParse(ddlClienteBase.SelectedValue, out int cli) && cli > 0 ? cli : (int?)null;
-            var dup = RegistroDespachoService.ValidarDocumentosDuplicados(numeroFactura, numeroCPIC, idCliente);
+        /// <summary>Guarda el lote; si falla, avisa los errores (con la marca CommitEnDuda en el lote de sesión) y devuelve null.</summary>
+        private ResultadoFinalizarLote Finalizar(LoteDespachos lote)
+        {
+            var resultado = FinalizarLoteService.Finalizar(lote, DocumentoHelper.RaizFisicaUploads(Server));
+            if (resultado.Ok)
+                return resultado;
 
-            if (numeroFactura != null && dup.FacturaExiste)
-                errores.Add($"El número de factura '{numeroFactura}' ya está registrado en el sistema para este cliente");
-
-            if (numeroCPIC != null && dup.CpicExiste)
-                errores.Add($"El número de CPIC '{numeroCPIC}' ya está registrado en el sistema");
-
-            if (errores.Count > 0)
+            if (resultado.CommitEnDuda)
             {
-                mensajeError = string.Join(". ", errores);
-                return false;
+                lote.CommitEnDuda = true;
+                LoteActual = lote;   // la marca queda en el lote de sesión
             }
+            MostrarMensaje("No se pudo finalizar el lote:", resultado.Errores, "danger");
+            return null;
+        }
 
-            return true;
+        /// <summary>Lote guardado: los ids en sus conductores, la página vuelve al inicio y se avisa lo creado y lo completado.</summary>
+        private void TrasFinalizar(LoteDespachos lote, ResultadoFinalizarLote resultado)
+        {
+            for (int i = 0; i < lote.Conductores.Count && i < resultado.IdsPorConductor.Count; i++)
+                lote.Conductores[i].IdDespachoGenerado = resultado.IdsPorConductor[i];
+            int creados = resultado.IdsCreados.Count;
+            int completados = resultado.IdsCompletados.Count;
+
+            // Limpiar lote y resetear página (antes del mensaje: LimpiarFormularioCompleto
+            // oculta el panel de mensajes y el aviso de éxito no llegaba a verse).
+            LoteActual = null;
+            MostrarFaseConfiguracionBase();
+            LimpiarFormularioCompleto();
+            CargarDatos();
+            ucConfiguracionBase.FechasPorDefecto();
+
+            MostrarMensaje(RegistroDespachoReglas.TextoLoteFinalizado(creados, completados), "success");
         }
 
         #endregion
@@ -1428,8 +1010,6 @@ namespace WebSGV.Views
                 : $"<span title=\"{Html(titulo)}\">{Html(texto)}</span>";
         }
 
-        private static string Html(string texto) => HttpUtility.HtmlEncode(texto ?? string.Empty);
-
         #endregion
 
         #region Descarga por pedido (DescargaPedido.ascx, E6-24)
@@ -1448,263 +1028,41 @@ namespace WebSGV.Views
         /// </summary>
         private void AplicarPropuestaConfiguracionBase(PropuestaConfiguracionBase p)
         {
-            RestaurarSeleccion(ddlClienteBase, p.IdCliente?.ToString());
-            ddlTipoOperacionBase.SelectedValue = p.TipoOperacion;
-            rblAmbitoOperacionBase.SelectedValue = p.EsInternacional ? "1" : "0";
-            MostrarOcultarPanelesBase();
-            ActualizarVisibilidadNumeroPedido();
-            ActualizarPlantasPorAmbito();
-            RestaurarSeleccion(ddlLugarOperacionBase, p.IdPlanta);
-            if (!string.IsNullOrEmpty(p.Fecha))
-                txtFechaDespachoBase.Text = p.Fecha;
-            RestaurarSeleccion(ddlMonedaFacturaBase, p.MonedaFactura);
-            if (!string.IsNullOrEmpty(p.NumeroPedido))
-                txtNumeroPedidoBase.Text = p.NumeroPedido;
-            if (p.NumeroFactura != null)
-                txtNumeroFacturaBase.Text = p.NumeroFactura;
-            if (p.FechaEmisionFactura != null)
-                txtFechaEmisionFacturaBase.Text = p.FechaEmisionFactura;
-            if (p.ValorTotalFactura != null)
-                txtValorTotalFacturaBase.Text = p.ValorTotalFactura;
+            ucConfiguracionBase.Aplicar(p);
             pnlConfiguracionBase.Visible = true;
         }
 
         #endregion
 
-        #region Métodos para Gestión de Viajes
+        #region Métodos para Gestión de Viajes (ViajesConductor.ascx e HistorialViajes.ascx, E6-26)
 
-        private List<ViajeEnProgreso> ObtenerViajesAbiertosConductor(int idConductor)
-            => RegistroDespachoService.ObtenerViajesAbiertosConductor(idConductor);
+        /// <summary>Los avisos de los viajes y del historial, y "Ver historial", que abre el modal.</summary>
+        private void ConectarViajes()
+        {
+            ucViajesConductor.SelectorConductor = ddlConductor;
+            ucHistorialViajes.SelectorConductor = ddlConductor;
+            ucViajesConductor.Aviso += (s, a) => MostrarMensaje(a.Mensaje, a.Tipo);
+            ucHistorialViajes.Aviso += (s, a) => MostrarMensaje(a.Mensaje, a.Tipo);
+            ucViajesConductor.VerHistorial += (s, a) => ucHistorialViajes.Abrir();
+        }
 
         private ViajeEnProgreso ObtenerInfoViaje(int idViajeProgreso)
             => RegistroDespachoService.ObtenerInfoViaje(idViajeProgreso);
 
-        private int CrearNuevoViajeProgreso(int idConductor, string descripcion = null)
-        {
-            return RegistroDespachoService.CrearNuevoViajeProgreso(idConductor, descripcion, ObtenerUsuarioActual());
-        }
-
         private int? DeterminarViajeProgreso(int idConductor, bool esInternacional, string tipoOperacion) =>
-            RegistroDespachoReglas.ElegirViajeProgreso(ObtenerViajesAbiertosConductor(idConductor), esInternacional, tipoOperacion,
-                ddlViajesActivos.SelectedValue);
-
-        private void CargarViajesEnProgreso(int idConductor)
-        {
-            var viajesAbiertos = ObtenerViajesAbiertosConductor(idConductor);
-
-            // Mostrar panel de viajes
-            pnlViajesProgreso.Visible = true;
-
-            // Obtener nombre del conductor
-            string nombreConductor = ddlConductor.SelectedItem.Text;
-            spanNombreConductor.InnerText = nombreConductor.Split('-')[0].Trim();
-
-            // Ocultar todos los paneles inicialmente
-            pnlSinViajes.Visible = false;
-            pnlConViajes.Visible = false;
-            pnlMultiplesViajes.Visible = false;
-
-            if (viajesAbiertos.Count == 0)
-            {
-                // Sin viajes abiertos
-                pnlSinViajes.Visible = true;
-            }
-            else if (viajesAbiertos.Count == 1)
-            {
-                // Un viaje abierto
-                var viaje = viajesAbiertos[0];
-                pnlConViajes.Visible = true;
-
-                lblNumeroViaje.Text = System.Web.HttpUtility.HtmlEncode(viaje.NumeroViajeProgreso);
-                lblFechaInicio.Text = viaje.FechaInicio.ToString("dd/MM/yyyy HH:mm");
-                lblCantidadDespachos.Text = viaje.CantidadDespachos.ToString();
-                lblTipoViaje.Text = viaje.EsInternacional.HasValue
-                    ? (viaje.EsInternacional.Value ? "Internacional" : "Nacional")
-                    : "Por determinar";
-            }
-            else
-            {
-                // Múltiples viajes abiertos
-                pnlMultiplesViajes.Visible = true;
-                // Token fresco cada vez que aparece "Crear nuevo viaje" (E5-3): el bloque de viajes no se dibuja hasta
-                // elegir un conductor, y este postback refresca UpdatePanelViajes, donde vive el campo. Solo si el campo
-                // está vacío: emitir en cada cambio de conductor descartaría (tope de 20) el token de otra pestaña abierta.
-                if (string.IsNullOrEmpty(hfEnvioUnicoViaje.Value))
-                    EnvioUnicoHelper.Emitir(ClaveEnvioUnicoViaje, hfEnvioUnicoViaje);
-
-                ddlViajesActivos.Items.Clear();
-                ddlViajesActivos.Items.Add(new ListItem("-- Seleccione un viaje --", "0"));
-
-                foreach (var viaje in viajesAbiertos)
-                {
-                    string display = $"{viaje.NumeroViajeProgreso} - {viaje.FechaInicio:dd/MM} ({viaje.CantidadDespachos} despachos)";
-                    ddlViajesActivos.Items.Add(new ListItem(display, viaje.IdViajeProgreso.ToString()));
-                }
-            }
-        }
-
-        private void OcultarPanelViajes()
-        {
-            pnlViajesProgreso.Visible = false;
-
-            // El bloque de viajes vive en su propio UpdatePanel condicional: si lo ocultamos
-            // durante un postback que no nació ahí (agregar conductor, por ejemplo), hay que
-            // pedirle que se refresque o seguiría mostrando los datos del conductor anterior.
-            var scriptManager = ScriptManager.GetCurrent(Page);
-            if (scriptManager != null && scriptManager.IsInAsyncPostBack)
-                UpdatePanelViajes.Update();
-        }
-
-        /// <summary>Clave de "Crear nuevo viaje" en <see cref="EnvioUnicoHelper"/> (E5-3).</summary>
-        public const string ClaveEnvioUnicoViaje = "RegistroDespacho.CrearNuevoViaje";
-
-        protected void btnCrearNuevoViaje_Click(object sender, EventArgs e)
-        {
-            // Envío único (E5-3): la respuesta lleva siempre un token nuevo (hfEnvioUnicoViaje está dentro de
-            // UpdatePanelViajes, que este botón refresca); el recibido se consume justo antes de crear el viaje.
-            string token = hfEnvioUnicoViaje.Value;
-            EnvioUnicoHelper.Emitir(ClaveEnvioUnicoViaje, hfEnvioUnicoViaje);
-            UpdatePanelViajes.Update();
-            try
-            {
-                if (ddlConductor.SelectedValue != "0")
-                {
-                    int idConductor = Convert.ToInt32(ddlConductor.SelectedValue);
-                    string nombreConductor = ddlConductor.SelectedItem.Text;
-
-                    if (!EnvioUnicoHelper.Consumir(ClaveEnvioUnicoViaje, token))
-                    {
-                        MostrarMensaje(EnvioUnicoHelper.MensajeYaRegistrado, "warning");
-                        CargarViajesEnProgreso(idConductor);
-                        return;
-                    }
-
-                    // Crear nuevo viaje forzosamente
-                    int nuevoViajeId = CrearNuevoViajeProgreso(idConductor, "Viaje creado manualmente por usuario");
-                    AuditoriaHelper.Registrar("INSERT", "ViajesEnProgreso", nuevoViajeId.ToString(),
-                        $"Viaje creado manualmente para {nombreConductor.Split('-')[0].Trim()} (idConductor {idConductor})");
-
-                    MostrarMensaje($"Viaje nuevo creado para {nombreConductor.Split('-')[0].Trim()}.", "success");
-
-                    // Recargar información de viajes
-                    CargarViajesEnProgreso(idConductor);
-                }
-            }
-            catch (Exception ex)
-            {
-                MostrarErrorOperacion("Error al crear nuevo viaje.", "btnCrearNuevoViaje_Click", ex);
-            }
-        }
-
-        protected void btnVerHistorialViajes_Click(object sender, EventArgs e)
-        {
-            // MAJ-002: Implementación real del historial de viajes
-            try
-            {
-                if (ddlConductor.SelectedValue == "0")
-                {
-                    MostrarMensaje("Seleccione un conductor para ver su historial de viajes.", "warning");
-                    return;
-                }
-
-                int idConductor = Convert.ToInt32(ddlConductor.SelectedValue);
-                string nombreConductor = ddlConductor.SelectedItem.Text.Split('-')[0].Trim();
-
-                // Actualizar el span del modal con el nombre del conductor
-                spanConductorModal.InnerText = nombreConductor;
-                UpdatePanelTituloModal.Update();
-
-                // Cargar historial de viajes desde la BD
-                CargarHistorialViajes(idConductor);
-
-                // Abrir el modal Bootstrap via script
-                LlamarFuncionJsAlCargar("showModal", "showHistorialModal");
-            }
-            catch (Exception ex)
-            {
-                MostrarErrorOperacion("Error al cargar historial de viajes.", "btnVerHistorialViajes_Click", ex);
-            }
-        }
-
-        private void CargarHistorialViajes(int idConductor)
-        {
-            try
-            {
-                gvHistorialViajes.DataSource = RegistroDespachoService.ObtenerHistorialViajesConductor(idConductor);
-                gvHistorialViajes.DataBind();
-                UpdatePanelModal.Update();
-            }
-            catch (Exception ex)
-            {
-                RegistrarError("CargarHistorialViajes", ex);
-                // Mostrar grilla vacía si falla la carga
-                gvHistorialViajes.DataSource = null;
-                gvHistorialViajes.DataBind();
-                MostrarMensaje("Error al cargar el historial.", "danger");
-            }
-        }
-
-        protected void gvHistorialViajes_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            // MAJ-002: Implementación del comando Reabrir
-            try
-            {
-                if (e.CommandName == "Reabrir")
-                {
-                    int idViajeProgreso = Convert.ToInt32(e.CommandArgument);
-
-                    RegistroDespachoService.ReabrirViajeProgreso(idViajeProgreso, ObtenerUsuarioActual());
-
-                    AuditoriaHelper.Registrar("UPDATE", "ViajesEnProgreso", idViajeProgreso.ToString(),
-                        $"Viaje en progreso reabierto por {ObtenerUsuarioActual()}");
-
-                    // Recargar historial del conductor activo
-                    if (ddlConductor.SelectedValue != "0")
-                    {
-                        int idConductor = Convert.ToInt32(ddlConductor.SelectedValue);
-                        CargarHistorialViajes(idConductor);
-                    }
-
-                    MostrarMensaje("Viaje reabierto.", "success");
-                }
-            }
-            catch (SqlException ex) when (ex.Number == 50000)
-            {
-                // Validaciones de negocio de sp_ReabrirViajeProgreso (RAISERROR): mostrar el motivo.
-                MostrarMensaje("No se pudo reabrir el viaje: " + MensajeErrorHelper.ParaUsuario(ex, "Error en {Contexto}", "gvHistorialViajes_RowCommand"), "warning");
-            }
-            catch (Exception ex)
-            {
-                MostrarErrorOperacion("Error al reabrir viaje.", "gvHistorialViajes_RowCommand", ex);
-            }
-        }
+            RegistroDespachoReglas.ElegirViajeProgreso(RegistroDespachoService.ObtenerViajesAbiertosConductor(idConductor), esInternacional,
+                tipoOperacion, ucViajesConductor.ViajeElegido);
 
         #endregion
 
         #region Métodos de Utilidad
 
-        private bool ValidarNumeroPedido(string numeroPedido) =>
-            DespachoValidaciones.ValidarNumeroPedido(numeroPedido);
-
-        private string ObtenerUsuarioActual() => ControlesFormulario.UsuarioActual(this);
+        private string ObtenerUsuarioActual() => UsuarioActual(this);
 
         private void LimpiarFormularioCompleto()
         {
             // Limpiar configuración base
-            ddlClienteBase.SelectedIndex = 0;
-            ddlLugarOperacionBase.SelectedIndex = 0;
-            ddlTipoOperacionBase.SelectedIndex = 0;
-            rblAmbitoOperacionBase.SelectedIndex = 0;
-
-            txtFechaDespachoBase.Text = string.Empty;
-            txtNumeroPedidoBase.Text = string.Empty;
-            txtNumeroFacturaBase.Text = string.Empty;
-            txtFechaEmisionFacturaBase.Text = string.Empty;
-            txtValorTotalFacturaBase.Text = string.Empty;
-            ddlMonedaFacturaBase.SelectedValue = "PEN";
-            txtNumeroCPICBase.Text = string.Empty;
-            txtFechaEmisionCPICBase.Text = string.Empty;
-            txtValorFleteBase.Text = string.Empty;
+            ucConfiguracionBase.Limpiar();
 
             // Limpiar campos de conductor
             LimpiarCamposConductor();
@@ -1784,19 +1142,6 @@ namespace WebSGV.Views
                     "if(document.readyState==='complete')ir();else window.addEventListener('load',ir);})();", true);
         }
 
-        /// <summary>
-        /// Llama a una función de <c>Scripts/paginas/RegistroDespacho.js</c> desde el servidor. En un postback completo
-        /// el startup script se pinta dentro del form, antes de que cargue ese .js (va al final de la página): se
-        /// espera al "load" (también deja actuar antes a MaintainScrollPositionOnPostback). En un postback parcial
-        /// la página ya está cargada y se llama enseguida. <paramref name="funcion"/> es un nombre fijo, nunca dato.
-        /// </summary>
-        private void LlamarFuncionJsAlCargar(string clave, string funcion)
-        {
-            ScriptManager.RegisterStartupScript(this, GetType(), clave,
-                $"(function(){{function ir(){{if(typeof window['{funcion}']==='function')window['{funcion}']();}}" +
-                "if(document.readyState==='complete')ir();else window.addEventListener('load',ir);})();", true);
-        }
-
         private void MostrarMensajeRecuperacion()
         {
             var lote = LoteActual;
@@ -1818,21 +1163,12 @@ namespace WebSGV.Views
             pnlMensajes.Visible = true;
         }
 
-        private void RegistrarError(string contexto, Exception ex)
-        {
-            LogSGV.Error(ex, "Error en {Contexto}", contexto);
-        }
+        /// <summary>Ver <see cref="ControlesFormulario.TextoErrorOperacion"/> (E6-13); se conserva aquí para las pruebas y los avisos de la página.</summary>
+        internal static string TextoErrorOperacion(string mensajeUsuario, string contexto, Exception ex) =>
+            ControlesFormulario.TextoErrorOperacion(mensajeUsuario, contexto, ex);
 
         private void MostrarErrorOperacion(string mensajeUsuario, string contexto, Exception ex) =>
             MostrarMensaje(TextoErrorOperacion(mensajeUsuario, contexto, ex), "danger");
-
-        /// <summary>
-        /// Texto del aviso de un error de operación (E6-13): el mensaje de negocio (ErrorNegocioException o RAISERROR/THROW
-        /// del SP) tal cual, o <paramref name="mensajeUsuario"/> si es técnico. Registra una sola vez: el técnico como
-        /// ERR con la pila y el de negocio como INF (antes se mostraba siempre el texto fijo y todo quedaba como ERR).
-        /// </summary>
-        internal static string TextoErrorOperacion(string mensajeUsuario, string contexto, Exception ex) =>
-            MensajeErrorHelper.ParaUsuarioOTexto(ex, mensajeUsuario, "Error en {Contexto}", contexto);
 
         #endregion
     }

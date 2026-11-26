@@ -25,7 +25,7 @@ namespace WebSGV.Tests
         /// <summary>Archivos de más de 800 líneas (ruta relativa a WebSGV/).</summary>
         private static readonly Dictionary<string, int> TopesArchivo = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Views/RegistroDespacho.aspx.cs"] = 1839,
+            ["Views/RegistroDespacho.aspx.cs"] = 1175,
             ["Views/ListaDespachos.aspx.cs"] = 2120,
             ["Services/Despachos/BandejaDocumentosService.cs"] = 1549,
             ["Views/ReportesOrdenesViaje.aspx.cs"] = 1479,
@@ -65,13 +65,11 @@ namespace WebSGV.Tests
             ["Services/Despachos/ExpedienteDocumentosService.cs::Obtener"] = 103,
             ["Views/Login.aspx.cs::btnLogin_Click"] = 102,
             ["Services/Facturas/FacturaFleteService.cs::Reporte"] = 101,
-            ["Views/RegistroDespacho.aspx.cs::CrearNuevoLote"] = 101,
             ["Views/DashboardConductor.aspx.cs::ConstruirInputLiquidacion"] = 100,
             ["Views/DetalleOrdenViaje.aspx.cs::Mostrar"] = 99,
             ["Views/Login.aspx.cs::Page_Load"] = 98,
             ["Views/VerificarDocumento.aspx.cs::Verificar"] = 88,
             ["Views/BandejaDocumentos.aspx.cs::btnRegistrar_Click"] = 97,
-            ["Views/RegistroDespacho.aspx.cs::ValidarConfiguracionBase"] = 95,
             ["Services/Despachos/ListaDespachosService.cs::GuardarCambiosLote"] = 94,
             ["Services/Conductor/DashboardConductorService.cs::CargarFinancieros"] = 93,
             ["Views/Login.aspx.cs::ValidarUsuario"] = 85,

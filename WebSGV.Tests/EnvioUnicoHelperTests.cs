@@ -210,17 +210,18 @@ namespace WebSGV.Tests
 
         public static IEnumerable<object[]> Paginas() => new[]
         {
-            // página, manejador, campo oculto, clave, primera escritura
-            new object[] { "Views/MovimientosViaje", "btnRegistrar_Click", "hfEnvioUnico", "ClaveEnvioUnico", "fuAdjunto.HasFile" },
-            new object[] { "Views/RegistroDespacho", "btnCrearNuevoViaje_Click", "hfEnvioUnicoViaje", "ClaveEnvioUnicoViaje", "CrearNuevoViajeProgreso(" },
-            new object[] { "Views/RegistroPlantas", "btnRegistrar_Click", "hfEnvioUnico", "ClaveEnvioUnico", "PlantaService.Registrar(" },
+            // página o control (sin extensión), extensión del marcado, manejador, campo oculto, clave, primera escritura.
+            // "Crear nuevo viaje" de RegistroDespacho vive en ViajesConductor.ascx desde E6-26.
+            new object[] { "Views/MovimientosViaje", ".aspx", "btnRegistrar_Click", "hfEnvioUnico", "ClaveEnvioUnico", "fuAdjunto.HasFile" },
+            new object[] { "Views/Controles/Despachos/ViajesConductor", ".ascx", "btnCrearNuevoViaje_Click", "hfEnvioUnicoViaje", "ClaveEnvioUnicoViaje", "CrearNuevoViajeProgreso(" },
+            new object[] { "Views/RegistroPlantas", ".aspx", "btnRegistrar_Click", "hfEnvioUnico", "ClaveEnvioUnico", "PlantaService.Registrar(" },
         };
 
         [Theory]
         [MemberData(nameof(Paginas))]
-        public void Pagina_ConsumeElTokenAntesDeEscribir(string pagina, string manejador, string campo, string clave, string escritura)
+        public void Pagina_ConsumeElTokenAntesDeEscribir(string pagina, string extension, string manejador, string campo, string clave, string escritura)
         {
-            string cs = Leer(pagina + ".aspx.cs");
+            string cs = Leer(pagina + extension + ".cs");
             string cuerpo = Cuerpo(cs, manejador);
 
             int consumir = cuerpo.IndexOf("EnvioUnicoHelper.Consumir(" + clave + ",", StringComparison.Ordinal);
@@ -234,13 +235,15 @@ namespace WebSGV.Tests
             var pageLoad = Cuerpo(cs, "Page_Load");
             Assert.Contains("EnvioUnicoHelper.Emitir(" + clave + ", " + campo + ")", pageLoad);
 
-            Assert.Matches(@"<asp:HiddenField\s+ID=""" + campo + @"""", Leer(pagina + ".aspx"));
+            Assert.Matches(@"<asp:HiddenField\s+ID=""" + campo + @"""", Leer(pagina + extension));
         }
 
         [Fact]
         public void RegistroDespacho_TokenDentroDelPanelQueRefresca_YBotonConConfirmacion()
         {
-            string aspx = Leer("Views/RegistroDespacho.aspx");
+            // El bloque de viajes es ViajesConductor.ascx desde E6-26; la página solo lo coloca.
+            Assert.Contains("<sgv:ViajesConductor ID=\"ucViajesConductor\" runat=\"server\" />", Leer("Views/RegistroDespacho.aspx"));
+            string aspx = Leer("Views/Controles/Despachos/ViajesConductor.ascx");
             var panel = Regex.Match(aspx, @"<asp:UpdatePanel ID=""UpdatePanelViajes"".*?<ContentTemplate>(?<c>.*?)</ContentTemplate>", RegexOptions.Singleline);
             Assert.True(panel.Success);
             string contenido = panel.Groups["c"].Value;
@@ -254,7 +257,7 @@ namespace WebSGV.Tests
             Assert.Contains("data-confirmar=\"", boton.Value);
 
             // El bloque no se dibuja hasta elegir un conductor: el token se renueva cada vez que aparece el botón.
-            string cargar = Cuerpo(Leer("Views/RegistroDespacho.aspx.cs"), "CargarViajesEnProgreso");
+            string cargar = Cuerpo(Leer("Views/Controles/Despachos/ViajesConductor.ascx.cs"), "MostrarVarios");
             Assert.True(cargar.IndexOf("EnvioUnicoHelper.Emitir(ClaveEnvioUnicoViaje, hfEnvioUnicoViaje)", StringComparison.Ordinal)
                         > cargar.IndexOf("pnlMultiplesViajes.Visible = true", StringComparison.Ordinal));
         }

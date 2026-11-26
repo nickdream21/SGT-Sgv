@@ -24,6 +24,13 @@ namespace WebSGV.Services.Despachos
         public static string TextoEstadoLote(int conductores) =>
             "Lote activo · " + conductores + (conductores == 1 ? " conductor" : " conductores");
 
+        /// <summary>Aviso de "Finalizar lote" que salió bien: los despachos creados y los programados que se completaron.</summary>
+        public static string TextoLoteFinalizado(int creados, int completados) =>
+            completados == 0
+                ? $"Lote finalizado: se crearon {creados} despachos."
+                : $"Lote finalizado: se completaron {completados} despacho(s) programado(s) con sus documentos" +
+                  (creados > 0 ? $" y se crearon {creados} nuevo(s)." : ".");
+
         // ── Tira de pasos del día (M-086) ───────────────────────────────────────────────────
 
         /// <summary>Paso activo de la tira: 1 con la vista previa del Word, 2 con la del ZIP o los PDF; sin ninguna, 1 (el primero que toca).</summary>

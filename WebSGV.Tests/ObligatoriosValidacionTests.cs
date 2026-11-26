@@ -47,9 +47,9 @@ namespace WebSGV.Tests
         /// </summary>
         public static readonly Dictionary<string, string> AriaRequiredDesdeElServidor = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["txtNumeroCPICBase"] = "RegistroDespacho.AriaRequiredCpic: CPIC opcional en la descarga internacional",
-            ["txtFechaEmisionCPICBase"] = "RegistroDespacho.AriaRequiredCpic: CPIC opcional en la descarga internacional",
-            ["txtValorFleteBase"] = "RegistroDespacho.AriaRequiredCpic: CPIC opcional en la descarga internacional",
+            ["txtNumeroCPICBase"] = "ConfiguracionBaseLote.AriaRequiredCpic: CPIC opcional en la descarga internacional",
+            ["txtFechaEmisionCPICBase"] = "ConfiguracionBaseLote.AriaRequiredCpic: CPIC opcional en la descarga internacional",
+            ["txtValorFleteBase"] = "ConfiguracionBaseLote.AriaRequiredCpic: CPIC opcional en la descarga internacional",
         };
 
         /// <summary>
@@ -608,7 +608,8 @@ namespace WebSGV.Tests
         [Fact]
         public void A_AriaRequiredDesdeElServidor_LoPoneOnPreRender()
         {
-            string cs = File.ReadAllText(Path.Combine(RaizWeb(), "Views", "RegistroDespacho.aspx.cs"));
+            // La configuración base es un control desde E6-26: el aria-required de la CPIC lo pone su OnPreRender.
+            string cs = File.ReadAllText(Path.Combine(RaizWeb(), "Views", "Controles", "Despachos", "ConfiguracionBaseLote.ascx.cs"));
             int pre = cs.IndexOf("protected override void OnPreRender(EventArgs e)", StringComparison.Ordinal);
             Assert.True(pre >= 0);
             Assert.Contains("AriaRequiredCpic();", cs.Substring(pre, cs.IndexOf("\n        }", pre, StringComparison.Ordinal) - pre));
