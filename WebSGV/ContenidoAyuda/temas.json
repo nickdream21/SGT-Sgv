@@ -104,7 +104,8 @@
         "A"
       ],
       "paginas": [
-        "Views/BandejaDocumentos.aspx"
+        "Views/BandejaDocumentos.aspx",
+        "Views/RegistroManualLote.aspx"
       ],
       "interruptor": "",
       "video": "",

@@ -6,15 +6,14 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Services.Despachos
 {
-    /// <summary>Vista de ListaDespachos: las dos listas (con pestañas) y las cuatro pantallas de un viaje o un lote.</summary>
+    /// <summary>Vista de ListaDespachos: las dos listas (con pestañas) y las tres pantallas de un viaje o un lote (el registro manual es RegistroManualLote.aspx desde E6-27).</summary>
     public enum VistaListaDespachos
     {
         Viajes,
         Lotes,
         DetalleViaje,
         EdicionLote,
-        DetalleLote,
-        RegistroManual
+        DetalleLote
     }
 
     /// <summary>Botón de una fila de las listas de ListaDespachos (E5-18a): ver, editar o ver anulado un lote, o ver un viaje.</summary>

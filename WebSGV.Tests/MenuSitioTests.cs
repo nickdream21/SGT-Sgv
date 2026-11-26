@@ -215,6 +215,7 @@ namespace WebSGV.Tests
             ["Views/Inicio.aspx"] = "portada de la administración: se llega con el logo (RolesHelper.UrlInicioSegunRol)",
             ["Views/MiSeguridad.aspx"] = "en Configuración, en el marcado de Site.Master (solo con segundo factor)",
             ["Views/DetalleOrdenViaje.aspx"] = "detalle de una liquidación: se abre desde las listas",
+            ["Views/RegistroManualLote.aspx"] = "registro manual de un lote: se abre desde el expediente de la Bandeja",
             ["Views/FirmarLiquidacion.aspx"] = "firma del conductor: se abre desde su panel",
             ["Views/ConformarLiquidacion.aspx"] = "conformidad del conductor: se abre desde su panel",
             ["Views/Exportacion/SeguimientoViaje.aspx"] = "detalle de un viaje: se abre desde el tablero de seguimiento",

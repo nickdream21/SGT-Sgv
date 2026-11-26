@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -66,6 +67,22 @@ namespace WebSGV.Services.Common
                 throw new ErrorNegocioException($"El monto de «{campo}» no es válido. {MensajeFormatoMonto}");
             }
             return ValidarMonto(d, campo);
+        }
+
+        /// <summary>
+        /// Monto opcional de un formulario (vacío = null), validado con <see cref="LeerMonto"/>: no numérico, negativo,
+        /// sobre el tope o con más de 2 decimales agrega el error del campo a <paramref name="errores"/> y devuelve null
+        /// (E6-27: antes en ListaDespachos, para "Factura y CPIC por despacho").
+        /// </summary>
+        public static decimal? LeerMontoOpcional(string texto, string campo, List<string> errores)
+        {
+            if (string.IsNullOrWhiteSpace(texto)) return null;
+            try { return LeerMonto(texto, campo); }
+            catch (ErrorNegocioException ex)
+            {
+                errores.Add(ex.Message);
+                return null;
+            }
         }
 
         /// <summary>

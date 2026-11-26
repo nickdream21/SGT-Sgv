@@ -369,7 +369,7 @@ namespace WebSGV.Services.Despachos
             {
                 c.Estado = EstadoAduanaBandeja.NoSeRegistra;
                 c.Detalle = $"La factura comercial {cp.FacturaComercial} está registrada para más de un cliente: no se sabe a qué carga va la CPIC. " +
-                            "Asígnela a mano en la lista de despachos → Documentos del lote → \"Factura y CPIC por despacho\".";
+                            "Asígnela a mano en el expediente del pedido → Registro manual → \"Factura y CPIC por despacho\".";
                 return;
             }
             // Las cargas de su factura comercial y sus descargas en destino (lote internacional, idDespachoCarga).

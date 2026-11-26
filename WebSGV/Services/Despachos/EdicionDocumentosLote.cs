@@ -117,9 +117,9 @@ namespace WebSGV.Services.Despachos
             // Otro usuario pudo asignar una 2.ª factura o CPIC mientras el formulario estaba abierto (el panel solo se
             // muestra con una): quitar desde aquí las quitaría todas.
             if (input.QuitarFactura && antes.Facturas.Count > 1)
-                throw new ErrorNegocioException("El lote ahora tiene más de una factura: quítelas por despacho en Documentos del lote → Factura y CPIC por despacho.");
+                throw new ErrorNegocioException("El lote ahora tiene más de una factura: quítelas por despacho en Registro manual → Factura y CPIC por despacho.");
             if (input.QuitarCpic && antes.Cpics.Count > 1)
-                throw new ErrorNegocioException("El lote ahora tiene más de una CPIC: quítelas por despacho en Documentos del lote → Factura y CPIC por despacho.");
+                throw new ErrorNegocioException("El lote ahora tiene más de una CPIC: quítelas por despacho en Registro manual → Factura y CPIC por despacho.");
 
             if (input.QuitarFactura)
                 c.FacturasAQuitar = antes.Despachos.Where(d => d.IdFactura.HasValue).Select(d => d.IdFactura.Value)

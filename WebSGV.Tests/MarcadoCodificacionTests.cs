@@ -81,9 +81,10 @@ namespace WebSGV.Tests
             "HttpUtility.HtmlEncode(",
             "System.Web.HttpUtility.HtmlEncode(",
             "Server.HtmlEncode(",
-            "CeldaDocumento(",            // ListaDespachos: HtmlEncode del número + insignia de textos fijos
-            "CeldaGuiaMci(",              // ListaDespachos: HtmlEncode de la guía + insignia de textos fijos
-            "InsigniaDocumento(",         // ListaDespachos: EstadoUiHelper.Sello, HtmlEncode del texto
+            // RegistroManualLote (E6-27, antes en ListaDespachos), ver RegistroManualLoteTests.Celdas_CodificanElTexto:
+            "RegistroManualLoteReglas.CeldaDocumento(",    // HtmlEncode del número + insignia de textos fijos
+            "RegistroManualLoteReglas.CeldaGuiaMci(",      // HtmlEncode de la guía + insignia de textos fijos
+            "RegistroManualLoteReglas.InsigniaDocumento(", // EstadoUiHelper.Sello, HtmlEncode del texto
             "ListaDespachosReglas.Sello", // ListaDespachos (E5-18a): SelloEstadoViaje, SelloEstadoDespacho, SelloLoteAnulado,
                                           // SellosDocumentos y SelloSinAdjuntar, todos por EstadoUiHelper.Sello (HtmlEncode)
             "UrlAdjunto(",             // MovimientosViaje: URL de DocumentoHelper (NavigateUrl la codifica el HyperLink)

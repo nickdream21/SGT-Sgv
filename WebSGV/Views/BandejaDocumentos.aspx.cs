@@ -760,7 +760,7 @@ namespace WebSGV.Views
             int pct = e.Requeridos == 0 ? 100 : (int)Math.Round(100.0 * listos / e.Requeridos);
             string volver = H(ResolveUrl("~/Views/BandejaDocumentos.aspx"));
             string lote = H(ResolveUrl("~/Views/ListaDespachos.aspx") + "?lote=" + HttpUtility.UrlEncode(e.IdLote));
-            string manual = H(ResolveUrl("~/Views/ListaDespachos.aspx") + "?manual=1&lote=" + HttpUtility.UrlEncode(e.IdLote));
+            string manual = H(ResolveUrl(RegistroManualLoteReglas.Url(e.IdLote)));
             string ayuda = AyudaCompletar(e.Faltan, e.SinPdf, e.Perfil);
 
             var sb = new StringBuilder();

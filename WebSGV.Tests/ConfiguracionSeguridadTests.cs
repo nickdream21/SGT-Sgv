@@ -206,7 +206,7 @@ namespace WebSGV.Tests
 
         [Theory]
         [InlineData("Views/RegistroDespacho.aspx", 25600)]
-        [InlineData("Views/ListaDespachos.aspx", 25600)]
+        [InlineData("Views/RegistroManualLote.aspx", 25600)]
         [InlineData("Views/BandejaDocumentos.aspx", 51200)]
         [InlineData("Views/FacturasFlete.aspx", 51200)]
         [InlineData("Views/Exportacion/ImportarSeguimiento.aspx", 12288)]

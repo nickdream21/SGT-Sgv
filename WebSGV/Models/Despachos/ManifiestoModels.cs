@@ -18,7 +18,7 @@ namespace WebSGV.Models.Despachos
     }
 
     /// <summary>
-    /// Fila de la grilla "Manifiesto por Conductor" en ListaDespachos.aspx: un despacho del
+    /// Fila de la grilla "Manifiestos por conductor" en RegistroManualLote.aspx: un despacho del
     /// lote con el documento de cruce/retorno más reciente (si existe).
     /// </summary>
     public class ManifiestoDespachoRow

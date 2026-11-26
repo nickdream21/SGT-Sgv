@@ -21,7 +21,7 @@ namespace WebSGV.Tests
     /// </summary>
     public class GrandesPlantillaTests
     {
-        public static readonly string[] Paginas = { "ListaDespachos", "RegistroDespacho" };
+        public static readonly string[] Paginas = { "ListaDespachos", "RegistroDespacho", "RegistroManualLote" };
 
         /// <summary>Páginas con filtros de búsqueda: llevan el details.sgv-filtros común (RegistroDespacho no filtra).</summary>
         private static readonly string[] PaginasConFiltros = { "ListaDespachos" };
@@ -214,14 +214,16 @@ namespace WebSGV.Tests
             Assert.True(ListaDespachosReglas.MuestraNavegacion(VistaListaDespachos.Viajes));
             Assert.True(ListaDespachosReglas.MuestraNavegacion(VistaListaDespachos.Lotes));
             foreach (var vista in new[] { VistaListaDespachos.DetalleViaje, VistaListaDespachos.EdicionLote,
-                VistaListaDespachos.DetalleLote, VistaListaDespachos.RegistroManual })
+                VistaListaDespachos.DetalleLote })
                 Assert.False(ListaDespachosReglas.MuestraNavegacion(vista), vista + " no lleva las pestañas (M-082)");
 
             string cs = Cs("ListaDespachos");
             Assert.Matches(@"pnlNavegacionListas\.Visible = (ListaDespachosReglas\.)?MuestraNavegacion\(vista\)", Metodo(cs, "MostrarVista"));
             // Toda pantalla pasa por MostrarVista: ningún otro método enciende un panel a mano.
             Assert.Single(Regex.Matches(cs, @"pnlListaLotes\.Visible\s*="));
-            Assert.Single(Regex.Matches(cs, @"pnlManifiestosLote\.Visible\s*="));
+            // El registro manual es RegistroManualLote.aspx desde E6-27: ya no es una vista de esta página.
+            Assert.DoesNotContain("pnlManifiestosLote", cs);
+            Assert.DoesNotContain("RegistroManual", Enum.GetNames(typeof(VistaListaDespachos)));
         }
 
         [Fact]
@@ -355,7 +357,8 @@ namespace WebSGV.Tests
         {
             string aspx = Aspx("ListaDespachos");
             Assert.Contains("ListaDespachosReglas.SellosDocumentos(", aspx);
-            Assert.Contains("ListaDespachosReglas.SelloSinAdjuntar(", aspx);
+            // Los manifiestos (con su sello "Sin adjuntar") están en el registro manual desde E6-27.
+            Assert.Contains("ListaDespachosReglas.SelloSinAdjuntar(", Aspx("RegistroManualLote"));
             Assert.Contains("ListaDespachosReglas.SelloEstadoDespacho(", aspx);
             Assert.DoesNotContain("ld-sin-adjuntar", aspx);
             Assert.Equal("", ListaDespachosReglas.SelloSinAdjuntar(5));
@@ -366,8 +369,10 @@ namespace WebSGV.Tests
             Assert.Contains("Falta &lt;factura&gt;", celda);
             Assert.Contains("Manifiesto: Pendiente", celda);
             Assert.DoesNotContain("Manifiesto", ListaDespachosReglas.SellosDocumentos("Completo", TonoEstado.Ok, false, "N/A"));
-            string insignia = Metodo(Cs("ListaDespachos"), "InsigniaDocumento");
-            Assert.DoesNotContain("<i class", insignia);
+            // InsigniaDocumento pasó a RegistroManualLoteReglas (E6-27): un sello con texto, sin icono.
+            Assert.DoesNotContain("<i class", Metodo(SiHay("Services", "Despachos", "RegistroManualLoteReglas.cs"), "InsigniaDocumento"));
+            Assert.Equal(EstadoUiHelper.Sello("sin PDF", TonoEstado.Alerta), RegistroManualLoteReglas.InsigniaDocumento(false, "sin PDF"));
+            Assert.Equal(EstadoUiHelper.Sello("PDF", TonoEstado.Ok), RegistroManualLoteReglas.InsigniaDocumento(true, "PDF"));
 
             Assert.Equal(TonoEstado.Ok, ListaDespachosReglas.TonoManifiesto("Completo"));
             Assert.Equal(TonoEstado.Peligro, ListaDespachosReglas.TonoManifiesto("Pendiente"));
@@ -400,8 +405,12 @@ namespace WebSGV.Tests
             Assert.DoesNotContain("btnGestionarManifiestos", aspx + cs);
             Assert.DoesNotContain("IrAlExpediente", cs);
             Assert.Contains("hlDocumentosLote.NavigateUrl = UrlExpediente(", cs);
-            Assert.Equal(5, Regex.Matches(aspx, @"DataField=""Placa(Tracto|Carreta)""[^>]*ItemStyle-CssClass=""ld-placa""").Count);
-            Assert.Matches(@"\.ld-placa\s*\{\s*white-space:\s*nowrap", Css("ListaDespachos"));
+            // 4 en esta página y 1 en las guías del registro manual (E6-27), cada hoja con su .ld-placa.
+            const string placa = @"DataField=""Placa(Tracto|Carreta)""[^>]*ItemStyle-CssClass=""ld-placa""";
+            Assert.Equal(4, Regex.Matches(aspx, placa).Count);
+            Assert.Single(Regex.Matches(Aspx("RegistroManualLote"), placa));
+            foreach (string hoja in new[] { "ListaDespachos", "RegistroManualLote" })
+                Assert.Matches(@"\.ld-placa\s*\{\s*white-space:\s*nowrap", Css(hoja));
         }
 
         [Fact]

@@ -74,6 +74,7 @@ QR
 Query
 Recuperar
 Recurso
+RegistroManualLote
 Reporte
 ReportesOrdenesViaje
 Restablecer

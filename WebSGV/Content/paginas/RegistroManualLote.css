@@ -1,0 +1,106 @@
+/* ==========================================================================
+   RegistroManualLote (E6-27): el registro manual de documentos de un lote, que
+   antes era una vista de ListaDespachos. Sobre la plantilla común de
+   sgv-base.css (sgv-panel, sgv-tabla, sgv-resumen); los nombres ld- se
+   conservan para no tocar el marcado ni el script.
+   ========================================================================== */
+
+/* El mismo ancho que tenía dentro de ListaDespachos. */
+.container:has(> .ld-pagina) { max-width: min(1880px, 97vw); }
+
+/* Una placa no se parte en el guion ("AVN-" / "758"). */
+.ld-placa { white-space: nowrap; }
+/* Los span.sr-only de las filas van en absolute: sin un contenedor posicionado se escapan del scroll de la tabla (M-168). */
+.table-responsive { position: relative; }
+
+/* ---- Registro manual de documentos ---- */
+.ld-aviso { display: flex; gap: .75rem; align-items: flex-start; padding: .8rem 1rem; border-radius: var(--sgv-radio); margin-bottom: 1.25rem; font-size: .875rem; line-height: 1.45; }
+.ld-aviso > i { margin-top: .15rem; font-size: 1rem; }
+.ld-aviso-info { background: var(--sgv-primario-claro); border: 1px solid var(--sgv-azul-200); color: var(--sgv-azul-900); }
+.ld-aviso-neutro { background: var(--sgv-fondo); border: 1px solid var(--sgv-borde); color: var(--sgv-texto-suave); }
+.ld-aviso-alerta { background: var(--sgv-alerta-fondo); border: 1px solid var(--sgv-ambar-200); color: var(--sgv-alerta-texto); }
+
+.ld-docs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+.ld-doc-card { background: var(--sgv-superficie); border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: .7rem; }
+.ld-doc-card-head { display: flex; flex-direction: column; gap: .15rem; }
+.ld-doc-card-titulo { font-size: .8125rem; font-weight: 600; color: var(--sgv-texto-suave); }
+.ld-doc-card-numero { font-size: 1rem; font-weight: 700; color: var(--sgv-texto); word-break: break-word; }
+.ld-doc-card-numero .sgv-estado { margin-left: .5rem; vertical-align: middle; }
+.ld-doc-archivo:empty { display: none; }
+.ld-doc-ver { display: inline-flex; align-items: center; gap: .4rem; font-size: .875rem; font-weight: 600; color: var(--sgv-primario); word-break: break-all; }
+.ld-doc-ver:hover { text-decoration: underline; }
+.ld-doc-subir { display: flex; align-items: stretch; gap: .5rem; flex-wrap: wrap; margin-top: auto; }
+.ld-doc-elegir {
+    flex: 1;
+    min-width: 180px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    border: 2px dashed var(--sgv-borde-fuerte);
+    border-radius: var(--sgv-radio);
+    padding: .55rem .8rem;
+    color: var(--sgv-texto-suave);
+    font-size: .875rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--sgv-fondo);
+    transition: border-color .15s, background .15s;
+    overflow: hidden;
+}
+.ld-doc-elegir:hover, .ld-doc-elegir:focus-within { border-color: var(--sgv-azul-500); background: var(--sgv-primario-claro); color: var(--sgv-primario); }
+.ld-doc-elegir.ld-con-archivo { border-style: solid; border-color: var(--sgv-verde-600); background: var(--sgv-verde-50); color: var(--sgv-ok-texto); }
+.ld-doc-elegir-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ld-doc-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.ld-doc-btn[disabled], .ld-doc-btn.ld-desactivado { opacity: .5; pointer-events: none; }
+.ld-nota { font-size: .8125rem; color: var(--sgv-texto-suave); margin: .75rem 0 1.25rem; }
+
+.ld-doc-registrar { background: var(--sgv-ambar-50); border: 1px solid var(--sgv-ambar-200); border-radius: var(--sgv-radio); padding: .8rem .9rem; display: flex; flex-direction: column; gap: .6rem; }
+.ld-doc-registrar-titulo { font-size: .875rem; font-weight: 600; color: var(--sgv-alerta-texto); }
+.ld-doc-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem .75rem; }
+.ld-campo { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.ld-campo-ancho { grid-column: 1 / -1; }
+.ld-campo label { font-size: .8125rem; font-weight: 600; color: var(--sgv-texto-suave); margin: 0; }
+.ld-doc-registrar .btn { align-self: flex-start; }
+
+.ld-bloque { background: var(--sgv-superficie); border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); margin-bottom: 1.25rem; overflow: hidden; }
+.ld-bloque-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: .25rem 1rem; padding: .85rem 1.1rem; border-bottom: 1px solid var(--sgv-borde); background: var(--sgv-fondo); }
+.ld-bloque-titulo { margin: 0; font-size: 1rem; font-weight: 600; color: var(--sgv-texto); }
+.ld-bloque-ayuda { font-size: .8125rem; color: var(--sgv-texto-suave); }
+.ld-bloque-pie { display: flex; justify-content: flex-end; padding: .8rem 1.1rem; border-top: 1px solid var(--sgv-borde); background: var(--sgv-fondo); }
+.ld-guia-input { min-width: 150px; }
+.ld-guia-input.ld-modificado { border-color: var(--sgv-ambar-500); background: var(--sgv-ambar-50); }
+
+/* Factura y CPIC por despacho */
+.ld-docs-despacho-enlace { padding: .7rem 1.1rem; }
+.ld-docs-despacho-enlace a { font-size: .875rem; font-weight: 600; color: var(--sgv-primario); }
+.ld-docs-despacho .ld-aviso { margin: .8rem 1.1rem 0; }
+.ld-col-marca { width: 2.5rem; text-align: center; }
+.ld-col-marca input[type=checkbox] { width: 1.1rem; height: 1.1rem; cursor: pointer; }
+.ld-docs-num { font-weight: 700; color: var(--sgv-texto); word-break: break-word; }
+.ld-tabla-docs-despacho .sgv-estado { margin-left: .25rem; }
+.ld-asignar-docs { margin: 1rem 1.1rem; }
+.ld-docs-lista { margin: 0 1.1rem 1rem; display: flex; flex-direction: column; gap: .5rem; }
+.ld-docs-lista-fila { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); padding: .6rem .8rem; }
+.ld-docs-lista-doc { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .6rem; min-width: 0; }
+.ld-docs-lista-tipo { font-size: .8125rem; font-weight: 600; color: var(--sgv-texto-suave); }
+.ld-docs-lista-acciones { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; flex: 1 1 320px; justify-content: flex-end; }
+.ld-docs-lista-acciones .ld-doc-subir { margin-top: 0; flex: 1 1 260px; }
+
+/* ---- Celular ---- */
+@media (max-width: 575.98px) {
+    .ld-doc-subir { flex-direction: column; }
+    .ld-bloque-pie .btn { width: 100%; }
+    .ld-doc-campos { grid-template-columns: 1fr; }
+    .ld-doc-registrar .btn { width: 100%; }
+
+    /* "Factura y CPIC por despacho": una tarjeta por despacho en vez de seis columnas. */
+    .ld-tabla-docs-despacho thead { display: none; }
+    .ld-tabla-docs-despacho, .ld-tabla-docs-despacho tbody, .ld-tabla-docs-despacho tr, .ld-tabla-docs-despacho td { display: block; width: 100%; }
+    .ld-tabla-docs-despacho tr { position: relative; border-bottom: 1px solid var(--sgv-borde); padding: .6rem .75rem .6rem 2.75rem; }
+    .table.sgv-tabla.ld-tabla-docs-despacho tbody td { border: 0 !important; padding: .15rem 0 !important; }
+    .ld-tabla-docs-despacho td[data-label]::before { content: attr(data-label); display: block; font-size: .75rem; font-weight: 600; color: var(--sgv-texto-suave); }
+    .ld-tabla-docs-despacho td.ld-col-marca { position: absolute; left: .75rem; top: .75rem; width: auto; }
+    .ld-asignar-docs, .ld-docs-lista { margin-left: .75rem; margin-right: .75rem; }
+    .ld-docs-lista-acciones { justify-content: flex-start; }
+}

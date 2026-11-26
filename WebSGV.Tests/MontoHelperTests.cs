@@ -116,7 +116,7 @@ namespace WebSGV.Tests
             Assert.Equal(ex.Message, MensajeError.ExtraerMensajeDeNegocio(ex));
         }
 
-        // ---- ListaDespachos «Factura y CPIC por despacho»: monto opcional con las mismas reglas ----
+        // ---- «Factura y CPIC por despacho» (RegistroManualLote): monto opcional con las mismas reglas ----
 
         [Theory]
         [InlineData(null)]
@@ -125,7 +125,7 @@ namespace WebSGV.Tests
         public void LeerMontoOpcional_Vacio_EsSinValorYSinError(string entrada)
         {
             var errores = new System.Collections.Generic.List<string>();
-            Assert.Null(WebSGV.Views.ListaDespachos.LeerMontoOpcional(entrada, "Valor del flete", errores));
+            Assert.Null(WebSGV.Services.Common.MontoHelper.LeerMontoOpcional(entrada, "Valor del flete", errores));
             Assert.Empty(errores);
         }
 
@@ -133,7 +133,7 @@ namespace WebSGV.Tests
         public void LeerMontoOpcional_Valido_DevuelveElMonto()
         {
             var errores = new System.Collections.Generic.List<string>();
-            Assert.Equal(1200.50m, WebSGV.Views.ListaDespachos.LeerMontoOpcional("1200.50", "Valor del flete", errores));
+            Assert.Equal(1200.50m, WebSGV.Services.Common.MontoHelper.LeerMontoOpcional("1200.50", "Valor del flete", errores));
             Assert.Empty(errores);
         }
 
@@ -146,7 +146,7 @@ namespace WebSGV.Tests
         public void LeerMontoOpcional_Invalido_AgregaElErrorDelCampo(string entrada, string fragmento)
         {
             var errores = new System.Collections.Generic.List<string>();
-            Assert.Null(WebSGV.Views.ListaDespachos.LeerMontoOpcional(entrada, "Valor total de la factura", errores));
+            Assert.Null(WebSGV.Services.Common.MontoHelper.LeerMontoOpcional(entrada, "Valor total de la factura", errores));
             string error = Assert.Single(errores);
             Assert.Contains("Valor total de la factura", error);
             Assert.Contains(fragmento, error);

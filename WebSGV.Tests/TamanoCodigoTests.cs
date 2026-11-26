@@ -26,7 +26,7 @@ namespace WebSGV.Tests
         private static readonly Dictionary<string, int> TopesArchivo = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {
             ["Views/RegistroDespacho.aspx.cs"] = 1175,
-            ["Views/ListaDespachos.aspx.cs"] = 2120,
+            ["Views/ListaDespachos.aspx.cs"] = 1318,
             ["Services/Despachos/BandejaDocumentosService.cs"] = 1549,
             ["Views/ReportesOrdenesViaje.aspx.cs"] = 1479,
             ["Services/PdfOrdenViajeService.cs"] = 1307,
