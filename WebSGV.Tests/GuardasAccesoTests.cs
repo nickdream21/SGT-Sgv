@@ -60,6 +60,7 @@ namespace WebSGV.Tests
                 { "Views/Inicio.aspx",                            "SecurityHelper.ExigirRolAdmin()" },
                 { "Views/LiquidacionesAprobadasContabilidad.aspx","RolesHelper.ValidarAccesoSeccion(\"LIQUIDACIONES_CONTABILIDAD\")" },
                 { "Views/LiquidacionesPendientes.aspx",           "RolesHelper.ValidarAccesoSeccion(\"ORDEN_VIAJE\")" },
+                { "Views/EditarLote.aspx",                        "SecurityHelper.ExigirRolAdmin()" },
                 { "Views/ListaDespachos.aspx",                    "SecurityHelper.ExigirRolAdmin()" },
                 // Los roles de RolesHelper.ExigeSegundoFactor; otro rol (conductor) vuelve a su inicio después (E4-14).
                 { "Views/MiSeguridad.aspx",                       "SecurityHelper.ExigirSesion()" },
@@ -306,6 +307,7 @@ namespace WebSGV.Tests
                 { "Views/Inicio.aspx",                            new[] { A } },
                 { "Views/LiquidacionesAprobadasContabilidad.aspx",new[] { A, K } },
                 { "Views/LiquidacionesPendientes.aspx",           new[] { A } },
+                { "Views/EditarLote.aspx",                        new[] { A } },
                 { "Views/ListaDespachos.aspx",                    new[] { A } },
                 // Solo la sesión: el conductor vuelve a su inicio después (RolesHelper.ExigeSegundoFactor, E4-14).
                 { "Views/MiSeguridad.aspx",                       Todos },

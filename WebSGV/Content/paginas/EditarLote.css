@@ -1,0 +1,92 @@
+/* ==========================================================================
+   EditarLote (E6-28): la edición de un lote, que antes era una vista de
+   ListaDespachos. Sobre la plantilla común de sgv-base.css (sgv-panel,
+   sgv-tabla, sgv-resumen); los nombres ld- se conservan para no tocar el
+   marcado ni el script. select2.min.css se carga antes que esta hoja.
+   ========================================================================== */
+
+/* El mismo ancho que tenía dentro de ListaDespachos. */
+.container:has(> .ld-pagina) { max-width: min(1880px, 97vw); }
+
+.ld-pagina .sgv-panel { margin-bottom: 1.25rem; }
+.ld-dato { font-weight: 600; color: var(--sgv-texto); }
+.ld-numero { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ld-col-fecha { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ---- Edición del lote ---- */
+.doc-panel { border: 1px solid var(--sgv-borde); border-radius: var(--sgv-radio); overflow: hidden; margin-bottom: 1rem; }
+.ld-doc-panel-titulo {
+    background: var(--sgv-fondo);
+    padding: .6rem .9rem;
+    border-bottom: 1px solid var(--sgv-borde);
+    font-weight: 600;
+    font-size: .875rem;
+    color: var(--sgv-texto);
+    margin: 0;
+}
+.doc-panel-content { padding: .9rem; }
+.form-section {
+    background: var(--sgv-fondo);
+    border: 1px solid var(--sgv-borde);
+    border-radius: var(--sgv-radio);
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.form-section-title {
+    color: var(--sgv-texto);
+    font-weight: 600;
+    margin-bottom: .75rem;
+    font-size: 1rem;
+    border-bottom: 1px solid var(--sgv-borde);
+    padding-bottom: .6rem;
+}
+.ld-conductor-actual { font-weight: 600; color: var(--sgv-texto); }
+.ld-form-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: .5rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--sgv-borde);
+}
+.ld-nota-alerta { color: var(--sgv-alerta-texto); }
+.ld-quitar-doc { display: inline-flex; align-items: center; }
+.ld-quitar-doc input[type=checkbox] { margin: 0 .45rem 0 0; }
+.ld-quitar-doc label { margin-bottom: 0; cursor: pointer; }
+/* El select original de select2 (.select2-hidden-accessible) y los span.sr-only de las filas van en absolute: sin un
+   contenedor posicionado se escapaban del scroll de la tabla y ensanchaban "Editar lote" a 390 px (M-168, como RegistroDespacho.css). */
+.table-responsive { position: relative; }
+.readonly-field { background-color: var(--sgv-fondo-pagina); cursor: not-allowed; }
+.form-text { font-size: .8125rem; color: var(--sgv-texto-suave); margin-top: .25rem; }
+
+
+/* ---- Aviso de Editar lote (más de una factura o CPIC) ---- */
+.ld-aviso { display: flex; gap: .75rem; align-items: flex-start; padding: .8rem 1rem; border-radius: var(--sgv-radio); margin-bottom: 1.25rem; font-size: .875rem; line-height: 1.45; }
+.ld-aviso-info { background: var(--sgv-primario-claro); border: 1px solid var(--sgv-azul-200); color: var(--sgv-azul-900); }
+.ld-aviso-alerta { background: var(--sgv-alerta-fondo); border: 1px solid var(--sgv-ambar-200); color: var(--sgv-alerta-texto); }
+
+/* ---- Select2 de los conductores (Editar lote) ----
+   select2.min.css se carga antes que esta hoja, así que basta el mismo selector. */
+.select2-container--default .select2-selection--single {
+    min-height: 38px;
+    border: 1px solid var(--sgv-borde-fuerte);
+    border-radius: var(--sgv-radio);
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered { padding: .375rem .75rem; line-height: 1.5; }
+.select2-container--default .select2-selection--single .select2-selection__arrow { height: 100%; }
+.select2-container--default .select2-results__option--highlighted[aria-selected] { background-color: var(--sgv-primario-osc); color: var(--sgv-blanco); }
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    border: 1px solid var(--sgv-borde-fuerte);
+    border-radius: var(--sgv-radio);
+    padding: .5rem;
+}
+
+/* ---- Celular ---- */
+@media (max-width: 767.98px) {
+    /* Al tacto, el combo de conductor con la altura de un botón (M-145). */
+    .select2-container--default .select2-selection--single { min-height: 2.75rem; }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 2rem; }
+    .ld-form-acciones { justify-content: stretch; }
+    .ld-form-acciones .btn { flex: 1 1 auto; }
+}

@@ -4,7 +4,7 @@ Registros de la BD que hay que corregir, completar o cargar. Casi todos están e
 
 Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = menor.
 
-Último id usado: D-039 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: D-040 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Facturas
 
@@ -52,6 +52,7 @@ Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = meno
 - [ ] **D-037** Marca o modelo de semirremolques con espacios al inicio o al final — 6 en `Carreta` (medido el 2026-11-23; p. ej. id 22 "FAMECA "; el modal de edición los muestra tal cual). Control: `SELECT id, marca, modelo FROM Carreta WHERE DATALENGTH(marca) <> DATALENGTH(LTRIM(RTRIM(marca))) OR DATALENGTH(modelo) <> DATALENGTH(LTRIM(RTRIM(modelo)))` (con `<>` directo SQL Server ignora los espacios finales). · C
 - [ ] **D-038** Conductor con el mismo nombre completo y dos documentos distintos — 1 caso (2 filas, visto el 2026-11-23 en la grilla de RegistroChoferes): confirmar con la oficina si es la misma persona con un documento mal cargado o dos personas, y desactivar o corregir la fila que sobre. Control: `SELECT LTRIM(RTRIM(nombre)) n, LTRIM(RTRIM(apPaterno)) p, LTRIM(RTRIM(ISNULL(apMaterno,''))) m, COUNT(*) FROM Conductor GROUP BY LTRIM(RTRIM(nombre)), LTRIM(RTRIM(apPaterno)), LTRIM(RTRIM(ISNULL(apMaterno,''))) HAVING COUNT(*) > 1` (debe dar 0 filas, o solo las confirmadas como personas distintas). · C
 - [ ] **D-039** Nombres de usuarios con espacios repetidos o al final — visto el 2026-11-24 en el modal de edición de GestionUsuarios (un usuario de rol CONDUCTOR con 67 caracteres frente a 54 recortado; la grilla lo oculta porque el HTML junta los espacios). Control: `SELECT COUNT(*) FROM Usuarios WHERE nombre LIKE '%  %' OR DATALENGTH(nombre) <> DATALENGTH(LTRIM(RTRIM(nombre)))`. Con aprobación: recortar y dejar un solo espacio entre palabras. · C
+- [ ] **D-040** Despachos activos con `numeroPedido = ''` (texto vacío) en lugar de NULL — al editar su lote se reescriben a NULL solo los que cambian y el lote puede partirse (M-229). Control: `SELECT COUNT(*) FROM Despachos WHERE activo = 1 AND numeroPedido = ''` (3 el 2026-11-26, cada uno en su propio lote). Con aprobación: `UPDATE … SET numeroPedido = NULL` en esos despachos. · C
 
 ## Reglas
 

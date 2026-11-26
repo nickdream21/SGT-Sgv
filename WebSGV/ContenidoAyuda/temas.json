@@ -135,7 +135,8 @@
         "A"
       ],
       "paginas": [
-        "Views/ListaDespachos.aspx"
+        "Views/ListaDespachos.aspx",
+        "Views/EditarLote.aspx"
       ],
       "interruptor": "",
       "video": "",

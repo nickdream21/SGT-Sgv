@@ -113,7 +113,7 @@ namespace WebSGV.Tests
             ["Services/Exportacion/ActualizacionGpsAutomatica.cs::Ejecutar"] = 1, // _textosTrasError = TextosTrasError (ParaUsuario)
             ["Views/DashboardConductor.aspx.cs::MantenerPestanaLiquidar"] = 1, // el envío ya mostró y registró el error
             ["Services/Common/MontoHelper.cs::LeerMontoOpcional"] = 1,  // monto inválido: a la lista de errores del formulario
-            ["Views/ListaDespachos.aspx.cs::ValidarMontoObligatorio"] = 1,
+            ["Services/Despachos/EditarLoteReglas.cs::ValidarMontoObligatorio"] = 1,
             ["Views/Login.aspx.cs::btnLogin_Click"] = 1,                // ValidarUsuario ya registró el error
         };
 

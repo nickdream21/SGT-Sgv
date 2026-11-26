@@ -1,9 +1,7 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -11,7 +9,6 @@ using static WebSGV.Views.ListaDespachos;
 using WebSGV.Helpers;
 using WebSGV.Models.Despachos;
 using WebSGV.Services.Despachos;
-using WebSGV.Services.Facturas;
 using WebSGV.Services.Common;
 
 namespace WebSGV.Views
@@ -40,24 +37,15 @@ namespace WebSGV.Views
         }
 
         /// <summary>
-        /// El lote abierto es un lote anulado (filtro "Anulados" -> "Ver unidades"): solo consulta.
-        /// Su id virtual puede coincidir con el de un lote activo registrado después con la misma
-        /// clave, y las escrituras resuelven los ids con lecturas de solo activos: por eso toda
-        /// acción que escribe se rechaza mientras este indicador está activo.
+        /// El lote abierto es un lote anulado (filtro "Anulados" -> "Ver unidades"): solo consulta. Su id virtual puede
+        /// coincidir con el de un lote activo registrado después con la misma clave: por eso su detalle no ofrece
+        /// "Documentos" ni "Editar lote" y lee sus despachos inactivos. Desde E6-28 esta página no escribe: editar y
+        /// anular son EditarLote.aspx, que vuelve a leer el lote activo antes de cada escritura.
         /// </summary>
         private bool LoteSeleccionadoAnulado
         {
             get { return ViewState["LoteSeleccionadoAnulado"] as bool? ?? false; }
             set { ViewState["LoteSeleccionadoAnulado"] = value; }
-        }
-
-
-        /// <summary>Si el lote abierto está anulado, avisa y devuelve true (la acción que escribe no sigue).</summary>
-        private bool RechazarSiLoteAnulado()
-        {
-            if (!LoteSeleccionadoAnulado) return false;
-            MostrarMensaje("El lote está anulado: solo se puede consultar.", "warning");
-            return true;
         }
 
         #endregion
@@ -97,9 +85,17 @@ namespace WebSGV.Views
 
                     // Enlace del expediente de la bandeja: abre el lote (operación). Los documentos se ven y
                     // se suben en la bandeja; el registro a mano (números sin documento) es RegistroManualLote.aspx.
+                    // "Volver a lotes" de EditarLote.aspx (y tras guardar, si el lote ya no existe con ninguna clave).
+                    if (Request.QueryString["vista"] == "lotes")
+                        MostrarListaLotes();
+
                     string lote = Request.QueryString["lote"];
                     if (!string.IsNullOrWhiteSpace(lote) && ObtenerLotePorId(lote) != null)
                         MostrarDetallesLote(lote);
+
+                    // Aviso de vuelta de EditarLote.aspx: solo los dos códigos fijos (?msg=), nunca un texto.
+                    var aviso = EditarLoteReglas.TextoAviso(Request.QueryString["msg"]);
+                    if (aviso != null) MostrarMensaje(aviso.Item1, aviso.Item2);
                 }
                 catch (Exception ex)
                 {
@@ -192,10 +188,9 @@ namespace WebSGV.Views
         }
 
         /// <summary>
-        /// Llena los dos desplegables de planta —el filtro de lotes y el de la edición
-        /// masiva— desde el catálogo <c>Planta</c>. Antes ambos tenían seis opciones
-        /// fijas en el markup: una planta nueva registrada en <c>RegistroPlantas</c> no
-        /// llegaba nunca a estas pantallas.
+        /// Llena el filtro de planta de los lotes desde el catálogo <c>Planta</c> (el de la edición está en
+        /// EditarLote.aspx desde E6-28). Antes tenía seis opciones fijas en el markup: una planta nueva registrada
+        /// en <c>RegistroPlantas</c> no llegaba nunca a esta pantalla.
         /// </summary>
         private void CargarPlantasFiltro()
         {
@@ -206,9 +201,6 @@ namespace WebSGV.Views
                 ddlFiltroPlantaLotes.Items.Clear();
                 ddlFiltroPlantaLotes.Items.Add(new ListItem("-- Todas las plantas --", ""));
 
-                ddlPlantaEdit.Items.Clear();
-                ddlPlantaEdit.Items.Add(new ListItem("-- Seleccione planta --", ""));
-
                 foreach (DataRow row in dt.Rows)
                 {
                     // El valor es idPlanta: filtrar y guardar por FK en vez de por texto
@@ -216,34 +208,12 @@ namespace WebSGV.Views
                     string nombre = row["nombre"].ToString();
                     string id = row["idPlanta"].ToString();
                     ddlFiltroPlantaLotes.Items.Add(new ListItem(nombre, id));
-                    ddlPlantaEdit.Items.Add(new ListItem(nombre, id));
                 }
             }
             catch (Exception ex)
             {
                 MostrarMensaje("Error al cargar plantas: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cargar plantas en ListaDespachos"), "warning");
             }
-        }
-
-        /// <summary>
-        /// Selecciona en <c>ddlPlantaEdit</c> la planta con la que el lote está
-        /// guardado. Si no está en el catálogo el combo queda sin selección y el
-        /// validador obliga a elegir, en vez de quedarse callado en el placeholder y
-        /// reasignar los despachos a otra planta al guardar, como ocurría antes.
-        /// </summary>
-        private void SeleccionarPlantaGuardada(int idPlanta)
-        {
-            ListItem item = idPlanta > 0
-                ? ddlPlantaEdit.Items.FindByValue(idPlanta.ToString())
-                : null;
-
-            ddlPlantaEdit.ClearSelection();
-
-            if (item != null)
-                item.Selected = true;
-            else
-                LogSGV.Advertencia(
-                    "ListaDespachos: el lote referencia la planta {IdPlanta}, que no está en el catálogo activo.", idPlanta);
         }
 
         private void CargarDropDownList(DropDownList ddl, DataTable datos, string textField, string valueField, string defaultText)
@@ -256,11 +226,6 @@ namespace WebSGV.Views
                     GetSafeValue<string>(fila, textField),
                     GetSafeValue<string>(fila, valueField)));
             }
-        }
-
-        private string IdsACsv(List<int> ids)
-        {
-            return string.Join(",", ids);
         }
 
         #endregion
@@ -498,38 +463,6 @@ namespace WebSGV.Views
             }
         }
 
-        // Campo de instancia: solo válido durante el DataBind de gvConductoresLote
-        private List<ListItem> _conductoresLoteCache;
-
-        private void CargarGridConductoresLote(List<int> idsDespachos)
-        {
-            if (idsDespachos.Count == 0) return;
-
-            // Pre-cargar todos los conductores una sola vez para toda la grid
-            _conductoresLoteCache = new List<ListItem>();
-            foreach (DataRow c in ListaDespachosService.ObtenerTodosConductores().Rows)
-                _conductoresLoteCache.Add(new ListItem(c["NombreCompleto"].ToString(), c["idConductor"].ToString()));
-
-            var despachos = new List<DespachoConConductor>();
-            foreach (DataRow d in ListaDespachosService.ObtenerDespachosConductoresLote(IdsACsv(idsDespachos)).Rows)
-            {
-                despachos.Add(new DespachoConConductor
-                {
-                    IdDespacho = GetSafeValue<int>(d, "idDespacho"),
-                    NumeroDespacho = GetSafeValue<string>(d, "numeroDespacho"),
-                    FechaDespacho = GetSafeValue<DateTime>(d, "fechaDespacho"),
-                    IdConductor = GetSafeValue<int>(d, "idConductor"),
-                    NombreConductorActual = GetSafeValue<string>(d, "NombreConductorActual")
-                });
-            }
-
-            gvConductoresLote.DataSource = despachos;
-            gvConductoresLote.DataBind(); // dispara RowDataBound usando _conductoresLoteCache
-            _conductoresLoteCache = null;
-        }
-
-
-
         #endregion
 
         #region Eventos de Navegación Principal
@@ -666,10 +599,9 @@ namespace WebSGV.Views
 
         /// <summary>
         /// Botón de una fila de las listas (E5-18a): las grillas no guardan ViewState, así que cada botón deja
-        /// "VER|lote", "EDITAR|lote", "VERANULADO|lote" o "VIAJE|id" en hfArgumentoFila y pulsa este botón oculto. El
-        /// campo lo puede cambiar el usuario: se lee con formato estricto y se vuelve a buscar el lote (activo o anulado,
-        /// según la acción) o el viaje antes de abrirlo. Leer el argumento no autoriza nada: las escrituras repiten sus
-        /// comprobaciones de siempre (RechazarSiLoteAnulado, ObtenerLotePorId).
+        /// "VER|lote", "VERANULADO|lote" o "VIAJE|id" en hfArgumentoFila y pulsa este botón oculto ("Editar" es un enlace
+        /// a EditarLote.aspx desde E6-28). El campo lo puede cambiar el usuario: se lee con formato estricto y se vuelve a
+        /// buscar el lote (activo o anulado, según la acción) o el viaje antes de abrirlo. Leer el argumento no autoriza nada.
         /// </summary>
         protected void btnAccionFila_Click(object sender, EventArgs e)
         {
@@ -701,8 +633,7 @@ namespace WebSGV.Views
                     return;
                 }
 
-                if (accion == AccionFilaLista.EditarLote) MostrarEdicionLote(idLoteVirtual);
-                else MostrarDetallesLote(idLoteVirtual, anulado);
+                MostrarDetallesLote(idLoteVirtual, anulado);
             }
             catch (Exception ex)
             {
@@ -714,47 +645,9 @@ namespace WebSGV.Views
         protected string UrlExpediente(object idLoteVirtual) =>
             ResolveUrl("~/Views/BandejaDocumentos.aspx") + "?lote=" + HttpUtility.UrlEncode(Convert.ToString(idLoteVirtual));
 
-        protected void gvConductoresLote_RowDataBound(object sender, GridViewRowEventArgs e)
-        {
-            if (e.Row.RowType != DataControlRowType.DataRow) return;
-
-            DropDownList ddlConductor = (DropDownList)e.Row.FindControl("ddlConductorDespacho");
-            if (ddlConductor == null) return;
-
-            // Usar el cache pre-cargado en CargarGridConductoresLote para evitar N conexiones SQL
-            ddlConductor.Items.Clear();
-            if (_conductoresLoteCache != null)
-            {
-                // Un ListItem nuevo por fila: si se comparten las mismas instancias, marcar el conductor de una
-                // fila lo marca en todas y "Guardar cambios" asignaba el del último despacho a todo el lote.
-                ddlConductor.Items.AddRange(_conductoresLoteCache
-                    .Select(i => new ListItem(i.Text, i.Value)).ToArray());
-            }
-            else
-            {
-                // Fallback: carga individual (solo si se llega aquí desde postback)
-                CargarConductoresEnDropDown(ddlConductor);
-            }
-
-            DespachoConConductor despacho = (DespachoConConductor)e.Row.DataItem;
-            if (despacho != null && ddlConductor.Items.FindByValue(despacho.IdConductor.ToString()) != null)
-            {
-                ddlConductor.SelectedValue = despacho.IdConductor.ToString();
-            }
-        }
-
-        private void CargarConductoresEnDropDown(DropDownList ddl)
-        {
-            DataTable dt = ListaDespachosService.ObtenerTodosConductores();
-            ddl.Items.Clear();
-            foreach (DataRow row in dt.Rows)
-            {
-                ddl.Items.Add(new ListItem(
-                    row["NombreCompleto"].ToString(),
-                    row["idConductor"].ToString()
-                ));
-            }
-        }
+        /// <summary>Enlace "Editar" de una fila y "Editar lote" del detalle: la página EditarLote.aspx (GET, E6-28).</summary>
+        protected string UrlEditar(object idLoteVirtual) =>
+            ResolveUrl(EditarLoteReglas.Url(Convert.ToString(idLoteVirtual)));
 
         #endregion
 
@@ -770,309 +663,25 @@ namespace WebSGV.Views
 
         #region Eventos de Navegación - Lotes
 
-        protected void btnVolverLotes_Click(object sender, EventArgs e)
-        {
-            MostrarListaLotes();
-            CargarLotesRegistrados();
-        }
-
         protected void btnVolverLotesDetalle_Click(object sender, EventArgs e)
         {
             MostrarListaLotes();
             CargarLotesRegistrados();
         }
 
-        protected void btnCancelarEdicion_Click(object sender, EventArgs e)
-        {
-            MostrarListaLotes();
-            CargarLotesRegistrados();
-        }
-
-        protected void btnEditarDesdeDetal_Click(object sender, EventArgs e)
-        {
-            if (RechazarSiLoteAnulado()) return;
-            if (!string.IsNullOrEmpty(LoteSeleccionadoId))
-            {
-                MostrarEdicionLote(LoteSeleccionadoId);
-            }
-        }
-
-        protected void ddlTipoOperacionEdit_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ConfigurarPanelesDocumentosEdicion();
-        }
-
-        protected void rblAmbitoEdit_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ConfigurarPanelesDocumentosEdicion();
-        }
-
-        #endregion
-
-        #region Eventos de Edición de Lotes
-
-        protected void btnGuardarCambios_Click(object sender, EventArgs e)
-        {
-            if (RechazarSiLoteAnulado()) return;
-            try
-            {
-                if (Page.IsValid && ValidarEdicionLote())
-                {
-                    bool huboCambios = GuardarCambiosLote();
-                    MostrarListaLotes();
-                    CargarLotesRegistrados();
-                    if (huboCambios) EstablecerContadores();
-                    if (huboCambios)
-                        MostrarMensaje("Cambios del lote guardados.", "success");
-                    else
-                        MostrarMensaje("No había cambios que guardar.", "info");
-                }
-            }
-            catch (Exception ex)
-            {
-                MostrarMensaje("Error al guardar cambios: " + MensajeErrorHelper.ParaUsuario(ex, "Error al guardar cambios del lote {Lote}", LoteSeleccionadoId), "danger");
-            }
-        }
-
-        /// <summary>Qué hacer con la factura del formulario (panel, casilla Quitar y número).</summary>
-        private AccionDocumentoLote AccionFacturaEdit() =>
-            EdicionDocumentosLote.Accion(pnlFacturaEdit.Visible, chkQuitarFacturaEdit.Checked, txtNumeroFacturaEdit.Text);
-
-        /// <summary>Qué hacer con la CPIC del formulario (panel, casilla Quitar y número).</summary>
-        private AccionDocumentoLote AccionCpicEdit() =>
-            EdicionDocumentosLote.Accion(pnlCPICEdit.Visible, chkQuitarCpicEdit.Checked, txtNumeroCPICEdit.Text);
-
-        private bool ValidarEdicionLote()
-        {
-            List<string> errores = new List<string>();
-            DateTime hoy = FechaHelper.Hoy();
-
-            if (string.IsNullOrEmpty(ddlTipoOperacionEdit.SelectedValue))
-                errores.Add("Debe seleccionar el tipo de operación");
-
-            if (string.IsNullOrEmpty(rblAmbitoEdit.SelectedValue))
-                errores.Add("Debe seleccionar el ámbito de operación");
-
-            if (!string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) &&
-                !Regex.IsMatch(txtNumeroPedidoEdit.Text, @"^\d{10}$"))
-            {
-                errores.Add("El número de pedido debe tener exactamente 10 dígitos");
-            }
-
-            // Fecha de programación estricta (yyyy-MM-dd); antes un texto raro llegaba a DateTime.Parse y daba un error genérico.
-            if (!DespachoValidaciones.TryParseFechaIso((txtFechaProgramacionEdit.Text ?? "").Trim(), out DateTime fechaProg))
-                errores.Add("La fecha de programación no es válida");
-            else if (fechaProg > hoy.AddDays(30))
-                errores.Add("La fecha de programación no puede ser mayor a 30 días en el futuro");
-
-            // Con número escrito, la fecha de emisión y el valor son obligatorios (antes un TryParse fallido guardaba
-            // 0001-01-01 o 0).
-            if (AccionFacturaEdit() == AccionDocumentoLote.GESTIONAR)
-            {
-                if (!DespachoValidaciones.FechaEmisionEsValida((txtFechaEmisionFacturaEdit.Text ?? "").Trim(), hoy))
-                    errores.Add("La fecha de emisión de la factura es obligatoria y no puede ser futura");
-                ValidarMontoObligatorio(txtValorTotalFacturaEdit.Text, "Valor total de la factura", errores);
-            }
-            if (AccionCpicEdit() == AccionDocumentoLote.GESTIONAR)
-            {
-                if (!DespachoValidaciones.FechaEmisionEsValida((txtFechaEmisionCPICEdit.Text ?? "").Trim(), hoy))
-                    errores.Add("La fecha de emisión de la CPIC es obligatoria y no puede ser futura");
-                ValidarMontoObligatorio(txtValorFleteEdit.Text, "Valor del flete", errores);
-            }
-
-            if (errores.Count > 0)
-            {
-                MostrarMensaje("Errores de validación: " + string.Join(", ", errores), "warning");
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>Monto obligatorio del formulario: vacío, no numérico, negativo o sobre el tope agrega el error del campo.</summary>
-        private static void ValidarMontoObligatorio(string texto, string campo, List<string> errores)
-        {
-            if (string.IsNullOrWhiteSpace(texto))
-            {
-                errores.Add($"El campo «{campo}» es obligatorio");
-                return;
-            }
-            try { MontoHelper.LeerMonto(texto, campo); }
-            catch (ErrorNegocioException ex) { errores.Add(ex.Message.TrimEnd('.')); }
-        }
-
-        /// <summary>
-        /// Guarda la edición del lote. Devuelve false si nada difería de lo guardado (no se escribió ni se auditó).
-        /// Con cambios, audita el lote con la foto antes/después y una fila por factura o CPIC tocada.
-        /// </summary>
-        private bool GuardarCambiosLote()
-        {
-            if (string.IsNullOrEmpty(LoteSeleccionadoId)) return false;
-
-            var lote = ObtenerLotePorId(LoteSeleccionadoId);
-            if (lote == null || lote.IdsDespachos.Count == 0) return false;
-
-            var accionFactura = AccionFacturaEdit();
-            var accionCpic = AccionCpicEdit();
-            bool gestionarFactura = accionFactura == AccionDocumentoLote.GESTIONAR;
-            bool gestionarCpic = accionCpic == AccionDocumentoLote.GESTIONAR;
-
-            var input = new GuardarCambiosLoteInput
-            {
-                IdsDespachos = lote.IdsDespachos,
-                FechaDespacho = DespachoValidaciones.LeerFechaIso(txtFechaProgramacionEdit.Text, "Fecha de programación"),
-                NumeroPedido = string.IsNullOrEmpty(txtNumeroPedidoEdit.Text) ? null : txtNumeroPedidoEdit.Text,
-                IdPlanta = Convert.ToInt32(ddlPlantaEdit.SelectedValue),
-                TipoOperacion = ddlTipoOperacionEdit.SelectedValue,
-                EsInternacional = rblAmbitoEdit.SelectedValue == "1",
-                UsuarioModificacion = ObtenerUsuarioActual(),
-                FechaActual = FechaHelper.Ahora(),
-                CambiosConductores = ObtenerConductoresElegidosDesdeGrid(),
-
-                // Un panel oculto no hace nada; con más de una factura o CPIC los paneles se ocultan.
-                GestionarFactura = gestionarFactura,
-                QuitarFactura = accionFactura == AccionDocumentoLote.QUITAR,
-                NumeroFactura = txtNumeroFacturaEdit.Text,
-                FechaEmisionFactura = gestionarFactura ? DespachoValidaciones.LeerFechaIso(txtFechaEmisionFacturaEdit.Text, "Fecha emisión de la factura") : (DateTime?)null,
-                ValorTotalFactura = gestionarFactura ? MontoHelper.LeerMonto(txtValorTotalFacturaEdit.Text, "Valor total de la factura") : (decimal?)null,
-                MonedaFactura = ddlMonedaFacturaEdit.SelectedValue,
-
-                GestionarCpic = gestionarCpic,
-                QuitarCpic = accionCpic == AccionDocumentoLote.QUITAR,
-                NumeroCPIC = txtNumeroCPICEdit.Text,
-                FechaEmisionCPIC = gestionarCpic ? DespachoValidaciones.LeerFechaIso(txtFechaEmisionCPICEdit.Text, "Fecha emisión de la CPIC") : (DateTime?)null,
-                ValorFlete = gestionarCpic ? MontoHelper.LeerMonto(txtValorFleteEdit.Text, "Valor del flete") : (decimal?)null
-            };
-
-            var resultado = ListaDespachosService.GuardarCambiosLote(input);
-            if (resultado.SinCambios) return false;
-
-            string idsCsv = IdsACsv(lote.IdsDespachos);
-            string documentos = "";
-            if (resultado.Factura != null) documentos += $"; factura {input.NumeroFactura?.Trim()} (id {resultado.Factura.Id}, {resultado.Factura.Accion})";
-            if (resultado.Cpic != null) documentos += $"; CPIC {input.NumeroCPIC?.Trim()} (id {resultado.Cpic.Id}, {resultado.Cpic.Accion})";
-            if (resultado.CpicsQuitadas.Count > 0) documentos += $"; CPIC quitada (id {string.Join(", ", resultado.CpicsQuitadas)})";
-            if (resultado.FacturasQuitadas.Count > 0) documentos += $"; factura quitada (id {string.Join(", ", resultado.FacturasQuitadas)})";
-            string conductores = resultado.ConductoresCambiados.Count == 0 ? "" :
-                "; conductor cambiado en " + string.Join(", ", resultado.ConductoresCambiados.Select(c => $"despacho {c.Key} → idConductor {c.Value}"));
-
-            AuditoriaHelper.Registrar("UPDATE", "Despachos", LoteSeleccionadoId,
-                $"Lote editado - despachos {idsCsv}{conductores}{documentos}",
-                resultado.AntesJson, resultado.DespuesJson);
-
-            if (resultado.Factura != null)
-                AuditoriaHelper.Registrar(resultado.Factura.Accion == "CREADA" ? "INSERT" : "UPDATE", "Factura", resultado.Factura.Id,
-                    $"Factura {input.NumeroFactura?.Trim()} {resultado.Factura.Accion} al editar el lote (despachos {idsCsv})");
-            if (resultado.Cpic != null)
-                AuditoriaHelper.Registrar(resultado.Cpic.Accion == "CREADA" ? "INSERT" : "UPDATE", "CPIC", resultado.Cpic.Id,
-                    $"CPIC {input.NumeroCPIC?.Trim()} {resultado.Cpic.Accion} al editar el lote (despachos {idsCsv})");
-            foreach (int id in resultado.CpicsQuitadas)
-                AuditoriaHelper.Registrar("UPDATE", "CPIC", id, $"CPIC QUITADA de los despachos {idsCsv} al editar el lote (el documento no se borra)");
-            foreach (int id in resultado.FacturasQuitadas)
-                AuditoriaHelper.Registrar("UPDATE", "Factura", id, $"Factura QUITADA de los despachos {idsCsv} al editar el lote (el documento no se borra)");
-
-            return true;
-        }
-
-        /// <summary>
-        /// Conductor elegido en la grilla para cada despacho (todas las filas). El servicio compara con el guardado y
-        /// solo escribe y reubica los que cambian.
-        /// </summary>
-        private Dictionary<int, int> ObtenerConductoresElegidosDesdeGrid()
-        {
-            Dictionary<int, int> cambios = new Dictionary<int, int>();
-
-            foreach (GridViewRow row in gvConductoresLote.Rows)
-            {
-                if (row.RowType == DataControlRowType.DataRow)
-                {
-                    int idDespacho = Convert.ToInt32(gvConductoresLote.DataKeys[row.RowIndex].Value);
-                    DropDownList ddlConductor = (DropDownList)row.FindControl("ddlConductorDespacho");
-
-                    if (ddlConductor != null && !string.IsNullOrEmpty(ddlConductor.SelectedValue))
-                    {
-                        int nuevoIdConductor = Convert.ToInt32(ddlConductor.SelectedValue);
-                        cambios[idDespacho] = nuevoIdConductor;
-                    }
-                }
-            }
-
-            return cambios;
-        }
-
-        protected void btnAnularLote_Click(object sender, EventArgs e)
-        {
-            if (RechazarSiLoteAnulado()) return;
-            try
-            {
-                if (string.IsNullOrEmpty(LoteSeleccionadoId))
-                {
-                    MostrarMensaje("No se pudo identificar el lote a anular.", "danger");
-                    return;
-                }
-
-                var lote = ObtenerLotePorId(LoteSeleccionadoId);
-                if (lote == null || lote.IdsDespachos.Count == 0)
-                {
-                    MostrarMensaje("No se encontraron despachos para anular.", "warning");
-                    return;
-                }
-
-                if (lote.EstadoLote == "ANULADO")
-                {
-                    MostrarMensaje("Este lote ya se encuentra anulado.", "warning");
-                    return;
-                }
-
-                string idsCsv = IdsACsv(lote.IdsDespachos);
-                // "Antes" para la auditoría: estado, activo y viaje de cada despacho del lote.
-                var antes = ListaDespachosService.ObtenerEstadoDespachos(idsCsv).AsEnumerable()
-                    .Select(r => new
-                    {
-                        idDespacho = r.Field<int>("idDespacho"),
-                        estadoDespacho = r["estadoDespacho"] as string,
-                        activo = r["activo"] != DBNull.Value && Convert.ToBoolean(r["activo"]),
-                        idViajeProgreso = r["idViajeProgreso"] == DBNull.Value ? (int?)null : Convert.ToInt32(r["idViajeProgreso"])
-                    })
-                    .ToList();
-
-                int viajesAnulados = ListaDespachosService.AnularLote(idsCsv, ObtenerUsuarioActual());
-
-                AuditoriaHelper.Registrar("UPDATE", "Despachos", LoteSeleccionadoId,
-                    $"Lote anulado (ANULADO, activo = 0) - despachos {idsCsv}; {viajesAnulados} viaje(s) anulado(s)",
-                    JsonConvert.SerializeObject(antes),
-                    JsonConvert.SerializeObject(new { estadoDespacho = "ANULADO", activo = false, idsDespachos = lote.IdsDespachos, viajesAnulados }));
-
-                MostrarListaLotes();
-                CargarLotesRegistrados();
-                EstablecerContadores();
-                string msgViajes = viajesAnulados > 0 ? $" Se anularon {viajesAnulados} viaje(s) sin despachos." : "";
-                MostrarMensaje($"Lote anulado. {lote.IdsDespachos.Count} despacho(s) quedaron como ANULADO y salieron de la liquidación y del seguimiento.{msgViajes}", "success", enPagina: true);
-            }
-            catch (Exception ex)
-            {
-                // El 50010/50011 del SP ya dice "No se puede anular el lote…": sin prefijo repetido.
-                string detalle = MensajeErrorHelper.ParaUsuario(ex, "Error al anular el lote {Lote}", LoteSeleccionadoId);
-                MostrarMensaje(detalle.StartsWith("No se puede anular", StringComparison.OrdinalIgnoreCase)
-                    ? detalle : "No se pudo anular el lote: " + detalle, "danger");
-            }
-        }
-
-
         #endregion
 
         #region Métodos de Vista
 
         /// <summary>
-        /// Muestra una sola de las cinco pantallas de la página (el registro manual es RegistroManualLote.aspx desde E6-27).
-        /// Las pestañas y el resumen van solo en las dos listas (M-082: antes seguían arriba del detalle y la edición).
+        /// Muestra una sola de las cuatro pantallas de la página (el registro manual es RegistroManualLote.aspx desde E6-27
+        /// y la edición de un lote EditarLote.aspx desde E6-28). Las pestañas y el resumen van solo en las dos listas (M-082).
         /// </summary>
         private void MostrarVista(VistaListaDespachos vista)
         {
             pnlListaViajes.Visible = vista == VistaListaDespachos.Viajes;
             pnlListaLotes.Visible = vista == VistaListaDespachos.Lotes;
             pnlDetallesViaje.Visible = vista == VistaListaDespachos.DetalleViaje;
-            pnlEdicionLote.Visible = vista == VistaListaDespachos.EdicionLote;
             pnlDetallesLote.Visible = vista == VistaListaDespachos.DetalleLote;
 
             pnlNavegacionListas.Visible = ListaDespachosReglas.MuestraNavegacion(vista);
@@ -1109,20 +718,9 @@ namespace WebSGV.Views
             CargarDespachosViaje(idViajeProgreso);
         }
 
-        private void MostrarEdicionLote(string idLoteVirtual)
-        {
-            LoteSeleccionadoAnulado = false;
-            ViajeSeleccionadoId = null;
-            LoteSeleccionadoId = idLoteVirtual;
-            MostrarVista(VistaListaDespachos.EdicionLote);
-
-            CargarDatosEdicionLote(idLoteVirtual);
-        }
-
         /// <summary>
         /// Detalle del lote. Con <paramref name="anulado"/> = true abre el lote anulado en solo lectura:
-        /// lee sus despachos inactivos, oculta "Documentos" y "Editar lote" y muestra el aviso; las
-        /// acciones que escriben quedan bloqueadas por <see cref="RechazarSiLoteAnulado"/>.
+        /// lee sus despachos inactivos, oculta "Documentos" y "Editar lote" y muestra el aviso.
         /// </summary>
         private void MostrarDetallesLote(string idLoteVirtual, bool anulado = false)
         {
@@ -1135,78 +733,10 @@ namespace WebSGV.Views
             // Los documentos del pedido se ven y se suben en el expediente de la bandeja (enlace GET, sin postback).
             hlDocumentosLote.Visible = !anulado;
             hlDocumentosLote.NavigateUrl = UrlExpediente(idLoteVirtual);
-            btnEditarDesdeDetal.Visible = !anulado;
+            hlEditarLote.Visible = !anulado;
+            hlEditarLote.NavigateUrl = UrlEditar(idLoteVirtual);
 
             CargarDespachosLote(idLoteVirtual, anulado);
-        }
-
-        private void CargarDatosEdicionLote(string idLoteVirtual)
-        {
-            var lote = ObtenerLotePorId(idLoteVirtual);
-            if (lote == null) return;
-
-            lblIdentificadorLote.Text = System.Web.HttpUtility.HtmlEncode($"{lote.NombreCliente} - {lote.FechaProgramacion:dd/MM/yyyy}");
-            lblDespachosSAfectados.Text = lote.CantidadDespachos.ToString();
-
-            txtFechaProgramacionEdit.Text = lote.FechaProgramacion.ToString("yyyy-MM-dd");
-            txtClienteEdit.Text = lote.NombreCliente;
-            txtNumeroPedidoEdit.Text = lote.NumeroPedido;
-
-            SeleccionarPlantaGuardada(lote.IdPlanta);
-
-            if (ddlTipoOperacionEdit.Items.FindByValue(lote.TipoOperacion) != null)
-                ddlTipoOperacionEdit.SelectedValue = lote.TipoOperacion;
-
-            rblAmbitoEdit.SelectedValue = lote.EsInternacional ? "1" : "0";
-
-            // Lo que decide qué documentos se editan (se conserva para los postbacks de tipo y ámbito).
-            ViewState["EdicionLoteTieneCpic"] = lote.CantidadCPIC > 0;
-            ViewState["EdicionLotePerfil"] = lote.PerfilDocumentos;
-            ViewState["EdicionLoteFacturas"] = lote.CantidadFacturas;
-            ViewState["EdicionLoteCpics"] = lote.CantidadCPIC;
-
-            ConfigurarPanelesDocumentosEdicion();
-
-            // Siempre (aunque el panel esté oculto): si el tipo o el ámbito lo muestran después, no debe quedar el
-            // número de otro lote editado antes. Con más de un documento los paneles no se muestran.
-            bool unDocumento = !EdicionDocumentosLote.TieneVariosDocumentos(lote.CantidadFacturas, lote.CantidadCPIC);
-            txtNumeroFacturaEdit.Text = unDocumento ? lote.NumeroFactura ?? "" : "";
-            txtFechaEmisionFacturaEdit.Text = unDocumento ? lote.FechaEmisionFactura?.ToString("yyyy-MM-dd") ?? "" : "";
-            txtValorTotalFacturaEdit.Text = unDocumento ? lote.ValorTotalFactura?.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) ?? "" : "";
-            ddlMonedaFacturaEdit.ClearSelection();
-            ListItem moneda = ddlMonedaFacturaEdit.Items.FindByValue((lote.MonedaFactura ?? "PEN").Trim());
-            if (moneda != null) moneda.Selected = true;
-
-            txtNumeroCPICEdit.Text = unDocumento ? lote.NumeroCPIC ?? "" : "";
-            txtFechaEmisionCPICEdit.Text = unDocumento ? lote.FechaEmisionCPIC?.ToString("yyyy-MM-dd") ?? "" : "";
-            txtValorFleteEdit.Text = unDocumento ? lote.ValorFlete?.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) ?? "" : "";
-            // Las casillas Quitar no se arrastran de un lote editado antes.
-            chkQuitarFacturaEdit.Checked = false;
-            chkQuitarCpicEdit.Checked = false;
-
-            CargarGridConductoresLote(lote.IdsDespachos);
-            // Con más de una factura o CPIC el aviso lleva al registro manual del lote, con "Factura y CPIC por despacho" abierta.
-            hlIrDocsPorDespacho.NavigateUrl = RegistroManualLoteReglas.Url(idLoteVirtual, porDespacho: true);
-        }
-
-        /// <summary>
-        /// Paneles de factura y CPIC de Editar lote (<see cref="EdicionDocumentosLote.Paneles"/>): la CPIC también en la
-        /// carga nacional si el lote la tiene; con más de una factura o CPIC no se muestran y sale el aviso que lleva a
-        /// "Factura y CPIC por despacho".
-        /// </summary>
-        private void ConfigurarPanelesDocumentosEdicion()
-        {
-            var paneles = EdicionDocumentosLote.Paneles(
-                ddlTipoOperacionEdit.SelectedValue,
-                rblAmbitoEdit.SelectedValue == "1",
-                ViewState["EdicionLoteTieneCpic"] as bool? ?? false,
-                ViewState["EdicionLotePerfil"] as string,
-                ViewState["EdicionLoteFacturas"] as int? ?? 0,
-                ViewState["EdicionLoteCpics"] as int? ?? 0);
-
-            pnlFacturaEdit.Visible = paneles.MostrarFactura;
-            pnlCPICEdit.Visible = paneles.MostrarCpic;
-            pnlAvisoVariosDocumentosEdit.Visible = paneles.VariosDocumentos;
         }
 
         #endregion
@@ -1280,23 +810,6 @@ namespace WebSGV.Views
                 ddlFiltroEstadoLotes.SelectedValue = "ACTIVO";
             ddlFiltroDocumentosLotes.SelectedIndex = 0;
             ConfigurarFechasPorDefecto();
-        }
-
-        private string ObtenerUsuarioActual()
-        {
-            string nombre = SesionHelper.Nombre(Session);
-            if (nombre.Length > 0)
-            {
-                return nombre;
-            }
-            else if (User.Identity.IsAuthenticated)
-            {
-                return User.Identity.Name;
-            }
-            else
-            {
-                return "Sistema";
-            }
         }
 
         private void MostrarMensaje(string mensaje, string tipo, bool enPagina = false)

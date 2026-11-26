@@ -100,8 +100,9 @@ namespace WebSGV.Tests
             Assert.True(casos.Count == 0, "Todavía arman ?manual=1:\n" + string.Join("\n", casos));
 
             Assert.Contains("RegistroManualLoteReglas.Url(e.IdLote)", Leer("Views", "BandejaDocumentos.aspx.cs"));
-            Assert.Contains("hlIrDocsPorDespacho.NavigateUrl = RegistroManualLoteReglas.Url(idLoteVirtual, porDespacho: true);", Leer("Views", "ListaDespachos.aspx.cs"));
-            Assert.Contains("<asp:HyperLink ID=\"hlIrDocsPorDespacho\"", Marcado("ListaDespachos"));
+            // El aviso de "más de una factura o CPIC" de la edición de un lote vive en EditarLote.aspx desde E6-28.
+            Assert.Contains("hlIrDocsPorDespacho.NavigateUrl = RegistroManualLoteReglas.Url(lote.IdLoteVirtual, porDespacho: true);", Leer("Views", "EditarLote.aspx.cs"));
+            Assert.Contains("<asp:HyperLink ID=\"hlIrDocsPorDespacho\"", Marcado("EditarLote"));
         }
 
         [Fact]

@@ -189,7 +189,7 @@ namespace WebSGV.Tests
         {
             var hojas = Hojas();
             Assert.Contains(Base, hojas);
-            Assert.True(hojas.Count == 30, "Hay " + hojas.Count + " hojas en Content; si agregaste o quitaste una, actualiza esta cifra (sus colores deben usar var(--sgv-*)).");
+            Assert.True(hojas.Count == 31, "Hay " + hojas.Count + " hojas en Content; si agregaste o quitaste una, actualiza esta cifra (sus colores deben usar var(--sgv-*)).");
         }
 
         /// <summary>(a) 0 colores literales fuera de un :root (los data-URI dentro de url() no cuentan).</summary>

@@ -32,6 +32,7 @@ DashboardConductor.RetirarLiquidacion
 Descarga
 Devuelta
 DocumentosGuia
+EditarLote
 El
 Envío
 Error

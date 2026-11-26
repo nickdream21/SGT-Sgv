@@ -21,7 +21,7 @@ namespace WebSGV.Tests
     /// </summary>
     public class GrandesPlantillaTests
     {
-        public static readonly string[] Paginas = { "ListaDespachos", "RegistroDespacho", "RegistroManualLote" };
+        public static readonly string[] Paginas = { "ListaDespachos", "RegistroDespacho", "RegistroManualLote", "EditarLote" };
 
         /// <summary>Páginas con filtros de búsqueda: llevan el details.sgv-filtros común (RegistroDespacho no filtra).</summary>
         private static readonly string[] PaginasConFiltros = { "ListaDespachos" };
@@ -213,8 +213,7 @@ namespace WebSGV.Tests
         {
             Assert.True(ListaDespachosReglas.MuestraNavegacion(VistaListaDespachos.Viajes));
             Assert.True(ListaDespachosReglas.MuestraNavegacion(VistaListaDespachos.Lotes));
-            foreach (var vista in new[] { VistaListaDespachos.DetalleViaje, VistaListaDespachos.EdicionLote,
-                VistaListaDespachos.DetalleLote })
+            foreach (var vista in new[] { VistaListaDespachos.DetalleViaje, VistaListaDespachos.DetalleLote })
                 Assert.False(ListaDespachosReglas.MuestraNavegacion(vista), vista + " no lleva las pestañas (M-082)");
 
             string cs = Cs("ListaDespachos");
@@ -224,6 +223,9 @@ namespace WebSGV.Tests
             // El registro manual es RegistroManualLote.aspx desde E6-27: ya no es una vista de esta página.
             Assert.DoesNotContain("pnlManifiestosLote", cs);
             Assert.DoesNotContain("RegistroManual", Enum.GetNames(typeof(VistaListaDespachos)));
+            // La edición de un lote es EditarLote.aspx desde E6-28.
+            Assert.DoesNotContain("EdicionLote", Enum.GetNames(typeof(VistaListaDespachos)));
+            Assert.DoesNotContain("pnlEdicionLote", cs);
         }
 
         [Fact]
@@ -290,12 +292,12 @@ namespace WebSGV.Tests
 
         [Theory]
         [InlineData("VER|1_4400134786_2026-11-11_CARGA_0_2", AccionFilaLista.VerLote, "1_4400134786_2026-11-11_CARGA_0_2", 0)]
-        [InlineData("EDITAR|12_NOPEDIDO_2026-01-05_DESCARGA_1_7", AccionFilaLista.EditarLote, "12_NOPEDIDO_2026-01-05_DESCARGA_1_7", 0)]
+        [InlineData("VER|12_NOPEDIDO_2026-01-05_DESCARGA_1_7", AccionFilaLista.VerLote, "12_NOPEDIDO_2026-01-05_DESCARGA_1_7", 0)]
         [InlineData("VERANULADO|3_123-A_2025-12-31_CARGA_1_10", AccionFilaLista.VerLoteAnulado, "3_123-A_2025-12-31_CARGA_1_10", 0)]
         [InlineData("VIAJE|42", AccionFilaLista.VerViaje, null, 42)]
         // Pedido vacío: el SP arma el id con ISNULL(numeroPedido, 'NOPEDIDO') y un '' guardado deja "1__fecha" (hay lotes activos así).
         [InlineData("VER|1__2026-08-26_CARGA_0_2", AccionFilaLista.VerLote, "1__2026-08-26_CARGA_0_2", 0)]
-        [InlineData("EDITAR|1__2026-08-26_CARGA_0_2", AccionFilaLista.EditarLote, "1__2026-08-26_CARGA_0_2", 0)]
+        [InlineData("VERANULADO|1__2026-08-26_CARGA_0_2", AccionFilaLista.VerLoteAnulado, "1__2026-08-26_CARGA_0_2", 0)]
         public void LD6_ArgumentoDeFilaValido(string argumento, AccionFilaLista accion, string lote, int viaje)
         {
             Assert.True(ListaDespachosReglas.TryLeerAccionFila(argumento, out var a, out string l, out int v));
@@ -324,6 +326,9 @@ namespace WebSGV.Tests
         [InlineData("VIAJE|5a")]
         [InlineData("VIAJE|99999999999")]
         [InlineData("EDITAR|42")]
+        // "Editar" es un enlace a EditarLote.aspx desde E6-28: un "EDITAR|lote" de una pestaña vieja ya no se lee.
+        [InlineData("EDITAR|12_NOPEDIDO_2026-01-05_DESCARGA_1_7")]
+        [InlineData("EDITAR|1__2026-08-26_CARGA_0_2")]
         public void LD6_ArgumentoDeFilaInvalido(string argumento) =>
             Assert.False(ListaDespachosReglas.TryLeerAccionFila(argumento, out _, out _, out _));
 
@@ -420,7 +425,8 @@ namespace WebSGV.Tests
             Assert.DoesNotMatch(@"ID=""ddlFiltroConductorViajes""[^>]*EnableViewState=""false""", aspx);
             foreach (string m in new[] { "ddlFiltroConductorViajes_SelectedIndexChanged", "ddlFiltroTipoViajes_SelectedIndexChanged", "btnBuscarViaje_Click" })
                 Assert.Contains("CargarViajesDesdeInicio();", Metodo(cs, m));
-            foreach (string m in new[] { "btnGuardarCambios_Click", "btnAnularLote_Click", "btnRefrescarViajes_Click", "btnRefrescarLotes_Click" })
+            // Guardar y anular un lote son de EditarLote.aspx desde E6-28 (Guardar vuelve por GET y recalcula al abrir).
+            foreach (string m in new[] { "btnRefrescarViajes_Click", "btnRefrescarLotes_Click" })
                 Assert.Contains("EstablecerContadores();", Metodo(cs, m));
         }
 

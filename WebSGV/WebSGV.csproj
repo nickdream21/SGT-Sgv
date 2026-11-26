@@ -401,6 +401,7 @@
     <Content Include="Content\paginas\LiquidacionesAprobadasContabilidad.css" />
     <Content Include="Content\paginas\LiquidacionesPendientes.css" />
     <Content Include="Content\paginas\ListaDespachos.css" />
+    <Content Include="Content\paginas\EditarLote.css" />
     <Content Include="Content\paginas\RegistroManualLote.css" />
     <Content Include="Content\paginas\Login.css" />
     <Content Include="Content\paginas\MiSeguridad.css" />
@@ -428,6 +429,7 @@
     <Content Include="Scripts\paginas\LiquidacionesAprobadasContabilidad.js" />
     <Content Include="Scripts\paginas\LiquidacionesPendientes.js" />
     <Content Include="Scripts\paginas\ListaDespachos.js" />
+    <Content Include="Scripts\paginas\EditarLote.js" />
     <Content Include="Scripts\paginas\RegistroManualLote.js" />
     <Content Include="Scripts\paginas\Login.js" />
     <Content Include="Scripts\paginas\MiSeguridad.js" />
@@ -537,6 +539,7 @@
     <Content Include="Views\BandejaDocumentos.aspx" />
     <Content Include="Views\ReporteGps.aspx" />
     <Content Include="Views\ListaDespachos.aspx" />
+    <Content Include="Views\EditarLote.aspx" />
     <Content Include="Views\RegistroManualLote.aspx" />
     <Content Include="Views\Login.aspx" />
     <Content Include="Views\MiSeguridad.aspx" />
@@ -650,6 +653,7 @@
     <Compile Include="Services\Despachos\FinalizarLoteService.cs" />
     <Compile Include="Services\Despachos\ListaDespachosService.cs" />
     <Compile Include="Services\Despachos\ListaDespachosReglas.cs" />
+    <Compile Include="Services\Despachos\EditarLoteReglas.cs" />
     <Compile Include="Services\Despachos\RegistroManualLoteReglas.cs" />
     <Compile Include="Services\Despachos\ArchivosRegistroManual.cs" />
     <Compile Include="Services\Despachos\RegistroDespachoReglas.cs" />
@@ -913,6 +917,13 @@
     </Compile>
     <Compile Include="Views\ListaDespachos.aspx.designer.cs">
       <DependentUpon>ListaDespachos.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\EditarLote.aspx.cs">
+      <DependentUpon>EditarLote.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Views\EditarLote.aspx.designer.cs">
+      <DependentUpon>EditarLote.aspx</DependentUpon>
     </Compile>
     <Compile Include="Views\RegistroManualLote.aspx.cs">
       <DependentUpon>RegistroManualLote.aspx</DependentUpon>

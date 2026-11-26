@@ -226,7 +226,7 @@ La única acción es "Anular lote": los despachos quedan ANULADO y `activo = 0`,
 y del seguimiento de exportación. El botón "Eliminar" se quitó.
 - Desde: 2026-11-16, `9bc0fec`.
 - En el código: `WebSGV/Database/StoredProcedures/sp_LD_AnularLote.sql:110-113` (ANULADO, `activo = 0`);
-  `WebSGV/Views/ListaDespachos.aspx:843-846`.
+  `WebSGV/Views/EditarLote.aspx` (`btnAnularLote`, desde E6-28).
 - Estado: vigente.
 
 ### DN-12 — Un despacho con liquidación no se anula ni cambia fecha, tipo o ámbito (D2)
@@ -268,7 +268,7 @@ reintentar no duplica documentos. Antes de escribir revalida y, por decisión de
 - Estado: vigente.
 
 ### DN-16 — Decisiones del bloque 4 aplicadas una sola vez (D4 y D7)
-D4: `EditarDespacho.aspx` se borró (la edición se hace desde "Editar lote" en ListaDespachos). D7: los despachos de
+D4: `EditarDespacho.aspx` se borró (la edición se hace desde "Editar lote", hoy `EditarLote.aspx`). D7: los despachos de
 prueba `demo-video` 2353–2355 quedaron ANULADO y `activo = 0`.
 - Desde: D4 2026-11-17, `8c0b59b`; D7 2026-11-17 (datos de sgvActualizada).
 - En el código: D4, la página ya no existe en `WebSGV/Views/`; D7, solo procedimiento (datos).

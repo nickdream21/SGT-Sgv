@@ -1,46 +1,6 @@
-﻿// Inicializar Select2 en los dropdowns de conductores
-function inicializarSelect2Conductores() {
-    $('.conductor-select').select2({
-        width: '100%',
-        placeholder: 'Buscar conductor...',
-        allowClear: false,
-        language: {
-            noResults: function() {
-                return "No se encontraron conductores";
-            },
-            searching: function() {
-                return "Buscando...";
-            }
-        }
-    });
-    $('.conductor-select').each(function () { SGV.nombrarSelect2(this); });
-}
-
-// Las fechas Desde/Hasta las pone el servidor (ConfigurarFechasPorDefecto). No se rellenan aquí: "?documentos=pendientes"
-// y "Ver los lotes con pendientes" las dejan vacías a propósito (lotes de cualquier fecha) y rellenarlas mostraba un
-// rango que no se había aplicado.
-$(document).ready(function () {
-    inicializarSelect2Conductores();
-});
-
-var prm = Sys.WebForms.PageRequestManager.getInstance();
-prm.add_endRequest(function () {
-    inicializarSelect2Conductores();
-});
-
-function validarNumeroPedido(input) {
-    var valor = input.value.replace(/[^0-9]/g, '');
-    input.value = valor;
-
-    // Clase de Bootstrap en vez de colores fijos (M-143): respeta el tema y el foco.
-    var valido = valor.length === 0 || valor.length === 10;
-    input.classList.toggle('is-invalid', !valido);
-    return valido;
-}
-
-$(document).on('input', '#' + SGV.txtNumeroPedidoEdit, function () {
-    validarNumeroPedido(this);
-});
+﻿// Fechas Desde/Hasta: las pone el servidor (ConfigurarFechasPorDefecto). No se rellenan aquí: "?documentos=pendientes"
+// y "Ver los lotes con pendientes" las dejan vacías a propósito (lotes de cualquier fecha). La edición de un lote
+// (combos de conductor y N° de pedido) está en EditarLote.js desde E6-28.
 
 // "Más filtros" de los lotes: el UpdatePanel vuelve a dibujar la barra en cada búsqueda, así que se
 // reabre solo si estaba abierto o si alguno de sus campos tiene un valor que está filtrando la lista.

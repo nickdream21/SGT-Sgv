@@ -5,8 +5,6 @@
 
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
 
-<%-- select2.min.css va antes de la hoja de la página: sus reglas de select2 (antes en ListaDespachos-2.css, que se cargaba al final) deben ganarle. --%>
-<link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/select2-4.0.13/select2.min.css") %>" rel="stylesheet" />
 <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/ListaDespachos.css") %>" rel="stylesheet" />
 
     <div class="ld-pagina">
@@ -27,7 +25,7 @@
             <ContentTemplate>
 
                 <%-- Botones de fila de las listas (E5-18a): las grillas no guardan ViewState; cada botón copia su
-                     data-argumento ("VER|lote", "EDITAR|lote", "VERANULADO|lote" o "VIAJE|id") aquí y pulsa
+                     data-argumento ("VER|lote", "VERANULADO|lote" o "VIAJE|id") aquí y pulsa
                      btnAccionFila (SGV.acciones.enviarFila). El servidor lo lee con formato estricto y vuelve a
                      buscar el lote o el viaje. --%>
                 <asp:HiddenField ID="hfArgumentoFila" runat="server" />
@@ -276,8 +274,8 @@
                                         <asp:TemplateField HeaderText="" ItemStyle-CssClass="sgv-col-acciones">
                                             <%-- Un lote anulado (filtro "Anulados") es solo de consulta: sus despachos tienen activo = 0.
                                                  "Ver unidades" abre su detalle en solo lectura (sin editar ni documentos). "Documentos" es un
-                                                 enlace (GET) al expediente del pedido en la Bandeja. --%>
-                                            <ItemTemplate><asp:PlaceHolder runat="server" Visible='<%# (string)Eval("EstadoLote") == "ANULADO" %>'><div class="sgv-acciones"><span class="sgv-suave">Solo consulta</span><button type="button" class="btn btn-sm btn-outline-secondary" data-accion="enviarFila" data-argumento='<%#: ListaDespachosReglas.ArgumentoFila(AccionFilaLista.VerLoteAnulado, Eval("IdLoteVirtual")) %>' aria-label='<%#: "Ver las unidades del lote anulado " + Eval("PedidoMostrado") %>'>Ver unidades</button></div></asp:PlaceHolder><asp:PlaceHolder runat="server" Visible='<%# (string)Eval("EstadoLote") != "ANULADO" %>'><div class="sgv-acciones"><button type="button" class="btn btn-sm btn-outline-primary" data-accion="enviarFila" data-argumento='<%#: ListaDespachosReglas.ArgumentoFila(AccionFilaLista.VerLote, Eval("IdLoteVirtual")) %>' aria-label='<%#: "Ver las unidades del pedido " + Eval("PedidoMostrado") %>'>Ver unidades</button><a href='<%#: UrlExpediente(Eval("IdLoteVirtual")) %>' class='<%#: (bool)Eval("DocumentosPendientes") ? "btn btn-sm btn-warning" : "btn btn-sm btn-outline-secondary" %>' title="Abre el expediente del pedido en la Bandeja de documentos" aria-label='<%#: "Documentos del pedido " + Eval("PedidoMostrado") %>'>Documentos</a><button type="button" class="btn btn-sm btn-outline-secondary" data-accion="enviarFila" data-argumento='<%#: ListaDespachosReglas.ArgumentoFila(AccionFilaLista.EditarLote, Eval("IdLoteVirtual")) %>' aria-label='<%#: "Editar el lote del pedido " + Eval("PedidoMostrado") %>'>Editar</button></div></asp:PlaceHolder></ItemTemplate>
+                                                 enlace (GET) al expediente del pedido en la Bandeja y "Editar", a EditarLote.aspx. --%>
+                                            <ItemTemplate><asp:PlaceHolder runat="server" Visible='<%# (string)Eval("EstadoLote") == "ANULADO" %>'><div class="sgv-acciones"><span class="sgv-suave">Solo consulta</span><button type="button" class="btn btn-sm btn-outline-secondary" data-accion="enviarFila" data-argumento='<%#: ListaDespachosReglas.ArgumentoFila(AccionFilaLista.VerLoteAnulado, Eval("IdLoteVirtual")) %>' aria-label='<%#: "Ver las unidades del lote anulado " + Eval("PedidoMostrado") %>'>Ver unidades</button></div></asp:PlaceHolder><asp:PlaceHolder runat="server" Visible='<%# (string)Eval("EstadoLote") != "ANULADO" %>'><div class="sgv-acciones"><button type="button" class="btn btn-sm btn-outline-primary" data-accion="enviarFila" data-argumento='<%#: ListaDespachosReglas.ArgumentoFila(AccionFilaLista.VerLote, Eval("IdLoteVirtual")) %>' aria-label='<%#: "Ver las unidades del pedido " + Eval("PedidoMostrado") %>'>Ver unidades</button><a href='<%#: UrlExpediente(Eval("IdLoteVirtual")) %>' class='<%#: (bool)Eval("DocumentosPendientes") ? "btn btn-sm btn-warning" : "btn btn-sm btn-outline-secondary" %>' title="Abre el expediente del pedido en la Bandeja de documentos" aria-label='<%#: "Documentos del pedido " + Eval("PedidoMostrado") %>'>Documentos</a><a href='<%#: UrlEditar(Eval("IdLoteVirtual")) %>' class="btn btn-sm btn-outline-secondary" aria-label='<%#: "Editar el lote del pedido " + Eval("PedidoMostrado") %>'>Editar</a></div></asp:PlaceHolder></ItemTemplate>
                                         </asp:TemplateField>
                                     </Columns>
                                 </asp:GridView>
@@ -328,237 +326,6 @@
                     </section>
                 </asp:Panel>
 
-                <!-- Edición del lote -->
-                <asp:Panel ID="pnlEdicionLote" runat="server" Visible="false">
-                    <section class="sgv-panel sgv-panel-acento" data-montos-grupo>
-                        <div class="sgv-panel-cab">
-                            <div>
-                                <h2 class="sgv-panel-titulo">Editar datos base del lote</h2>
-                                <p class="sgv-panel-nota mb-0">Lote: <asp:Label ID="lblIdentificadorLote" runat="server" CssClass="ld-dato"></asp:Label> · Despachos afectados: <asp:Label ID="lblDespachosSAfectados" runat="server" CssClass="ld-dato ld-afectados"></asp:Label></p>
-                            </div>
-                            <div class="ld-cab-acciones">
-                                <asp:Button ID="btnCancelarEdicion" runat="server" Text="Cancelar"
-                                    CssClass="btn btn-outline-secondary btn-sm" OnClick="btnCancelarEdicion_Click" CausesValidation="false" />
-                                <asp:Button ID="btnVolverLotes" runat="server" Text="Volver a lotes"
-                                    CssClass="btn btn-outline-secondary btn-sm" OnClick="btnVolverLotes_Click" CausesValidation="false" />
-                            </div>
-                        </div>
-                        <div class="sgv-panel-cuerpo">
-
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-                                <strong>Importante:</strong> los cambios afectarán a todos los despachos de este lote.
-                                Verifique cuidadosamente antes de guardar.
-                            </div>
-
-                            <div class="ld-edicion" data-enter="<%= btnGuardarCambios.ClientID %>">
-
-                                <!-- Fila 1: campos básicos en 4 columnas -->
-                                <div class="row mb-3">
-                                    <div class="col-md-3">
-                                        <div class="form-group">
-                                            <label for="<%= txtFechaProgramacionEdit.ClientID %>" class="sgv-etiqueta">Fecha de programación: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
-                                            <asp:TextBox ID="txtFechaProgramacionEdit" runat="server" CssClass="form-control" TextMode="Date" aria-required="true"></asp:TextBox>
-                                            <asp:RequiredFieldValidator ID="rfvFechaProgramacionEdit" runat="server"
-                                                ControlToValidate="txtFechaProgramacionEdit"
-                                                ErrorMessage="Seleccione la fecha de programación."
-                                                Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true"
-                                                ValidationGroup="EdicionLote" />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group">
-                                            <label for="<%= txtClienteEdit.ClientID %>" class="sgv-etiqueta">Cliente:</label>
-                                            <asp:TextBox ID="txtClienteEdit" runat="server" CssClass="form-control readonly-field" ReadOnly="true"></asp:TextBox>
-                                            <small class="form-text">No se puede modificar el cliente</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group">
-                                            <label for="<%= txtNumeroPedidoEdit.ClientID %>" class="sgv-etiqueta">N° de pedido:</label>
-                                            <asp:TextBox ID="txtNumeroPedidoEdit" runat="server" CssClass="form-control"
-                                                placeholder="Ej: 1234567890" MaxLength="10"></asp:TextBox>
-                                            <small class="form-text">Exactamente 10 dígitos numéricos</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <div class="form-group">
-                                            <label for="<%= ddlPlantaEdit.ClientID %>" class="sgv-etiqueta">Planta de operación: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
-                                            <%-- Opciones cargadas desde el catálogo Planta en CargarPlantasFiltro(). --%>
-                                            <asp:DropDownList ID="ddlPlantaEdit" runat="server" CssClass="custom-select" aria-required="true">
-                                            </asp:DropDownList>
-                                            <asp:RequiredFieldValidator ID="rfvPlantaEdit" runat="server"
-                                                ControlToValidate="ddlPlantaEdit"
-                                                InitialValue=""
-                                                ErrorMessage="Seleccione la planta."
-                                                Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true"
-                                                ValidationGroup="EdicionLote" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Fila 2: tipo, ámbito y documentos -->
-                                <div class="row mb-3">
-                                    <div class="col-md-3">
-                                        <div class="form-group">
-                                            <label for="<%= ddlTipoOperacionEdit.ClientID %>" class="sgv-etiqueta">Tipo de operación: <span class="sgv-obligatorio" aria-hidden="true">*</span></label>
-                                            <asp:DropDownList ID="ddlTipoOperacionEdit" runat="server" CssClass="custom-select" aria-required="true"
-                                                AutoPostBack="true" OnSelectedIndexChanged="ddlTipoOperacionEdit_SelectedIndexChanged">
-                                                <asp:ListItem Value="" Text="-- Seleccione --"></asp:ListItem>
-                                                <asp:ListItem Value="CARGA" Text="Carga"></asp:ListItem>
-                                                <asp:ListItem Value="DESCARGA" Text="Descarga"></asp:ListItem>
-                                            </asp:DropDownList>
-                                            <asp:RequiredFieldValidator ID="rfvTipoOperacionEdit" runat="server" ControlToValidate="ddlTipoOperacionEdit" InitialValue=""
-                                                ErrorMessage="Seleccione el tipo de operación." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="EdicionLote" />
-                                        </div>
-                                        <div class="form-group mt-2">
-                                            <span class="sgv-etiqueta" id="lblAmbitoEdit">Ámbito: <span class="sgv-obligatorio" aria-hidden="true">*</span></span>
-                                            <div role="radiogroup" aria-labelledby="lblAmbitoEdit" aria-required="true">
-                                                <asp:RadioButtonList ID="rblAmbitoEdit" runat="server" CssClass="rbl-inline"
-                                                    AutoPostBack="true" OnSelectedIndexChanged="rblAmbitoEdit_SelectedIndexChanged"
-                                                    RepeatDirection="Horizontal" RepeatLayout="Flow">
-                                                    <asp:ListItem Value="0" Text="Nacional &nbsp;"></asp:ListItem>
-                                                    <asp:ListItem Value="1" Text="Internacional"></asp:ListItem>
-                                                </asp:RadioButtonList>
-                                            </div>
-                                            <asp:RequiredFieldValidator ID="rfvAmbitoEdit" runat="server" ControlToValidate="rblAmbitoEdit"
-                                                ErrorMessage="Seleccione el ámbito." Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="EdicionLote" />
-                                        </div>
-                                        <small class="form-text ld-nota-alerta mt-1">Al cambiar estos valores los paneles de documentos se actualizan automáticamente.</small>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <!-- Factura -->
-                                        <asp:Panel ID="pnlFacturaEdit" runat="server" CssClass="doc-panel h-100" Visible="false">
-                                            <h3 class="ld-doc-panel-titulo">Datos de factura</h3>
-                                            <div class="doc-panel-content">
-                                                <div class="form-group">
-                                                    <label for="<%= txtNumeroFacturaEdit.ClientID %>" class="sgv-etiqueta">N° de factura:</label>
-                                                    <asp:TextBox ID="txtNumeroFacturaEdit" runat="server" CssClass="form-control" placeholder="Ej: F222 - 00004267"></asp:TextBox>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="<%= txtFechaEmisionFacturaEdit.ClientID %>" class="sgv-etiqueta">Fecha de emisión:</label>
-                                                    <asp:TextBox ID="txtFechaEmisionFacturaEdit" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="<%= txtValorTotalFacturaEdit.ClientID %>" class="sgv-etiqueta">Valor total:</label>
-                                                    <asp:TextBox ID="txtValorTotalFacturaEdit" runat="server"
-                                                        CssClass="form-control"
-                                                        placeholder="0.00"
-                                                        inputmode="decimal" autocomplete="off" data-monto="true">
-                                                    </asp:TextBox>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="<%= ddlMonedaFacturaEdit.ClientID %>" class="sgv-etiqueta">Moneda:</label>
-                                                    <asp:DropDownList ID="ddlMonedaFacturaEdit" runat="server" CssClass="custom-select">
-                                                        <asp:ListItem Value="PEN" Text="Soles (PEN)"></asp:ListItem>
-                                                        <asp:ListItem Value="USD" Text="Dólares (USD)"></asp:ListItem>
-                                                    </asp:DropDownList>
-                                                </div>
-                                                <div class="form-group mb-0">
-                                                    <asp:CheckBox ID="chkQuitarFacturaEdit" runat="server" CssClass="ld-quitar-doc" Text="Quitar esta factura del lote" />
-                                                    <small class="form-text">La factura no se borra: solo deja de estar en estos despachos. Si el lote tiene una CPIC de esta factura, quítela también.</small>
-                                                </div>
-                                            </div>
-                                        </asp:Panel>
-                                    </div>
-                                    <div class="col-md-5">
-                                        <!-- CPIC -->
-                                        <asp:Panel ID="pnlCPICEdit" runat="server" CssClass="doc-panel h-100" Visible="false">
-                                            <h3 class="ld-doc-panel-titulo">Datos de CPIC</h3>
-                                            <div class="doc-panel-content">
-                                                <div class="form-group">
-                                                    <label for="<%= txtNumeroCPICEdit.ClientID %>" class="sgv-etiqueta">N° de CPIC:</label>
-                                                    <asp:TextBox ID="txtNumeroCPICEdit" runat="server" CssClass="form-control" placeholder="Ej: 1234567" MaxLength="7"></asp:TextBox>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="<%= txtFechaEmisionCPICEdit.ClientID %>" class="sgv-etiqueta">Fecha de emisión de la CPIC:</label>
-                                                    <asp:TextBox ID="txtFechaEmisionCPICEdit" runat="server" CssClass="form-control" TextMode="Date"></asp:TextBox>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="<%= txtValorFleteEdit.ClientID %>" class="sgv-etiqueta">Valor del flete:</label>
-                                                    <asp:TextBox ID="txtValorFleteEdit" runat="server"
-                                                        CssClass="form-control"
-                                                        placeholder="0.00"
-                                                        inputmode="decimal" autocomplete="off" data-monto="true">
-                                                    </asp:TextBox>
-                                                </div>
-                                                <div class="form-group mb-0">
-                                                    <asp:CheckBox ID="chkQuitarCpicEdit" runat="server" CssClass="ld-quitar-doc" Text="Quitar esta CPIC del lote" />
-                                                    <small class="form-text">La CPIC no se borra: solo deja de estar en estos despachos.</small>
-                                                </div>
-                                            </div>
-                                        </asp:Panel>
-                                    </div>
-                                </div>
-
-                                <%-- Lote con más de una factura o CPIC: aquí no se editan (escribir un número las juntaría en una). --%>
-                                <asp:Panel ID="pnlAvisoVariosDocumentosEdit" runat="server" Visible="false" CssClass="ld-aviso ld-aviso-info mb-3">
-                                    <div>
-                                        <strong>Este lote lleva más de una factura o CPIC.</strong>
-                                        Sus números no se cambian aquí: corríjalos en
-                                        <asp:HyperLink ID="hlIrDocsPorDespacho" runat="server">Registro manual → Factura y CPIC por despacho</asp:HyperLink>.
-                                        Los demás cambios de esta pantalla sí se guardan.
-                                    </div>
-                                </asp:Panel>
-
-                                <!-- Fila 3: conductores (ancho completo) -->
-                                <div class="form-section">
-                                    <h3 class="form-section-title">Conductores por despacho</h3>
-                                    <p class="form-text mb-2">Puede cambiar el conductor de cada despacho por separado. Los cambios se aplican al guardar.</p>
-                                    <div class="table-responsive">
-                                        <asp:GridView ID="gvConductoresLote" runat="server"
-                                            CssClass="table sgv-tabla mb-0"
-                                            AutoGenerateColumns="false"
-                                            DataKeyNames="IdDespacho"
-                                            OnRowDataBound="gvConductoresLote_RowDataBound"
-                                            EmptyDataText="Este lote no tiene despachos."
-                                            GridLines="None" CellSpacing="-1">
-                                            <EmptyDataRowStyle CssClass="sgv-vacio" />
-                                            <Columns>
-                                                <asp:BoundField DataField="IdDespacho" HeaderText="ID" Visible="false" />
-                                                <asp:BoundField DataField="NumeroDespacho" HeaderText="N° de despacho" ItemStyle-CssClass="ld-numero" />
-                                                <asp:BoundField DataField="FechaDespacho" HeaderText="Fecha" DataFormatString="{0:dd/MM/yyyy}" ItemStyle-CssClass="ld-col-fecha" />
-                                                <asp:TemplateField HeaderText="Conductor actual">
-                                                    <ItemTemplate><span class="ld-conductor-actual"><%#: Eval("NombreConductorActual") %></span></ItemTemplate>
-                                                </asp:TemplateField>
-                                                <asp:TemplateField HeaderText="Cambiar conductor">
-                                                    <ItemTemplate>
-                                                        <asp:DropDownList ID="ddlConductorDespacho" runat="server"
-                                                            CssClass="custom-select conductor-select" aria-label='<%# "Conductor del despacho " + Eval("NumeroDespacho") %>'>
-                                                        </asp:DropDownList>
-                                                    </ItemTemplate>
-                                                </asp:TemplateField>
-                                            </Columns>
-                                        </asp:GridView>
-                                    </div>
-                                </div>
-
-                                <!-- Botones de acción -->
-                                <div class="ld-form-acciones">
-                                    <asp:Button ID="btnAnularLote" runat="server"
-                                        Text="Anular lote"
-                                        CssClass="btn btn-warning"
-                                        OnClick="btnAnularLote_Click"
-                                        CausesValidation="false"
-                                        data-montos-libre="true"
-                                        data-confirmar="¿Anular este lote?\n\nTodos sus despachos quedarán como ANULADO y saldrán de la lista, de la liquidación del conductor y del seguimiento. Un viaje que quede sin despachos también se anula.\nNo se puede anular si algún viaje del lote ya tiene liquidación del conductor.\nLos registros se conservan para auditoría."
-                                        data-confirmar-titulo="Anular lote"
-                                        data-confirmar-aceptar="Anular lote"
-                                        data-confirmar-peligro="true" />
-                                    <asp:Button ID="btnGuardarCambios" runat="server"
-                                        Text="Guardar cambios"
-                                        CssClass="btn btn-primary"
-                                        OnClick="btnGuardarCambios_Click"
-                                        ValidationGroup="EdicionLote"
-                                        data-validar-grupo="EdicionLote"
-                                        data-confirmar="¿Está seguro de aplicar estos cambios a todo el lote?"
-                                        data-confirmar-aceptar="Guardar cambios" />
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </asp:Panel>
-
                 <!-- Detalle de un lote -->
                 <asp:Panel ID="pnlDetallesLote" runat="server" Visible="false">
                     <section class="sgv-panel">
@@ -570,8 +337,7 @@
                             <div class="ld-cab-acciones">
                                 <asp:HyperLink ID="hlDocumentosLote" runat="server" CssClass="btn btn-outline-primary btn-sm"
                                     ToolTip="Abre el expediente del pedido en la Bandeja de documentos">Documentos</asp:HyperLink>
-                                <asp:Button ID="btnEditarDesdeDetal" runat="server" Text="Editar lote"
-                                    CssClass="btn btn-outline-secondary btn-sm" OnClick="btnEditarDesdeDetal_Click" CausesValidation="false" />
+                                <asp:HyperLink ID="hlEditarLote" runat="server" CssClass="btn btn-outline-secondary btn-sm">Editar lote</asp:HyperLink>
                                 <asp:Button ID="btnVolverLotesDetalle" runat="server" Text="Volver a lotes"
                                     CssClass="btn btn-outline-secondary btn-sm" OnClick="btnVolverLotesDetalle_Click" CausesValidation="false" />
                             </div>
@@ -636,15 +402,7 @@
                 <asp:AsyncPostBackTrigger ControlID="btnLimpiarFiltros" EventName="Click" />
                 <asp:AsyncPostBackTrigger ControlID="btnAccionFila" EventName="Click" />
 
-                <asp:AsyncPostBackTrigger ControlID="btnCancelarEdicion" EventName="Click" />
-                <asp:AsyncPostBackTrigger ControlID="btnVolverLotes" EventName="Click" />
-                <asp:AsyncPostBackTrigger ControlID="btnGuardarCambios" EventName="Click" />
-                <asp:AsyncPostBackTrigger ControlID="btnAnularLote" EventName="Click" />
                 <asp:AsyncPostBackTrigger ControlID="ddlFiltroEstadoLotes" EventName="SelectedIndexChanged" />
-                <asp:AsyncPostBackTrigger ControlID="ddlTipoOperacionEdit" EventName="SelectedIndexChanged" />
-                <asp:AsyncPostBackTrigger ControlID="rblAmbitoEdit" EventName="SelectedIndexChanged" />
-
-                <asp:AsyncPostBackTrigger ControlID="btnEditarDesdeDetal" EventName="Click" />
                 <asp:AsyncPostBackTrigger ControlID="btnVolverLotesDetalle" EventName="Click" />
             </Triggers>
         </asp:UpdatePanel>
@@ -653,13 +411,9 @@
 </asp:Content>
 
 <asp:Content ID="Content2" ContentPlaceHolderID="ScriptsSection" runat="server">
-    <!-- Select2 JS -->
-    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/select2-4.0.13.min.js") %>"></script>
-
     <script>
         // Valores del servidor que usa el script de la página (ids de controles ASP.NET).
         var SGV = Object.assign(window.SGV || {}, {
-            txtNumeroPedidoEdit: '<%= txtNumeroPedidoEdit.ClientID %>',
             hfArgumentoFila: '<%= hfArgumentoFila.ClientID %>',
             btnAccionFila: '<%= btnAccionFila.ClientID %>'
         });

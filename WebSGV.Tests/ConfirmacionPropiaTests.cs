@@ -35,8 +35,8 @@ namespace WebSGV.Tests
         }
 
         [Theory]
-        [InlineData("ListaDespachos.aspx", "btnAnularLote", true)]
-        [InlineData("ListaDespachos.aspx", "btnGuardarCambios", false)]
+        [InlineData("EditarLote.aspx", "btnAnularLote", true)]
+        [InlineData("EditarLote.aspx", "btnGuardarCambios", false)]
         [InlineData("RegistroDespacho.aspx", "btnFinalizarLote", false)]
         [InlineData("RegistroDespacho.aspx", "btnCancelarLote", true)]
         public void AccionesDelLote_UsanDataConfirmar_NoConfirmNativo(string pagina, string id, bool peligro)
@@ -50,8 +50,10 @@ namespace WebSGV.Tests
 
         [Theory]
         [InlineData("Views", "ListaDespachos.aspx")]
+        [InlineData("Views", "EditarLote.aspx")]
         [InlineData("Views", "RegistroDespacho.aspx")]
         [InlineData("Scripts", "paginas/ListaDespachos.js")]
+        [InlineData("Scripts", "paginas/EditarLote.js")]
         public void PaginasDelLote_SinConfirm(string carpeta, string archivo)
         {
             Assert.DoesNotContain("confirm(", Leer(carpeta, archivo));

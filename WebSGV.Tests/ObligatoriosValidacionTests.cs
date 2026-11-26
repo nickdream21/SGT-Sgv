@@ -487,6 +487,7 @@ namespace WebSGV.Tests
         [InlineData("Views/GestionUsuarios.aspx", "btnGuardarUsuario", "vgUsuario", false)]
         [InlineData("Views/GestionUsuarios.aspx", "btnResetPass", "vgReset", true)]
         [InlineData("Views/GestionUsuarios.aspx", "btnConfirmarReaut", "vgReaut", true)]
+        [InlineData("Views/EditarLote.aspx", "btnGuardarCambios", "EdicionLote", true)]
         [InlineData("Views/RegistroManualLote.aspx", "btnRegistrarFactura", "vgFacturaLote", true)]
         [InlineData("Views/RegistroManualLote.aspx", "btnRegistrarCpic", "vgCpicLote", true)]
         [InlineData("Views/Controles/Despachos/ProgramacionWord.ascx", "btnProgramarDespachos", "vgProgramar", true)]
@@ -527,7 +528,7 @@ namespace WebSGV.Tests
                     if (Atributo(a, "data-validar-grupo") != grupo)
                         fallas.Add($"{p.Ruta}:{p.Linea(b.Index)} {Atributo(a, "ID")}: data-confirmar sin data-validar-grupo=\"{grupo}\"");
                 }
-            Assert.True(revisados > 0, "Se esperaba al menos btnGuardarCambios de ListaDespachos.");
+            Assert.True(revisados > 0, "Se esperaba al menos btnGuardarCambios de EditarLote.");
             Assert.True(fallas.Count == 0, string.Join("\n", fallas));
 
             string js = File.ReadAllText(Path.Combine(RaizWeb(), "Scripts", "paginas", "SiteMaster.js"));

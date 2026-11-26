@@ -127,7 +127,7 @@ namespace WebSGV.Tests
         [InlineData("Views/RegistroDespacho.aspx.cs", "pulse \\\"Finalizar lote\\\" para guardar.\", \"success\", enPagina: true)")]
         [InlineData("Views/RegistroDespacho.aspx.cs", "Ahora puede agregar conductores.\", \"success\", enPagina: true)")]
         [InlineData("Views/Exportacion/ImportarSeguimiento.aspx.cs", "MostrarAlerta(resumen, _rechazadas.Count > 0 || _filasSinProgramacion > 0 ? \"warning\" : \"success\", enPagina: true)")]
-        [InlineData("Views/ListaDespachos.aspx.cs", "{msgViajes}\", \"success\", enPagina: true)")]
+        [InlineData("Views/EditarLote.aspx.cs", "{msgViajes}\", \"success\", enPagina: true)")]
         public void ExitosConIndicacionSePintan(string archivo, string llamada) =>
             Assert.Contains(llamada, Leer(archivo));
 
@@ -138,6 +138,7 @@ namespace WebSGV.Tests
             {
                 ("Views/LiquidacionesPendientes.aspx", new[] { "pnlMensajes", "lblMensaje" }),
                 ("Views/ListaDespachos.aspx", new[] { "pnlMensajes", "lblMensaje" }),
+                ("Views/EditarLote.aspx", new[] { "pnlMensajes", "lblMensaje" }),
                 ("Views/RegistroDespacho.aspx", new[] { "pnlMensajes", "lblMensaje", "pnlMensajeImportacion", "lblMensajeImportacion",
                     "pnlMensajeConductor", "lblMensajeConductor" }),
                 ("Views/Controles/Despachos/DescargaPedido.ascx", new[] { "pnlMensajeDescarga", "lblMensajeDescarga" }),

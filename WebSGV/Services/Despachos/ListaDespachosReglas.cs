@@ -6,21 +6,19 @@ using WebSGV.Helpers;
 
 namespace WebSGV.Services.Despachos
 {
-    /// <summary>Vista de ListaDespachos: las dos listas (con pestañas) y las tres pantallas de un viaje o un lote (el registro manual es RegistroManualLote.aspx desde E6-27).</summary>
+    /// <summary>Vista de ListaDespachos: las dos listas (con pestañas) y el detalle de un viaje o un lote (el registro manual es RegistroManualLote.aspx desde E6-27 y la edición de un lote EditarLote.aspx desde E6-28).</summary>
     public enum VistaListaDespachos
     {
         Viajes,
         Lotes,
         DetalleViaje,
-        EdicionLote,
         DetalleLote
     }
 
-    /// <summary>Botón de una fila de las listas de ListaDespachos (E5-18a): ver, editar o ver anulado un lote, o ver un viaje.</summary>
+    /// <summary>Botón de una fila de las listas de ListaDespachos (E5-18a): ver o ver anulado un lote, o ver un viaje ("Editar" es un enlace desde E6-28).</summary>
     public enum AccionFilaLista
     {
         VerLote,
-        EditarLote,
         VerLoteAnulado,
         VerViaje
     }
@@ -32,7 +30,6 @@ namespace WebSGV.Services.Despachos
     public static class ListaDespachosReglas
     {
         public const string CodigoVer = "VER";
-        public const string CodigoEditar = "EDITAR";
         public const string CodigoVerAnulado = "VERANULADO";
         public const string CodigoViaje = "VIAJE";
 
@@ -47,7 +44,7 @@ namespace WebSGV.Services.Despachos
         private static readonly Regex FormaLote = new Regex(
             @"^\d+_[A-Za-z0-9-]*_\d{4}-\d{2}-\d{2}_(CARGA|DESCARGA)_[01]_\d+$", RegexOptions.CultureInvariant);
 
-        /// <summary>Las pestañas y el resumen van solo en las dos listas (M-082): no en un detalle, la edición ni el registro manual.</summary>
+        /// <summary>Las pestañas y el resumen van solo en las dos listas (M-082): no en un detalle.</summary>
         public static bool MuestraNavegacion(VistaListaDespachos vista) =>
             vista == VistaListaDespachos.Viajes || vista == VistaListaDespachos.Lotes;
 
@@ -59,13 +56,12 @@ namespace WebSGV.Services.Despachos
         public static bool EsIdLoteValido(string idLoteVirtual) =>
             !string.IsNullOrEmpty(idLoteVirtual) && idLoteVirtual.Length <= LargoMaximoArgumento && FormaLote.IsMatch(idLoteVirtual);
 
-        /// <summary>data-argumento de un botón de fila: "VER|lote", "EDITAR|lote", "VERANULADO|lote" o "VIAJE|id".</summary>
+        /// <summary>data-argumento de un botón de fila: "VER|lote", "VERANULADO|lote" o "VIAJE|id".</summary>
         public static string ArgumentoFila(AccionFilaLista accion, object id)
         {
             string valor = Convert.ToString(id, CultureInfo.InvariantCulture) ?? "";
             switch (accion)
             {
-                case AccionFilaLista.EditarLote: return CodigoEditar + "|" + valor;
                 case AccionFilaLista.VerLoteAnulado: return CodigoVerAnulado + "|" + valor;
                 case AccionFilaLista.VerViaje: return CodigoViaje + "|" + valor;
                 default: return CodigoVer + "|" + valor;
@@ -94,7 +90,6 @@ namespace WebSGV.Services.Despachos
                     idViaje = id;
                     return true;
                 case CodigoVer: accion = AccionFilaLista.VerLote; break;
-                case CodigoEditar: accion = AccionFilaLista.EditarLote; break;
                 case CodigoVerAnulado: accion = AccionFilaLista.VerLoteAnulado; break;
                 default: return false;
             }

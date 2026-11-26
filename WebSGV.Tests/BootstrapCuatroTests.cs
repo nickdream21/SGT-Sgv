@@ -171,15 +171,21 @@ namespace WebSGV.Tests
         }
 
         [Fact]
-        public void ListaDespachos_CargaSelect2AntesDeSuHoja()
+        public void EditarLote_CargaSelect2AntesDeSuHoja()
         {
-            // Las reglas de select2 de ListaDespachos.css (antes en ListaDespachos-2.css, que se cargaba al final)
-            // tienen la misma especificidad que las de select2.min.css: deben ir después para ganarles.
-            string aspx = Leer("Views/ListaDespachos.aspx");
+            // Las reglas de select2 de EditarLote.css (antes en ListaDespachos.css y, antes aún, en ListaDespachos-2.css,
+            // que se cargaba al final) tienen la misma especificidad que las de select2.min.css: deben ir después para ganarles.
+            string aspx = Leer("Views/EditarLote.aspx");
             int select2 = aspx.IndexOf("select2-4.0.13/select2.min.css", StringComparison.Ordinal);
-            int hoja = aspx.IndexOf("Content/paginas/ListaDespachos.css", StringComparison.Ordinal);
-            Assert.True(select2 >= 0 && hoja >= 0 && select2 < hoja, "select2.min.css debe enlazarse antes de ListaDespachos.css");
-            Assert.Contains(".select2-container--default .select2-selection--single", Leer("Content/paginas/ListaDespachos.css"));
+            int hoja = aspx.IndexOf("Content/paginas/EditarLote.css", StringComparison.Ordinal);
+            Assert.True(select2 >= 0 && hoja >= 0 && select2 < hoja, "select2.min.css debe enlazarse antes de EditarLote.css");
+            Assert.Contains(".select2-container--default .select2-selection--single", Leer("Content/paginas/EditarLote.css"));
+            Assert.Contains("Scripts/lib/select2-4.0.13.min.js", aspx);
+
+            // La lista de despachos ya no tiene combos de conductor con select2 (E6-28).
+            string lista = Leer("Views/ListaDespachos.aspx");
+            Assert.DoesNotContain("select2", lista);
+            Assert.DoesNotContain("select2", Leer("Content/paginas/ListaDespachos.css"));
         }
 
         // ------------------------------------------------------------------ !important

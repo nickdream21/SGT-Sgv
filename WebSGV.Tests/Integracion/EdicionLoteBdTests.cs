@@ -182,6 +182,44 @@ namespace WebSGV.Tests.Integracion
             }
         }
 
+        /// <summary>
+        /// E6-28: tras guardar en EditarLote.aspx la página vuelve al detalle con el id que arma EditarLoteReglas.IdTrasGuardar;
+        /// ese id debe ser el mismo que arma sp_LD_ObtenerLotesRegistrados para el lote ya editado (fecha y pedido nuevos).
+        /// </summary>
+        [FactBD]
+        public void Cambiar_fecha_y_pedido_el_id_tras_guardar_abre_el_mismo_lote()
+        {
+            using (new TransaccionDePrueba())
+            {
+                var ids = LoteDeDos(out _);
+                int idCliente = Convert.ToInt32(DbHelper.EjecutarEscalar("SELECT idCliente FROM Despachos WHERE idDespacho = @id",
+                    DbHelper.Param("@id", ids[0])));
+                var d = Foto(ids).Despachos[0];
+                string original = EditarLoteReglas.IdLoteVirtual(idCliente, d.NumeroPedido, d.FechaDespacho.Value, d.TipoOperacion,
+                    d.EsInternacional, d.IdPlanta.Value);
+                var antes = ListaDespachosService.ObtenerLotePorId(original);
+                Assert.NotNull(antes);
+                Assert.Equal(ids.OrderBy(i => i), antes.IdsDespachos.OrderBy(i => i));
+
+                var input = SinTocar(ids);
+                input.FechaDespacho = d.FechaDespacho.Value.Date.AddDays(-3);
+                input.NumeroPedido = "9" + Azar.Next(100000000, 999999999).ToString("D9");
+                var r = ListaDespachosService.GuardarCambiosLote(input);
+                Assert.False(r.SinCambios);
+
+                string candidato = EditarLoteReglas.IdTrasGuardar(antes, input);
+                Assert.NotEqual(original, candidato);
+                Assert.True(ListaDespachosReglas.EsIdLoteValido(candidato), candidato);
+                var despues = ListaDespachosService.ObtenerLotePorId(candidato);
+                Assert.NotNull(despues);
+                Assert.Equal(ids.OrderBy(i => i), despues.IdsDespachos.OrderBy(i => i));
+                Assert.Null(ListaDespachosService.ObtenerLotePorId(original));
+
+                Assert.Equal("~/Views/ListaDespachos.aspx?lote=" + System.Web.HttpUtility.UrlEncode(candidato) + "&msg=lote_guardado",
+                    EditarLoteReglas.DestinoTrasGuardar(original, candidato, false, id => ListaDespachosService.ObtenerLotePorId(id) != null));
+            }
+        }
+
         [FactBD]
         public void Quitar_factura_dejando_su_CPIC_avisa_50025()
         {
