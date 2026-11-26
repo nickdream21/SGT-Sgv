@@ -4,7 +4,7 @@ Registros de la BD que hay que corregir, completar o cargar. Casi todos están e
 
 Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = menor.
 
-Último id usado: D-040 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: D-042 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Facturas
 
@@ -53,6 +53,8 @@ Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = meno
 - [ ] **D-038** Conductor con el mismo nombre completo y dos documentos distintos — 1 caso (2 filas, visto el 2026-11-23 en la grilla de RegistroChoferes): confirmar con la oficina si es la misma persona con un documento mal cargado o dos personas, y desactivar o corregir la fila que sobre. Control: `SELECT LTRIM(RTRIM(nombre)) n, LTRIM(RTRIM(apPaterno)) p, LTRIM(RTRIM(ISNULL(apMaterno,''))) m, COUNT(*) FROM Conductor GROUP BY LTRIM(RTRIM(nombre)), LTRIM(RTRIM(apPaterno)), LTRIM(RTRIM(ISNULL(apMaterno,''))) HAVING COUNT(*) > 1` (debe dar 0 filas, o solo las confirmadas como personas distintas). · C
 - [ ] **D-039** Nombres de usuarios con espacios repetidos o al final — visto el 2026-11-24 en el modal de edición de GestionUsuarios (un usuario de rol CONDUCTOR con 67 caracteres frente a 54 recortado; la grilla lo oculta porque el HTML junta los espacios). Control: `SELECT COUNT(*) FROM Usuarios WHERE nombre LIKE '%  %' OR DATALENGTH(nombre) <> DATALENGTH(LTRIM(RTRIM(nombre)))`. Con aprobación: recortar y dejar un solo espacio entre palabras. · C
 - [ ] **D-040** Despachos activos con `numeroPedido = ''` (texto vacío) en lugar de NULL — al editar su lote se reescriben a NULL solo los que cambian y el lote puede partirse (M-229). Control: `SELECT COUNT(*) FROM Despachos WHERE activo = 1 AND numeroPedido = ''` (3 el 2026-11-26, cada uno en su propio lote). Con aprobación: `UPDATE … SET numeroPedido = NULL` en esos despachos. · C
+- [ ] **D-041** Factura de flete E001-18719 (Vitapro, 05/11/2026, 14 731,20 USD) activa en SGV pero anulada en SUNAT con nota de crédito — visto el 2026-11-26 en la consulta de facturas emitidas de SUNAT (columna "NCE de Anulación"). Control: `SELECT idFacturaFlete, activo FROM FacturaFlete WHERE numeroFactura = 'E001-18719'`. El usuario confirma si la nota la anuló entera y qué factura la reemplaza; con aprobación: darla de baja y pasar sus despachos a la que la reemplace. · B
+- [ ] **D-042** Factura E001-18732 (16/11/2026, 2 376,00) registrada sin cliente (`nombreCliente` NULL) — en SUNAT está emitida a una persona natural, no a un cliente de transporte. Control: `SELECT idFacturaFlete, idCliente, nombreCliente FROM FacturaFlete WHERE numeroFactura = 'E001-18732'`. El usuario confirma si es un flete real (completar el cliente) o se cargó por error (darla de baja). · C
 
 ## Reglas
 
