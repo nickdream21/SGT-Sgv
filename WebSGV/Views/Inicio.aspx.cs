@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Web.UI;
 using WebSGV.Helpers;
 using WebSGV.Services.Despachos;
@@ -25,13 +24,12 @@ namespace WebSGV.Views
         {
             try
             {
-                DateTime hoy = FechaHelper.Hoy();
-                var lotes = ListaDespachosService.ObtenerLotesRegistrados(null, null, null, null, null, null, "ACTIVO",
-                    documentos: ListaDespachosService.DOCUMENTOS_PENDIENTES);
-                if (lotes.Count == 0) return;
+                // Contados en la BD (E6-29, sp_LD_ContarLotesActivos): antes se traían todos los lotes pendientes.
+                ContadoresLotes c = ListaDespachosService.ContarLotesActivos(FechaHelper.Hoy());
+                int pendientes = c.ConDocumentosPendientes, atrasados = c.Atrasados;
+                if (pendientes == 0) return;
 
-                int atrasados = lotes.Count(l => EstadoDocumental.DeLote(l).Atrasado(l.FechaProgramacion, hoy));
-                lblDocumentosPendientes.Text = (lotes.Count == 1 ? "1 lote con documentos pendientes" : $"{lotes.Count} lotes con documentos pendientes")
+                lblDocumentosPendientes.Text = (pendientes == 1 ? "1 lote con documentos pendientes" : $"{pendientes} lotes con documentos pendientes")
                     + (atrasados > 0 ? $" ({atrasados} con más de 3 días)" : "") + " — ver y completar";
                 lnkDocumentosPendientes.Visible = true;
             }

@@ -64,7 +64,6 @@ namespace WebSGV.Tests
         {
             { "sp_DC_ObtenerEstacionesPeaje",      "catálogo de estaciones de peaje" },
             { "sp_LD_ObtenerConductoresConViajes", "conductores con un viaje ABIERTO (pocos a la vez)" },
-            { "sp_LD_ObtenerLotesRegistrados",     "pendiente M-138: las fechas son opcionales y ListaDespachos lo llama sin fechas (contadores de EstablecerContadores, \"documentos pendientes\" y campos vaciados)" },
             { "sp_ObtenerLiquidacionesPendientes", "solo las PENDIENTES de revisión (salen al revisarlas; no crecen con el tiempo)" },
             { "sp_LD_ObtenerTodosConductores",     "catálogo de conductores" },
             { "sp_LD_ObtenerViajesActivos",        "viajes ABIERTOS (pocos a la vez; los cerrados no salen)" },
@@ -114,6 +113,79 @@ namespace WebSGV.Tests
             var sinLimite = new HashSet<string>(SpDeListadoSinLimite(), StringComparer.OrdinalIgnoreCase);
             var sobran = ExcepcionesSp.Keys.Where(k => !sinLimite.Contains(k)).ToList();
             Assert.True(sobran.Count == 0, "Excepción de SP que ya no hace falta (quítela de ExcepcionesSp):\n" + string.Join("\n", sobran));
+        }
+
+        /// <summary>
+        /// E6-29 (M-138): <c>sp_LD_ObtenerLotesRegistrados</c> ya no es una excepción (tiene <c>@maxFilas</c>), pero sus
+        /// fechas siguen siendo opcionales. Ningún llamado pasa <c>null</c> literal como fecha desde y hasta (5.º y 6.º
+        /// argumento: los contadores van por <c>ContarLotesActivos</c>), y la lista de ListaDespachos pide el tope.
+        /// </summary>
+        [Fact]
+        public void ObtenerLotesRegistrados_NuncaSinFechasFueraDeUnaBusqueda()
+        {
+            string raiz = RaizWeb();
+            var fallas = new List<string>();
+            var archivos = new[] { "Services", "Views" }
+                .SelectMany(d => Directory.GetFiles(Path.Combine(raiz, d), "*.cs", SearchOption.AllDirectories));
+            foreach (string archivo in archivos)
+            {
+                string cs = File.ReadAllText(archivo);
+                foreach (Match m in Regex.Matches(cs, @"\bObtenerLotesRegistrados(?:ConTotal)?\s*\("))
+                {
+                    if (Regex.IsMatch(cs.Substring(0, m.Index), @"(?:static|private|public)\s+[\w<>]+\s*$")) continue; // declaración
+                    var argumentos = Argumentos(cs, m.Index + m.Length);
+                    if (argumentos.Count >= 6 && argumentos[4] == "null" && argumentos[5] == "null")
+                        fallas.Add(archivo.Substring(raiz.Length + 1) + ": " + string.Join(", ", argumentos));
+                }
+            }
+            Assert.True(fallas.Count == 0, "Llamado a ObtenerLotesRegistrados sin fechas (use ContarLotesActivos para contar):\n"
+                + string.Join("\n", fallas));
+
+            string lista = File.ReadAllText(Path.Combine(raiz, "Views", "ListaDespachos.aspx.cs"));
+            string contadores = CuerpoMetodo(lista, "EstablecerContadores");
+            Assert.Contains("ContarLotesActivos(", contadores);
+            Assert.DoesNotContain("ObtenerLotesRegistrados", contadores);
+            Assert.Contains("ListaDespachosReglas.TopeLotesLista", lista);
+            Assert.DoesNotContain("ListaDespachosService.ObtenerLotesRegistrados(", lista);
+
+            string inicio = CuerpoMetodo(File.ReadAllText(Path.Combine(raiz, "Views", "Inicio.aspx.cs")), "MostrarDocumentosPendientes");
+            Assert.Contains("ContarLotesActivos(", inicio);
+            Assert.DoesNotContain("ObtenerLotesRegistrados", inicio);
+        }
+
+        /// <summary>Argumentos de un llamado, separados por las comas de primer nivel, desde justo después del "(".</summary>
+        private static List<string> Argumentos(string cs, int desde)
+        {
+            var lista = new List<string>();
+            var actual = new StringBuilder();
+            int nivel = 0;
+            for (int i = desde; i < cs.Length; i++)
+            {
+                char c = cs[i];
+                if (c == '(' || c == '[' || c == '{') nivel++;
+                if (c == ')' || c == ']' || c == '}')
+                {
+                    if (nivel == 0) { lista.Add(actual.ToString().Trim()); break; }
+                    nivel--;
+                }
+                if (c == ',' && nivel == 0) { lista.Add(actual.ToString().Trim()); actual.Clear(); continue; }
+                actual.Append(c);
+            }
+            return lista;
+        }
+
+        /// <summary>Cuerpo (entre llaves) del método <paramref name="nombre"/>.</summary>
+        private static string CuerpoMetodo(string cs, string nombre)
+        {
+            var m = Regex.Match(cs, @"\b" + nombre + @"\s*\([^)]*\)\s*\{");
+            Assert.True(m.Success, "No está el método " + nombre);
+            int nivel = 0;
+            for (int i = m.Index + m.Length - 1; i < cs.Length; i++)
+            {
+                if (cs[i] == '{') nivel++;
+                else if (cs[i] == '}' && --nivel == 0) return cs.Substring(m.Index, i - m.Index + 1);
+            }
+            return cs.Substring(m.Index);
         }
 
         [Fact]

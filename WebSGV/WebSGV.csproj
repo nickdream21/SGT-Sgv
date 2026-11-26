@@ -274,6 +274,7 @@
     <Content Include="Database\StoredProcedures\sp_LD_ActualizarDespachoEnLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_AnularLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_AsignarDocumentosDespachos.sql" />
+    <Content Include="Database\StoredProcedures\sp_LD_ContarLotesActivos.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_ContarViajesActivos.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_DesvincularDocumentoLote.sql" />
     <Content Include="Database\StoredProcedures\sp_LD_EliminarLote.sql" />
@@ -649,6 +650,7 @@
     <Compile Include="Services\Despachos\DespachoValidaciones.cs" />
     <Compile Include="Services\Despachos\DocumentoCpicService.cs" />
     <Compile Include="Services\Despachos\EdicionDocumentosLote.cs" />
+    <Compile Include="Services\Despachos\ContadoresLotes.cs" />
     <Compile Include="Services\Despachos\EstadoDocumental.cs" />
     <Compile Include="Services\Despachos\FinalizarLoteService.cs" />
     <Compile Include="Services\Despachos\ListaDespachosService.cs" />

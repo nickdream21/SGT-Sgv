@@ -88,8 +88,14 @@ namespace WebSGV.Services.Despachos
             return dias == 1 ? "hace 1 día" : $"hace {dias} días";
         }
 
+        /// <summary>
+        /// Días que un lote puede esperar sus documentos antes de marcarse atrasado (en rojo). También lo recibe
+        /// <c>sp_LD_ContarLotesActivos</c> (<see cref="ListaDespachosService.ContarLotesActivos"/>).
+        /// </summary>
+        public const int DiasTolerancia = 3;
+
         /// <summary>Más de <paramref name="diasTolerancia"/> días sin completar: se marca en rojo.</summary>
-        public bool Atrasado(DateTime fechaDespacho, DateTime hoy, int diasTolerancia = 3) =>
+        public bool Atrasado(DateTime fechaDespacho, DateTime hoy, int diasTolerancia = DiasTolerancia) =>
             !Completo && (hoy.Date - fechaDespacho.Date).Days > diasTolerancia;
 
         private void Agregar(List<string> faltan, int cuantos, string texto)

@@ -359,6 +359,8 @@ SELECT HAS_PERMS_BY_NAME(NULL, 'DATABASE', 'VIEW DATABASE STATE') AS verEstado,
        (SELECT actual_state_desc FROM sys.database_query_store_options) AS queryStore;
 ```
 
+**E6-29 — `sp_LD_ContarLotesActivos` (nuevo) y `sp_LD_ObtenerLotesRegistrados` (cambiado)**: los contadores de ListaDespachos (pestañas y resumen) y el aviso de documentos pendientes de Inicio salen de una consulta propia en vez de traer todos los lotes; el listado gana `@maxFilas` opcional (la lista se corta a 500 lotes con aviso), la columna `TotalLotes` al final y un orden estable. El `-SoloListar` los muestra como 1 FALTA y 1 DISTINTO y se aplican con el resto; sin migración. **Orden: los dos SP → publicar el código de E6-29** (el SP cambiado sirve igual a la DLL vieja; la DLL nueva **no** funciona con el listado viejo, que no conoce `@maxFilas`: se cae toda la lista de lotes, y sin el SP de conteo se pierden los contadores). Control: anotar antes los números de ListaDespachos (lotes registrados, pendientes, con más de 3 días, con manifiestos pendientes) y de Inicio, y comprobar después que son los mismos. Las reglas de documentos están copiadas en los dos SP entre marcadores `-- [reglas-documentos:…]`: se editan los dos a la vez (`ReglasDocumentosSpTests`).
+
 ## 6. SP retirados
 
 Ninguno los llama el código publicado. Los 8 `sp_SE_*` sin uso que borraba `borrar-sp-se-sin-uso.sql` los borra ahora la migración 57 (paso 4); el script se quitó del repo.

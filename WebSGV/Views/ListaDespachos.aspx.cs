@@ -341,7 +341,8 @@ namespace WebSGV.Views
             {
                 _lotesEnlazados = true;
                 // Lo que falta documentar va primero (el resto conserva el orden por fecha de la consulta).
-                List<LoteRegistrado> lotes = ObtenerLotesRegistrados()
+                ListadoLotes listado = ObtenerLotesRegistrados();
+                List<LoteRegistrado> lotes = listado.Lotes
                     .OrderBy(l => l.EstadoLote == "ANULADO" || EstadoDocumental.DeLote(l).Completo ? 1 : 0)
                     .ToList();
                 DateTime hoy = FechaHelper.Hoy();
@@ -384,8 +385,8 @@ namespace WebSGV.Views
                 gvLotesRegistrados.DataSource = filas;
                 gvLotesRegistrados.DataBind();
 
-                litTotalLotes.Text = filas.Count == 0 ? "Sin lotes con los filtros elegidos"
-                    : ListaCatalogo.Resumen(gvLotesRegistrados.PageIndex, filas.Count, filas.Count, "") + " con los filtros elegidos";
+                litTotalLotes.Text = ListaDespachosReglas.TextoTotalLotes(gvLotesRegistrados.PageIndex, filas.Count, listado.Total,
+                    ddlFiltroDocumentosLotes.SelectedValue == ListaDespachosService.DOCUMENTOS_PENDIENTES);
             }
             catch (Exception ex)
             {
@@ -393,7 +394,7 @@ namespace WebSGV.Views
             }
         }
 
-        private List<LoteRegistrado> ObtenerLotesRegistrados()
+        private ListadoLotes ObtenerLotesRegistrados()
         {
             int? idCliente = string.IsNullOrEmpty(ddlFiltroClienteLotes.SelectedValue)
                 ? (int?)null : Convert.ToInt32(ddlFiltroClienteLotes.SelectedValue);
@@ -416,14 +417,16 @@ namespace WebSGV.Views
             string documentos = string.IsNullOrEmpty(ddlFiltroDocumentosLotes.SelectedValue)
                 ? null : ddlFiltroDocumentosLotes.SelectedValue;
 
-            var lotes = ListaDespachosService.ObtenerLotesRegistrados(
+            // A lo más TopeLotesLista lotes (E6-29): sin fechas ya no se trae la tabla entera.
+            var listado = ListaDespachosService.ObtenerLotesRegistradosConTotal(
                 idCliente, tipoOperacion, idPlanta, numeroPedido, fechaDesde, fechaHasta, estadoFiltro,
-                numeroFactura, numeroCPIC, nombreConductor, documentos);
+                numeroFactura, numeroCPIC, nombreConductor, documentos, ListaDespachosReglas.TopeLotesLista);
 
-            // Viendo lo pendiente, primero lo más antiguo (lo que más urge completar).
+            // Viendo lo pendiente, primero lo más antiguo (lo que más urge completar; el SP ya los trae así para
+            // que el tope deje fuera los más recientes).
             return documentos == ListaDespachosService.DOCUMENTOS_PENDIENTES
-                ? lotes.OrderBy(l => l.FechaProgramacion).ThenBy(l => l.NombreCliente).ToList()
-                : lotes;
+                ? new ListadoLotes(listado.Lotes.OrderBy(l => l.FechaProgramacion).ThenBy(l => l.NombreCliente).ToList(), listado.Total)
+                : listado;
         }
 
         private LoteRegistrado ObtenerLotePorId(string idLoteVirtual)
@@ -746,30 +749,21 @@ namespace WebSGV.Views
         /// <summary>
         /// Contadores de las pestañas y la línea de resumen de las listas (E5-18a, en vez de cuatro tarjetas): viajes
         /// activos, lotes activos, lotes con documentos pendientes (y los que llevan más de 3 días así) y lotes con
-        /// manifiestos pendientes. Devuelve los viajes activos. Se calcula al abrir la página y tras cada escritura;
-        /// los controles guardan el texto en su ViewState para no repetir la consulta en cada postback.
+        /// manifiestos pendientes. Devuelve los viajes activos. Se calcula al abrir la página y al refrescar;
+        /// los controles guardan el texto en su ViewState para no repetir la consulta en cada postback. Desde E6-29 los
+        /// lotes se cuentan en la BD (sp_LD_ContarLotesActivos, una fila) en vez de traerlos todos.
         /// </summary>
         private int EstablecerContadores()
         {
             try
             {
                 int totalViajes = ListaDespachosService.ContarViajesActivos();
-                var lotesActivos = ListaDespachosService.ObtenerLotesRegistrados(null, null, null, null, null, null, "ACTIVO");
-
-                int manifiestosPendientes = lotesActivos.Select(ListaDespachosService.EstadoManifiesto)
-                    .Count(v => v == "Pendiente" || v.StartsWith("Parcial"));
-
-                DateTime hoy = FechaHelper.Hoy();
-                var pendientes = lotesActivos
-                    .Select(l => new { Lote = l, Documentos = EstadoDocumental.DeLote(l) })
-                    .Where(x => !x.Documentos.Completo)
-                    .ToList();
-                int atrasados = pendientes.Count(x => x.Documentos.Atrasado(x.Lote.FechaProgramacion, hoy));
+                ContadoresLotes c = ListaDespachosService.ContarLotesActivos(FechaHelper.Hoy());
 
                 btnMostrarViajes.Text = ListaDespachosReglas.TextoPestana("Viajes activos", totalViajes);
-                btnMostrarLotes.Text = ListaDespachosReglas.TextoPestana("Lotes registrados", lotesActivos.Count);
-                litResumenListas.Text = ListaDespachosReglas.HtmlResumenListas(manifiestosPendientes, pendientes.Count, atrasados);
-                phVerPendientes.Visible = pendientes.Count > 0;
+                btnMostrarLotes.Text = ListaDespachosReglas.TextoPestana("Lotes registrados", c.LotesActivos);
+                litResumenListas.Text = ListaDespachosReglas.HtmlResumenListas(c.ConManifiestosPendientes, c.ConDocumentosPendientes, c.Atrasados);
+                phVerPendientes.Visible = c.ConDocumentosPendientes > 0;
                 return totalViajes;
             }
             catch (Exception ex)

@@ -175,55 +175,80 @@ namespace WebSGV.Services.Despachos
         public const string DOCUMENTOS_COMPLETOS = "COMPLETOS";
 
         /// <summary>
-        /// Lotes registrados filtrados (<c>sp_LD_ObtenerLotesRegistrados</c>).
-        /// <paramref name="documentos"/>: <see cref="DOCUMENTOS_PENDIENTES"/>, <see cref="DOCUMENTOS_COMPLETOS"/> o null.
+        /// Todos los lotes registrados que cumplen los filtros (<c>sp_LD_ObtenerLotesRegistrados</c>); <paramref name="documentos"/>:
+        /// <see cref="DOCUMENTOS_PENDIENTES"/>, <see cref="DOCUMENTOS_COMPLETOS"/> o null. Para una lista en pantalla use
+        /// <see cref="ObtenerLotesRegistradosConTotal"/> (con tope) y para contar <see cref="ContarLotesActivos"/>.
         /// </summary>
         public static List<LoteRegistrado> ObtenerLotesRegistrados(
             int? idCliente, string tipoOperacion, int? idPlanta, string numeroPedido,
             DateTime? fechaDesde, DateTime? fechaHasta, string estadoFiltro,
             string numeroFactura = null, string numeroCPIC = null, string nombreConductor = null,
-            string documentos = null)
+            string documentos = null) =>
+            LeerLotesRegistrados(idCliente, tipoOperacion, idPlanta, numeroPedido, fechaDesde, fechaHasta, estadoFiltro,
+                numeroFactura, numeroCPIC, nombreConductor, documentos, null).Lotes;
+
+        /// <summary>
+        /// Como <see cref="ObtenerLotesRegistrados"/> con a lo más <paramref name="maximo"/> lotes (E6-29): con PENDIENTES los
+        /// más antiguos, si no los más recientes; <see cref="ListadoLotes.Total"/>: cuántos cumplen los filtros sin el tope.
+        /// </summary>
+        public static ListadoLotes ObtenerLotesRegistradosConTotal(
+            int? idCliente, string tipoOperacion, int? idPlanta, string numeroPedido, DateTime? fechaDesde, DateTime? fechaHasta,
+            string estadoFiltro, string numeroFactura, string numeroCPIC, string nombreConductor, string documentos, int maximo)
         {
+            if (maximo < 1) throw new ArgumentOutOfRangeException(nameof(maximo), maximo, "El tope de lotes debe ser al menos 1.");
+            return LeerLotesRegistrados(idCliente, tipoOperacion, idPlanta, numeroPedido, fechaDesde, fechaHasta, estadoFiltro,
+                numeroFactura, numeroCPIC, nombreConductor, documentos, maximo);
+        }
+
+        private static ListadoLotes LeerLotesRegistrados(
+            int? idCliente, string tipoOperacion, int? idPlanta, string numeroPedido, DateTime? fechaDesde, DateTime? fechaHasta,
+            string estadoFiltro, string numeroFactura, string numeroCPIC, string nombreConductor, string documentos, int? maximo)
+        {
+            object Texto(string valor) => string.IsNullOrEmpty(valor) ? (object)DBNull.Value : valor;
             List<LoteRegistrado> lotes = new List<LoteRegistrado>();
+            int total = 0;
 
             using (SqlConnection conn = new SqlConnection(DbHelper.ConnectionString))
+            using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerLotesRegistrados", conn))
             {
-                using (SqlCommand cmd = new SqlCommand("sp_LD_ObtenerLotesRegistrados", conn))
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@idCliente", (object)idCliente ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@tipoOperacion", Texto(tipoOperacion));
+                cmd.Parameters.AddWithValue("@idPlanta", (object)idPlanta ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@numeroPedido", Texto(numeroPedido));
+                cmd.Parameters.AddWithValue("@fechaDesde", (object)fechaDesde ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@fechaHasta", (object)fechaHasta ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@estadoFiltro", Texto(estadoFiltro));
+                cmd.Parameters.AddWithValue("@numeroFactura", Texto(numeroFactura));
+                cmd.Parameters.AddWithValue("@numeroCPIC", Texto(numeroCPIC));
+                cmd.Parameters.AddWithValue("@nombreConductor", Texto(nombreConductor));
+                cmd.Parameters.AddWithValue("@documentos", Texto(documentos));
+                // Sin tope no se manda: el SP lo toma como NULL (todas las filas), igual que antes de E6-29.
+                if (maximo.HasValue)
+                    cmd.Parameters.AddWithValue("@maxFilas", maximo.Value);
+
+                conn.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-
-                    cmd.Parameters.AddWithValue("@idCliente", (object)idCliente ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@tipoOperacion",
-                        string.IsNullOrEmpty(tipoOperacion) ? (object)DBNull.Value : tipoOperacion);
-                    cmd.Parameters.AddWithValue("@idPlanta", (object)idPlanta ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@numeroPedido",
-                        string.IsNullOrEmpty(numeroPedido) ? (object)DBNull.Value : numeroPedido);
-                    cmd.Parameters.AddWithValue("@fechaDesde", (object)fechaDesde ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@fechaHasta", (object)fechaHasta ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@estadoFiltro",
-                        string.IsNullOrEmpty(estadoFiltro) ? (object)DBNull.Value : estadoFiltro);
-                    cmd.Parameters.AddWithValue("@numeroFactura",
-                        string.IsNullOrEmpty(numeroFactura) ? (object)DBNull.Value : numeroFactura);
-                    cmd.Parameters.AddWithValue("@numeroCPIC",
-                        string.IsNullOrEmpty(numeroCPIC) ? (object)DBNull.Value : numeroCPIC);
-                    cmd.Parameters.AddWithValue("@nombreConductor",
-                        string.IsNullOrEmpty(nombreConductor) ? (object)DBNull.Value : nombreConductor);
-                    cmd.Parameters.AddWithValue("@documentos",
-                        string.IsNullOrEmpty(documentos) ? (object)DBNull.Value : documentos);
-
-                    conn.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
-                        {
-                            lotes.Add(LeerLoteDesdeReader(reader));
-                        }
+                        lotes.Add(LeerLoteDesdeReader(reader));
+                        if (lotes.Count == 1) total = GetSafeValue<int>(reader, "TotalLotes");
                     }
                 }
             }
-
-            return lotes;
+            return new ListadoLotes(lotes, total);
         }
+
+        /// <summary>
+        /// Contadores de los lotes activos en una fila (<c>sp_LD_ContarLotesActivos</c>, E6-29), los de <see cref="ContadoresLotes.DesdeLotes"/>
+        /// sin traer los lotes. <paramref name="hoy"/>: <see cref="FechaHelper.Hoy"/> (decide los atrasados); cliente opcional.
+        /// </summary>
+        public static ContadoresLotes ContarLotesActivos(DateTime hoy, int? idCliente = null) =>
+            ContadoresLotes.DeFila(DbHelper.ConsultarTablaSp("sp_LD_ContarLotesActivos",
+                DbHelper.Param("@hoy", hoy.Date),
+                DbHelper.Param("@diasTolerancia", EstadoDocumental.DiasTolerancia),
+                DbHelper.Param("@idCliente", (object)idCliente ?? DBNull.Value)).Rows.Cast<DataRow>().FirstOrDefault());
 
         /// <summary>
         /// Lote por su id virtual (ignora los filtros del usuario): reconstruye los criterios

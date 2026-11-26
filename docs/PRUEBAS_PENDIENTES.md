@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-116 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-117 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -60,6 +60,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-114** RegistroDespacho tras E6-26 en el sitio publicado con un admin real — lote a mano con factura y CPIC adjuntas (que los PDF queden en el lote al finalizar), "Crear nuevo viaje" con un conductor de varios viajes en dos pestañas (un solo viaje), historial y "Reabrir", e iniciar un lote completo a 390 px en un celular. · B
 - [ ] **P-115** `RegistroManualLote.aspx` en el sitio publicado tras E6-27 con un admin real — entrar desde el expediente de la Bandeja y por el enlace viejo `ListaDespachos.aspx?manual=1&lote=`; en un lote nacional real sin factura, registrar la factura y adjuntar su PDF en la misma visita, y en un lote con varias facturas o CPIC usar "Subir PDF" de una fila; también desde un celular a 390 px. · B
 - [ ] **P-116** `EditarLote.aspx` en el sitio publicado tras E6-28 con un admin real — entrar desde la fila y desde el detalle, guardar cambiando la fecha (vuelve al detalle con el lote nuevo), guardar sin cambios, el aviso de varios documentos y anular un lote de prueba; también desde un celular a 390 px (select2 de conductores al tacto). · B
+- [ ] **P-117** Contadores de lotes tras publicar E6-29 — en el sitio publicado, anotar antes de publicar los números de ListaDespachos (pestañas, línea de resumen, "Ver los lotes con pendientes") y el aviso de documentos pendientes de Inicio, y comprobar después que son los mismos. · B
 - [ ] **P-012** Seguimiento: lo que escribe — corregir una hora, guardar los datos que el GPS no sabe, editar datos del viaje, nuevo viaje, cerrar/reabrir, "Actualizar GPS", y los paneles de evidencia/corrección (JS). Por HTTP solo se probó lo que lee; las escrituras, con `SeguimientoViajesBdTests`. · B
 - [ ] **P-013** Interfaz de documentos y documentos pendientes — registrar una factura y un CPIC de prueba desde la tarjeta, el paginado (página 2 con un filtro; que el pie no quede tapado por la columna fija de acciones) y el ancho de página; el recuadro, el filtro y "Documentos" del lote (adjuntar un PDF de factura y guardar una guía de prueba). · B
 - [ ] **P-014** Reporte de cargas — pestañas, los dos gráficos (tooltip, ancho de celular) y que la pestaña se mantenga al buscar; solo se probó por HTTP. · C

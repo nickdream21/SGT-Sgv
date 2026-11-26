@@ -57,6 +57,15 @@
 --     CpicConPdf) en vez de un NOT EXISTS por fila.
 --   * OPTION (RECOMPILE): con tantos filtros opcionales, el plan se arma con los valores
 --     reales de cada llamada.
+-- E6-29 (2026-11-25):
+--   * @maxFilas (opcional): tope de filas (ListaDespachos pide 500); NULL = todas, como antes.
+--     TotalLotes (ultima columna) = cuantos lotes cumplen los filtros sin el tope.
+--   * Orden estable: con @documentos = 'PENDIENTES' el mas antiguo primero (fecha y cliente), y
+--     siempre FechaCreacion DESC e IdLoteVirtual, para que el tope corte siempre en el mismo lugar.
+--   * Las reglas de documentos (perfil del cliente, que se espera de cada carga y que falta) estan
+--     entre los marcadores -- [reglas-documentos:...] y son IDENTICAS en sp_LD_ContarLotesActivos
+--     (contadores de ListaDespachos e Inicio): si cambia una, editar las dos
+--     (ReglasDocumentosSpTests lo exige).
 -- ============================================================
 CREATE OR ALTER PROCEDURE sp_LD_ObtenerLotesRegistrados
     @idCliente       INT          = NULL,
@@ -70,7 +79,8 @@ CREATE OR ALTER PROCEDURE sp_LD_ObtenerLotesRegistrados
     @nombreConductor VARCHAR(200) = NULL,
     @idPlanta        INT          = NULL,
     @planta          VARCHAR(100) = NULL,
-    @documentos      VARCHAR(20)  = NULL
+    @documentos      VARCHAR(20)  = NULL,
+    @maxFilas        INT          = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -100,6 +110,7 @@ BEGIN
     IF @fechaHasta IS NOT NULL
         SET @fechaHastaFin = DATEADD(SECOND, -1, DATEADD(DAY, 1, CAST(@fechaHasta AS DATETIME)));
 
+    -- [reglas-documentos:perfil-cliente] (identico en sp_LD_ObtenerLotesRegistrados y sp_LD_ContarLotesActivos: editar los dos)
     -- Perfil de cada cliente, calculado una vez (antes eran dos CTE que el plan repetia por despacho):
     --   conPedido: manda sus documentos en el ZIP del correo (pedido, factura con PDF y guias): Vitapro.
     --   conCPIC:   alguno de sus despachos activos tiene CPIC.
@@ -118,7 +129,9 @@ BEGIN
       AND (@idCliente IS NULL OR idCliente = @idCliente)
     GROUP BY idCliente
     OPTION (RECOMPILE);
+    -- [/reglas-documentos:perfil-cliente]
 
+    -- [reglas-documentos:documentos-por-tipo] (identico en sp_LD_ObtenerLotesRegistrados y sp_LD_ContarLotesActivos: editar los dos)
     ;WITH ManifiestosPorDespacho AS (
         -- Una fila por despacho con manifiesto: cuales tiene (cruce, retorno).
         SELECT idDespacho,
@@ -146,6 +159,7 @@ BEGIN
                CASE WHEN pc.conPedido = 1 THEN 'PEDIDO'
                     WHEN d.esInternacional = 1 OR pc.conCPIC = 1 THEN 'CPIC'
                     ELSE 'GUIA' END AS perfil
+    -- [/reglas-documentos:documentos-por-tipo]
         FROM Despachos d
         LEFT JOIN @perfilCliente pc ON pc.idCliente = d.idCliente
         WHERE ((@verAnulados = 0 AND d.activo = 1) OR (@verAnulados = 1 AND d.activo = 0 AND d.estadoDespacho = 'ANULADO'))
@@ -156,6 +170,7 @@ BEGIN
           AND (@fechaDesde     IS NULL OR d.fechaDespacho  >= @fechaDesde)
           AND (@fechaHastaFin  IS NULL OR d.fechaDespacho  <= @fechaHastaFin)
     ),
+    -- [reglas-documentos:faltantes] (identico en sp_LD_ObtenerLotesRegistrados y sp_LD_ContarLotesActivos: editar los dos)
     DespachosDocumentos AS (
         -- Un 1 por documento que le falta al despacho (0 si esta anulado:
         -- un anulado no espera documentos).
@@ -189,6 +204,7 @@ BEGIN
         LEFT JOIN ManifiestosPorDespacho mpd ON mpd.idDespacho = d.idDespacho
         LEFT JOIN FacturasConPdf         fpdf ON fpdf.idFactura = d.idFactura
         LEFT JOIN CpicConPdf             cpdf ON cpdf.idCPIC    = d.idCPIC
+    -- [/reglas-documentos:faltantes]
     ),
     LotesAgrupados AS (
         SELECT
@@ -256,7 +272,8 @@ BEGIN
             d.tipoOperacion, d.esInternacional, d.idPlanta, pl.nombre
         HAVING COUNT(*) >= 1
     )
-    SELECT la.*
+    -- TotalLotes al final: la version anterior de la aplicacion lee las columnas por nombre.
+    SELECT TOP (ISNULL(@maxFilas, 2147483647)) la.*, COUNT(*) OVER () AS TotalLotes
     FROM LotesAgrupados la
     WHERE (@estadoFiltro IS NULL OR la.EstadoLote = @estadoFiltro)
       AND (@documentos IS NULL
@@ -278,6 +295,9 @@ BEGIN
               AND CONCAT(c2.nombre, ' ', ISNULL(c2.apPaterno, ''), ' ', ISNULL(c2.apMaterno, ''))
                     LIKE @conductorLike
       ))
-    ORDER BY la.FechaCreacion DESC
+    ORDER BY CASE WHEN @documentos = 'PENDIENTES' THEN la.FechaProgramacion END,
+             CASE WHEN @documentos = 'PENDIENTES' THEN la.NombreCliente END,
+             la.FechaCreacion DESC,
+             la.IdLoteVirtual
     OPTION (RECOMPILE);
 END

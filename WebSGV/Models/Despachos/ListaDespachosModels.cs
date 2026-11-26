@@ -352,4 +352,24 @@ namespace WebSGV.Models.Despachos
         public string AccionCpic { get; set; }
         public int Despachos { get; set; }
     }
+
+    /// <summary>
+    /// Lotes de una consulta con tope (E6-29): los que se trajeron y cuántos cumplen los filtros sin el tope
+    /// (<c>TotalLotes</c> de <c>sp_LD_ObtenerLotesRegistrados</c>).
+    /// </summary>
+    public sealed class ListadoLotes
+    {
+        public ListadoLotes(List<LoteRegistrado> lotes, int total)
+        {
+            Lotes = lotes ?? new List<LoteRegistrado>();
+            Total = Math.Max(total, Lotes.Count);
+        }
+
+        public List<LoteRegistrado> Lotes { get; }
+
+        public int Total { get; }
+
+        /// <summary>true si el tope dejó lotes fuera.</summary>
+        public bool Cortado => Total > Lotes.Count;
+    }
 }

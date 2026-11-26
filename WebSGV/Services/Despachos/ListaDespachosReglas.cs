@@ -117,6 +117,38 @@ namespace WebSGV.Services.Despachos
             return html;
         }
 
+        /// <summary>
+        /// Lotes que pinta la lista de ListaDespachos como máximo (E6-29, M-138): sin fechas o con un rango amplio la
+        /// consulta ya no trae la tabla entera. <c>sp_LD_ObtenerLotesRegistrados</c> devuelve además el total sin el tope.
+        /// </summary>
+        public const int TopeLotesLista = 500;
+
+        /// <summary>
+        /// Aviso de la lista cuando el tope cortó lotes (null si se muestran todos). Viendo los pendientes, el SP devuelve
+        /// los más antiguos primero; si no, los más recientes.
+        /// </summary>
+        public static string AvisoTopeLotes(int mostrados, int total, bool pendientes)
+        {
+            if (total <= mostrados) return null;
+            var es = CultureInfo.GetCultureInfo("es-PE");
+            string n = Math.Max(0, mostrados).ToString("N0", es), t = total.ToString("N0", es);
+            return pendientes
+                ? $"Se muestran los {n} lotes con documentos pendientes más antiguos de {t}; complete esos o filtre por cliente o fechas para ver el resto."
+                : $"Se muestran los {n} lotes más recientes de {t}; acote las fechas o los filtros para ver el resto.";
+        }
+
+        /// <summary>
+        /// Resumen de la lista de lotes ("Mostrando 1–25 de 108 con los filtros elegidos"): con el tope dice el total real
+        /// y agrega <see cref="AvisoTopeLotes"/>.
+        /// </summary>
+        public static string TextoTotalLotes(int indicePagina, int mostrados, int total, bool pendientes)
+        {
+            if (mostrados <= 0) return "Sin lotes con los filtros elegidos";
+            string aviso = AvisoTopeLotes(mostrados, total, pendientes);
+            return ListaCatalogo.Resumen(indicePagina, mostrados, Math.Max(total, mostrados), "") + " con los filtros elegidos"
+                + (aviso == null ? "" : ". " + aviso);
+        }
+
         /// <summary>Resumen del detalle de un lote en una línea: despachos, operación, planta y fecha de creación.</summary>
         public static string HtmlResumenLote(int despachos, string operacion, string planta, DateTime fechaCreacion) =>
             "<p class=\"sgv-resumen\">" + Parte(despachos, "despacho", "despachos") +
