@@ -9,9 +9,10 @@
 --   LotesDocumentosPendientes  a los que les falta algun documento (EstadoDocumental.Completo = false).
 --   LotesAtrasados             de esos, los programados hace mas de @diasTolerancia dias
 --                              (EstadoDocumental.Atrasado; DiasTolerancia = 3).
---   LotesManifiestosPendientes internacionales con planta en los que no todos los despachos tienen
---                              manifiesto de cruce y de retorno ("Pendiente" o "Parcial N/M" de
---                              ListaDespachosService.EstadoManifiesto).
+--   LotesManifiestosPendientes lotes con planta en los que no todos los despachos que esperan MCI
+--                              (internacionales y cargas de perfil CPIC, no anulados) tienen uno, de
+--                              cruce o de retorno (M-242, 2026-11-26; antes se exigian los dos)
+--                              ("Pendiente" o "Parcial N/M" de ListaDespachosService.EstadoManifiesto).
 -- @hoy lo pasa la aplicacion (FechaHelper.Hoy(), hora de Peru): la hora del servidor no se usa (BaseDeDatosTests).
 -- @idCliente opcional: los contadores de un cliente (el perfil de documentos tambien se calcula
 -- solo con sus despachos, igual que en sp_LD_ObtenerLotesRegistrados con ese filtro).
@@ -51,12 +52,9 @@ BEGIN
 
     -- [reglas-documentos:documentos-por-tipo] (identico en sp_LD_ObtenerLotesRegistrados y sp_LD_ContarLotesActivos: editar los dos)
     ;WITH ManifiestosPorDespacho AS (
-        -- Una fila por despacho con manifiesto: cuales tiene (cruce, retorno).
-        SELECT idDespacho,
-               MAX(CASE WHEN tipoManifiesto = 'CRUCE'   THEN 1 ELSE 0 END) AS TieneCruce,
-               MAX(CASE WHEN tipoManifiesto = 'RETORNO' THEN 1 ELSE 0 END) AS TieneRetorno
-        FROM DocumentosManifiesto
-        GROUP BY idDespacho
+        -- Una fila por despacho con algun manifiesto: un MCI por camion, de cruce o de retorno
+        -- segun el sentido de su carga (DN-21, M-242).
+        SELECT DISTINCT idDespacho FROM DocumentosManifiesto
     ),
     FacturasConPdf AS (
         -- Facturas con su PDF activo (una fila por factura).
@@ -110,9 +108,15 @@ BEGIN
             CASE WHEN d.estadoDespacho <> 'ANULADO'
                       AND (d.esInternacional = 1 OR (d.perfil = 'CPIC' AND d.tipoOperacion = 'CARGA'))
                       AND mpd.idDespacho IS NULL THEN 1 ELSE 0 END AS SinManifiesto,
-            -- Manifiesto completo: el de cruce y el de retorno (estado del manifiesto en ListaDespachos).
-            CASE WHEN mpd.TieneCruce = 1 AND mpd.TieneRetorno = 1
-                 THEN 1 ELSE 0 END AS ManifiestoCompleto
+            -- Estado del manifiesto en ListaDespachos (M-242, 2026-11-26): espera MCI el mismo despacho
+            -- que SinManifiesto, y esta completo con un MCI de cualquier tipo (DN-21), de modo que
+            -- EsperaManifiesto = ManifiestoCompleto + SinManifiesto.
+            CASE WHEN d.estadoDespacho <> 'ANULADO'
+                      AND (d.esInternacional = 1 OR (d.perfil = 'CPIC' AND d.tipoOperacion = 'CARGA'))
+                      THEN 1 ELSE 0 END AS EsperaManifiesto,
+            CASE WHEN d.estadoDespacho <> 'ANULADO'
+                      AND (d.esInternacional = 1 OR (d.perfil = 'CPIC' AND d.tipoOperacion = 'CARGA'))
+                      AND mpd.idDespacho IS NOT NULL THEN 1 ELSE 0 END AS ManifiestoCompleto
         FROM DespachosPerfil d
         LEFT JOIN ManifiestosPorDespacho mpd ON mpd.idDespacho = d.idDespacho
         LEFT JOIN FacturasConPdf         fpdf ON fpdf.idFactura = d.idFactura
@@ -130,6 +134,7 @@ BEGIN
             SUM(d.SinPedido + d.SinGuia + d.SinFactura + d.SinPdfFactura
                 + d.SinCPIC + d.SinPdfCPIC + d.SinManifiesto) AS Faltantes,
             SUM(d.ManifiestoCompleto) AS DespachosManifiestoCompleto,
+            SUM(d.EsperaManifiesto) AS DespachosEsperanManifiesto,
             CASE
                 WHEN SUM(CASE WHEN d.estadoDespacho = 'ANULADO' THEN 1 ELSE 0 END) = COUNT(*)
                 THEN 'ANULADO'
@@ -146,8 +151,8 @@ BEGIN
         ISNULL(SUM(CASE WHEN l.Faltantes > 0 THEN 1 ELSE 0 END), 0) AS LotesDocumentosPendientes,
         ISNULL(SUM(CASE WHEN l.Faltantes > 0 AND DATEDIFF(DAY, l.fechaDespacho, @hoy) > @diasTolerancia
                         THEN 1 ELSE 0 END), 0) AS LotesAtrasados,
-        ISNULL(SUM(CASE WHEN l.esInternacional = 1 AND l.idPlanta > 0
-                         AND l.DespachosManifiestoCompleto < l.CantidadDespachos
+        ISNULL(SUM(CASE WHEN l.idPlanta > 0 AND l.DespachosEsperanManifiesto > 0
+                         AND l.DespachosManifiestoCompleto < l.DespachosEsperanManifiesto
                         THEN 1 ELSE 0 END), 0) AS LotesManifiestosPendientes
     FROM Lotes l
     WHERE l.EstadoLote = 'ACTIVO'

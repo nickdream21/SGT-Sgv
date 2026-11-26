@@ -371,8 +371,8 @@ namespace WebSGV.Views
                     l.FechaCreacion,
                     l.EstadoLote,
                     ManifiestoEstado = manifiesto,
-                    // El manifiesto de aduana solo aplica a un lote internacional.
-                    MostrarManifiesto = l.EsInternacional && manifiesto != "N/A",
+                    // Sello si el lote espera MCI (internacional o carga CPIC como Crisar, M-242); si no, "N/A".
+                    MostrarManifiesto = manifiesto != "N/A",
                     DocumentosResumen = anulado ? "—" : documentos.Resumen,
                     DocumentosTono = anulado ? TonoEstado.Neutro : documentos.Completo ? TonoEstado.Ok : TonoEstado.Alerta,
                     DocumentosPendientes = !anulado && !documentos.Completo,
@@ -462,7 +462,7 @@ namespace WebSGV.Views
                 litResumenLote.Text = ListaDespachosReglas.HtmlResumenLote(lote.CantidadDespachos, lote.TipoOperacion,
                     lote.PlantaOperacion, lote.FechaCreacion);
                 // "Documentos" siempre visible: Factura/CPIC aplican también a lotes nacionales.
-                // El Manifiesto (solo internacional) se oculta dentro de esa vista si no aplica.
+                // El Manifiesto (internacional o carga de perfil CPIC, M-242) se oculta dentro de esa vista si no aplica.
             }
         }
 

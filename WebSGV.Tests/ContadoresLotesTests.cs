@@ -14,7 +14,7 @@ namespace WebSGV.Tests
         private static readonly DateTime Hoy = new DateTime(2026, 11, 25);
 
         private static LoteRegistrado Lote(DateTime fecha, int despachos = 2, bool internacional = false, int idPlanta = 1,
-            int manifiestoCompleto = 0, int sinGuia = 0, string estado = "ACTIVO") => new LoteRegistrado
+            int manifiestoCompleto = 0, int sinGuia = 0, string estado = "ACTIVO", int? esperan = null) => new LoteRegistrado
         {
             FechaProgramacion = fecha,
             CantidadDespachos = despachos,
@@ -22,6 +22,7 @@ namespace WebSGV.Tests
             EsInternacional = internacional,
             IdPlanta = idPlanta,
             DespachosManifiestoCompleto = manifiestoCompleto,
+            DespachosEsperanManifiesto = esperan ?? (internacional ? despachos : 0),
             DespachosSinGuia = sinGuia,
             EstadoLote = estado
         };
@@ -62,13 +63,15 @@ namespace WebSGV.Tests
                 Lote(Hoy, despachos: 2, internacional: true, manifiestoCompleto: 0), // Pendiente
                 Lote(Hoy, despachos: 2, internacional: true, manifiestoCompleto: 1), // Parcial 1/2
                 Lote(Hoy, despachos: 2, internacional: true, manifiestoCompleto: 2), // Completo
-                Lote(Hoy, despachos: 2, internacional: false),                       // N/A: nacional
-                Lote(Hoy, despachos: 2, internacional: true, idPlanta: 0)            // N/A: sin planta
+                Lote(Hoy, despachos: 2, internacional: false),                       // N/A: nacional sin CPIC
+                Lote(Hoy, despachos: 2, internacional: true, idPlanta: 0),           // N/A: sin planta
+                Lote(Hoy, despachos: 2, internacional: false, esperan: 2),           // Pendiente: nacional con CPIC (M-242)
+                Lote(Hoy, despachos: 2, internacional: false, esperan: 2, manifiestoCompleto: 2) // Completo
             }, Hoy);
 
             Assert.Equal("Parcial 1/2", ListaDespachosService.EstadoManifiesto(Lote(Hoy, internacional: true, manifiestoCompleto: 1)));
-            Assert.Equal(5, c.LotesActivos);
-            Assert.Equal(2, c.ConManifiestosPendientes);
+            Assert.Equal(7, c.LotesActivos);
+            Assert.Equal(3, c.ConManifiestosPendientes);
         }
 
         [Fact]

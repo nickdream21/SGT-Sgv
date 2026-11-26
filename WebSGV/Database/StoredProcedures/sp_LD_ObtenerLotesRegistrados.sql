@@ -35,8 +35,11 @@
 -- distintas lleva el lote. Con mas de una, NumeroFactura/NumeroCPIC (el MAX)
 -- es solo una de ellas: la pantalla lista cada documento por su id.
 -- DespachosManifiestoCompleto (2026-11-17, ultima columna): cuantos despachos del
--- lote tienen manifiesto de cruce Y de retorno (estado del manifiesto de
--- ListaDespachos sin una consulta por lote).
+-- lote tienen su MCI (estado del manifiesto de ListaDespachos sin una consulta por lote).
+-- M-242 (2026-11-26): basta un MCI de cualquier tipo (cruce o retorno, DN-21) en cada
+-- despacho que lo espera (antes se exigian los dos, y ningun camion los tiene);
+-- DespachosEsperanManifiesto (al final, antes de TotalLotes) = cuantos lo esperan
+-- (internacionales y cargas de perfil CPIC, no anulados: los mismos que SinManifiesto).
 -- NumerosFactura / NumerosCPIC (2026-11-17, tarea 17, al final del resultset): los numeros
 -- de factura y CPIC de los despachos del lote separados por '|' (con repetidos: uno por
 -- despacho, sin orden; la aplicacion quita los repetidos y ordena). La columna "Factura / CPIC" de
@@ -133,12 +136,9 @@ BEGIN
 
     -- [reglas-documentos:documentos-por-tipo] (identico en sp_LD_ObtenerLotesRegistrados y sp_LD_ContarLotesActivos: editar los dos)
     ;WITH ManifiestosPorDespacho AS (
-        -- Una fila por despacho con manifiesto: cuales tiene (cruce, retorno).
-        SELECT idDespacho,
-               MAX(CASE WHEN tipoManifiesto = 'CRUCE'   THEN 1 ELSE 0 END) AS TieneCruce,
-               MAX(CASE WHEN tipoManifiesto = 'RETORNO' THEN 1 ELSE 0 END) AS TieneRetorno
-        FROM DocumentosManifiesto
-        GROUP BY idDespacho
+        -- Una fila por despacho con algun manifiesto: un MCI por camion, de cruce o de retorno
+        -- segun el sentido de su carga (DN-21, M-242).
+        SELECT DISTINCT idDespacho FROM DocumentosManifiesto
     ),
     FacturasConPdf AS (
         -- Facturas con su PDF activo (una fila por factura).
@@ -197,9 +197,15 @@ BEGIN
             CASE WHEN d.estadoDespacho <> 'ANULADO'
                       AND (d.esInternacional = 1 OR (d.perfil = 'CPIC' AND d.tipoOperacion = 'CARGA'))
                       AND mpd.idDespacho IS NULL THEN 1 ELSE 0 END AS SinManifiesto,
-            -- Manifiesto completo: el de cruce y el de retorno (estado del manifiesto en ListaDespachos).
-            CASE WHEN mpd.TieneCruce = 1 AND mpd.TieneRetorno = 1
-                 THEN 1 ELSE 0 END AS ManifiestoCompleto
+            -- Estado del manifiesto en ListaDespachos (M-242, 2026-11-26): espera MCI el mismo despacho
+            -- que SinManifiesto, y esta completo con un MCI de cualquier tipo (DN-21), de modo que
+            -- EsperaManifiesto = ManifiestoCompleto + SinManifiesto.
+            CASE WHEN d.estadoDespacho <> 'ANULADO'
+                      AND (d.esInternacional = 1 OR (d.perfil = 'CPIC' AND d.tipoOperacion = 'CARGA'))
+                      THEN 1 ELSE 0 END AS EsperaManifiesto,
+            CASE WHEN d.estadoDespacho <> 'ANULADO'
+                      AND (d.esInternacional = 1 OR (d.perfil = 'CPIC' AND d.tipoOperacion = 'CARGA'))
+                      AND mpd.idDespacho IS NOT NULL THEN 1 ELSE 0 END AS ManifiestoCompleto
         FROM DespachosPerfil d
         LEFT JOIN ManifiestosPorDespacho mpd ON mpd.idDespacho = d.idDespacho
         LEFT JOIN FacturasConPdf         fpdf ON fpdf.idFactura = d.idFactura
@@ -258,7 +264,8 @@ BEGIN
             -- Al final del resultset: la version anterior de la aplicacion lee las columnas por nombre.
             SUM(d.ManifiestoCompleto) AS DespachosManifiestoCompleto,
             STRING_AGG(CAST(f.numeroFactura AS NVARCHAR(MAX)), '|') AS NumerosFactura,
-            STRING_AGG(CAST(cp.numeroCPIC AS NVARCHAR(MAX)), '|') AS NumerosCPIC
+            STRING_AGG(CAST(cp.numeroCPIC AS NVARCHAR(MAX)), '|') AS NumerosCPIC,
+            SUM(d.EsperaManifiesto)   AS DespachosEsperanManifiesto
 
         FROM DespachosDocumentos d
         INNER JOIN Cliente cl ON d.idCliente = cl.idCliente

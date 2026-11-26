@@ -729,30 +729,30 @@ namespace WebSGV.Services.Despachos
                 DespachosSinManifiesto = GetSafeValue<int>(reader, "DespachosSinManifiesto"),
                 PerfilDocumentos = GetSafeValue<string>(reader, "PerfilDocumentos", "PEDIDO"),
                 DespachosManifiestoCompleto = GetSafeValue<int>(reader, "DespachosManifiestoCompleto"),
+                DespachosEsperanManifiesto = GetSafeValue<int>(reader, "DespachosEsperanManifiesto"),
                 NumerosFactura = GetSafeValue<string>(reader, "NumerosFactura"),
                 NumerosCPIC = GetSafeValue<string>(reader, "NumerosCPIC")
             };
         }
 
         /// <summary>
-        /// Estado del manifiesto de un lote: "N/A" si es nacional, está anulado o no tiene despachos; si no,
-        /// "Completo" / "Pendiente" / "Parcial N/M" según cuántos despachos tienen manifiesto de cruce y de retorno.
+        /// Estado del manifiesto: "N/A" si no espera MCI, está anulado o ningún despacho lo espera; si no, "Completo" /
+        /// "Pendiente" / "Parcial N/M" según cuántos tienen un MCI, de cruce o de retorno (M-242, DN-21).
         /// </summary>
-        public static string EstadoManifiesto(int totalDespachos, int despachosCompletos, bool esInternacional, bool anulado)
+        public static string EstadoManifiesto(int totalDespachos, int despachosCompletos, bool esperaManifiesto, bool anulado)
         {
-            if (!esInternacional || anulado || totalDespachos <= 0) return "N/A";
+            if (!esperaManifiesto || anulado || totalDespachos <= 0) return "N/A";
             if (despachosCompletos >= totalDespachos) return "Completo";
             if (despachosCompletos <= 0) return "Pendiente";
             return $"Parcial {despachosCompletos}/{totalDespachos}";
         }
 
         /// <summary>
-        /// <see cref="EstadoManifiesto(int, int, bool, bool)"/> de un lote de <c>sp_LD_ObtenerLotesRegistrados</c>. Un lote
-        /// sin planta no tiene id virtual válido (no se pueden resolver sus despachos): "N/A", como antes.
+        /// <see cref="EstadoManifiesto(int, int, bool, bool)"/> sobre los que esperan MCI; sin planta (id no válido): "N/A".
         /// </summary>
         public static string EstadoManifiesto(LoteRegistrado lote) =>
-            EstadoManifiesto(lote.IdPlanta > 0 ? lote.CantidadDespachos : 0, lote.DespachosManifiestoCompleto,
-                             lote.EsInternacional, lote.EstadoLote == "ANULADO");
+            EstadoManifiesto(lote.IdPlanta > 0 ? lote.DespachosEsperanManifiesto : 0, lote.DespachosManifiestoCompleto,
+                             lote.DespachosEsperanManifiesto > 0, lote.EstadoLote == "ANULADO");
 
         /// <summary>
         /// Guarda las guías de un despacho registrado sin ellas (<c>sp_LD_ActualizarGuiaDespacho</c>;

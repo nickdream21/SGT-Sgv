@@ -44,6 +44,7 @@ namespace WebSGV.Tests
         [InlineData("perfil-cliente", "@perfilCliente")]
         [InlineData("documentos-por-tipo", "AS perfil")]
         [InlineData("faltantes", "AS SinManifiesto")]
+        [InlineData("faltantes", "AS EsperaManifiesto")]
         public void Region_IdenticaEnLosDosSp(string region, string debeContener)
         {
             string lista = Region(Sp(Spes[0]), Spes[0], region);
@@ -62,6 +63,27 @@ namespace WebSGV.Tests
                 Assert.Contains("editar las dos", sql);
                 Assert.Contains("ReglasDocumentosSpTests", sql);
             }
+        }
+
+        /// <summary>
+        /// M-242: el manifiesto está completo con un MCI de cualquier tipo en cada despacho que lo espera (DN-21); ningún
+        /// SP vuelve a exigir el de cruce y el de retorno a la vez, y el contador compara contra los que lo esperan.
+        /// </summary>
+        [Fact]
+        public void Manifiesto_UnMciPorDespachoQueLoEspera_NoCruceYRetorno()
+        {
+            foreach (string sp in Spes)
+            {
+                string sql = Sp(sp);
+                Assert.DoesNotMatch(@"(?is)TieneCruce\s*=\s*1\s+AND\s+\S*TieneRetorno", sql);
+                Assert.DoesNotContain("TieneCruce", sql);
+                Assert.DoesNotContain("TieneRetorno", sql);
+                Assert.Matches(@"(?i)SUM\(d\.EsperaManifiesto\)\s+AS\s+DespachosEsperanManifiesto", sql);
+            }
+            string conteo = Sp("sp_LD_ContarLotesActivos");
+            Assert.Matches(@"(?i)l\.DespachosEsperanManifiesto\s*>\s*0", conteo);
+            Assert.Matches(@"(?i)l\.DespachosManifiestoCompleto\s*<\s*l\.DespachosEsperanManifiesto", conteo);
+            Assert.DoesNotMatch(@"(?i)l\.DespachosManifiestoCompleto\s*<\s*l\.CantidadDespachos", conteo);
         }
 
         [Fact]

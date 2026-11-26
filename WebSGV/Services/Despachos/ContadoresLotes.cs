@@ -23,7 +23,10 @@ namespace WebSGV.Services.Despachos
         /// <summary>De los pendientes, los programados hace más de <see cref="EstadoDocumental.DiasTolerancia"/> días.</summary>
         public int Atrasados { get; set; }
 
-        /// <summary>Lotes activos con el manifiesto "Pendiente" o "Parcial N/M" (<see cref="ListaDespachosService.EstadoManifiesto(LoteRegistrado)"/>).</summary>
+        /// <summary>
+        /// Lotes activos con el manifiesto "Pendiente" o "Parcial N/M" (<see cref="ListaDespachosService.EstadoManifiesto(LoteRegistrado)"/>):
+        /// algún despacho que espera MCI sin ninguno, de cruce o de retorno (M-242).
+        /// </summary>
         public int ConManifiestosPendientes { get; set; }
 
         /// <summary>

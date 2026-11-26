@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-118 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-119 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -62,6 +62,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-116** `EditarLote.aspx` en el sitio publicado tras E6-28 con un admin real — entrar desde la fila y desde el detalle, guardar cambiando la fecha (vuelve al detalle con el lote nuevo), guardar sin cambios, el aviso de varios documentos y anular un lote de prueba; también desde un celular a 390 px (select2 de conductores al tacto). · B
 - [ ] **P-117** Contadores de lotes tras publicar E6-29 — en el sitio publicado, anotar antes de publicar los números de ListaDespachos (pestañas, línea de resumen, "Ver los lotes con pendientes") y el aviso de documentos pendientes de Inicio, y comprobar después que son los mismos. · B
 - [ ] **P-118** Paleta de DN-36 en el sitio publicado y en un celular real — barra de menú azul (enlaces, menú colapsado y desplegables legibles, "Cerrar sesión" visible), cabeceras de tabla azules en Lista de despachos, Liquidaciones y un catálogo, fases con color en el Tablero de seguimiento, y que el navegador no muestre la hoja vieja (recargar con Ctrl+F5 una vez si hace falta). · C
+- [ ] **P-119** Sello "Manifiesto" en el sitio publicado tras publicar M-242 — en ListaDespachos → Lotes registrados, Novopan y Crisar con "Manifiesto: Completo", el resumen con 1 lote con manifiestos pendientes (D-004) y Polinplast sin sello, a 1366 y 390 px. Aplicar antes los 2 SP en la BD del sitio. · C
 - [ ] **P-012** Seguimiento: lo que escribe — corregir una hora, guardar los datos que el GPS no sabe, editar datos del viaje, nuevo viaje, cerrar/reabrir, "Actualizar GPS", y los paneles de evidencia/corrección (JS). Por HTTP solo se probó lo que lee; las escrituras, con `SeguimientoViajesBdTests`. · B
 - [ ] **P-013** Interfaz de documentos y documentos pendientes — registrar una factura y un CPIC de prueba desde la tarjeta, el paginado (página 2 con un filtro; que el pie no quede tapado por la columna fija de acciones) y el ancho de página; el recuadro, el filtro y "Documentos" del lote (adjuntar un PDF de factura y guardar una guía de prueba). · B
 - [ ] **P-014** Reporte de cargas — pestañas, los dos gráficos (tooltip, ancho de celular) y que la pestaña se mantenga al buscar; solo se probó por HTTP. · C

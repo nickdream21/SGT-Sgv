@@ -47,24 +47,48 @@ namespace WebSGV.Tests
         }
 
         [Theory]
-        [InlineData(3, 0, false, false, "N/A")]       // nacional
+        [InlineData(3, 0, false, false, "N/A")]       // no espera MCI (nacional sin CPIC)
         [InlineData(3, 3, true, true, "N/A")]         // anulado
         [InlineData(0, 0, true, false, "N/A")]        // sin despachos
         [InlineData(3, 3, true, false, "Completo")]
         [InlineData(3, 0, true, false, "Pendiente")]
         [InlineData(3, 1, true, false, "Parcial 1/3")]
-        public void Estado_del_manifiesto(int total, int completos, bool internacional, bool anulado, string esperado) =>
-            Assert.Equal(esperado, ListaDespachosService.EstadoManifiesto(total, completos, internacional, anulado));
+        public void Estado_del_manifiesto(int total, int completos, bool esperaManifiesto, bool anulado, string esperado) =>
+            Assert.Equal(esperado, ListaDespachosService.EstadoManifiesto(total, completos, esperaManifiesto, anulado));
 
         [Fact]
         public void Estado_del_manifiesto_de_un_lote_sin_planta_es_NA()
         {
-            var lote = new LoteRegistrado { EsInternacional = true, EstadoLote = "ACTIVO", CantidadDespachos = 2, IdPlanta = 0 };
+            var lote = new LoteRegistrado { EsInternacional = true, EstadoLote = "ACTIVO", CantidadDespachos = 2, IdPlanta = 0,
+                                            DespachosEsperanManifiesto = 2 };
             Assert.Equal("N/A", ListaDespachosService.EstadoManifiesto(lote));
             lote.IdPlanta = 5;
             Assert.Equal("Pendiente", ListaDespachosService.EstadoManifiesto(lote));
             lote.DespachosManifiestoCompleto = 2;
             Assert.Equal("Completo", ListaDespachosService.EstadoManifiesto(lote));
+        }
+
+        /// <summary>
+        /// M-242: el estado se calcula sobre los despachos que esperan MCI (internacionales y cargas de perfil CPIC), con
+        /// un MCI de cualquier tipo, no sobre "es internacional" ni con cruce y retorno a la vez.
+        /// </summary>
+        [Fact]
+        public void Estado_del_manifiesto_de_un_lote_sigue_a_los_despachos_que_esperan_MCI()
+        {
+            // Crisar: nacional, carga de perfil CPIC, sus 2 camiones con MCI de cruce.
+            var nacionalConCpic = new LoteRegistrado { EsInternacional = false, EstadoLote = "ACTIVO", CantidadDespachos = 2,
+                                                       IdPlanta = 5, DespachosEsperanManifiesto = 2, DespachosManifiestoCompleto = 2 };
+            Assert.Equal("Completo", ListaDespachosService.EstadoManifiesto(nacionalConCpic));
+
+            // Internacional sin ningún despacho que espere MCI (todos anulados en el SP): no aplica.
+            var sinEspera = new LoteRegistrado { EsInternacional = true, EstadoLote = "ACTIVO", CantidadDespachos = 2,
+                                                 IdPlanta = 5, DespachosEsperanManifiesto = 0 };
+            Assert.Equal("N/A", ListaDespachosService.EstadoManifiesto(sinEspera));
+
+            // Uno de dos con MCI.
+            var parcial = new LoteRegistrado { EsInternacional = true, EstadoLote = "ACTIVO", CantidadDespachos = 2,
+                                               IdPlanta = 5, DespachosEsperanManifiesto = 2, DespachosManifiestoCompleto = 1 };
+            Assert.Equal("Parcial 1/2", ListaDespachosService.EstadoManifiesto(parcial));
         }
     }
 }

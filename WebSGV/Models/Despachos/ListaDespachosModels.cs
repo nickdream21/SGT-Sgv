@@ -172,10 +172,16 @@ namespace WebSGV.Models.Despachos
         public int DespachosSinManifiesto { get; set; }
 
         /// <summary>
-        /// Despachos del lote con manifiesto de cruce y de retorno (sp_LD_ObtenerLotesRegistrados): el estado del
-        /// manifiesto de ListaDespachos (<c>ListaDespachosService.EstadoManifiesto</c>).
+        /// Despachos del lote con su MCI, de cruce o de retorno (DN-21, M-242; sp_LD_ObtenerLotesRegistrados): el estado
+        /// del manifiesto de ListaDespachos (<c>ListaDespachosService.EstadoManifiesto</c>).
         /// </summary>
         public int DespachosManifiestoCompleto { get; set; }
+
+        /// <summary>
+        /// Despachos del lote que esperan MCI (M-242): no anulados, internacionales o cargas de perfil CPIC (los mismos
+        /// que cuenta <see cref="DespachosSinManifiesto"/>). 0 si el SP es anterior a esta columna.
+        /// </summary>
+        public int DespachosEsperanManifiesto { get; set; }
 
         /// <summary>
         /// Qué documentos se esperan del cliente (sp_LD_ObtenerLotesRegistrados): PEDIDO (ZIP del correo: pedido, factura
