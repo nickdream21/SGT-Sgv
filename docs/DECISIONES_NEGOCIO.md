@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-35 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-36 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -55,6 +55,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-33 | Páginas sin enlace retiradas: productos y rutas solo desde el Catálogo del cliente |
 | DN-34 | Rol SUPERVISOR retirado |
 | DN-35 | Etapa 6: pruebas con BD en una copia local, registro manual a su página, Contabilidad aparte, plantas por ámbito, Estado del sistema solo con conteos (opción recomendada, a confirmar) |
+| DN-36 | Paleta "Cabecera de tinta": grises azulados, barra de menú azul, cabeceras de tabla en azul claro, fases del viaje con tinte propio |
 
 ---
 
@@ -395,6 +396,22 @@ de totales: los contadores van en las pestañas. Se conservan los colores suaves
   y tres reglas de iconos, mostradas sobre la pantalla de Gestión de liquidaciones y la del conductor en el celular.
 - En el código: paleta, tipografía y foco en `WebSGV/Content/sgv-base.css` (E5-12, commit 5589b6f); emojis y redacción (E5-24a, 221bcfb) e iconos solo en acciones de tabla, avisos de error/advertencia y funcionales (E5-24b), fijados por
   `WebSGV.Tests/InterfazFormalTests.cs` (topes de iconos que solo bajan; las tarjetas KPI de E5-17/E5-18 en lista cerrada).
+- Estado: vigente; los tonos de la paleta los ajusta DN-36 (la dirección, los iconos y la tipografía no cambian).
+
+### DN-36 — Paleta "Cabecera de tinta": grises azulados, barra de menú azul, cabeceras de tabla en azul claro, fases del viaje con tinte propio
+El usuario veía las pantallas "muy apagadas". Dentro de la dirección de DN-28 (misma estructura, tipografía, sellos, sin
+sombras ni degradados) se cambian solo los tonos: los grises neutros pasan a grises con un leve tinte azul, el azul tinta
+sube un punto de luz, la barra de menú va en azul sólido con texto blanco (el único bloque de color de cada pantalla),
+las cabeceras de tabla en azul claro con texto tinta, la fila bajo el cursor se nota y los contadores de pestaña llevan el
+tinte azul. En el tablero de seguimiento las fases del viaje toman un tinte propio derivado de los colores de fase del
+dashboard (carga azul, base naranja, Ecuador verde azulado, retorno rosado, cerrado neutro). Los gráficos (DN-30) y los
+PDF no cambian; del mapa solo la ruta de carga sigue al azul nuevo.
+- Desde: 2026-11-26. El usuario eligió el modelo B entre tres (A "Tinta viva", B "Cabecera de tinta", C "Papel claro"),
+  mostrados contra el aspecto actual sobre ocho pantallas (Lista y Registro de despachos, Tablero y Seguimiento del viaje,
+  Dashboard de exportación, Login, Mi viaje en el celular y piezas sueltas).
+- En el código: escala, semánticas de menú, tabla y fases en `WebSGV/Content/sgv-base.css`; barra en `Site.Master` y
+  `Content/paginas/SiteMaster.css`; fases en `Content/paginas/Exportacion/SeguimientoExportacion.css`; valores y
+  contrastes fijados por `WebSGV.Tests/EstilosTests.cs`.
 - Estado: vigente.
 
 ## 7. Operación y calidad

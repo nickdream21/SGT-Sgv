@@ -51,7 +51,7 @@
 
 /* ---- Tabla de conductores ---- */
 .rd-tabla-conductores { font-size: .86rem; }
-.rd-tabla-conductores thead th { background: var(--sgv-fondo); color: var(--sgv-texto-suave); font-size: .75rem; font-weight: 700; border-bottom: 2px solid var(--sgv-borde); white-space: nowrap; }
+.rd-tabla-conductores thead th { background: var(--sgv-tabla-cab-fondo); color: var(--sgv-tabla-cab-texto); font-size: .75rem; font-weight: 700; border-bottom: 2px solid var(--sgv-tabla-cab-borde); white-space: nowrap; }
 .rd-tabla-conductores td { vertical-align: middle; }
 .rd-tabla-conductores tr.rd-fila-editando > td { background: var(--sgv-ambar-50) !important; }
 .rd-placa { font-family: Consolas, "Courier New", monospace; font-weight: 700; }
@@ -149,13 +149,13 @@ select.rd-select-sugerido, select.rd-select-sugerido + .select2-container .selec
 }
 
 .table thead th {
-    background-color: var(--sgv-fondo);
-    border-bottom: 2px solid var(--sgv-borde);
+    background-color: var(--sgv-tabla-cab-fondo);
+    border-bottom: 2px solid var(--sgv-tabla-cab-borde);
     font-weight: 600;
 }
 
 .table-hover tbody tr:hover {
-    background-color: rgba(var(--sgv-negro-rgb), 0.075);
+    background-color: var(--sgv-fila-hover);
     transition: background-color 0.15s ease-in-out;
 }
 

@@ -2,7 +2,7 @@
 
 > **Qué etapa sigue:** `docs/HOJA_DE_RUTA_CALIDAD.md` (leerla primero). **Historial:** `git log` (un commit por tarea); lo anterior al 2026-11-21, en `docs/archivo/HISTORIAL_2026.md` (congelado).
 
-Última actualización: **2026-11-26**, commit anterior `496a205` — **Etapa 6 cerrada (E6-30), nota medida 6,5**: tarjeta medida con las herramientas de la etapa (5 filas cumplidas, 2 a medias: Services 56,0 % de cobertura sin BD y la medición en operación sin publicar); bitácora y `HOJA_DE_RUTA_CALIDAD.md` al día; nuevos M-236 a M-238. La Etapa 7 no está planificada. No contiene contraseñas: solo dice dónde están.
+Última actualización: **2026-11-26**, commit anterior `bf409d7` — **Paleta "Cabecera de tinta" (DN-36)**: grises azulados, barra de menú azul, cabeceras de tabla en azul claro y fases del tablero con tinte propio, elegida por el usuario sobre tres modelos; solo color, sin cambios de estructura; nuevo P-118. Antes: Etapa 6 cerrada (E6-30), nota medida 6,5. La Etapa 7 no está planificada. No contiene contraseñas: solo dice dónde están.
 
 Último id usado: M-238 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 

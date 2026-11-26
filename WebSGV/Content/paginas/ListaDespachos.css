@@ -49,8 +49,8 @@
     box-shadow: -6px 0 8px -6px rgba(var(--sgv-texto-rgb), .18);
     z-index: 1;
 }
-.ld-tabla-lotes th:last-child { background: var(--sgv-fondo-pagina); z-index: 2; }
-.ld-tabla-lotes tbody tr:hover td:last-child { background: var(--sgv-fondo); }
+.ld-tabla-lotes th:last-child { background: var(--sgv-tabla-cab-fondo); z-index: 2; }
+.ld-tabla-lotes tbody tr:hover td:last-child { background: var(--sgv-fila-hover); }
 /* El paginador y la fila de "sin resultados" no son una columna de acciones. */
 .ld-tabla-lotes tr.sgv-paginador td,
 .ld-tabla-lotes tr.sgv-vacio td { position: static; box-shadow: none; }

@@ -217,8 +217,10 @@ namespace WebSGV.Tests
 
             var paleta = decls.Where(d => d.Hoja == Base && Literal.IsMatch(d.Valor) && !d.Valor.StartsWith("var(", StringComparison.Ordinal)).ToList();
             // E5-12: una escala corta (DN-28). Un color nuevo entra a la escala solo si ningún tono existente sirve.
-            Assert.True(paleta.Count >= 15 && paleta.Count <= 30,
-                "La escala de sgv-base.css debería tener entre 15 y 30 colores literales; tiene " + paleta.Count);
+            // Tope 40 (antes 30): lo pide el modelo B "Cabecera de tinta" (2026-11-26), que suma la barra de menú
+            // (fondo y texto) y el tinte propio de las tres fases del viaje (fondo, borde y texto de cada una).
+            Assert.True(paleta.Count >= 15 && paleta.Count <= 40,
+                "La escala de sgv-base.css debería tener entre 15 y 40 colores literales; tiene " + paleta.Count);
             var repetidos = paleta
                 .GroupBy(d => d.Valor.ToLowerInvariant())
                 .Where(g => g.Count() > 1)
@@ -252,16 +254,19 @@ namespace WebSGV.Tests
             var dobles = defs.GroupBy(d => d.Propiedad).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
             Assert.True(dobles.Count == 0, "Variable --sgv-* definida dos veces: " + string.Join(", ", dobles));
 
-            // E5-12: las semánticas toman los valores de la dirección "Expediente" (DN-28).
+            // E5-12: las semánticas toman los valores de la dirección "Expediente" (DN-28), con la paleta del
+            // modelo B "Cabecera de tinta" (2026-11-26): tinta más viva, barra de menú y cabeceras de tabla en azul.
             var raiz = RaizBase();
             var direccion = new Dictionary<string, string>
             {
-                ["--sgv-primario"] = "#1f3a6e", ["--sgv-foco"] = "#1f3a6e", ["--sgv-info-texto"] = "#1f3a6e",
-                ["--sgv-texto"] = "#1a2230", ["--sgv-texto-suave"] = "#566173", ["--sgv-borde"] = "#d5dae2",
-                ["--sgv-fondo-pagina"] = "#eceef1", ["--sgv-superficie"] = "#ffffff",
-                ["--sgv-ok"] = "#17603a", ["--sgv-ok-texto"] = "#17603a",
+                ["--sgv-primario"] = "#1b4b9b", ["--sgv-foco"] = "#1b4b9b", ["--sgv-info-texto"] = "#1b4b9b",
+                ["--sgv-texto"] = "#18223a", ["--sgv-texto-suave"] = "#52607a", ["--sgv-borde"] = "#d0d9e8",
+                ["--sgv-fondo-pagina"] = "#e8edf5", ["--sgv-superficie"] = "#ffffff",
+                ["--sgv-ok"] = "#146c3e", ["--sgv-ok-texto"] = "#146c3e",
                 ["--sgv-alerta"] = "#7a5200", ["--sgv-alerta-texto"] = "#7a5200",
-                ["--sgv-peligro"] = "#9a1c1c", ["--sgv-peligro-texto"] = "#9a1c1c",
+                ["--sgv-peligro"] = "#a11d1d", ["--sgv-peligro-texto"] = "#a11d1d",
+                ["--sgv-menu-fondo"] = "#173f85", ["--sgv-menu-texto"] = "#dbe6f8",
+                ["--sgv-tabla-cab-fondo"] = "#dfe9f8", ["--sgv-tabla-cab-texto"] = "#143a7a",
                 ["--sgv-radio"] = "3px"
             };
             foreach (var o in direccion)
@@ -504,6 +509,14 @@ namespace WebSGV.Tests
             new object[] { "--sgv-blanco", "--sgv-texto-suave" },
             new object[] { "--sgv-foco", "--sgv-superficie" },
             new object[] { "--sgv-foco", "--sgv-fondo-pagina" },
+            // Modelo B "Cabecera de tinta": barra de menú, cabeceras de tabla, fila bajo el puntero y fases del viaje.
+            new object[] { "--sgv-menu-texto", "--sgv-menu-fondo" },
+            new object[] { "--sgv-blanco", "--sgv-menu-fondo" },
+            new object[] { "--sgv-tabla-cab-texto", "--sgv-tabla-cab-fondo" },
+            new object[] { "--sgv-texto-suave", "--sgv-fila-hover" },
+            new object[] { "--sgv-fase-base-texto", "--sgv-fase-base-fondo" },
+            new object[] { "--sgv-fase-ecuador-texto", "--sgv-fase-ecuador-fondo" },
+            new object[] { "--sgv-fase-retorno-texto", "--sgv-fase-retorno-fondo" },
         };
 
         /// <summary>(j) Contraste de al menos 4,5:1 (fórmula WCAG) en cada par texto/fondo de las semánticas.</summary>
@@ -555,7 +568,7 @@ namespace WebSGV.Tests
             Assert.DoesNotContain("IBM Plex", texto);
             Assert.DoesNotContain("font-face", texto);
             Assert.Contains("font-family: \"Segoe UI\", Roboto, sans-serif", texto);
-            foreach (var c in new[] { "#1a2230", "#566173", "#eceef1", "#1f3a6e" })
+            foreach (var c in new[] { "#18223a", "#52607a", "#e8edf5", "#1b4b9b" })
                 Assert.Contains(c, texto);
         }
 

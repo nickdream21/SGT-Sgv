@@ -37,11 +37,11 @@
 .ff-tabla { font-size: .84rem; margin-bottom: 0; }
 .ff-tabla thead th {
     position: sticky; top: 0; z-index: 2;
-    background: var(--sgv-fondo); color: var(--sgv-texto-suave); font-weight: 600; font-size: .78rem; white-space: nowrap;
-    border-top: 0; border-bottom: 0; box-shadow: inset 0 -1px 0 var(--sgv-borde-fuerte);
+    background: var(--sgv-tabla-cab-fondo); color: var(--sgv-tabla-cab-texto); font-weight: 600; font-size: .78rem; white-space: nowrap;
+    border-top: 0; border-bottom: 0; box-shadow: inset 0 -1px 0 var(--sgv-tabla-cab-borde);
 }
 .ff-tabla td, .ff-tabla th { vertical-align: middle; padding: .45rem .7rem; }
-.ff-tabla tbody tr:hover td { background-color: var(--sgv-fondo-pagina); }
+.ff-tabla tbody tr:hover td { background-color: var(--sgv-fila-hover); }
 .ff-tabla td.ff-num, .ff-tabla th.ff-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ff-tabla td.ff-cod { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ff-tabla td.ff-cliente { max-width: 210px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -14,11 +14,11 @@
 
 /* === Tablas === */
 .table thead th {
-    background-color: var(--sgv-fondo-pagina) !important;
-    color: var(--sgv-texto-suave) !important;
+    background-color: var(--sgv-tabla-cab-fondo) !important;
+    color: var(--sgv-tabla-cab-texto) !important;
     font-weight: 600 !important;
     border: none !important;
-    border-bottom: 1px solid var(--sgv-borde-fuerte) !important;
+    border-bottom: 1px solid var(--sgv-tabla-cab-borde) !important;
     vertical-align: middle !important;
     padding: 10px !important;
     opacity: 1 !important;
@@ -30,7 +30,7 @@
 }
 
 .table tbody tr:hover {
-    background-color: var(--sgv-fondo) !important;
+    background-color: var(--sgv-fila-hover) !important;
 }
 
 /* Fuera las celdas del paginador del GridView (.sgv-paginador, E5-16): las pinta sgv-base.css. :where()

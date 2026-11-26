@@ -13,45 +13,60 @@
             grises → el gris único; verdes, esmeraldas y turquesas → verde; ámbar y naranja → ámbar;
             rojos → rojo. Los pasos 50-100 son el fondo suave, 200-400 el borde, 500-700 el color
             pleno y 800-900 el tono oscuro (en grises: 400-600 el secundario, 800-900 el texto).
-       Contraste (WCAG, lo calcula EstilosTests): texto 16:1 sobre blanco, secundario 6,3:1, cada
-       estado 6:1 o más sobre su fondo, blanco sobre primario 11:1. Un color nuevo se agrega a la
+       Modelo B "Cabecera de tinta" (2026-11-26): misma estructura, tinta más viva, barra de menú en
+       tinta y cabeceras de tabla en azul claro.
+       Contraste (WCAG, lo calcula EstilosTests): texto 15,8:1 sobre blanco, secundario 6,3:1, cada
+       estado 5,5:1 o más sobre su fondo, blanco sobre primario 8,3:1. Un color nuevo se agrega a la
        escala (y a la prueba si es texto), no como literal en una hoja. */
 
     /* 1. Escala */
     --sgv-blanco: #ffffff;
-    --sgv-exp-tinta: #1f3a6e;
-    --sgv-exp-tinta-osc: #152a52;
-    --sgv-exp-tinta-borde: #b4c1d8;
-    --sgv-exp-tinta-fondo: #e3e9f3;
-    --sgv-exp-tinta-claro: #f2f5fa;
-    --sgv-exp-texto: #1a2230;
-    --sgv-exp-texto-medio: #3b4656;
-    --sgv-exp-secundario: #566173;
-    --sgv-exp-linea-fuerte: #a8b0bc;
-    --sgv-exp-linea: #d5dae2;
-    --sgv-exp-gris-pagina: #eceef1;
-    --sgv-exp-gris-claro: #f5f6f8;
-    --sgv-exp-verde: #17603a;
-    --sgv-exp-verde-osc: #0f4529;
-    --sgv-exp-verde-borde: #a6cdb5;
-    --sgv-exp-verde-fondo: #e4f1e9;
+    --sgv-exp-tinta: #1b4b9b;
+    --sgv-exp-tinta-osc: #143a7a;
+    --sgv-exp-tinta-borde: #aac0e3;
+    --sgv-exp-tinta-fondo: #dfe9f8;
+    --sgv-exp-tinta-claro: #f0f5fc;
+    --sgv-exp-texto: #18223a;
+    --sgv-exp-texto-medio: #37445c;
+    --sgv-exp-secundario: #52607a;
+    --sgv-exp-linea-fuerte: #9fadc4;
+    --sgv-exp-linea: #d0d9e8;
+    --sgv-exp-gris-pagina: #e8edf5;
+    --sgv-exp-gris-claro: #f3f6fb;
+    --sgv-exp-verde: #146c3e;
+    --sgv-exp-verde-osc: #0d4a2a;
+    --sgv-exp-verde-borde: #9fd1b2;
+    --sgv-exp-verde-fondo: #e0f3e7;
     --sgv-exp-ambar: #7a5200;
     --sgv-exp-ambar-osc: #5a3c00;
-    --sgv-exp-ambar-borde: #dcc48a;
-    --sgv-exp-ambar-fondo: #f8eed8;
-    --sgv-exp-rojo: #9a1c1c;
+    --sgv-exp-ambar-borde: #e2c67f;
+    --sgv-exp-ambar-fondo: #fbefd2;
+    --sgv-exp-rojo: #a11d1d;
     --sgv-exp-rojo-osc: #761515;
-    --sgv-exp-rojo-borde: #dfa9a9;
-    --sgv-exp-rojo-fondo: #f7e4e4;
+    --sgv-exp-rojo-borde: #e3a5a5;
+    --sgv-exp-rojo-fondo: #fae3e3;
     /* Solo para las líneas de ruta sobre el mapa (tiene que verse sobre calles y verde de OpenStreetMap). */
     --sgv-exp-mapa-naranja: #c2410c;
+    /* Modelo B "Cabecera de tinta": barra de menú en tinta con enlaces claros. */
+    --sgv-exp-menu: #173f85;
+    --sgv-exp-menu-texto: #dbe6f8;
+    /* Fases del viaje en el tablero de exportación: tinte propio derivado de los colores de fase del dashboard. */
+    --sgv-exp-fase-base-fondo: #fdebe1;
+    --sgv-exp-fase-base-borde: #f0bfa3;
+    --sgv-exp-fase-base-texto: #9a3d12;
+    --sgv-exp-fase-ecuador-fondo: #dcf3ec;
+    --sgv-exp-fase-ecuador-borde: #9bd3c0;
+    --sgv-exp-fase-ecuador-texto: #0e6650;
+    --sgv-exp-fase-retorno-fondo: #fbe6ee;
+    --sgv-exp-fase-retorno-borde: #eeb4c9;
+    --sgv-exp-fase-retorno-texto: #9c2a57;
 
     /* Triples para transparencias: rgba(var(--sgv-x-rgb), alfa). Mismos valores que la escala. */
     --sgv-blanco-rgb: 255, 255, 255;
     --sgv-negro-rgb: 0, 0, 0;
-    --sgv-texto-rgb: 26, 34, 48;
-    --sgv-primario-rgb: 31, 58, 110;
-    --sgv-peligro-rgb: 154, 28, 28;
+    --sgv-texto-rgb: 24, 34, 58;
+    --sgv-primario-rgb: 27, 75, 155;
+    --sgv-peligro-rgb: 161, 29, 29;
 
     /* 2. Semánticas */
     --sgv-texto: var(--sgv-exp-texto);
@@ -84,6 +99,23 @@
     /* Rutas del mapa: las lee SeguimientoViajeMapa.js con getComputedStyle (leyenda y líneas del mismo origen). */
     --sgv-mapa-carga: var(--sgv-exp-tinta);
     --sgv-mapa-descarga: var(--sgv-exp-mapa-naranja);
+    /* Modelo B: barra de menú, cabeceras de tabla y fila bajo el puntero. */
+    --sgv-menu-fondo: var(--sgv-exp-menu);
+    --sgv-menu-texto: var(--sgv-exp-menu-texto);
+    --sgv-tabla-cab-fondo: var(--sgv-exp-tinta-fondo);
+    --sgv-tabla-cab-texto: var(--sgv-exp-tinta-osc);
+    --sgv-tabla-cab-borde: var(--sgv-exp-tinta-borde);
+    --sgv-fila-hover: var(--sgv-exp-tinta-claro);
+    /* Fases del viaje (SeguimientoExportacion): sello con fondo, borde y texto. */
+    --sgv-fase-base-fondo: var(--sgv-exp-fase-base-fondo);
+    --sgv-fase-base-borde: var(--sgv-exp-fase-base-borde);
+    --sgv-fase-base-texto: var(--sgv-exp-fase-base-texto);
+    --sgv-fase-ecuador-fondo: var(--sgv-exp-fase-ecuador-fondo);
+    --sgv-fase-ecuador-borde: var(--sgv-exp-fase-ecuador-borde);
+    --sgv-fase-ecuador-texto: var(--sgv-exp-fase-ecuador-texto);
+    --sgv-fase-retorno-fondo: var(--sgv-exp-fase-retorno-fondo);
+    --sgv-fase-retorno-borde: var(--sgv-exp-fase-retorno-borde);
+    --sgv-fase-retorno-texto: var(--sgv-exp-fase-retorno-texto);
     --sgv-radio: 3px;
     --sgv-fuente: "IBM Plex Sans", "Segoe UI", Roboto, sans-serif;
 
@@ -543,8 +575,8 @@ select.is-invalid + .select2-container.select2-container--default .select2-selec
     min-width: 1.5rem;
     padding: 0 0.45rem;
     border-radius: 999px;
-    background: var(--sgv-fondo-pagina);
-    color: var(--sgv-texto-suave);
+    background: var(--sgv-info-fondo);
+    color: var(--sgv-primario);
     font-size: 0.75rem;
     font-weight: 600;
     line-height: 1.25rem;
@@ -602,12 +634,12 @@ select.is-invalid + .select2-container.select2-container--default .select2-selec
 .sgv-tabla { font-size: 0.875rem; color: var(--sgv-texto); }
 
 .table.sgv-tabla th {
-    background: var(--sgv-fondo-pagina) !important;
-    color: var(--sgv-texto-suave) !important;
+    background: var(--sgv-tabla-cab-fondo) !important;
+    color: var(--sgv-tabla-cab-texto) !important;
     font-size: 0.8125rem !important;
     font-weight: 600 !important;
     border: none !important;
-    border-bottom: 1px solid var(--sgv-borde-fuerte) !important;
+    border-bottom: 1px solid var(--sgv-tabla-cab-borde) !important;
     padding: 0.625rem var(--tabla-celda-x, 0.75rem) !important;
     text-align: left !important;
     white-space: nowrap;
@@ -621,7 +653,7 @@ select.is-invalid + .select2-container.select2-container--default .select2-selec
 .table.sgv-tabla tbody tr:nth-child(odd),
 .table.sgv-tabla tbody tr:nth-child(even) { background: var(--sgv-superficie) !important; }
 
-.table.sgv-tabla tbody tr:hover { background: var(--sgv-fondo) !important; }
+.table.sgv-tabla tbody tr:hover { background: var(--sgv-fila-hover) !important; }
 
 .table.sgv-tabla tbody td:not(:where(.sgv-paginador td)) {
     border: none !important;
@@ -801,10 +833,24 @@ div.sgv-paginador:empty { display: none; }
 a { color: var(--sgv-primario); }
 a:hover { color: var(--sgv-primario-osc); }
 
-.navbar.bg-light { background-color: var(--sgv-superficie) !important; border-bottom: 1px solid var(--sgv-borde); }
-.navbar-light .navbar-brand, .navbar-light .navbar-brand:hover { color: var(--sgv-primario); }
-.navbar-light .navbar-nav .nav-link { color: var(--sgv-texto-medio); }
-.navbar-light .navbar-nav .nav-link:hover, .navbar-light .navbar-nav .show > .nav-link, .navbar-light .navbar-nav .active > .nav-link { color: var(--sgv-primario); }
+/* Barra de menú (modelo B "Cabecera de tinta"): <nav class="navbar navbar-dark sgv-menu"> en Site.Master. navbar-dark
+   deja el botón del menú del celular en blanco; aquí van el fondo de tinta y los colores de enlaces, rol y "Cerrar sesión".
+   Los .dropdown-menu siguen blancos (también abiertos dentro del menú colapsado). */
+.navbar.sgv-menu { background-color: var(--sgv-menu-fondo); border-bottom: 1px solid var(--sgv-menu-fondo); }
+.sgv-menu .navbar-brand, .sgv-menu .navbar-brand:hover, .sgv-menu .navbar-brand:focus { color: var(--sgv-blanco); }
+.sgv-menu .navbar-nav .nav-link { color: var(--sgv-menu-texto); }
+.sgv-menu .navbar-nav .nav-link:hover, .sgv-menu .navbar-nav .nav-link:focus, .sgv-menu .navbar-nav .show > .nav-link { color: var(--sgv-blanco); background-color: rgba(var(--sgv-blanco-rgb), .1); }
+.sgv-menu .navbar-nav .nav-item.active > .nav-link { color: var(--sgv-blanco); font-weight: 600; box-shadow: inset 0 -2px 0 var(--sgv-blanco); }
+.sgv-menu .navbar-text, .sgv-menu .user-info { color: var(--sgv-menu-texto); }
+.sgv-menu .badge-rol { background-color: rgba(var(--sgv-blanco-rgb), .14); border-color: rgba(var(--sgv-blanco-rgb), .4); color: var(--sgv-blanco); }
+.sgv-menu .btn-outline-danger { background-color: transparent; border-color: var(--sgv-blanco); color: var(--sgv-blanco); }
+.sgv-menu .btn-outline-danger:hover, .sgv-menu .btn-outline-danger:focus,
+.sgv-menu .btn-outline-danger:not(:disabled):not(.disabled):active { background-color: var(--sgv-blanco); border-color: var(--sgv-blanco); color: var(--sgv-primario); }
+.sgv-menu .btn-outline-danger:focus, .sgv-menu .btn-outline-danger:not(:disabled):not(.disabled):active:focus { box-shadow: 0 0 0 .2rem rgba(var(--sgv-blanco-rgb), .5); }
+.sgv-menu .navbar-toggler { border-color: rgba(var(--sgv-blanco-rgb), .4); }
+/* El foco común es azul tinta: sobre la barra no se vería. */
+.sgv-menu .navbar-brand:focus-visible, .sgv-menu .navbar-nav > .nav-item > .nav-link:focus-visible,
+.sgv-menu .btn:focus-visible, .sgv-menu .navbar-toggler:focus-visible { outline-color: var(--sgv-blanco); }
 .dropdown-menu { border-color: var(--sgv-borde); border-radius: var(--sgv-radio); }
 .dropdown-item { color: var(--sgv-texto); }
 .dropdown-item.active, .dropdown-item:active { background-color: var(--sgv-primario); color: var(--sgv-blanco); }
@@ -914,10 +960,10 @@ a.badge-primary:hover, a.badge-info:hover { background-color: var(--sgv-info-bor
 /* Tablas tipo planilla: líneas grises finas y cifras alineadas. */
 .table { color: var(--sgv-texto); }
 .table th, .table td { border-top-color: var(--sgv-borde); }
-.table thead th { border-bottom-color: var(--sgv-borde-fuerte); }
+.table thead th { border-bottom-color: var(--sgv-tabla-cab-borde); }
 .table-bordered, .table-bordered th, .table-bordered td { border-color: var(--sgv-borde); }
 .table-striped tbody tr:nth-of-type(odd) { background-color: var(--sgv-fondo); }
-.table-hover tbody tr:hover { background-color: var(--sgv-primario-claro); color: var(--sgv-texto); }
+.table-hover tbody tr:hover { background-color: var(--sgv-fila-hover); color: var(--sgv-texto); }
 
 /* Hojas: blanco con borde de 1 px, radio de 3 px y sin sombra. */
 .card { border-color: var(--sgv-borde); border-radius: var(--sgv-radio); }

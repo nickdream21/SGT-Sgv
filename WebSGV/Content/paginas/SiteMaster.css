@@ -36,7 +36,7 @@
 }
 
 .user-info {
-    color: var(--sgv-texto-medio);
+    color: var(--sgv-menu-texto);
     font-weight: 500;
     margin-right: 15px;
     display: flex;
@@ -66,13 +66,10 @@
     background-color: var(--sgv-fondo);
 }
 
-/* Página actual (M-076, E5-19c): el menú que la contiene y su opción. La opción no usa el fondo azul
+/* Página actual (M-076, E5-19c): el menú que la contiene y su opción. El menú va en blanco, con peso 600 y
+   una raya blanca abajo (.sgv-menu .navbar-nav .nav-item.active > .nav-link, sgv-base.css: más específica que la
+   de Bootstrap, .navbar-dark .navbar-nav .active > .nav-link, sin !important). La opción no usa el fondo azul
    de Bootstrap (.dropdown-item.active): se marca con la tinta del sitio y una barra a la izquierda. */
-/* Especificidad mayor que la de Bootstrap (.navbar-light .navbar-nav .active > .nav-link), sin !important. */
-.navbar-light .navbar-nav .nav-item.active > .nav-link {
-    color: var(--sgv-primario);
-    font-weight: 600;
-}
 .navbar .dropdown-menu .dropdown-item.active {
     background-color: var(--sgv-primario-claro);
     color: var(--sgv-primario);
@@ -165,6 +162,12 @@ table[border="1"] td .btn { white-space: nowrap; }
     /* El relleno general de .nav-link va con !important (arriba): solo así se angosta aquí. */
     .navbar-nav .nav-link { padding: 0.5rem 0.4rem !important; }
     .navbar .btn-outline-danger { white-space: nowrap; }
+}
+
+/* Pie de página: gris claro de la paleta con línea arriba (antes el #f8f9fa de .bg-light de Bootstrap). */
+.footer.sgv-pie {
+    background-color: var(--sgv-fondo);
+    border-top: 1px solid var(--sgv-borde);
 }
 
 /* Celular (< 576 px): se aprovecha todo el ancho, los encabezados con botón bajan de línea en vez

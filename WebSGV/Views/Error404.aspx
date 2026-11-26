@@ -11,12 +11,12 @@
         .error-title {
             font-size: 1.75rem;
             font-weight: 700;
-            color: #1a2230;
+            color: #18223a;
             margin-bottom: 10px;
         }
         .error-message {
             font-size: 1rem;
-            color: #566173;
+            color: #52607a;
             margin-bottom: 30px;
             line-height: 1.6;
         }
@@ -24,22 +24,22 @@
             margin: 5px;
         }
         .error-actions .btn-primary {
-            background-color: #1f3a6e;
-            border-color: #1f3a6e;
+            background-color: #1b4b9b;
+            border-color: #1b4b9b;
             color: white;
             font-weight: 500;
             padding: 10px 24px;
         }
         .error-actions .btn-outline-secondary {
             background-color: white;
-            border: 1px solid #a8b0bc;
-            color: #566173;
+            border: 1px solid #9fadc4;
+            color: #52607a;
             font-weight: 500;
             padding: 10px 24px;
         }
         .error-code {
             font-size: 0.85rem;
-            color: #566173;
+            color: #52607a;
             margin-top: 30px;
         }
     </style>

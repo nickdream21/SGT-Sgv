@@ -64,7 +64,7 @@
 .bd-factura-det { color: var(--sgv-texto-suave); font-size: .85rem; }
 
 .bd-tabla { margin-bottom: 0; font-size: .85rem; }
-.bd-tabla th { background: var(--sgv-superficie); color: var(--sgv-texto-suave); font-weight: 600; font-size: .78rem; letter-spacing: .02em; border-top: 0; white-space: nowrap; }
+.bd-tabla th { background: var(--sgv-tabla-cab-fondo); color: var(--sgv-tabla-cab-texto); font-weight: 600; font-size: .78rem; letter-spacing: .02em; border-top: 0; white-space: nowrap; }
 .bd-tabla td, .bd-tabla th { vertical-align: middle; padding: .5rem .75rem; }
 .bd-tabla .bd-num { text-align: right; white-space: nowrap; }
 .bd-cod { white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -118,7 +118,7 @@
 .bd-tabla-tablero th:nth-child(6) { width: 130px; }
 .bd-tabla-tablero th:nth-child(7) { width: 90px; }
 .bd-tabla-tablero td:nth-child(3) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bd-tabla-tablero tbody tr:hover td { background-color: var(--sgv-fondo); }
+.bd-tabla-tablero tbody tr:hover td { background-color: var(--sgv-fila-hover); }
 .bd-filtro select.form-control { min-width: 200px; }
 @media (max-width: 991.98px) {
     .bd-tabla-tablero { table-layout: auto; min-width: 760px; }

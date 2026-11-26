@@ -59,7 +59,7 @@
 .rc-c-descarga { flex: 0 0 10rem; color: var(--sgv-texto-suave); font-size: .85rem; }
 
 .rc-detalle { font-size: .875rem; background: var(--sgv-superficie); }
-.rc-detalle th { background: var(--sgv-fondo); color: var(--sgv-texto-suave); font-weight: 600; border-top: 0; }
+.rc-detalle th { background: var(--sgv-tabla-cab-fondo); color: var(--sgv-tabla-cab-texto); font-weight: 600; border-top: 0; }
 .rc-detalle td, .rc-detalle th { white-space: nowrap; vertical-align: middle; padding-left: 1rem; }
 .rc-sin-viaje { color: var(--sgv-texto-suave); font-style: italic; }
 .rc-pie { padding: .625rem 1rem; border-top: 1px solid var(--sgv-borde); }

@@ -40,7 +40,7 @@
             AllowCustomErrorsRedirect="false" OnAsyncPostBackError="ScriptManager1_AsyncPostBackError" />
 
         <!-- Navbar -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-light" runat="server" id="Navbar">
+        <nav class="navbar navbar-expand-lg navbar-dark sgv-menu" runat="server" id="Navbar">
             <a class="navbar-brand" href="<%= ResolveUrl(UrlInicio) %>">
                 Sistema SGV
             </a>
@@ -128,7 +128,7 @@
         </main>
 
         <!-- Footer -->
-        <footer class="footer text-center py-3 mt-5 bg-light">
+        <footer class="footer sgv-pie text-center py-3 mt-5">
             <div class="container">
                 <p class="mb-0 text-muted">
                     <%: DateTime.Now.Year %> - Sistema SGV<% if (!string.IsNullOrEmpty(NombreUsuario)) { %> |

@@ -69,10 +69,10 @@ p.sx-filtro-cuenta:empty { display: none; }
 .table.sgv-tabla tbody td { vertical-align: top; }
 .sx-fase { display: inline-block; padding: 0.0625rem 0.5625rem; border: 1px solid var(--sgv-borde-fuerte); border-radius: var(--sgv-radio); font-size: 0.8125rem; font-weight: 500; white-space: nowrap; }
 .sx-fase-carga { background: var(--sgv-info-fondo); border-color: var(--sgv-info-borde); color: var(--sgv-info-texto); }
-.sx-fase-base { background: var(--sgv-violeta-100); border-color: var(--sgv-violeta-200); color: var(--sgv-violeta-800); }
-.sx-fase-ecuador { background: var(--sgv-turquesa-100); border-color: var(--sgv-ok-borde); color: var(--sgv-turquesa-800); }
-.sx-fase-retorno { background: var(--sgv-fondo-pagina); border-color: var(--sgv-borde-fuerte); color: var(--sgv-texto-medio); }
-.sx-fase-cerrado { background: var(--sgv-ok-fondo); border-color: var(--sgv-ok-borde); color: var(--sgv-ok-texto); }
+.sx-fase-base { background: var(--sgv-fase-base-fondo); border-color: var(--sgv-fase-base-borde); color: var(--sgv-fase-base-texto); }
+.sx-fase-ecuador { background: var(--sgv-fase-ecuador-fondo); border-color: var(--sgv-fase-ecuador-borde); color: var(--sgv-fase-ecuador-texto); }
+.sx-fase-retorno { background: var(--sgv-fase-retorno-fondo); border-color: var(--sgv-fase-retorno-borde); color: var(--sgv-fase-retorno-texto); }
+.sx-fase-cerrado { background: var(--sgv-fondo); border-color: var(--sgv-borde-fuerte); color: var(--sgv-texto-medio); }
 
 .sx-avance { display: flex; flex-direction: column; gap: 0.25rem; min-width: 9rem; font-size: 0.75rem; color: var(--sgv-gris-600); }
 .sx-avance-fila { display: flex; justify-content: space-between; }
@@ -84,9 +84,9 @@ p.sx-filtro-cuenta:empty { display: none; }
 .sx-avance-barra::-webkit-progress-bar { background: var(--sgv-gris-200); border-radius: 2px; }
 .sx-avance-barra::-webkit-progress-value { border-radius: 2px; }
 .sx-avance-carga::-webkit-progress-value { background: var(--sgv-primario); }
-.sx-avance-descarga::-webkit-progress-value { background: var(--sgv-turquesa-700); }
+.sx-avance-descarga::-webkit-progress-value { background: var(--sgv-fase-ecuador-texto); }
 .sx-avance-carga::-moz-progress-bar { background: var(--sgv-primario); border-radius: 2px; }
-.sx-avance-descarga::-moz-progress-bar { background: var(--sgv-turquesa-700); border-radius: 2px; }
+.sx-avance-descarga::-moz-progress-bar { background: var(--sgv-fase-ecuador-texto); border-radius: 2px; }
 
 .sx-avisos { display: flex; flex-direction: column; gap: 0.25rem; align-items: flex-start; max-width: 17rem; }
 .sx-aviso { display: inline-block; padding: 0.0625rem 0.5rem; border-radius: 4px; font-size: 0.8125rem; }
@@ -303,8 +303,8 @@ p.sx-filtro-cuenta:empty { display: none; }
 /* ===== Tablero más denso: unidades agrupadas por pedido, avance junto a la fase (2026-11-12) ===== */
 .sx-tabla-caja .sgv-tabla tbody td { padding-top: 0.5rem; padding-bottom: 0.5rem; }
 .sx-tabla-caja .sx-fila[hidden], .sx-tabla-caja .sx-grupo[hidden] { display: none; }
-.table.sgv-tabla tbody tr.sx-grupo, .table.sgv-tabla tbody tr.sx-grupo:hover { background: var(--sgv-fondo-pagina) !important; }
-.table.sgv-tabla tbody tr.sx-grupo td { padding: 0.3rem 0.75rem; font-size: 0.8125rem; color: var(--sgv-texto-suave); border-top: 2px solid var(--sgv-borde-fuerte); white-space: pre-wrap; }
+.table.sgv-tabla tbody tr.sx-grupo, .table.sgv-tabla tbody tr.sx-grupo:hover { background: var(--sgv-primario-claro) !important; }
+.table.sgv-tabla tbody tr.sx-grupo td { padding: 0.3rem 0.75rem; font-size: 0.8125rem; color: var(--sgv-texto-suave); border-top: 2px solid var(--sgv-tabla-cab-borde); white-space: pre-wrap; }
 .sx-grupo strong { color: var(--sgv-texto); font-size: 0.875rem; }
 .sx-fila-agrupada .sx-prog { display: none; }
 .sx-fila .sx-avance { margin-top: 0.375rem; min-width: 0; max-width: 13rem; gap: 0.125rem; }

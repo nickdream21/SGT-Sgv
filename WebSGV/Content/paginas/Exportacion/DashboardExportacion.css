@@ -97,7 +97,7 @@
 /* ---- Tablas ---- */
 .de-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .de-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.de-table th { font-size: .75rem; font-weight: 600; color: var(--de-muted); text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--de-border); white-space: nowrap; }
+.de-table th { font-size: .75rem; font-weight: 600; color: var(--sgv-tabla-cab-texto); background: var(--sgv-tabla-cab-fondo); text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--sgv-tabla-cab-borde); white-space: nowrap; }
 .de-table td { padding: 7px 10px; border-bottom: 1px solid var(--de-grid); vertical-align: middle; }
 .de-table tbody tr:last-child td { border-bottom: 0; }
 .de-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
