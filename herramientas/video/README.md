@@ -20,3 +20,5 @@ Los MP4 quedan en `docs/DOCUMENTACION/capacitacion/` (gitignored).
   pasándolos en `SGV_OCULTAR="NOMBRE APELLIDOS|DNI|..."` (no se guardan en el código).
 - **Beneficios:** las cifras de las escenas son las medidas al 03/11/2026; si cambian, actualizar el guion.
 - `voz.mjs "texto" salida.mp3 [voz]` genera solo un audio, para probar voces.
+- **Tutoriales grabados mientras Claude opera Edge** (grabación del monitor con ffmpeg, línea de tiempo desde
+  la transcripción, puntero sintético, zoom y subtítulos): ver [`tutorial/README.md`](tutorial/README.md).

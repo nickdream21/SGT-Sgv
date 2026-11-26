@@ -1,2 +1,16 @@
 node_modules/
 salida/
+__pycache__/
+# tutorial/: tomas, temporales y caches (lo normal es que vayan a docs/DOCUMENTACION/capacitacion/)
+tutorial/tomas/
+tutorial/*.tmp/
+tutorial/*.json
+eventos*.json
+guion*.json
+*.mkv
+*.mp4
+*.mp3
+*.wav
+*.npy
+*.detener
+.grabacion-activa.json
