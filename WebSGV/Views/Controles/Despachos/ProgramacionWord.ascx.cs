@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Linq;
 using System.Text;
@@ -324,14 +325,19 @@ namespace WebSGV.Views.Controles.Despachos
             }
         }
 
-        /// <summary>Cliente, planta y fecha de carga elegidos (la fecha, hasta 7 días antes o después de hoy).</summary>
+        /// <summary>
+        /// Cliente, planta y fecha de carga elegidos (la fecha, hasta 7 días después de hoy y hasta los días antes que
+        /// diga <c>Despachos.DiasAtrasProgramacionWord</c> en Web.config; 7 por defecto).
+        /// </summary>
         private void LeerDatosCarga(List<string> errores, out int idCliente, out int idPlanta, out DateTime fecha)
         {
             if (!int.TryParse(ddlClienteProg.SelectedValue, out idCliente) || idCliente <= 0) errores.Add("Elija el cliente.");
             if (!int.TryParse(ddlPlantaProg.SelectedValue, out idPlanta) || idPlanta <= 0) errores.Add("Elija la planta de carga.");
+            int diasAtras = DespachoValidaciones.DiasAtrasProgramacionWord(
+                ConfigurationManager.AppSettings[DespachoValidaciones.ClaveDiasAtrasProgramacionWord]);
             if (!DespachoValidaciones.TryParseFechaIso(txtFechaProg.Text, out fecha)
-                || fecha < FechaHelper.Hoy().AddDays(-7) || fecha > FechaHelper.Hoy().AddDays(7))
-                errores.Add("La fecha de carga no es válida (hasta 7 días antes o después de hoy).");
+                || !DespachoValidaciones.FechaCargaWordEsValida(fecha, FechaHelper.Hoy(), diasAtras))
+                errores.Add($"La fecha de carga no es válida (hasta {diasAtras} días antes o 7 días después de hoy).");
         }
 
         /// <summary>Las filas marcadas que no estaban ya programadas, con lo elegido en cada una.</summary>

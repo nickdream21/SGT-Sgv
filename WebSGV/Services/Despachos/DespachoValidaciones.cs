@@ -46,6 +46,30 @@ namespace WebSGV.Services.Despachos
                    fecha.Date <= hoy.Date.AddDays(30);
         }
 
+        /// <summary>Clave de Web.config con los días hacia atrás que acepta "Programar con el Word".</summary>
+        public const string ClaveDiasAtrasProgramacionWord = "Despachos.DiasAtrasProgramacionWord";
+
+        /// <summary>Días hacia atrás por defecto (y hacia adelante, siempre) de la fecha de carga del Word.</summary>
+        public const int DiasProgramacionWordPorDefecto = 7;
+
+        /// <summary>
+        /// Días hacia atrás de la fecha de carga del Word según el texto de Web.config: un entero entre 1 y 60;
+        /// vacío, no numérico o fuera de rango da <see cref="DiasProgramacionWordPorDefecto"/>.
+        /// </summary>
+        public static int DiasAtrasProgramacionWord(string valorConfig) =>
+            int.TryParse((valorConfig ?? "").Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int dias)
+            && dias >= 1 && dias <= 60
+                ? dias
+                : DiasProgramacionWordPorDefecto;
+
+        /// <summary>
+        /// Fecha de carga del Word dentro de [hoy - <paramref name="diasAtras"/>, hoy + 7]. Hacia adelante
+        /// queda fijo en 7: ampliar la ventana solo sirve para regularizar días pasados.
+        /// </summary>
+        public static bool FechaCargaWordEsValida(DateTime fecha, DateTime hoy, int diasAtras) =>
+            fecha.Date >= hoy.Date.AddDays(-diasAtras) &&
+            fecha.Date <= hoy.Date.AddDays(DiasProgramacionWordPorDefecto);
+
         /// <summary>
         /// Fecha de emisión (factura/CPIC) válida: ISO (yyyy-MM-dd), año entre 2000 y
         /// 2100, y no posterior a <paramref name="hoy"/>.

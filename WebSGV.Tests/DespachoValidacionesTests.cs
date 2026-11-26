@@ -8,6 +8,35 @@ namespace WebSGV.Tests
     {
         private static readonly DateTime Hoy = new DateTime(2026, 6, 10);
 
+        // ---- Ventana de la fecha de carga del Word ----
+
+        [Theory]
+        [InlineData(null, 7)]
+        [InlineData("", 7)]
+        [InlineData("abc", 7)]
+        [InlineData("0", 7)]
+        [InlineData("-5", 7)]
+        [InlineData("61", 7)]
+        [InlineData(" 30 ", 30)]
+        [InlineData("1", 1)]
+        [InlineData("60", 60)]
+        public void DiasAtrasProgramacionWord_LeeLaClaveConDefectoYRango(string valor, int esperado)
+        {
+            Assert.Equal(esperado, DespachoValidaciones.DiasAtrasProgramacionWord(valor));
+        }
+
+        [Theory]
+        [InlineData(-7, 7, true)]
+        [InlineData(-8, 7, false)]
+        [InlineData(-30, 30, true)]
+        [InlineData(-31, 30, false)]
+        [InlineData(7, 30, true)]
+        [InlineData(8, 30, false)]
+        public void FechaCargaWordEsValida_AtrasSegunClave_AdelanteSiempreSiete(int dias, int diasAtras, bool esperado)
+        {
+            Assert.Equal(esperado, DespachoValidaciones.FechaCargaWordEsValida(Hoy.AddDays(dias), Hoy, diasAtras));
+        }
+
         // ---- TryParseFechaIso ----
 
         [Fact]
