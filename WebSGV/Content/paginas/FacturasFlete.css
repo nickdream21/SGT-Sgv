@@ -68,6 +68,8 @@
     /* "Facturado US$ … y S/ … (n facturas)" no cabe en una línea: en el celular cada parte puede partirse. */
     .ff-pagina .sgv-resumen > span { white-space: normal; }
     .ff-contador { margin-left: 0; }
+    /* El selector de facturas con el texto de 16 px del resto del sitio en el celular (M-252, SiteMaster.css). */
+    .ff-pagina input[type=file] { font-size: 1rem; }
     /* Tablas en tarjetas (M-251, sgv-tabla-apilada): sin scroll propio, cada fila muestra todas sus cifras. */
     .ff-tabla-wrap { max-height: none; min-height: 0; overflow: visible; }
     .ff-tabla.sgv-tabla-apilada td.ff-cliente { max-width: none; white-space: normal; }

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Web;
 using WebSGV.Helpers;
+using WebSGV.Models.Despachos;
 
 namespace WebSGV.Services.Despachos
 {
@@ -226,6 +227,22 @@ namespace WebSGV.Services.Despachos
         /// <summary>Sello "Sin adjuntar" de un manifiesto que todavía no tiene archivo; vacío si ya lo tiene.</summary>
         public static string SelloSinAdjuntar(object idDocumento) =>
             idDocumento == null || idDocumento == DBNull.Value ? EstadoUiHelper.Sello("Sin adjuntar", TonoEstado.Alerta) : "";
+
+        /// <summary>
+        /// Nombre del lote para los aria-label de sus botones (M-253): "pedido X" si tiene pedido; si no ("—", vacío o
+        /// DBNull), "lote sin pedido de {cliente} del {dd/MM/yyyy}", sin las partes que falten.
+        /// </summary>
+        public static string NombreLote(object numeroPedido, object cliente, object fecha)
+        {
+            string pedido = (numeroPedido == DBNull.Value ? "" : Convert.ToString(numeroPedido, CultureInfo.InvariantCulture) ?? "").Trim();
+            if (pedido.Length > 0 && pedido != "—" && pedido != LoteRegistrado.TextoSinPedido) return "pedido " + pedido;
+
+            string nombre = "lote sin pedido";
+            string nombreCliente = (cliente == DBNull.Value ? "" : Convert.ToString(cliente, CultureInfo.InvariantCulture) ?? "").Trim();
+            if (nombreCliente.Length > 0 && nombreCliente != "—") nombre += " de " + nombreCliente;
+            if (fecha is DateTime f) nombre += " del " + f.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+            return nombre;
+        }
 
         /// <summary>"EN_PROGRESO" → "En progreso"; "CARGA" → "Carga" (estilo oración, DN-28).</summary>
         public static string TextoOracion(string valor)

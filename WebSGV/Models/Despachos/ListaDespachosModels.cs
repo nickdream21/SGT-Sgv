@@ -141,13 +141,17 @@ namespace WebSGV.Models.Despachos
 
         /// <summary>
         /// N° de pedido para la grilla. Una carga sin pedido ni factura es la programada con
-        /// el Word que espera el correo (RegistroDespacho la completa al leer los documentos).
+        /// el Word que espera el correo (RegistroDespacho la completa al leer los documentos): dice
+        /// "Sin pedido" (M-253; lo que falta ya lo dice la columna Documentos, EstadoDocumental).
         /// </summary>
         public string PedidoMostrado =>
             string.IsNullOrWhiteSpace(NumeroPedido) && string.IsNullOrWhiteSpace(NumeroFactura)
                 && string.Equals(TipoOperacion, "CARGA", StringComparison.OrdinalIgnoreCase)
                 && (string.IsNullOrEmpty(PerfilDocumentos) || PerfilDocumentos == "PEDIDO")   // los terceros no traen pedido
-                ? "Faltan documentos" : NumeroPedido;
+                ? TextoSinPedido : NumeroPedido;
+
+        /// <summary>Texto de la columna Pedido para una carga que aún espera sus documentos (M-253).</summary>
+        public const string TextoSinPedido = "Sin pedido";
 
         public DateTime FechaCreacion { get; set; }
         public string UsuarioCreacion { get; set; }

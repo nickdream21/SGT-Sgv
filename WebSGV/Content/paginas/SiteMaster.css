@@ -134,6 +134,11 @@ input[type=file]::file-selector-button {
     background: var(--sgv-superficie); color: var(--sgv-texto-medio); font-weight: 500; cursor: pointer; transition: background-color .15s, border-color .15s;
 }
 input[type=file]::file-selector-button:hover { background: var(--sgv-fondo-pagina); border-color: var(--sgv-borde-fuerte); }
+/* Celular (M-252): el selector de archivos con texto de 16 px y un botón de 44 px de alto, cómodo al tacto. */
+@media (max-width: 767.98px) {
+    input[type=file] { font-size: 1rem; min-height: 2.75rem; }
+    input[type=file]::file-selector-button { min-height: 2.75rem; padding: .5rem 1rem; }
+}
 
 /* GridView: el borde duro (border="1") se suaviza en todas las grillas del sistema. */
 table[border="1"] { border: 1px solid var(--sgv-borde) !important; }

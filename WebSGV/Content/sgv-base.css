@@ -379,6 +379,8 @@ summary:focus-visible,
 @media (max-width: 767.98px) {
     .sgv-modal-ayuda { max-width: none; margin: 0; min-height: 100%; }
     .sgv-modal-ayuda .modal-content { min-height: 100vh; border: 0; border-radius: 0; }
+    /* Temas del índice de Ayuda con un área de toque de unos 44 px (M-252). */
+    .sgv-ayuda-indice li > a { display: block; padding: .625rem 0; }
 }
 
 /* === Filtros plegables (E5-14) ===

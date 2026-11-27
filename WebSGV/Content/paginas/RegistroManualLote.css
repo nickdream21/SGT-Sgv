@@ -51,7 +51,8 @@
 .ld-doc-elegir:hover, .ld-doc-elegir:focus-within { border-color: var(--sgv-azul-500); background: var(--sgv-primario-claro); color: var(--sgv-primario); }
 .ld-doc-elegir.ld-con-archivo { border-style: solid; border-color: var(--sgv-verde-600); background: var(--sgv-verde-50); color: var(--sgv-ok-texto); }
 .ld-doc-elegir-texto { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ld-doc-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+/* input[type=file] delante: gana a la regla del celular de SiteMaster.css (min-height de 44 px, M-252), que lo dejaba en 1x44. */
+input[type=file].ld-doc-input { position: absolute; width: 1px; height: 1px; min-height: 0; opacity: 0; overflow: hidden; }
 .ld-doc-btn[disabled], .ld-doc-btn.ld-desactivado { opacity: .5; pointer-events: none; }
 .ld-nota { font-size: .8125rem; color: var(--sgv-texto-suave); margin: .75rem 0 1.25rem; }
 

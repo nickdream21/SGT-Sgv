@@ -89,4 +89,11 @@
     .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 2rem; }
     .ld-form-acciones { justify-content: stretch; }
     .ld-form-acciones .btn { flex: 1 1 auto; }
+    /* Ámbito (RadioButtonList Flow: span.rbl-inline > input + label) y "Quitar esta factura/CPIC"
+       (span.ld-quitar-doc > input + label): etiquetas de 44 px de alto y la marca de 20 px (M-252). */
+    .rbl-inline input[type=radio],
+    .ld-quitar-doc input[type=checkbox] { width: 1.25rem; height: 1.25rem; vertical-align: middle; }
+    .rbl-inline label,
+    .ld-quitar-doc label { display: inline-flex; align-items: center; min-height: 2.75rem; vertical-align: middle; }
+    .rbl-inline label { margin: 0 .75rem 0 .4rem; }
 }

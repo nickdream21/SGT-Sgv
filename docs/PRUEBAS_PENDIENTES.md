@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-122 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-123 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -125,6 +125,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-074** Anchos que cambiaron con los puntos de corte de E5-13 — las reglas de celular pasaron de `max-width: 768px/576px/992px` a `767.98/575.98/991.98px` (cambia solo exactamente a 768, 576 y 992 px, donde ahora coinciden con la rejilla de Bootstrap) y las de 480, 520 y 560 px a 575.98 px (cambia entre 481 y 575 px): con el ancho exacto, mirar Login, Inicio, Auditoría, ReportesOrdenesViaje, ListaDespachos, RegistroDespacho y LiquidacionesPendientes a 768 px (tablet vertical), y MiSeguridad, SegundoFactor, FirmarLiquidacion, DashboardExportacion y SeguimientoExportacion a 540 px: sin desbordes ni cortes. Además, en RegistroDespacho los 8 desplegables con `custom-select-sm` (Sección del Word, Cliente y Planta de programar e importar, Completa el despacho, Planta de descarga) quedan de 31 px como los campos de su fila. · C
 - [ ] **P-121** Seguimiento en el celular real tras publicar M-248/M-249 — en local ya medido en un Redmi (tablero 6 328 px, "Ver más", paginador arriba y abajo, hitos de 28 px). Falta en el sitio publicado: pestaña Vencidos con un vencido real (casilla de "Marcar los de esta página" cuadrada y etiquetas de 44 px, sin confirmar el cierre) y girar el celular en SeguimientoViaje (vertical→horizontal→vertical redibuja los hitos sin duplicarlos). · C
 - [ ] **P-122** Tablas apiladas en el sitio publicado y celular real (M-250/M-251) — Bandeja "Por camión": tocar el PDF de una guía del remitente y que abra (en local dan 404 porque los archivos no están en esta máquina); EditarLote cambiando el tipo de operación sin guardar; FacturasFlete tras "Leer y registrar" una factura (la tabla del resultado también va apilada, no probada). · B
+- [ ] **P-123** Detalles del celular tras publicar M-252/M-254 — en un celular real: selectores de archivo al tacto (FacturasFlete, DestinoDescarga, RegistroChoferes, y los de factura/CPIC/documento de RegistroManualLote con sus paneles visibles), casillas de EditarLote con los dos paneles de documentos e índice de Ayuda; en un portátil real de 1366×768 el Login con el aviso de sesión vencida. · C
 
 ## Reglas
 
