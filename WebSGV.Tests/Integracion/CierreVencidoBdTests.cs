@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using WebSGV.Helpers;
@@ -77,6 +78,33 @@ namespace WebSGV.Tests.Integracion
                 Assert.Equal(new[] { posterior }, PestanasSeguimiento.Filtrar(tablero, PestanasSeguimiento.EnCurso).Select(x => x.Id));
                 Assert.Equal(new[] { sinPosterior, vencido }.OrderBy(x => x),
                     PestanasSeguimiento.Filtrar(tablero, PestanasSeguimiento.Vencidos).Select(x => x.Id).OrderBy(x => x));
+            }
+        }
+
+        [FactBD]
+        public void Tablero_ImportadoDelExcelAbiertoHace30Dias_NoEsVencidoYQuedaEnSuFase()
+        {
+            using (new TransaccionDePrueba())
+            {
+                int importado = Viaje(Pedido + "04", 30);
+                int posterior = Viaje(Pedido + "05", 2);
+                // Como los del Excel: sin origen (historial anterior al sistema).
+                DbHelper.EjecutarNonQuery("UPDATE SeguimientoExportacion SET origen = NULL WHERE idSeguimiento = @id", DbHelper.Param("@id", importado));
+
+                var tablero = SeguimientoViajesService.ListarTablero(new FiltroTablero
+                {
+                    Desde = FechaHelper.Hoy().AddDays(-1), Hasta = FechaHelper.Hoy(), Texto = Pedido, IncluirHistorial = true,
+                });
+                var i = tablero.Single(x => x.Id == importado);
+                Assert.Null(i.Origen);
+                Assert.False(i.Vencido);
+                Assert.Equal(30, i.DiasAbierto);
+                Assert.Null(i.PosteriorId);   // el OUTER APPLY solo corre para los vencidos
+                Assert.DoesNotContain(i.Avisos ?? new List<AvisoViaje>(), a => a.Texto.StartsWith("Vencido"));
+                Assert.DoesNotContain(importado, PestanasSeguimiento.Filtrar(tablero, PestanasSeguimiento.Vencidos).Select(x => x.Id));
+                Assert.Contains(importado, PestanasSeguimiento.Filtrar(tablero, PestanasSeguimiento.EnCurso).Select(x => x.Id));
+                Assert.Contains(importado, PestanasSeguimiento.Filtrar(tablero, i.Fase.Grupo).Select(x => x.Id));
+                Assert.Contains(posterior, PestanasSeguimiento.Filtrar(tablero, PestanasSeguimiento.EnCurso).Select(x => x.Id));
             }
         }
 

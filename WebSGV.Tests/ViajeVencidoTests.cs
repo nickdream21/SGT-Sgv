@@ -37,23 +37,23 @@ namespace WebSGV.Tests
         public void Borde_DiezNoOnceSi(int diasAtras, bool vencido)
         {
             // La hora no cuenta: el día 10 a las 00:01 y a las 23:59 es el mismo día.
-            Assert.Equal(vencido, ViajeVencido.Es("ecuador", Hoy.AddDays(-diasAtras).AddMinutes(1), Hoy.AddHours(23)));
-            Assert.Equal(vencido, ViajeVencido.Es("ecuador", Hoy.AddDays(-diasAtras).AddHours(23).AddMinutes(59), Hoy));
+            Assert.Equal(vencido, ViajeVencido.Es("ecuador", Hoy.AddDays(-diasAtras).AddMinutes(1), Hoy.AddHours(23), "DESPACHO"));
+            Assert.Equal(vencido, ViajeVencido.Es("ecuador", Hoy.AddDays(-diasAtras).AddHours(23).AddMinutes(59), Hoy, "DESPACHO"));
             Assert.Equal(diasAtras, ViajeVencido.DiasAbierto(Hoy.AddDays(-diasAtras).AddHours(7), Hoy.AddHours(20)));
         }
 
         [Fact]
         public void Cerrado_NoEsVencido()
         {
-            Assert.False(ViajeVencido.Es("cerrado", Hoy.AddDays(-30), Hoy));
+            Assert.False(ViajeVencido.Es("cerrado", Hoy.AddDays(-30), Hoy, "DESPACHO"));
         }
 
         [Fact]
         public void Cancelado_NoEsVencido()
         {
             var fase = FaseViaje.Calcular(Horas(), "CANCELADO");
-            Assert.False(ViajeVencido.Es(fase.Grupo, Hoy.AddDays(-30), Hoy));
-            Assert.False(ViajeVencido.Es(RutaTercero.Fase("CRISAR", Horas(), "CANCELADO", null, null).Grupo, Hoy.AddDays(-30), Hoy));
+            Assert.False(ViajeVencido.Es(fase.Grupo, Hoy.AddDays(-30), Hoy, "DESPACHO"));
+            Assert.False(ViajeVencido.Es(RutaTercero.Fase("CRISAR", Horas(), "CANCELADO", null, null).Grupo, Hoy.AddDays(-30), Hoy, "DESPACHO"));
         }
 
         [Fact]
@@ -61,21 +61,21 @@ namespace WebSGV.Tests
         {
             var fase = FaseViaje.Calcular(Horas("fhLlegadaBaseFinal"), "EN_CURSO");
             Assert.Equal("cerrado", fase.Grupo);
-            Assert.False(ViajeVencido.Es(fase.Grupo, Hoy.AddDays(-30), Hoy));
+            Assert.False(ViajeVencido.Es(fase.Grupo, Hoy.AddDays(-30), Hoy, "DESPACHO"));
         }
 
         [Fact]
         public void Finalizado_NoEsVencido()
         {
-            Assert.False(ViajeVencido.Es(FaseViaje.Calcular(Horas(), "FINALIZADO").Grupo, Hoy.AddDays(-30), Hoy));
+            Assert.False(ViajeVencido.Es(FaseViaje.Calcular(Horas(), "FINALIZADO").Grupo, Hoy.AddDays(-30), Hoy, "DESPACHO"));
         }
 
         [Fact]
         public void ProgramadoAFuturoOSinFecha_NoEsVencido()
         {
-            Assert.False(ViajeVencido.Es("carga", Hoy.AddDays(3), Hoy));
+            Assert.False(ViajeVencido.Es("carga", Hoy.AddDays(3), Hoy, "DESPACHO"));
             Assert.True(ViajeVencido.DiasAbierto(Hoy.AddDays(3), Hoy) < 0);
-            Assert.False(ViajeVencido.Es("carga", null, Hoy));
+            Assert.False(ViajeVencido.Es("carga", null, Hoy, "DESPACHO"));
             Assert.Equal(0, ViajeVencido.DiasAbierto(null, Hoy));
         }
 
@@ -123,6 +123,66 @@ namespace WebSGV.Tests
         public void SoloSeCierranDesdeElTablero_LosDeDespachoOManuales(string origen, bool esperado)
         {
             Assert.Equal(esperado, ViajeVencido.SeCierraDesdeTablero(origen));
+        }
+
+        // ── Importados del Excel (U-106): nunca vencen ──
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("  ")]
+        public void ImportadoDelExcel_AbiertoHace30Dias_NoEsVencido(string origen)
+        {
+            Assert.False(ViajeVencido.Es("ecuador", Hoy.AddDays(-30), Hoy, origen));
+            Assert.False(ViajeVencido.Es("carga", Hoy.AddDays(-400), Hoy, origen));
+        }
+
+        [Theory]
+        [InlineData("DESPACHO")]
+        [InlineData("MANUAL")]
+        [InlineData(" manual ")]
+        public void DespachoOManual_AbiertoHace11Dias_EsVencido(string origen)
+        {
+            Assert.True(ViajeVencido.Es("retorno", Hoy.AddDays(-11), Hoy, origen));
+            Assert.False(ViajeVencido.Es("retorno", Hoy.AddDays(-10), Hoy, origen));
+        }
+
+        /// <summary>Un viaje con su "Vencido" calculado por la regla, como lo arma el tablero (ConVencido).</summary>
+        private static ViajeResumen ViajeConOrigen(int id, string grupo, int diasAtras, string origen)
+        {
+            DateTime programacion = Hoy.AddDays(-diasAtras);
+            return new ViajeResumen
+            {
+                Id = id, Tracto1 = "ABC-123", FhProgramacion = programacion, Origen = origen,
+                Fase = new FaseCalculada { Nombre = grupo, Grupo = grupo },
+                DiasAbierto = ViajeVencido.DiasAbierto(programacion, Hoy),
+                Vencido = ViajeVencido.Es(grupo, programacion, Hoy, origen),
+            };
+        }
+
+        [Fact]
+        public void Pestanas_ConImportadosIncluidos_LosImportadosAbiertosVanASuFaseYNoAVencidos()
+        {
+            var t = new List<ViajeResumen>
+            {
+                ViajeConOrigen(1, "ecuador", 30, null),        // importado abierto hace 30 días
+                ViajeConOrigen(2, "carga", 200, null),         // importado abierto hace 200 días
+                ViajeConOrigen(3, "cerrado", 60, null),        // importado cerrado
+                ViajeConOrigen(4, "retorno", 11, "MANUAL"),    // vencido
+                ViajeConOrigen(5, "ecuador", 11, "DESPACHO"),  // vencido
+                ViajeConOrigen(6, "ecuador", 2, "DESPACHO"),   // en curso
+            };
+            Assert.Equal(new[] { 4, 5 }, PestanasSeguimiento.Filtrar(t, PestanasSeguimiento.Vencidos).Select(v => v.Id));
+            Assert.Equal(new[] { 1, 2, 6 }, PestanasSeguimiento.Filtrar(t, PestanasSeguimiento.EnCurso).Select(v => v.Id));
+            Assert.Equal(new[] { 1, 6 }, PestanasSeguimiento.Filtrar(t, "ecuador").Select(v => v.Id));
+            Assert.Equal(new[] { 2 }, PestanasSeguimiento.Filtrar(t, "carga").Select(v => v.Id));
+            Assert.Empty(PestanasSeguimiento.Filtrar(t, "retorno"));
+            Assert.Equal(new[] { 3 }, PestanasSeguimiento.Filtrar(t, PestanasSeguimiento.Cerrados).Select(v => v.Id));
+            Assert.Equal(6, PestanasSeguimiento.Filtrar(t, PestanasSeguimiento.Todos).Count);
+            // Las pestañas de fase + Vencidos + Cerrados reparten todos los viajes, sin repetir ni perder ninguno.
+            int suma = new[] { "carga", "base", "ecuador", "retorno", PestanasSeguimiento.Vencidos, PestanasSeguimiento.Cerrados }
+                .Sum(f => PestanasSeguimiento.Filtrar(t, f).Count);
+            Assert.Equal(t.Count, suma);
         }
 
         [Fact]

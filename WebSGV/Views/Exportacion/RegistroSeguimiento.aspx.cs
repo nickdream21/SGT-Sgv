@@ -458,7 +458,7 @@ namespace WebSGV.Views.Exportacion
             rptViajes.DataSource = visibles.Select(v => Fila(v, puedeCerrar)).ToList();
             rptViajes.DataBind();
             pnlVacio.Visible = visibles.Count == 0;
-            // Solo con algún vencido de los despachos o creado a mano: los importados del Excel no se cierran aquí.
+            // Solo con algún vencido (todos son de los despachos o creados a mano: un importado del Excel nunca vence, U-106).
             pnlCierre.Visible = puedeCerrar && visibles.Any(v => ViajeVencido.SeCierraDesdeTablero(v.Origen));
         }
 

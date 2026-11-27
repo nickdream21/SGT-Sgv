@@ -148,7 +148,7 @@ namespace WebSGV.Services.Exportacion
             if (maximo < 1) throw new ArgumentOutOfRangeException(nameof(maximo));
             string texto = string.IsNullOrWhiteSpace(f.Texto) ? null : f.Texto.Trim();
             string planta = string.IsNullOrWhiteSpace(f.Planta) ? null : f.Planta.Trim().ToUpperInvariant();
-            // Para los vencidos (la regla de ViajeVencido: abierto y programado antes de hoy − DiasVencido), el viaje siguiente
+            // Para los vencidos (la regla de ViajeVencido: de despacho o manual, abierto y programado antes de hoy − DiasVencido), el viaje siguiente
             // de la misma carreta. El OUTER APPLY va después del TOP: corre solo sobre las filas que se traen y, por la condición
             // de vencido, solo para esas (~0,6 s sobre toda la tabla, 7400 viajes, 27/11/2026).
             DataTable dt = DbHelper.ConsultarTabla($@"
@@ -169,7 +169,7 @@ namespace WebSGV.Services.Exportacion
                 OUTER APPLY (
                     SELECT TOP 1 p.idSeguimiento, p.cliente, COALESCE(p.fhProgramacion, p.fechaRegistro) AS fecha
                     FROM SeguimientoExportacion p
-                    WHERE ISNULL(x.estado, '') NOT IN ('FINALIZADO', 'CANCELADO') AND x.fhLlegadaBaseFinal IS NULL
+                    WHERE x.origen IN ('DESPACHO', 'MANUAL') AND ISNULL(x.estado, '') NOT IN ('FINALIZADO', 'CANCELADO') AND x.fhLlegadaBaseFinal IS NULL
                       AND COALESCE(x.fhProgramacion, x.fechaRegistro) < DATEADD(DAY, -@diasVencido, CAST(CAST(dbo.fn_AhoraPeru() AS DATE) AS DATETIME))
                       AND x.carreta IS NOT NULL AND p.carreta = x.carreta AND p.activo = 1 AND p.idSeguimiento <> x.idSeguimiento
                       AND ISNULL(p.estado, '') <> 'CANCELADO'
@@ -603,7 +603,7 @@ namespace WebSGV.Services.Exportacion
             DateTime hoy = FechaHelper.Hoy();
             DateTime? referencia = Fecha(r, "fhProgramacion") ?? Fecha(r, "fechaRegistro");
             v.DiasAbierto = ViajeVencido.DiasAbierto(referencia, hoy);
-            v.Vencido = ViajeVencido.Es(v.Fase?.Grupo, referencia, hoy);
+            v.Vencido = ViajeVencido.Es(v.Fase?.Grupo, referencia, hoy, v.Origen);
             v.MotivoCierre = Texto(r, "motivoCierre");
             v.FhCierreAdministrativo = Fecha(r, "fhCierreAdministrativo");
             return v;

@@ -140,7 +140,7 @@
         <asp:Panel ID="pnlCierre" runat="server" Visible="false" CssClass="sgv-panel sx-cierre">
             <p class="sx-cierre-nota">Un viaje vencido sigue abierto hace más de 10 días (un viaje normal dura hasta 9). Si ya terminó, ciérralo
                 aquí: pasa a <strong>FINALIZADO</strong> con el motivo, la fecha y tu usuario, y queda en la auditoría. Marca los que quieras cerrar
-                o usa <strong>Cerrar</strong> en cada fila. Los importados del Excel (historial) no se cierran aquí.</p>
+                o usa <strong>Cerrar</strong> en cada fila.</p>
             <div class="sx-cierre-campos">
                 <label class="sx-campo">Motivo del cierre
                     <asp:DropDownList ID="ddlMotivoCierre" runat="server" data-accion-change="mostrarMotivoOtro" />

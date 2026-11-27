@@ -33,14 +33,19 @@ namespace WebSGV.Services.Exportacion
         public static int DiasAbierto(DateTime? fechaReferencia, DateTime hoy) =>
             fechaReferencia.HasValue ? (hoy.Date - fechaReferencia.Value.Date).Days : 0;
 
-        /// <summary>Abierto (fase distinta de "cerrado") y con más de <see cref="DiasVencido"/> días desde su fecha.</summary>
-        public static bool Es(string grupoFase, DateTime? fechaReferencia, DateTime hoy) =>
-            !string.Equals(grupoFase, "cerrado", StringComparison.OrdinalIgnoreCase)
+        /// <summary>
+        /// De los despachos o creado a mano (<see cref="SeCierraDesdeTablero"/>), abierto (fase distinta de "cerrado") y con
+        /// más de <see cref="DiasVencido"/> días desde su fecha. Un importado del Excel (origen NULL, historial anterior al
+        /// sistema) nunca vence: no es un viaje a seguir (U-106); sigue en su fase y en "Todos".
+        /// </summary>
+        public static bool Es(string grupoFase, DateTime? fechaReferencia, DateTime hoy, string origen) =>
+            SeCierraDesdeTablero(origen)
+            && !string.Equals(grupoFase, "cerrado", StringComparison.OrdinalIgnoreCase)
             && DiasAbierto(fechaReferencia, hoy) > DiasVencido;
 
         /// <summary>
         /// Solo se cierran desde el tablero los viajes de los despachos o creados a mano (origen DESPACHO / MANUAL), la misma
-        /// condición de sp_SE_CerrarVencido. Los importados del Excel (origen NULL, el historial) son otro conjunto, sin decidir.
+        /// condición de sp_SE_CerrarVencido. Los importados del Excel (origen NULL, el historial) no vencen (<see cref="Es"/>).
         /// </summary>
         public static bool SeCierraDesdeTablero(string origen)
         {

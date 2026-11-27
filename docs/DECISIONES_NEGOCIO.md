@@ -352,8 +352,9 @@ programación está **vencido**: sale de "En curso" (la pestaña por defecto) y 
 (ADMIN, ADMINISTRADOR, ADMINISTRADOR DE TRANSPORTE) puede cerrarlo administrativamente desde esa pestaña, con un motivo
 obligatorio de una lista fija ("Descarga no registrada (antes del sistema)", "La carreta ya está en otro viaje" u "Otro"
 con texto); queda auditado y el detalle del viaje lo muestra. Nunca se cierran por script. El GPS deja de consultar los
-vencidos cuya carreta ya hizo otro viaje. Los importados del Excel (historial, `origen` NULL) no se cierran desde el
-tablero aunque estén vencidos: queda por decidir (U-106, M-023). Los 15 viajes de DN-20 los cierra el usuario desde la pantalla (D-043).
+vencidos cuya carreta ya hizo otro viaje. Los importados del Excel (historial anterior al sistema, `origen` NULL) nunca son vencidos ni se cierran desde
+el tablero: con "Incluir los importados" siguen en su fase, como antes (2026-11-27, U-106; sus datos no se tocan). Los 15 viajes de DN-20 se cerraron así el 2026-11-27 (8 "Descarga no registrada (antes del sistema)", 5 "La carreta
+ya está en otro viaje" y 2 con "Otro"), con su registro `CIERRE_ADMINISTRATIVO` en `AuditoriaLog`.
 - Desde: 2026-11-27 (el usuario pidió aplicar la opción recomendada).
 - En el código: `WebSGV/Services/Exportacion/ViajeVencido.cs` (`DiasVencido = 10`, motivos) y
   `WebSGV/Database/StoredProcedures/sp_SE_CerrarVencido.sql` (mismo umbral, en el servidor).
