@@ -4,7 +4,7 @@ Lo que **solo puede hacer el usuario** (o la oficina, a pedido suyo): decisiones
 
 Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = valor claro; C = menor. Las mejoras de código están en `docs/PLAN_MEJORAS_SGV.md` (`M-`), los datos por corregir en `docs/DATOS_POR_CORREGIR.md` (`D-`) y las pruebas en `docs/PRUEBAS_PENDIENTES.md` (`P-`).
 
-Último id usado: U-105 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: U-106 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Credenciales y paneles externos
 
@@ -87,6 +87,7 @@ Prioridad: A = riesgo de datos, dinero o seguridad, o bloquea el uso real; B = v
 - [ ] **U-103** Cuota de disco del plan de somee — verla en el panel: el log puede llegar a 1,2 GB en el peor caso (62 archivos de 20 MB), además de los PDF firmados y los Uploads. · C
 - [ ] **U-104** Al pasar a `sgvTransporte`: confirmar en el panel de somee que el usuario de la BD tiene VIEW DATABASE STATE y que el Query Store está encendido (sin eso, "Estado del sistema" dice "no disponible" en las consultas costosas); el SELECT de control está en `docs/PASO_A_PRODUCCION.md`. · C
 - [ ] **U-105** Cambiar las contraseñas de los usuarios de prueba de `privado/CREDENCIALES_USUARIOS.txt` (BD de pruebas) y copiar el archivo nuevo a las dos máquinas — el 2026-11-26 su contenido se mostró en la salida de una herramienta de una sesión de Claude Code (no quedó en ningún archivo ni commit). · B
+- [ ] **U-106** Qué hacer con los viajes importados del Excel que siguen abiertos — con "Incluir los importados" el tablero de seguimiento muestra 845 vencidos de origen Excel (historial, al 2026-11-27); DN-37 no deja cerrarlos desde la pantalla. Decidir si se cierran con un script `D-` auditado, si la fase los da por cerrados cuando no tienen hitos (M-023) o si se dejan. · C
 
 ## Datos o documentos por conseguir
 

@@ -162,6 +162,7 @@
                     tr.hidden = !ok;
                     if (ok) n++;
                 });
+                g.n = n;
                 g.cab.hidden = n === 0;
                 g.td.innerHTML = '';
                 var b = document.createElement('strong');
@@ -173,9 +174,100 @@
             });
             if (cuenta) cuenta.textContent = palabras.length ? visibles + ' de ' + filas.length + ' viajes en esta pestaña' : '';
         }
+
+        // Paginación: POR_PAGINA viajes por página sin partir un pedido (un grupo más grande que la página va solo).
+        // Pagina lo que deja la búsqueda; las filas de otra página se ocultan con una clase y no con [hidden], así
+        // "Copiar STATUS" sigue copiando todas las de la pestaña. Cambiar de pestaña recarga y vuelve a la página 1.
+        var POR_PAGINA = 25, pagina = 0, paginas = [];
+        var nav = document.getElementById('sxPaginador'), textoNav = document.getElementById('sxPaginadorTexto'),
+            anterior = document.getElementById('sxPaginaAnterior'), siguiente = document.getElementById('sxPaginaSiguiente');
+        function paginar() {
+            paginarSinMarcar();
+            if (SGV.cierreVencidos) SGV.cierreVencidos.contarVencidosMarcados();
+        }
+        function paginarSinMarcar() {
+            var conFilas = grupos.filter(function (g) { return g.n > 0; });
+            var total = conFilas.reduce(function (a, g) { return a + g.n; }, 0);
+            paginas = [];
+            var actualPag = null;
+            conFilas.forEach(function (g) {
+                if (!actualPag || (actualPag.n > 0 && actualPag.n + g.n > POR_PAGINA)) {
+                    actualPag = { grupos: [], n: 0 };
+                    paginas.push(actualPag);
+                }
+                actualPag.grupos.push(g);
+                actualPag.n += g.n;
+            });
+            var hayPaginas = total > POR_PAGINA && paginas.length > 1;
+            if (pagina >= paginas.length) pagina = Math.max(paginas.length - 1, 0);
+            grupos.forEach(function (g) {
+                var fuera = hayPaginas && paginas[pagina].grupos.indexOf(g) < 0;
+                g.cab.classList.toggle('sx-fuera-pagina', fuera);
+                g.filas.forEach(function (tr) { tr.classList.toggle('sx-fuera-pagina', fuera); });
+            });
+            if (!nav) return;
+            nav.hidden = !hayPaginas;
+            if (!hayPaginas) return;
+            var inicio = 0;
+            for (var i = 0; i < pagina; i++) inicio += paginas[i].n;
+            var fin = inicio + paginas[pagina].n;
+            textoNav.textContent = (fin === inicio + 1 ? fin : (inicio + 1) + '–' + fin) + ' de ' + total;
+            anterior.disabled = pagina === 0;
+            siguiente.disabled = pagina >= paginas.length - 1;
+        }
+        function irA(nueva) {
+            pagina = nueva;
+            paginar();
+            var tabs = document.querySelector('.sgv-tabs');
+            if (tabs && tabs.scrollIntoView) tabs.scrollIntoView({ block: 'start' });
+        }
+        if (anterior) anterior.addEventListener('click', function () { if (pagina > 0) irA(pagina - 1); });
+        if (siguiente) siguiente.addEventListener('click', function () { if (pagina < paginas.length - 1) irA(pagina + 1); });
+
         aplicar();
-        if (caja) caja.addEventListener('input', aplicar);
+        paginar();
+        if (caja) caja.addEventListener('input', function () { aplicar(); pagina = 0; paginar(); });
     })();
+
+    // Cierre administrativo de los vencidos (pestaña Vencidos, solo administradores): "Otro" pide escribir el motivo y
+    // el botón dice cuántos hay marcados (también en la pregunta de confirmación).
+    var motivo = SGV.ddlMotivoCierre && document.getElementById(SGV.ddlMotivoCierre);
+    var botonCerrar = SGV.btnCerrarSeleccionados && document.getElementById(SGV.btnCerrarSeleccionados);
+    function mostrarMotivoOtro() {
+        var campo = document.getElementById('campoMotivoOtro');
+        if (campo && motivo) campo.hidden = motivo.value !== SGV.motivoOtro;
+    }
+    // "Marcar los de esta página" queda marcada solo si lo están todas las casillas a la vista (cambia al paginar o buscar).
+    function casillasALaVista() {
+        return document.querySelectorAll('tr.sx-fila:not([hidden]):not(.sx-fuera-pagina) input[name="cierreSel"]');
+    }
+    function contarVencidosMarcados() {
+        var todos = document.getElementById('chkCierreTodos');
+        if (todos) {
+            var vista = casillasALaVista();
+            todos.checked = vista.length > 0 && Array.prototype.every.call(vista, function (c) { return c.checked; });
+        }
+        if (!botonCerrar) return;
+        var n = document.querySelectorAll('input[name="cierreSel"]:checked').length;
+        botonCerrar.value = n > 0 ? 'Cerrar los seleccionados (' + n + ')' : 'Cerrar los seleccionados';
+        botonCerrar.setAttribute('data-confirmar', n > 0
+            ? '¿Cerrar administrativamente ' + (n === 1 ? 'el viaje vencido marcado' : 'los ' + n + ' viajes vencidos marcados') +
+              '?\\nPasan a FINALIZADO con el motivo elegido y queda en la auditoría.'
+            : '¿Cerrar administrativamente los viajes vencidos marcados?\\nPasan a FINALIZADO con el motivo elegido y queda en la auditoría.');
+    }
+    mostrarMotivoOtro();
+    contarVencidosMarcados();
+    SGV.cierreVencidos = { mostrarMotivoOtro: mostrarMotivoOtro, contarVencidosMarcados: contarVencidosMarcados, casillasALaVista: casillasALaVista };
+
+    // "Cerrar los seleccionados" sin ninguna marcada: se avisa sin abrir la confirmación. Va en la captura de window,
+    // antes que el data-confirmar de SiteMaster.js (captura de document). El servidor también lo rechaza.
+    window.addEventListener('click', function (e) {
+        if (!botonCerrar || !e.target || !e.target.closest || e.target.closest('#' + SGV.btnCerrarSeleccionados) !== botonCerrar) return;
+        if (botonCerrar.sgvConfirmado || document.querySelectorAll('input[name="cierreSel"]:checked').length > 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        SGV.avisar('Marca al menos un viaje vencido.', { tipo: 'warning' });
+    }, true);
 
     document.addEventListener('click', function (e) {
         var uno = e.target.closest('[data-copiar]');
@@ -186,7 +278,7 @@
             return;
         }
         if (e.target.closest('#btnCopiarStatus')) {
-            // Solo las filas a la vista (el filtro al escribir oculta las demás).
+            // Las filas que deja el filtro al escribir, de todas las páginas (la paginación no las marca [hidden]).
             var filas = Array.prototype.map.call(document.querySelectorAll('tr.sx-fila:not([hidden]) .sx-status-texto'), function (s) { return s.textContent.trim(); });
             if (!filas.length) { SGV.avisar('No hay filas para copiar.'); return; }
             // Una fila por línea, en el orden de la tabla: se pega directo en la columna STATUS del Excel.
@@ -212,9 +304,24 @@
 // SiteMaster.js. Devolver false cancela el clic (y el postback del botón).
 window.SGV = window.SGV || {};
 SGV.acciones = Object.assign(SGV.acciones || {}, {
+    mostrarMotivoOtro: function () { if (SGV.cierreVencidos) SGV.cierreVencidos.mostrarMotivoOtro(); },
+    contarVencidosMarcados: function () { if (SGV.cierreVencidos) SGV.cierreVencidos.contarVencidosMarcados(); },
+    // "Marcar los de esta página": solo las filas a la vista (la búsqueda y la página).
+    marcarVencidosPagina: function (el) {
+        if (!SGV.cierreVencidos) return;
+        Array.prototype.forEach.call(SGV.cierreVencidos.casillasALaVista(), function (c) { c.checked = el.checked; });
+        if (SGV.cierreVencidos) SGV.cierreVencidos.contarVencidosMarcados();
+    },
     // La consulta corre en segundo plano (SGV.actualizarGps) y el postback del botón no se hace.
     actualizarGps: function (el) {
         if (SGV.actualizarGps) { SGV.actualizarGps(el); return false; }
         el.value = 'Consultando el GPS…';   // sin el script de arriba: postback como antes
     }
 });
+
+// Validador del motivo del cierre (cvMotivoCierre, grupo "cierre"): uno de la lista y, con "Otro", el texto escrito.
+// Lo llama WebForms por su nombre (ClientValidationFunction), por eso es global.
+window.sxValidarMotivoCierre = function (origen, args) {
+    var otro = SGV.txtMotivoOtro && document.getElementById(SGV.txtMotivoOtro);
+    args.IsValid = !!args.Value && (args.Value !== SGV.motivoOtro || !!(otro && otro.value.trim()));
+};

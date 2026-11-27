@@ -61,7 +61,7 @@ namespace WebSGV.Tests
             ["Services/Despachos/BandejaDocumentosService.cs::Registrar"] = 120,
             ["Services/Facturas/FacturaFleteService.cs::Conciliar"] = 114,
             ["Views/LiquidacionesPendientes.aspx.cs::EnviarAConformidad"] = 108,
-            ["Views/Exportacion/SeguimientoViaje.aspx.cs::Cargar"] = 107,
+            ["Views/Exportacion/SeguimientoViaje.aspx.cs::Cargar"] = 104,
             ["Services/Despachos/ExpedienteDocumentosService.cs::Obtener"] = 103,
             ["Views/Login.aspx.cs::btnLogin_Click"] = 102,
             ["Services/Facturas/FacturaFleteService.cs::Reporte"] = 101,

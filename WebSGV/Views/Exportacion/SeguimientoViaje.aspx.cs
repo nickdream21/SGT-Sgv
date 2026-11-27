@@ -107,10 +107,7 @@ namespace WebSGV.Views.Exportacion
             litNotaDatos.Text = deDespacho
                 ? "El pedido, la carreta, los tractos y los choferes vienen del despacho: si algo está mal, corrígelo en Despachos. Aquí puedes ajustar la hora de programación y la planta."
                 : "Si el tracto de carga y el de descarga son el mismo, escribe la misma placa en los dos.";
-            bool cerrado = string.Equals(v.Estado, "FINALIZADO", StringComparison.OrdinalIgnoreCase);
-            btnEstado.Text = cerrado ? "Reabrir viaje" : "Cerrar viaje";
-            // Un viaje anulado no se cierra ni se reabre (volvería a contar en el Dashboard de exportación).
-            btnEstado.Visible = !SeguimientoViajesService.EsAnulado(v.Estado);
+            MostrarEstado(v);
 
             txtPedido.Text = v.Pedido;
             txtCarreta.Text = v.Carreta;
@@ -283,6 +280,19 @@ namespace WebSGV.Views.Exportacion
                 MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex, "SeguimientoViaje.ActualizarGps"), "peligro");
             }
             Cargar();
+        }
+
+        /// <summary>Cerrar o reabrir según el estado y, si se cerró como vencido desde el tablero, el motivo a la vista.</summary>
+        private void MostrarEstado(ViajeResumen v)
+        {
+            bool cerrado = string.Equals(v.Estado, "FINALIZADO", StringComparison.OrdinalIgnoreCase);
+            btnEstado.Text = cerrado ? "Reabrir viaje" : "Cerrar viaje";
+            // Un viaje anulado no se cierra ni se reabre (volvería a contar en el Dashboard de exportación).
+            btnEstado.Visible = !SeguimientoViajesService.EsAnulado(v.Estado);
+            // Si luego se reabrió, el cierre administrativo ya no se muestra.
+            string cierreAdministrativo = ViajeVencido.TextoCierre(v.Estado, v.MotivoCierre, v.FhCierreAdministrativo);
+            pnlCierreAdministrativo.Visible = cierreAdministrativo != null;
+            litCierreAdministrativo.Text = Html(cierreAdministrativo ?? "");
         }
 
         protected void btnEstado_Click(object sender, EventArgs e)

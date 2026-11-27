@@ -36,7 +36,14 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.Button btnFiltrar;
         protected global::System.Web.UI.WebControls.Panel pnlTope;
         protected global::System.Web.UI.WebControls.Literal litTope;
+        protected global::System.Web.UI.WebControls.HiddenField hfArgumentoFila;
+        protected global::System.Web.UI.WebControls.Button btnAccionFila;
         protected global::System.Web.UI.WebControls.Repeater rptFases;
+        protected global::System.Web.UI.WebControls.Panel pnlCierre;
+        protected global::System.Web.UI.WebControls.DropDownList ddlMotivoCierre;
+        protected global::System.Web.UI.WebControls.TextBox txtMotivoOtro;
+        protected global::System.Web.UI.WebControls.Button btnCerrarSeleccionados;
+        protected global::System.Web.UI.WebControls.CustomValidator cvMotivoCierre;
         protected global::System.Web.UI.WebControls.Repeater rptViajes;
         protected global::System.Web.UI.WebControls.Panel pnlVacio;
         protected global::System.Web.UI.WebControls.Literal litResumen;

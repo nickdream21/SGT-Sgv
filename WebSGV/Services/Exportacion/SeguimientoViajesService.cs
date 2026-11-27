@@ -9,94 +9,6 @@ using WebSGV.Services.GpsIntegracion;
 
 namespace WebSGV.Services.Exportacion
 {
-    public sealed class FiltroTablero
-    {
-        public DateTime Desde { get; set; }
-        public DateTime Hasta { get; set; }
-
-        /// <summary>Pedido, carreta, placa o chofer. Con texto se busca en todas las fechas.</summary>
-        public string Texto { get; set; }
-
-        /// <summary>JAVE | INBALNOR | null (todas).</summary>
-        public string Planta { get; set; }
-
-        /// <summary>Incluir los viajes importados del Excel o del formulario viejo (origen NULL); por defecto solo despachos y manuales.</summary>
-        public bool IncluirHistorial { get; set; }
-
-        /// <summary>VITAPRO | TERCEROS | CRISAR | NOVOPAN | POLINPLAST | AFRECHO | null (todos).</summary>
-        public string Cliente { get; set; }
-    }
-
-    /// <summary>Un viaje (pedido y carreta) en el tablero, con su fase y avisos ya calculados.</summary>
-    public sealed class ViajeResumen
-    {
-        public int Id { get; set; }
-        public string Pedido { get; set; }
-        public string Carreta { get; set; }
-        public string Tracto1 { get; set; }
-        public string Chofer1 { get; set; }
-        public string Tracto2 { get; set; }
-        public string Chofer2 { get; set; }
-        public string Planta { get; set; }
-        public string Estado { get; set; }
-
-        /// <summary>CRISAR | NOVOPAN | POLINPLAST | AFRECHO; null = exportación de Vitapro.</summary>
-        public string TipoRuta { get; set; }
-        public string LugarCarga { get; set; }
-        public string LugarEntrega { get; set; }
-
-        /// <summary>Hitos de la ruta del viaje (los de Vitapro o los de su cliente tercero).</summary>
-        public IReadOnlyList<DefinicionHito> Hitos { get; set; } = HitosSeguimiento.Todos;
-        public int TotalCarga => Hitos.Count(h => h.Tramo == TramoViaje.Carga);
-        public int TotalDescarga => Hitos.Count(h => h.Tramo == TramoViaje.Descarga);
-
-        /// <summary>DESPACHO | MANUAL | null (importado del Excel o del formulario viejo).</summary>
-        public string Origen { get; set; }
-        public DateTime? FhProgramacion { get; set; }
-        public DateTime? UltimaConsultaGps { get; set; }
-
-        /// <summary>Texto de STATUS de la unidad (fase + lugar general), para copiar al Excel y enviar.</summary>
-        public string Status { get; set; }
-        public DateTime? UltimaPosicion { get; set; }
-        public string Lugar { get; set; }
-
-        /// <summary>"dd/MM HH:mm" de la última posición del GPS mientras el viaje sigue abierto; null si ya cerró o no hay.</summary>
-        public string UbicacionHora => UltimaPosicion.HasValue && Fase != null && Fase.Grupo != "cerrado" ? UltimaPosicion.Value.ToString("dd/MM HH:mm") : null;
-
-        /// <summary>
-        /// Viaje abierto cuyo GPS no reportaba hace más de <see cref="StatusUnidad.SenalAntigua"/> cuando se le consultó por
-        /// última vez. Casi siempre es la unidad estacionada con la batería cortada (base, TCI): el 25/10/2026, 25 de 33 tractos.
-        /// Se mide contra la consulta y no contra la hora actual: si la consulta automática se detiene (27/10/2026, cron-job.org
-        /// con 403), todas las posiciones envejecen a la vez sin que las unidades estén apagadas.
-        /// </summary>
-        public bool GpsSinReportar => UbicacionHora != null && UltimaConsultaGps.HasValue
-            && UltimaConsultaGps.Value - UltimaPosicion.Value > StatusUnidad.SenalAntigua;
-        public Dictionary<string, DateTime?> Horas { get; set; }
-
-        /// <summary>Columnas de <see cref="Horas"/> que no se registraron y salen estimadas (inicio y término de carga, <see cref="CargaEstimada"/>).</summary>
-        public List<string> HorasEstimadas { get; set; } = new List<string>();
-        public FaseCalculada Fase { get; set; }
-        public List<AvisoViaje> Avisos { get; set; }
-        public int AvanceCarga { get; set; }
-        public int AvanceDescarga { get; set; }
-        public string UltimoHito { get; set; }
-        public DateTime? UltimoHitoHora { get; set; }
-
-        /// <summary>Velocidad (km/h) y coordenadas de la última posición del GPS.</summary>
-        public double? Velocidad { get; set; }
-        public double? Latitud { get; set; }
-        public double? Longitud { get; set; }
-
-        /// <summary>Tracto de la compañera del grupo cuya posición se tomó porque el GPS de este no tiene señal; null = su propio GPS.</summary>
-        public string GpsAproximadoDe { get; set; }
-
-        /// <summary>Hora aproximada de llegada a la planta si va en camino a cargar o a descargar; null si no.</summary>
-        public LlegadaEstimada.Estimado Llegada { get; set; }
-
-        /// <summary>La fila completa de SeguimientoExportacion (para exportar al STATUS GENERAL).</summary>
-        public DataRow Fila { get; set; }
-    }
-
     /// <summary>Un hito en el detalle: su hora, de dónde salió y la evidencia del GPS.</summary>
     public sealed class HitoDetalle
     {
@@ -186,48 +98,6 @@ namespace WebSGV.Services.Exportacion
         }
     }
 
-    /// <summary>
-    /// Viajes del tablero hasta un tope, con cuántos cumplen los filtros: así la pantalla avisa cuando no se
-    /// muestran todos y una exportación se niega en vez de recortar en silencio (B6-2).
-    /// </summary>
-    public sealed class ListadoTablero
-    {
-        public ListadoTablero(List<ViajeResumen> viajes, int total, int maximo)
-        {
-            Viajes = viajes ?? new List<ViajeResumen>();
-            Total = Math.Max(total, Viajes.Count);
-            Maximo = maximo;
-        }
-
-        /// <summary>Los viajes traídos: los <see cref="Maximo"/> más recientes por programación.</summary>
-        public List<ViajeResumen> Viajes { get; }
-
-        /// <summary>Cuántos viajes cumplen los filtros (aunque no se hayan traído todos).</summary>
-        public int Total { get; }
-
-        public int Maximo { get; }
-
-        /// <summary>Hay viajes que cumplen los filtros y no vinieron por el tope.</summary>
-        public bool Cortado => Total > Viajes.Count;
-
-        /// <summary>Aviso para la tabla en pantalla cuando se cortó; null si están todos.</summary>
-        public string AvisoTabla() => Cortado
-            ? $"Se muestran los {Viajes.Count.ToString("N0", Cultura)} viajes más recientes de {Total.ToString("N0", Cultura)}; " +
-              "acote las fechas (o la búsqueda) para ver el resto. Las pestañas cuentan solo los que se muestran; los Excel traen todos (las imágenes, hasta 500)."
-            : null;
-
-        /// <summary>Por qué no se exporta cuando se cortó; null si están todos y se puede exportar.</summary>
-        public string MotivoNoExportar() => Cortado
-            ? $"Acote las fechas: hay {Total.ToString("N0", Cultura)} viajes con estos filtros y el máximo para exportar es {Maximo.ToString("N0", Cultura)}."
-            : null;
-
-        /// <summary>Por qué no se genera la imagen: una sola imagen de más de <paramref name="maximoImagen"/> filas no se puede leer ni generar.</summary>
-        public static string MotivoNoImagen(int filas, int maximoImagen) => filas > maximoImagen
-            ? $"La imagen admite hasta {maximoImagen.ToString("N0", Cultura)} viajes y hay {filas.ToString("N0", Cultura)}: acote las fechas o baje el Excel."
-            : null;
-
-        private static readonly System.Globalization.CultureInfo Cultura = System.Globalization.CultureInfo.GetCultureInfo("es-PE");
-    }
 
     /// <summary>
     /// Datos del tablero y del detalle del seguimiento de exportación (SeguimientoExportacion +
@@ -278,7 +148,12 @@ namespace WebSGV.Services.Exportacion
             if (maximo < 1) throw new ArgumentOutOfRangeException(nameof(maximo));
             string texto = string.IsNullOrWhiteSpace(f.Texto) ? null : f.Texto.Trim();
             string planta = string.IsNullOrWhiteSpace(f.Planta) ? null : f.Planta.Trim().ToUpperInvariant();
+            // Para los vencidos (la regla de ViajeVencido: abierto y programado antes de hoy − DiasVencido), el viaje siguiente
+            // de la misma carreta. El OUTER APPLY va después del TOP: corre solo sobre las filas que se traen y, por la condición
+            // de vencido, solo para esas (~0,6 s sobre toda la tabla, 7400 viajes, 27/11/2026).
             DataTable dt = DbHelper.ConsultarTabla($@"
+                SELECT x.*, pos.idSeguimiento AS {ColumnaPosteriorId}, pos.cliente AS {ColumnaPosteriorPedido}, pos.fecha AS {ColumnaPosteriorFecha}
+                FROM (
                 SELECT TOP (@maximo) t.*, COUNT(*) OVER () AS {ColumnaTotal} FROM ({SqlBase}
                   AND (@texto IS NOT NULL OR COALESCE(se.fhProgramacion, se.fechaRegistro) >= @desde AND COALESCE(se.fhProgramacion, se.fechaRegistro) < @hasta
                        OR se.origen IN ('DESPACHO', 'MANUAL') AND ISNULL(se.estado, '') NOT IN ('FINALIZADO', 'CANCELADO') AND se.fhLlegadaBaseFinal IS NULL)
@@ -289,7 +164,20 @@ namespace WebSGV.Services.Exportacion
                   AND (@cliente IS NULL OR (@cliente = 'VITAPRO' AND se.tipoRuta IS NULL)
                        OR (@cliente = 'TERCEROS' AND se.tipoRuta IS NOT NULL) OR se.tipoRuta = @cliente)
                 ) t
-                ORDER BY COALESCE(t.fhProgramacion, t.fechaRegistro) DESC, t.idSeguimiento DESC",
+                ORDER BY COALESCE(t.fhProgramacion, t.fechaRegistro) DESC, t.cliente, t.idSeguimiento DESC
+                ) x
+                OUTER APPLY (
+                    SELECT TOP 1 p.idSeguimiento, p.cliente, COALESCE(p.fhProgramacion, p.fechaRegistro) AS fecha
+                    FROM SeguimientoExportacion p
+                    WHERE ISNULL(x.estado, '') NOT IN ('FINALIZADO', 'CANCELADO') AND x.fhLlegadaBaseFinal IS NULL
+                      AND COALESCE(x.fhProgramacion, x.fechaRegistro) < DATEADD(DAY, -@diasVencido, CAST(CAST(dbo.fn_AhoraPeru() AS DATE) AS DATETIME))
+                      AND x.carreta IS NOT NULL AND p.carreta = x.carreta AND p.activo = 1 AND p.idSeguimiento <> x.idSeguimiento
+                      AND ISNULL(p.estado, '') <> 'CANCELADO'
+                      AND COALESCE(p.fhProgramacion, p.fechaRegistro) > COALESCE(x.fhProgramacion, x.fechaRegistro)
+                    ORDER BY COALESCE(p.fhProgramacion, p.fechaRegistro), p.idSeguimiento
+                ) pos
+                ORDER BY COALESCE(x.fhProgramacion, x.fechaRegistro) DESC, x.cliente, x.idSeguimiento DESC",
+                DbHelper.Param("@diasVencido", ViajeVencido.DiasVencido),
                 DbHelper.Param("@desde", f.Desde.Date),
                 DbHelper.Param("@hasta", f.Hasta.Date.AddDays(1)),
                 DbHelper.Param("@texto", texto),
@@ -299,12 +187,38 @@ namespace WebSGV.Services.Exportacion
                 DbHelper.Param("@cliente", string.IsNullOrWhiteSpace(f.Cliente) ? null : f.Cliente.Trim().ToUpperInvariant()),
                 DbHelper.Param("@maximo", maximo));
             int total = dt.Rows.Count == 0 ? 0 : Convert.ToInt32(dt.Rows[0][ColumnaTotal]);
-            // La cuenta no es del viaje: fuera antes de que la fila llegue al STATUS GENERAL.
-            dt.Columns.Remove(ColumnaTotal);
-            return new ListadoTablero(dt.Rows.Cast<DataRow>().Select(Resumir).ToList(), total, maximo);
+            var viajes = new List<ViajeResumen>(dt.Rows.Count);
+            DateTime ahora = FechaHelper.Ahora();
+            foreach (DataRow r in dt.Rows)
+            {
+                var v = Resumir(r);
+                if (v.Vencido && !r.IsNull(ColumnaPosteriorId))
+                {
+                    v.PosteriorId = Convert.ToInt32(r[ColumnaPosteriorId]);
+                    v.PosteriorPedido = Texto(r, ColumnaPosteriorPedido);
+                    v.PosteriorFecha = Fecha(r, ColumnaPosteriorFecha);
+                }
+                if (v.Vencido) AgregarAvisoVencido(v, ahora);
+                viajes.Add(v);
+            }
+            // La cuenta y el viaje posterior no son del viaje: fuera antes de que la fila llegue al STATUS GENERAL.
+            foreach (var c in new[] { ColumnaTotal, ColumnaPosteriorId, ColumnaPosteriorPedido, ColumnaPosteriorFecha })
+                dt.Columns.Remove(c);
+            return new ListadoTablero(viajes, total, maximo);
         }
 
         private const string ColumnaTotal = "sgvTotalFiltrado";
+        private const string ColumnaPosteriorId = "sgvPosteriorId";
+        private const string ColumnaPosteriorPedido = "sgvPosteriorPedido";
+        private const string ColumnaPosteriorFecha = "sgvPosteriorFecha";
+
+        /// <summary>Aviso de peligro del vencido, el primero de la fila.</summary>
+        private static void AgregarAvisoVencido(ViajeResumen v, DateTime ahora) =>
+            (v.Avisos = v.Avisos ?? new List<AvisoViaje>()).Insert(0, new AvisoViaje
+            {
+                Tipo = TipoAviso.Peligro,
+                Texto = ViajeVencido.Aviso(v.DiasAbierto, v.Carreta, v.PosteriorPedido, v.PosteriorId, v.PosteriorFecha, ahora),
+            });
 
         /// <summary>
         /// Crea los viajes que faltan a partir de los despachos de carga de exportación desde
@@ -435,17 +349,61 @@ namespace WebSGV.Services.Exportacion
         }
 
         /// <summary>
+        /// Cierre administrativo de un viaje vencido (<see cref="ViajeVencido"/>): pasa a FINALIZADO con su motivo, la fecha
+        /// y el usuario (sp_SE_CerrarVencido, que rechaza uno cerrado, anulado o no vencido). Lo pide un administrador
+        /// desde la pestaña Vencidos del tablero; queda en la auditoría.
+        /// </summary>
+        public static void CerrarVencido(int idSeguimiento, string motivo, int? idUsuario)
+        {
+            string m = (motivo ?? "").Trim();
+            if (m.Length == 0) throw new Common.ErrorNegocioException("Escribe el motivo del cierre.");
+            if (m.Length > ViajeVencido.LargoMaximoMotivo)
+                throw new Common.ErrorNegocioException($"El motivo admite hasta {ViajeVencido.LargoMaximoMotivo} caracteres.");
+            DbHelper.EjecutarNonQuerySp("sp_SE_CerrarVencido",
+                DbHelper.Param("@idSeguimiento", idSeguimiento),
+                DbHelper.Param("@motivo", m),
+                DbHelper.Param("@idUsuario", idUsuario));
+            AuditoriaHelper.Registrar("CIERRE_ADMINISTRATIVO", "SeguimientoExportacion", idSeguimiento, m);
+        }
+
+        /// <summary>
+        /// <see cref="CerrarVencido"/> de varios viajes, cada uno por su lado: uno que no se puede cerrar no frena a los
+        /// demás. Devuelve cuántos se cerraron y el motivo de los que no (texto para el usuario).
+        /// </summary>
+        public static Tuple<int, List<string>> CerrarVencidos(IEnumerable<int> ids, string motivo, int? idUsuario)
+        {
+            int cerrados = 0;
+            var errores = new List<string>();
+            foreach (int id in (ids ?? Enumerable.Empty<int>()).Distinct())
+            {
+                try
+                {
+                    CerrarVencido(id, motivo, idUsuario);
+                    cerrados++;
+                }
+                catch (Exception ex)
+                {
+                    errores.Add($"Viaje #{id}: " + MensajeErrorHelper.ParaUsuario(ex, "Error al cerrar el viaje vencido {Id}", id));
+                }
+            }
+            return Tuple.Create(cerrados, errores);
+        }
+
+        /// <summary>
         /// Los viajes cuyo GPS se consulta (<see cref="ActualizarGpsAbiertos"/>): no cerrados, con algún tracto y ya
         /// programados (las cargas de mañana o después, que el tablero muestra, aún no salen). Salud.ashx usa la
         /// misma regla para saber si el GPS automático está atrasado.
+        /// Un vencido (<see cref="ViajeVencido"/>) cuya carreta ya salió en un viaje posterior no se consulta: su GPS es el
+        /// del viaje nuevo. El vencido sin viaje posterior sigue (al final de la cola, <see cref="OrdenarParaGps"/>).
         /// </summary>
         public static IEnumerable<ViajeResumen> AbiertosParaGps(IEnumerable<ViajeResumen> viajes, DateTime hoy) =>
             viajes
                 .Where(v => v.Fase.Grupo != "cerrado" && (!string.IsNullOrWhiteSpace(v.Tracto1) || !string.IsNullOrWhiteSpace(v.Tracto2)))
-                .Where(v => !(v.FhProgramacion.HasValue && v.FhProgramacion.Value.Date > hoy.Date));
+                .Where(v => !(v.FhProgramacion.HasValue && v.FhProgramacion.Value.Date > hoy.Date))
+                .Where(v => !(v.Vencido && v.PosteriorId.HasValue));
 
-        /// <summary>Un viaje programado hace más de esto y todavía abierto se consulta al final.</summary>
-        private const int DiasViajeAtrasado = 10;
+        /// <summary>Un viaje programado hace más de esto y todavía abierto se consulta al final (la regla del vencido).</summary>
+        private const int DiasViajeAtrasado = ViajeVencido.DiasVencido;
 
         /// <summary>
         /// Consulta el GPS de los viajes abiertos del tablero, hasta <paramref name="maximo"/> viajes
@@ -619,7 +577,7 @@ namespace WebSGV.Services.Exportacion
         {
             int Prioridad(ViajeResumen v)
             {
-                if (v.FhProgramacion.HasValue && v.FhProgramacion.Value.Date < hoy.AddDays(-DiasViajeAtrasado)) return 3;
+                if (v.FhProgramacion.HasValue && v.FhProgramacion.Value.Date < hoy.Date.AddDays(-DiasViajeAtrasado)) return 3;
                 switch (v.Fase.Grupo)
                 {
                     case "carga": return 0;
@@ -634,7 +592,24 @@ namespace WebSGV.Services.Exportacion
                 .ThenBy(v => v.UltimaConsultaGps ?? DateTime.MinValue);
         }
 
-        private static ViajeResumen Resumir(DataRow r)
+        private static ViajeResumen Resumir(DataRow r) => ConVencido(ResumirFila(r), r);
+
+        /// <summary>
+        /// Vencido (<see cref="ViajeVencido"/>) y el cierre administrativo. El aviso del vencido lo agrega el tablero
+        /// (<see cref="ListarTableroConTotal"/>), que también sabe si la carreta ya está en un viaje posterior.
+        /// </summary>
+        private static ViajeResumen ConVencido(ViajeResumen v, DataRow r)
+        {
+            DateTime hoy = FechaHelper.Hoy();
+            DateTime? referencia = Fecha(r, "fhProgramacion") ?? Fecha(r, "fechaRegistro");
+            v.DiasAbierto = ViajeVencido.DiasAbierto(referencia, hoy);
+            v.Vencido = ViajeVencido.Es(v.Fase?.Grupo, referencia, hoy);
+            v.MotivoCierre = Texto(r, "motivoCierre");
+            v.FhCierreAdministrativo = Fecha(r, "fhCierreAdministrativo");
+            return v;
+        }
+
+        private static ViajeResumen ResumirFila(DataRow r)
         {
             var horas = ColumnasHora.ToDictionary(c => c, c => Fecha(r, c), StringComparer.OrdinalIgnoreCase);
             string estado = Texto(r, "estado");

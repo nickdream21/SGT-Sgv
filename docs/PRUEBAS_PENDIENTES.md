@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-119 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-120 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -47,6 +47,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-032** Comprobaciones por HTTP en el sitio publicado — un POST de formulario a un PageMethod no ejecuta nada; `GpsAutomatico.ashx?iniciar=1` sin sesión da 403; la cookie `SGV_SessionId` sale con `Secure` tras iniciar sesión; `/trace.axd` y `/Web.config` no dan 200. · C
 - [ ] **P-053** Compresión en el sitio publicado — tras publicar E5-7, solo con GET: `Login.aspx`, un `ScriptResource.axd` y un postback de UpdatePanel llegan con `Content-Encoding: gzip`, `sgv-base.css?v=` con `max-age` de un año, y el primer ingreso a Login con caché vacía pesa menos de 400 KB (hoy ≈ 1,35 MB); si el HTML sigue sin gzip, encender `Compresion.Respuesta` (el respaldo de E5-7 comprime solo el HTML: el `.axd` y el parcial de UpdatePanel solo llegan con gzip si somee tiene la compresión dinámica de IIS). Pasos en "Medir gzip tras publicar" de `herramientas/publicar/README.md`. · B
 - [ ] **P-054** Bloqueo de doble envío con la latencia real — tras publicar E5-2, sin guardar datos: doble toque en "Buscar" desde un celular da una sola respuesta con "Procesando…", y tras descargar un Excel y un PDF la página queda usable (no pegada 20 s). · B
+- [ ] **P-120** Vencidos y cierre administrativo en el sitio publicado — tras publicar DN-37 (migración 65 y `sp_SE_CerrarVencido` antes de la DLL): en RegistroSeguimiento, con un administrador, a 1366 px y en un celular real: pestaña "Vencidos (15)" en ámbar, paginador, tarjetas sin scroll horizontal; cerrar los vencidos de D-043 con su motivo y ver "Cerrado administrativamente" en el detalle de uno; con otro rol, que el panel de cierre no aparezca. Si hay más de 25 vencidos, que "Marcar los de esta página" se desmarque al pasar de página (en local no se pudo: solo 15). · B
 
 ## En el sitio local (probador)
 

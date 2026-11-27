@@ -27,6 +27,10 @@
         <asp:Panel ID="pnlMensaje" runat="server" Visible="false" EnableViewState="false">
             <asp:Literal ID="litMensaje" runat="server" />
         </asp:Panel>
+        <%-- Viaje vencido cerrado desde la pestaña Vencidos del tablero (sp_SE_CerrarVencido). --%>
+        <asp:Panel ID="pnlCierreAdministrativo" runat="server" Visible="false" CssClass="sx-mensaje sx-mensaje-alerta" role="status">
+            <asp:Literal ID="litCierreAdministrativo" runat="server" />
+        </asp:Panel>
 
         <%-- Datos de cabecera: abierto al crear un viaje, plegado al editar. --%>
         <div class="sgv-panel mb-3">

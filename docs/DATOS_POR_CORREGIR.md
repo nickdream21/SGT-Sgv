@@ -4,7 +4,7 @@ Registros de la BD que hay que corregir, completar o cargar. Casi todos están e
 
 Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = menor.
 
-Último id usado: D-042 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: D-043 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Facturas
 
@@ -35,6 +35,7 @@ Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = meno
 - [ ] **D-021** Terceros: viajes ya en curso sin despacho — los de antes de registrar a los clientes (los de setiembre ya tienen despacho): programarlos con su Word (carga de hasta 7 días atrás) o crearlos a mano, si se quieren. · C
 - [ ] **D-022** Guía T660-00016530 del pedido 4400133881 — dice otro chofer y el tracto T7J-861, pero la administradora tiene BNG-758 (viaje manual 7341, pedido `PENDIENTE`). Confirmar con quien emitió la guía y enlazar el despacho 873 con el viaje 7341 (o corregir chofer/tracto). · C
 - [ ] **D-023** Seguimiento: 4 pares de viajes importados con el mismo tracto el mismo día — A6L-927 2025-06-24, C6L-700 y AMN-912 2025-01-06, TBM-898 2024-03-23: parecen duplicados de la carga histórica. Revisar con el usuario. · C
+- [ ] **D-043** 15 viajes del seguimiento vencidos (abiertos con más de 10 días al 2026-11-27) — ids 3422-3424, 5368-5370, 7063, 7064 (los 8 del 30/09: carga de la víspera del arranque sin despacho de descarga), 7470, 7761, 7786, 7798, 7872, 8379 y 19974; en 14 la carreta ya hizo otro viaje. Por DN-37 los cierra un administrador desde RegistroSeguimiento → Vencidos con su motivo (no por script); si alguno tuvo una descarga real que se quiera registrar, completarlo en vez de cerrarlo (D-015). Control: `SELECT idSeguimiento FROM SeguimientoExportacion WHERE activo = 1 AND origen IN ('DESPACHO','MANUAL') AND ISNULL(estado,'') NOT IN ('FINALIZADO','CANCELADO') AND fhLlegadaBaseFinal IS NULL AND COALESCE(fhProgramacion, fechaRegistro) < DATEADD(day, -10, CAST(CAST(dbo.fn_AhoraPeru() AS DATE) AS DATETIME))` (0 filas = hecho; 15 al 2026-11-27). · B
 - [ ] **D-024** 9 GRE de Polinplast de setiembre sin PDF — (EG03-15116 a 15340, despachos 3038–3046): bajarlas de SUNAT (Consulta de GRE, 01–30/09) y subirlas por la bandeja. · C
 
 - [ ] **D-032** Viaje de prueba `VP-SIM-1111` (id 1843, ANULADO) — borrarlo junto con los datos de prueba de D-012. Control: `SELECT idViajeProgreso, estadoViaje FROM ViajesEnProgreso WHERE numeroViajeProgreso = 'VP-SIM-1111'`. · C

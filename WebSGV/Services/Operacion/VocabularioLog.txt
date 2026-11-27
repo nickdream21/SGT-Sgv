@@ -165,6 +165,7 @@ cargas
 cargó
 catálogo
 cerrada
+cerrar
 cierra
 cifrado
 clave

@@ -141,7 +141,7 @@ namespace WebSGV.Services.Exportacion
         }
     }
 
-    public enum TipoAviso { Manual, Alerta, Info }
+    public enum TipoAviso { Manual, Alerta, Info, Peligro }
 
     public sealed class AvisoViaje
     {

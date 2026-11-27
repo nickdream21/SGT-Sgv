@@ -75,7 +75,11 @@
             <button type="button" class="sx-btn sx-btn-chico" id="btnVerDatosNuevos">Ver datos nuevos</button>
         </div>
 
-        <asp:HiddenField ID="hdnFase" runat="server" Value="activos" />
+        <asp:HiddenField ID="hdnFase" runat="server" Value="encurso" />
+        <%-- "Cerrar" de una fila de Vencidos: SGV.acciones.enviarFila deja el id aquí y pulsa btnAccionFila. El servidor lo revalida. --%>
+        <asp:HiddenField ID="hfArgumentoFila" runat="server" />
+        <asp:Button ID="btnAccionFila" runat="server" Text="Cerrar viaje vencido" CssClass="d-none" CausesValidation="false"
+            OnClick="btnAccionFila_Click" tabindex="-1" aria-hidden="true" />
 
         <details class="sgv-filtros" open data-plegar-movil>
             <summary>Filtros <span class="sgv-filtros-cuenta"></span></summary>
@@ -126,14 +130,40 @@
                 <ItemTemplate>
                     <asp:LinkButton runat="server" CommandName="Fase" CommandArgument='<%# Eval("Grupo") %>' CausesValidation="false"
                         CssClass='<%# (bool)Eval("Activo") ? "sgv-tab activo" : "sgv-tab" %>' role="tab" aria-selected='<%# (bool)Eval("Activo") ? "true" : "false" %>'>
-                        <%#: Eval("Nombre") %> <span class="sgv-tab-contador"><%#: Eval("Cantidad") %></span>
+                        <%#: Eval("Nombre") %> <span class='<%#: Eval("ContadorCss") %>'><%#: Eval("Cantidad") %></span>
                     </asp:LinkButton>
                 </ItemTemplate>
             </asp:Repeater>
         </div>
 
+        <%-- Cierre administrativo de los vencidos: solo en la pestaña Vencidos y para un administrador (el servidor lo revisa). --%>
+        <asp:Panel ID="pnlCierre" runat="server" Visible="false" CssClass="sgv-panel sx-cierre">
+            <p class="sx-cierre-nota">Un viaje vencido sigue abierto hace más de 10 días (un viaje normal dura hasta 9). Si ya terminó, ciérralo
+                aquí: pasa a <strong>FINALIZADO</strong> con el motivo, la fecha y tu usuario, y queda en la auditoría. Marca los que quieras cerrar
+                o usa <strong>Cerrar</strong> en cada fila. Los importados del Excel (historial) no se cierran aquí.</p>
+            <div class="sx-cierre-campos">
+                <label class="sx-campo">Motivo del cierre
+                    <asp:DropDownList ID="ddlMotivoCierre" runat="server" data-accion-change="mostrarMotivoOtro" />
+                </label>
+                <label class="sx-campo sx-cierre-otro" id="campoMotivoOtro">Escribe el motivo
+                    <asp:TextBox ID="txtMotivoOtro" runat="server" MaxLength="200" placeholder="Hasta 200 caracteres" />
+                </label>
+                <label class="sx-campo sx-campo-casilla sx-cierre-todos">
+                    <input type="checkbox" id="chkCierreTodos" data-accion-change="marcarVencidosPagina" />
+                    Marcar los de esta página
+                </label>
+                <asp:Button ID="btnCerrarSeleccionados" runat="server" Text="Cerrar los seleccionados" CssClass="sx-btn sx-btn-alerta"
+                    ValidationGroup="cierre" data-validar-grupo="cierre" OnClick="btnCerrarSeleccionados_Click"
+                    data-confirmar="¿Cerrar administrativamente los viajes vencidos marcados?\nPasan a FINALIZADO con el motivo elegido y queda en la auditoría."
+                    data-confirmar-titulo="Cerrar viajes vencidos" data-confirmar-aceptar="Cerrar" data-confirmar-peligro="true" />
+            </div>
+            <asp:CustomValidator ID="cvMotivoCierre" runat="server" ControlToValidate="ddlMotivoCierre" ValidateEmptyText="true"
+                ClientValidationFunction="sxValidarMotivoCierre" ErrorMessage="Elige el motivo del cierre (con &quot;Otro&quot;, escríbelo)."
+                Display="Dynamic" CssClass="sgv-campo-error" SetFocusOnError="true" ValidationGroup="cierre" />
+        </asp:Panel>
+
         <div class="sgv-panel sx-tabla-caja">
-            <table class="table sgv-tabla">
+            <table class="table sgv-tabla sx-tablero">
                 <thead>
                     <tr><th>Pedido / carreta</th><th>Carga</th><th>Descarga</th><th>Fase y avance</th><th>STATUS y último hito</th><th>Pendiente</th></tr>
                 </thead>
@@ -141,39 +171,53 @@
                     <asp:Repeater ID="rptViajes" runat="server" EnableViewState="false">
                         <ItemTemplate>
                             <tr class="sx-fila" data-pedido='<%#: Eval("Pedido") %>' data-prog='<%#: Eval("Programacion") %>'>
-                                <td>
+                                <td data-label="Pedido / carreta"><div class="sx-celda">
                                     <a class="sx-mono sx-pedido" href='SeguimientoViaje.aspx?id=<%#: Eval("Id") %>'><%#: Eval("Pedido") %></a>
                                     <span class="sx-sub">Carreta <span class="sx-mono"><%#: Eval("Carreta") %></span></span>
                                     <span class="sx-sub sx-prog">Prog. <%#: Eval("Programacion") %></span>
-                                </td>
-                                <td><span class="sx-mono"><%#: Eval("Tracto1") %></span><span class="sx-sub"><%#: Eval("Chofer1") %></span></td>
-                                <td><span class='<%#: Convert.ToString(Eval("Tracto2")) == "Sin asignar" ? "sx-sin-asignar" : "sx-mono" %>'><%#: Eval("Tracto2") %></span><span class="sx-sub"><%#: Eval("Chofer2") %></span></td>
-                                <td>
+                                </div></td>
+                                <td data-label="Carga"><div class="sx-celda"><span class="sx-mono"><%#: Eval("Tracto1") %></span><span class="sx-sub"><%#: Eval("Chofer1") %></span></div></td>
+                                <td data-label="Descarga"><div class="sx-celda"><span class='<%#: Convert.ToString(Eval("Tracto2")) == "Sin asignar" ? "sx-sin-asignar" : "sx-mono" %>'><%#: Eval("Tracto2") %></span><span class="sx-sub"><%#: Eval("Chofer2") %></span></div></td>
+                                <td data-label="Fase y avance"><div class="sx-celda">
                                     <span class='<%#: "sx-fase sx-fase-" + Eval("Grupo") %>'><%#: Eval("Fase") %></span><span class="sx-sub"><%#: Eval("Planta") %></span>
                                     <div class="sx-avance">
                                         <div class="sx-avance-fila"><span>Carga</span><progress class="sx-avance-barra sx-avance-carga" max="100" value='<%#: Eval("CargaPct") %>' aria-hidden="true"></progress><span class="sx-mono"><%#: Eval("CargaTxt") %></span></div>
                                         <div class="sx-avance-fila"><span>Descarga</span><progress class="sx-avance-barra sx-avance-descarga" max="100" value='<%#: Eval("DescargaPct") %>' aria-hidden="true"></progress><span class="sx-mono"><%#: Eval("DescargaTxt") %></span></div>
                                     </div>
-                                </td>
-                                <td class="sx-status">
+                                </div></td>
+                                <td class="sx-status" data-label="STATUS"><div class="sx-celda">
                                     <span class="sx-status-texto"><%#: Eval("Status") %></span>
                                     <button type="button" class="sx-copiar" data-copiar title="Copiar este STATUS" aria-label="Copiar este STATUS"><i class="fas fa-copy" aria-hidden="true"></i></button>
                                     <span class='<%#: "sx-sub sx-mono " + Eval("UbicacionClase") %>'><%#: Eval("Ubicacion") %></span>
                                     <span class="sx-sub sx-llegada"><%#: Eval("Llegada") %></span>
                                     <span class="sx-sub sx-ultimo">Último hito: <%#: Eval("UltimoHito") %> <span class="sx-mono"><%#: Eval("UltimoHora") %></span></span>
-                                </td>
-                                <td>
+                                </div></td>
+                                <td data-label="Pendiente"><div class="sx-celda">
                                     <div class="sx-avisos">
                                         <asp:Repeater runat="server" DataSource='<%# Eval("Avisos") %>'>
                                             <ItemTemplate><span class='<%#: "sx-aviso sx-aviso-" + Eval("Css") %>'><%#: Eval("Texto") %></span></ItemTemplate>
                                         </asp:Repeater>
                                     </div>
-                                </td>
+                                    <asp:PlaceHolder runat="server" Visible='<%# (bool)Eval("PuedeCerrar") %>'>
+                                        <div class="sx-cierre-fila">
+                                            <label class="sx-cierre-sel"><input type="checkbox" name="cierreSel" value='<%#: Eval("Id") %>' data-accion-change="contarVencidosMarcados" /> Marcar</label>
+                                            <button type="button" class="sx-btn sx-btn-chico sx-btn-cerrar" data-accion="enviarFila" data-argumento='<%#: Eval("Id") %>'
+                                                data-validar-grupo="cierre" data-confirmar='<%#: Eval("ConfirmarCierre") %>' data-confirmar-titulo="Cerrar viaje vencido"
+                                                data-confirmar-aceptar="Cerrar" data-confirmar-peligro="true">Cerrar</button>
+                                        </div>
+                                    </asp:PlaceHolder>
+                                </div></td>
                             </tr>
                         </ItemTemplate>
                     </asp:Repeater>
                 </tbody>
             </table>
+            <%-- Paginación en el navegador (RegistroSeguimiento.js): 25 viajes por página sin partir un pedido; solo con más de 25. --%>
+            <nav class="sx-paginador" id="sxPaginador" aria-label="Páginas del tablero" hidden>
+                <span class="sx-paginador-texto" id="sxPaginadorTexto" role="status"></span>
+                <button type="button" class="sx-btn" id="sxPaginaAnterior">Anterior</button>
+                <button type="button" class="sx-btn" id="sxPaginaSiguiente">Siguiente</button>
+            </nav>
             <asp:Panel ID="pnlVacio" runat="server" Visible="false" CssClass="sgv-vacio">
                 No hay viajes en esta fase con los filtros elegidos.
             </asp:Panel>
@@ -183,6 +227,8 @@
     </div>
     <script>var SGV = Object.assign(window.SGV || {}, { autoActualizarGps: <%= AutoActualizarGps ? "true" : "false" %>, btnActualizarGps: '<%= btnActualizarGps.ClientID %>',
         btnFiltrar: '<%= btnFiltrar.ClientID %>', txtBuscar: '<%= txtBuscar.ClientID %>', ultimaConsultaGps: '<%= HttpUtility.JavaScriptStringEncode(UltimaConsultaGps) %>', urlEstadoGps: '<%= ResolveUrl("~/Views/Exportacion/GpsAutomatico.ashx?estado=1") %>',
-        urlIniciarGps: '<%= ResolveUrl("~/Views/Exportacion/GpsAutomatico.ashx?iniciar=1") %>' });</script>
+        urlIniciarGps: '<%= ResolveUrl("~/Views/Exportacion/GpsAutomatico.ashx?iniciar=1") %>',
+        hfArgumentoFila: '<%= hfArgumentoFila.ClientID %>', btnAccionFila: '<%= btnAccionFila.ClientID %>', ddlMotivoCierre: '<%= ddlMotivoCierre.ClientID %>',
+        txtMotivoOtro: '<%= txtMotivoOtro.ClientID %>', btnCerrarSeleccionados: '<%= btnCerrarSeleccionados.ClientID %>', motivoOtro: '<%= HttpUtility.JavaScriptStringEncode(WebSGV.Services.Exportacion.ViajeVencido.MotivoOtro) %>' });</script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/Exportacion/RegistroSeguimiento.js") %>"></script>
 </asp:Content>

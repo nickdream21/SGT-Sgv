@@ -14,7 +14,7 @@ decisión cambia, no se borra: se marca "reemplazada por DN-yy" y se agrega la n
 nombres, teléfonos, contraseñas): usar el rol ("un conductor", "la administradora de transporte").
 Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 
-Último id usado: DN-36 (la próxima decisión toma el siguiente; ver "Reglas" al final).
+Último id usado: DN-37 (la próxima decisión toma el siguiente; ver "Reglas" al final).
 
 ## Índice
 
@@ -39,7 +39,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-17 | La placa de un vehículo con historial no se cambia |
 | DN-18 | Los viajes del seguimiento nacen de los despachos |
 | DN-19 | Inicio y término de carga estimados desde la salida de planta |
-| DN-20 | Los 15 viajes antiguos que siguen en "Activos" se dejan como están |
+| DN-20 | Los 15 viajes antiguos que siguen en "Activos" se dejan como están (reemplazada por DN-37) |
 | DN-21 | Un CPI por factura y un MCI por camión (observada, a confirmar) |
 | DN-22 | Vitapro (ida): todo sale de la factura F222 y el packing list (observada, a confirmar) |
 | DN-23 | Cargas y flete por camión de los demás clientes (observada, a confirmar) |
@@ -56,6 +56,7 @@ Las demás reglas (dónde va cada cosa) están en "Reglas", al final.
 | DN-34 | Rol SUPERVISOR retirado |
 | DN-35 | Etapa 6: pruebas con BD en una copia local, registro manual a su página, Contabilidad aparte, plantas por ámbito, Estado del sistema solo con conteos (opción recomendada, a confirmar) |
 | DN-36 | Paleta "Cabecera de tinta": grises azulados, barra de menú azul, cabeceras de tabla en azul claro, fases del viaje con tinte propio |
+| DN-37 | Viaje vencido a los 10 días: pestaña propia y cierre administrativo con motivo |
 
 ---
 
@@ -341,6 +342,21 @@ usuario). El aviso "Falta inicio y término de carga" que se decidió dejar ese 
 siguiente por DN-19.
 - Desde: 2026-11-12, `03afb60`.
 - En el código: solo procedimiento.
+- Estado: reemplazada por DN-37 (2026-11-27).
+
+### DN-37 — Viaje vencido a los 10 días: pestaña propia y cierre administrativo con motivo
+Un viaje del seguimiento que sigue abierto (sin FINALIZADO, CANCELADO ni llegada a la base) más de 10 días después de su
+programación está **vencido**: sale de "En curso" (la pestaña por defecto) y de las de fase, y va a la pestaña
+"Vencidos", con el aviso de cuántos días lleva y, si la carreta ya hizo otro viaje, cuál. El umbral sale de los datos:
+489 viajes de despacho cerrados al 2026-11-27 duraron como máximo 8,5 días (mediana 3,8, p99 7,7). Un administrador
+(ADMIN, ADMINISTRADOR, ADMINISTRADOR DE TRANSPORTE) puede cerrarlo administrativamente desde esa pestaña, con un motivo
+obligatorio de una lista fija ("Descarga no registrada (antes del sistema)", "La carreta ya está en otro viaje" u "Otro"
+con texto); queda auditado y el detalle del viaje lo muestra. Nunca se cierran por script. El GPS deja de consultar los
+vencidos cuya carreta ya hizo otro viaje. Los importados del Excel (historial, `origen` NULL) no se cierran desde el
+tablero aunque estén vencidos: queda por decidir (U-106, M-023). Los 15 viajes de DN-20 los cierra el usuario desde la pantalla (D-043).
+- Desde: 2026-11-27 (el usuario pidió aplicar la opción recomendada).
+- En el código: `WebSGV/Services/Exportacion/ViajeVencido.cs` (`DiasVencido = 10`, motivos) y
+  `WebSGV/Database/StoredProcedures/sp_SE_CerrarVencido.sql` (mismo umbral, en el servidor).
 - Estado: vigente.
 
 ## 5. CPI y manifiesto (MCI) de exportación

@@ -208,6 +208,7 @@
     <Content Include="Database\Schema\62_SegundoFactor.sql" />
     <Content Include="Database\Schema\63_RolSupervisorRetirado.sql" />
     <Content Include="Database\Schema\64_PlantaNombreUnico.sql" />
+    <Content Include="Database\Schema\65_CierreAdministrativoSeguimiento.sql" />
     <Content Include="Database\Scripts\script_UnificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\script_VerificarCatalogoPlanta.sql" />
     <Content Include="Database\Scripts\quitar-segundo-factor.ps1" />
@@ -313,6 +314,7 @@
     <Content Include="Database\StoredProcedures\sp_ReabrirViajeProgreso.sql" />
     <Content Include="Database\StoredProcedures\sp_RechazarLiquidacion.sql" />
     <Content Include="Database\StoredProcedures\sp_SE_CambiarEstado.sql" />
+    <Content Include="Database\StoredProcedures\sp_SE_CerrarVencido.sql" />
     <Content Include="Database\StoredProcedures\sp_SE_CorregirHito.sql" />
     <Content Include="Database\StoredProcedures\sp_SE_GuardarDatosManuales.sql" />
     <Content Include="Database\StoredProcedures\sp_SE_GuardarDatosViaje.sql" />
@@ -691,6 +693,9 @@
     <Compile Include="Services\Exportacion\ImportacionSeguimientoService.cs" />
     <Compile Include="Services\Exportacion\StatusUnidad.cs" />
     <Compile Include="Services\Exportacion\UnidadesActivas.cs" />
+    <Compile Include="Services\Exportacion\ViajeVencido.cs" />
+    <Compile Include="Services\Exportacion\PestanasSeguimiento.cs" />
+    <Compile Include="Services\Exportacion\TableroSeguimientoModelos.cs" />
     <Compile Include="Services\Exportacion\LlegadaEstimada.cs" />
     <Compile Include="Services\Exportacion\AproximacionGrupo.cs" />
     <Compile Include="Services\Exportacion\ColaLaTroncal.cs" />

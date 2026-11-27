@@ -31,7 +31,8 @@ namespace WebSGV.Services.Exportacion
         {
             var res = new List<Unidad>();
             foreach (var v in viajes
-                .Where(v => !RutaTercero.Es(v.TipoRuta) && v.Fase != null && v.Fase.Grupo != "cerrado")
+                // Sin los vencidos (ViajeVencido): las pestañas de fase del tablero tampoco los cuentan.
+                .Where(v => !RutaTercero.Es(v.TipoRuta) && v.Fase != null && v.Fase.Grupo != "cerrado" && !v.Vencido)
                 .Where(v => ahora - UltimaHora(v) <= SinAvanzar)
                 .OrderBy(v => Array.IndexOf(FaseViaje.Grupos, v.Fase.Grupo))
                 .ThenByDescending(UltimaHora))

@@ -47,17 +47,10 @@ namespace WebSGV.Views.Exportacion
         protected string UltimaConsultaGps { get; private set; } = "";
 
         /// <summary>
-        /// "Activos" (la pestaña al abrir): los viajes en curso o programados, sin los cerrados. "Todos" suma los cerrados
-        /// del rango de fechas (el historial).
+        /// Solo un administrador (EsRolAdmin) cierra los vencidos; la sección ya es solo de administradores, pero el
+        /// cierre lo vuelve a mirar por si eso cambia.
         /// </summary>
-        private const string PestanaActivos = "activos";
-        private const string PestanaTodos = "todos";
-
-        private static readonly (string Grupo, string Nombre)[] Pestanas =
-        {
-            (PestanaActivos, "Activos"), ("carga", "En carga"), ("base", "En base"),
-            ("ecuador", "Rumbo a Ecuador / a la descarga"), ("retorno", "Retorno"), ("cerrado", "Cerrados"), (PestanaTodos, "Todos"),
-        };
+        private bool EsAdmin => RolesHelper.EsRolAdmin(SesionHelper.Rol(Session));
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -71,9 +64,13 @@ namespace WebSGV.Views.Exportacion
                 string aviso = AvisoSeguimiento.Texto(Request.QueryString["msg"]);
                 if (aviso != null) MostrarMensaje(aviso, "ok");
                 // Llegada desde el dashboard: ?fase= abre esa pestaña y ?buscar= deja el pedido o la placa ya filtrados.
+                // ?fase=activos (enlaces guardados) abre "En curso"; ?fase=vencidos, los vencidos.
                 string fase = Request.QueryString["fase"];
-                if (Pestanas.Any(p => p.Grupo == fase))
-                    hdnFase.Value = fase;
+                if (PestanasSeguimiento.Existe(fase))
+                    hdnFase.Value = PestanasSeguimiento.Normalizar(fase);
+                ddlMotivoCierre.Items.Add(new ListItem("Elige el motivo", ""));
+                foreach (string m in ViajeVencido.Motivos)
+                    ddlMotivoCierre.Items.Add(new ListItem(m, m));
                 string buscar = (Request.QueryString["buscar"] ?? "").Trim();
                 if (buscar.Length > 0)
                     txtBuscar.Text = buscar.Length > 60 ? buscar.Substring(0, 60) : buscar;
@@ -102,6 +99,56 @@ namespace WebSGV.Views.Exportacion
         protected void rptFases_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
             hdnFase.Value = Convert.ToString(e.CommandArgument);
+            Cargar();
+        }
+
+        /// <summary>"Cerrar los seleccionados" de la pestaña Vencidos: las casillas marcadas (name="cierreSel").</summary>
+        protected void btnCerrarSeleccionados_Click(object sender, EventArgs e) => CerrarVencidos(Request.Form.GetValues("cierreSel"));
+
+        /// <summary>"Cerrar" de una fila de Vencidos (SGV.acciones.enviarFila deja el id en hfArgumentoFila).</summary>
+        protected void btnAccionFila_Click(object sender, EventArgs e)
+        {
+            string id = hfArgumentoFila.Value;
+            hfArgumentoFila.Value = "";
+            CerrarVencidos(new[] { id });
+        }
+
+        /// <summary>
+        /// Cierre administrativo de los vencidos elegidos, con el motivo de la lista (o el escrito en "Otro"). El servidor
+        /// revisa el rol, la pestaña y el motivo; sp_SE_CerrarVencido, que cada uno siga abierto y vencido.
+        /// </summary>
+        private void CerrarVencidos(IEnumerable<string> valores)
+        {
+            var ids = (valores ?? new string[0])
+                .Select(x => int.TryParse((x ?? "").Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out int id) ? id : 0)
+                .Where(id => id > 0).Distinct().Take(SeguimientoViajesService.MaximoFilasTablero).ToList();
+            if (!EsAdmin)
+                MostrarMensaje("Solo un administrador puede cerrar viajes vencidos.", "peligro");
+            else if (Fase() != PestanasSeguimiento.Vencidos)
+                MostrarMensaje("Los viajes vencidos se cierran desde la pestaña Vencidos.", "alerta");
+            else if (ids.Count == 0)
+                MostrarMensaje("Marca al menos un viaje vencido para cerrarlo.", "alerta");
+            else
+            {
+                try
+                {
+                    string motivo = ViajeVencido.Motivo(ddlMotivoCierre.SelectedValue, txtMotivoOtro.Text);
+                    var r = SeguimientoViajesService.CerrarVencidos(ids, motivo, SesionHelper.IdUsuario(Session));
+                    string texto = r.Item1 > 0 ? $"{r.Item1} viaje(s) vencido(s) cerrado(s) con el motivo \"{motivo}\"." : "No se cerró ningún viaje.";
+                    if (r.Item2.Count > 0)
+                        texto += " No se cerraron: " + string.Join(" ", r.Item2.Take(5)) + (r.Item2.Count > 5 ? $" Y {r.Item2.Count - 5} más." : "");
+                    MostrarMensaje(texto, r.Item2.Count > 0 ? "alerta" : "ok");
+                    if (r.Item1 > 0)
+                    {
+                        ddlMotivoCierre.SelectedIndex = 0;
+                        txtMotivoOtro.Text = "";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MostrarMensaje(MensajeErrorHelper.ParaUsuario(ex), "alerta");
+                }
+            }
             Cargar();
         }
 
@@ -349,20 +396,8 @@ namespace WebSGV.Views.Exportacion
             pnlTope.Visible = avisoTope != null;
             litTope.Text = HttpUtility.HtmlEncode(avisoTope ?? "");
 
-            string fase = Fase();
-            rptFases.DataSource = Pestanas.Select(p => new
-            {
-                p.Grupo,
-                p.Nombre,
-                Cantidad = DeLaPestana(todos, p.Grupo).Count,
-                Activo = p.Grupo == fase,
-            }).ToList();
-            rptFases.DataBind();
+            EnlazarTabla(todos);
 
-            var visibles = DeLaPestana(todos, fase);
-            rptViajes.DataSource = visibles.Select(Fila).ToList();
-            rptViajes.DataBind();
-            pnlVacio.Visible = visibles.Count == 0;
 
             var consultas = todos.Where(v => v.UltimaConsultaGps.HasValue).Select(v => v.UltimaConsultaGps.Value).ToList();
             // Con el cambio de contraseña pendiente no se lanza: Global.asax rechaza la consulta (403) y
@@ -396,34 +431,69 @@ namespace WebSGV.Views.Exportacion
                 MensajeErrorHelper.ParaUsuario(ex);
                 litReporteGrifo.Text = "";
             }
-            int activos = DeLaPestana(todos, PestanaActivos).Count;
+            MostrarResumen(todos);
+        }
+
+        /// <summary>Las pestañas con su cuenta y la tabla de la pestaña elegida (con el cierre en Vencidos, solo administradores).</summary>
+        private void EnlazarTabla(List<ViajeResumen> todos)
+        {
+            string fase = Fase();
+            rptFases.DataSource = PestanasSeguimiento.Lista.Select(p =>
+            {
+                int cantidad = PestanasSeguimiento.Filtrar(todos, p.Grupo).Count;
+                return new
+                {
+                    p.Grupo,
+                    p.Nombre,
+                    Cantidad = cantidad,
+                    Activo = p.Grupo == fase,
+                    // Vencidos con alguno: el contador en ámbar, para que se vea sin entrar.
+                    ContadorCss = p.Grupo == PestanasSeguimiento.Vencidos && cantidad > 0 ? "sgv-tab-contador sx-contador-vencidos" : "sgv-tab-contador",
+                };
+            }).ToList();
+            rptFases.DataBind();
+
+            var visibles = PestanasSeguimiento.Filtrar(todos, fase);
+            bool puedeCerrar = fase == PestanasSeguimiento.Vencidos && EsAdmin;
+            rptViajes.DataSource = visibles.Select(v => Fila(v, puedeCerrar)).ToList();
+            rptViajes.DataBind();
+            pnlVacio.Visible = visibles.Count == 0;
+            // Solo con algún vencido de los despachos o creado a mano: los importados del Excel no se cierran aquí.
+            pnlCierre.Visible = puedeCerrar && visibles.Any(v => ViajeVencido.SeCierraDesdeTablero(v.Origen));
+        }
+
+        private void MostrarResumen(List<ViajeResumen> todos)
+        {
+            int enCurso = PestanasSeguimiento.Filtrar(todos, PestanasSeguimiento.EnCurso).Count;
+            int vencidos = PestanasSeguimiento.Filtrar(todos, PestanasSeguimiento.Vencidos).Count;
+            string textoVencidos = vencidos > 0
+                ? $" y {vencidos} vencido(s) (abiertos hace más de {ViajeVencido.DiasVencido} días, pestaña Vencidos)"
+                : "";
             litResumen.Text = HttpUtility.HtmlEncode((string.IsNullOrWhiteSpace(txtBuscar.Text)
-                ? $"{activos} viaje(s) activo(s) (en curso o programados, de cualquier fecha) de {todos.Count}; los cerrados son los programados entre " +
+                ? $"{enCurso} viaje(s) en curso o programados{textoVencidos}, de cualquier fecha, de {todos.Count}; los cerrados son los programados entre " +
                   $"{FechaTexto(txtDesde.Text)} y {FechaTexto(txtHasta.Text)} (pestañas Cerrados y Todos). Con texto en Buscar se busca en todas las fechas."
-                : $"{todos.Count} viaje(s) con \"{txtBuscar.Text.Trim()}\" en cualquier fecha, {activos} activo(s).")
+                : $"{todos.Count} viaje(s) con \"{txtBuscar.Text.Trim()}\" en cualquier fecha, {enCurso} en curso{textoVencidos}.")
                 + (chkHistorial.Checked ? " Incluye los importados del Excel." : " Solo viajes de los despachos y creados a mano."));
         }
 
-        private string Fase() => string.IsNullOrEmpty(hdnFase.Value) ? PestanaActivos : hdnFase.Value;
-
-        private static List<ViajeResumen> DeLaPestana(List<ViajeResumen> todos, string fase) =>
-            fase == PestanaTodos ? todos
-            : fase == PestanaActivos ? todos.Where(v => v.Fase.Grupo != "cerrado").ToList()
-            : todos.Where(v => v.Fase.Grupo == fase).ToList();
+        private string Fase() => PestanasSeguimiento.Normalizar(hdnFase.Value);
 
         /// <summary>
-        /// Los viajes de la pestaña elegida para los Excel e imágenes. En "Activos" van todos los del rango, como
-        /// siempre (el STATUS y el historial en Excel incluyen los cerrados); en las de fase, solo esa fase.
+        /// Los viajes de la pestaña elegida para los Excel e imágenes. En "En curso" van todos los del rango, como
+        /// siempre (el STATUS y el historial en Excel incluyen los cerrados); en las demás, lo que muestra la pestaña.
         /// </summary>
         private List<ViajeResumen> FiltrarPorFase(List<ViajeResumen> todos)
         {
             string fase = Fase();
-            return DeLaPestana(todos, fase == PestanaActivos ? PestanaTodos : fase);
+            return PestanasSeguimiento.Filtrar(todos, fase == PestanasSeguimiento.EnCurso ? PestanasSeguimiento.Todos : fase);
         }
 
-        private static object Fila(ViajeResumen v) => new
+        private static object Fila(ViajeResumen v, bool puedeCerrar) => new
         {
             v.Id,
+            PuedeCerrar = puedeCerrar && v.Vencido && ViajeVencido.SeCierraDesdeTablero(v.Origen),
+            ConfirmarCierre = $"¿Cerrar administrativamente el viaje {v.Pedido ?? "sin pedido"} (carreta {v.Carreta ?? "por confirmar"}), abierto hace {v.DiasAbierto} días?" +
+                "\\nPasa a FINALIZADO con el motivo elegido y queda en la auditoría.",
             Pedido = v.Pedido ?? "Sin pedido",
             Carreta = v.Carreta ?? "Por confirmar",
             Programacion = v.FhProgramacion.HasValue ? v.FhProgramacion.Value.ToString("dd/MM/yyyy HH:mm") : "sin fecha",
@@ -476,8 +546,8 @@ namespace WebSGV.Views.Exportacion
             if (!string.IsNullOrEmpty(ddlCliente.SelectedValue)) yield return "Cliente: " + ddlCliente.SelectedItem.Text;
             if (!string.IsNullOrEmpty(ddlPlanta.SelectedValue)) yield return "Planta: " + ddlPlanta.SelectedItem.Text;
             yield return chkHistorial.Checked ? "Incluye los importados del Excel" : "Viajes de los despachos y creados a mano";
-            var pestana = Pestanas.FirstOrDefault(p => p.Grupo == hdnFase.Value);
-            if (pestana.Grupo != null && pestana.Grupo != PestanaTodos && pestana.Grupo != PestanaActivos) yield return "Fase: " + pestana.Nombre;
+            string fase = Fase();
+            if (fase != PestanasSeguimiento.Todos && fase != PestanasSeguimiento.EnCurso) yield return "Fase: " + PestanasSeguimiento.NombreDe(fase);
         }
 
         private static DateTime? LeerFecha(string s) =>

@@ -314,6 +314,15 @@ SELECT OBJECT_NAME(i.object_id) AS tabla, i.name, i.filter_definition, STRING_AG
 SELECT archivo, fechaAplicacion FROM dbo.SchemaVersion WHERE archivo = '64_PlantaNombreUnico.sql';
 ```
 
+**Migración 65** (`65_CierreAdministrativoSeguimiento.sql`, DN-37): agrega a `SeguimientoExportacion` las columnas `motivoCierre NVARCHAR(200)`, `fhCierreAdministrativo DATETIME` e `idUsuarioCierre INT`, todas NULL e idempotentes (`COL_LENGTH`). Es aditiva: no toca datos. No lleva `-- Requiere SP:` a propósito (`sp_SE_CerrarVencido` y `sp_SE_CambiarEstado` usan las columnas nuevas y no compilarían antes). **Orden: migración 65 → `aplicar-procedimientos.ps1`** (`sp_SE_CerrarVencido` nuevo, `sp_SE_CambiarEstado` cambiado) **→ publicar el código de DN-37**. La DLL tolera una BD sin la 65 (lee las columnas solo si existen), pero el cierre administrativo falla sin el SP. Control posterior (solo SELECT):
+
+```sql
+-- 3 filas.
+SELECT name FROM sys.columns WHERE object_id = OBJECT_ID('dbo.SeguimientoExportacion') AND name IN ('motivoCierre', 'fhCierreAdministrativo', 'idUsuarioCierre');
+-- 1 fila.
+SELECT name FROM sys.procedures WHERE name = 'sp_SE_CerrarVencido';
+```
+
 ## 5. Procedimientos almacenados
 
 **Obligatorio antes de este paso y del 4:** ensayar el mismo commit sobre el `.bacpac` más reciente con `.\herramientas\respaldo\ensayar-migracion.ps1` (migraciones, SP, ejecución de humo y `[FactBD]` en una copia local) y tener `RESULTADO: OK`. `aplicar-procedimientos.ps1` vuelve a hacer el humo al terminar, pero en producción eso llega tarde: el SP ya quedó aplicado.
@@ -362,6 +371,8 @@ SELECT HAS_PERMS_BY_NAME(NULL, 'DATABASE', 'VIEW DATABASE STATE') AS verEstado,
 **E6-29 — `sp_LD_ContarLotesActivos` (nuevo) y `sp_LD_ObtenerLotesRegistrados` (cambiado)**: los contadores de ListaDespachos (pestañas y resumen) y el aviso de documentos pendientes de Inicio salen de una consulta propia en vez de traer todos los lotes; el listado gana `@maxFilas` opcional (la lista se corta a 500 lotes con aviso), la columna `TotalLotes` al final y un orden estable. El `-SoloListar` los muestra como 1 FALTA y 1 DISTINTO y se aplican con el resto; sin migración. **Orden: los dos SP → publicar el código de E6-29** (el SP cambiado sirve igual a la DLL vieja; la DLL nueva **no** funciona con el listado viejo, que no conoce `@maxFilas`: se cae toda la lista de lotes, y sin el SP de conteo se pierden los contadores). Control: anotar antes los números de ListaDespachos (lotes registrados, pendientes, con más de 3 días, con manifiestos pendientes) y de Inicio, y comprobar después que son los mismos. Las reglas de documentos están copiadas en los dos SP entre marcadores `-- [reglas-documentos:…]`: se editan los dos a la vez (`ReglasDocumentosSpTests`).
 
 **M-242 — `sp_LD_ObtenerLotesRegistrados` y `sp_LD_ContarLotesActivos` (cambiados): manifiesto completo con un MCI por despacho**. El sello "Manifiesto" de ListaDespachos y el contador "con manifiestos pendientes" pasan de exigir MCI de cruce **y** de retorno a exigir un MCI cualquiera en cada despacho que lo espera (internacional, o carga con CPIC), la misma regla de la Bandeja; el listado gana la columna `DespachosEsperanManifiesto` antes de `TotalLotes`. Sin migración. **Orden: los dos SP → publicar el código** (la DLL vieja con los SP nuevos funciona igual; la DLL nueva con los SP viejos deja todos los lotes sin sello de manifiesto hasta aplicarlos). Si se aplica junto con E6-29, el control de E6-29 cambia **a propósito** en el número "con manifiestos pendientes": baja (en `sgvActualizada` pasó de 16 a 1); los demás números deben ser los mismos. Control (solo SELECT): `EXEC sp_LD_ContarLotesActivos @hoy = '<hoy>'` → `LotesManifiestosPendientes` igual al número de lotes con algún despacho internacional o de carga con CPIC sin fila en `DocumentosManifiesto`.
+
+**DN-37 — `sp_SE_CerrarVencido` (nuevo) y `sp_SE_CambiarEstado` (cambiado): viajes vencidos y cierre administrativo**. El primero cierra un viaje de despacho o manual abierto con más de 10 días con su motivo (rechaza los no vencidos, cancelados, ya cerrados e importados); el segundo limpia el motivo de cierre al reabrir. Van **después** de la migración 65 y antes de la DLL. Sin cambio de datos: los 15 vencidos de `sgvActualizada` (D-043) los cierra un administrador desde la pantalla.
 
 ## 6. SP retirados
 

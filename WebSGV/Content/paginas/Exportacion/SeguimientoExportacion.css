@@ -332,3 +332,58 @@ p.sx-filtro-cuenta:empty { display: none; }
     color: var(--sgv-texto-suave);
     background-color: var(--sgv-fondo);
 }
+
+/* ===== Viajes vencidos: abiertos hace más de 10 días (ViajeVencido, 2026-11-27) ===== */
+.sgv-tab-contador.sx-contador-vencidos, .sgv-tab.activo .sgv-tab-contador.sx-contador-vencidos {
+    background: var(--sgv-alerta-fondo); color: var(--sgv-alerta-texto); box-shadow: inset 0 0 0 1px var(--sgv-alerta-borde);
+}
+.sx-aviso-peligro { background: var(--sgv-peligro-fondo); color: var(--sgv-peligro-texto); border: 1px solid var(--sgv-peligro-borde); font-weight: 500; }
+
+/* Cierre administrativo (pestaña Vencidos, solo administradores) */
+.sx-cierre { padding: 0.875rem 1rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.625rem; }
+.sx-cierre-nota { margin: 0; font-size: 0.875rem; color: var(--sgv-texto-medio); }
+.sx-cierre-campos { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; }
+.sx-cierre-campos select { min-width: 18rem; max-width: 100%; }
+.sx-cierre-otro input { width: 22rem; max-width: 100%; }
+.sx-cierre-otro[hidden] { display: none; }
+.sx-cierre-fila { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
+.sx-cierre-sel { display: inline-flex; align-items: center; gap: 0.375rem; margin: 0; font-size: 0.8125rem; cursor: pointer; }
+.sx-cierre-sel input { width: 1.125rem; height: 1.125rem; margin: 0; }
+
+/* Paginación del tablero (en el navegador, RegistroSeguimiento.js) */
+.sx-tabla-caja .sx-fila.sx-fuera-pagina, .sx-tabla-caja .sx-grupo.sx-fuera-pagina { display: none; }
+.sx-paginador { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.5rem; padding: 0.625rem 1rem; border-top: 1px solid var(--sgv-borde); }
+.sx-paginador[hidden] { display: none; }
+.sx-paginador-texto { margin-right: auto; font-size: 0.875rem; color: var(--sgv-texto-medio); font-variant-numeric: tabular-nums; }
+.sx-paginador .sx-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* Celular: cada viaje es una tarjeta (sin scroll horizontal); la etiqueta de cada dato sale de data-label. */
+@media (max-width: 767.98px) {
+    .sx-tabla-caja { overflow-x: visible; }
+    .sx-tabla-caja table.sx-tablero { min-width: 0; width: 100%; }
+    .sx-tablero thead { display: none; }
+    .sx-tablero, .sx-tablero tbody, .sx-tablero tr, .sx-tablero td { display: block; width: 100%; }
+    .table.sgv-tabla.sx-tablero tbody tr.sx-fila { border-bottom: 1px solid var(--sgv-borde-fuerte); padding: 0.375rem 0; }
+    /* Etiqueta a la izquierda y el dato (.sx-celda) a la derecha en una rejilla: el padding y el borde de la celda los
+       fijan App.css y sgv-base.css (prioridad forzada), así que la etiqueta no depende de ellos. */
+    .table.sgv-tabla.sx-tablero tbody tr.sx-fila td {
+        display: grid; grid-template-columns: 6.25rem minmax(0, 1fr); column-gap: 0.625rem; align-items: start;
+        white-space: normal; overflow-wrap: anywhere;
+    }
+    .sx-tablero tr.sx-fila td::before {
+        content: attr(data-label); font-size: 0.75rem; font-weight: 600; color: var(--sgv-texto-suave); padding-top: 0.125rem;
+    }
+    .sx-tablero .sx-celda { min-width: 0; }
+    .sx-tablero .sx-status, .sx-tablero .sx-avisos, .sx-tablero .sx-fila .sx-avance { max-width: none; min-width: 0; }
+    .sx-tablero .sx-status-texto { overflow-wrap: anywhere; }
+    .table.sgv-tabla.sx-tablero tbody tr.sx-grupo td { display: block; padding: 0.4rem 0.75rem; }
+    .sx-tablero .sx-fila .sx-avisos { flex-direction: column; }
+    .sx-tablero .sx-copiar { min-width: 2.5rem; min-height: 2.5rem; }
+    .sx-tablero .sx-btn-cerrar, .sx-paginador .sx-btn, .sx-cierre .sx-btn { height: 2.75rem; min-width: 2.75rem; }
+    .sx-cierre-sel, .sx-cierre-todos { min-height: 2.5rem; }
+    .sx-cierre-campos > * { flex: 1 1 100%; }
+    .sx-cierre-campos select, .sx-cierre-otro input { min-width: 0; width: 100%; }
+    .sx-paginador { justify-content: space-between; }
+    .sx-paginador-texto { flex: 1 1 100%; margin-right: 0; }
+    .sx-paginador .sx-btn { flex: 1 1 0; justify-content: center; }
+}

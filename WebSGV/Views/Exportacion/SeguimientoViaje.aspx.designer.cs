@@ -20,6 +20,8 @@ namespace WebSGV.Views.Exportacion
         protected global::System.Web.UI.WebControls.Button btnActualizarGps;
         protected global::System.Web.UI.WebControls.Panel pnlMensaje;
         protected global::System.Web.UI.WebControls.Literal litMensaje;
+        protected global::System.Web.UI.WebControls.Panel pnlCierreAdministrativo;
+        protected global::System.Web.UI.WebControls.Literal litCierreAdministrativo;
         protected global::System.Web.UI.WebControls.TextBox txtPedido;
         protected global::System.Web.UI.WebControls.TextBox txtCarreta;
         protected global::System.Web.UI.WebControls.TextBox txtProgramacion;

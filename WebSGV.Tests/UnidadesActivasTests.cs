@@ -60,6 +60,17 @@ namespace WebSGV.Tests
         }
 
         [Fact]
+        public void SinVencidos_ComoLasPestanasDeFaseDelTablero()
+        {
+            var vencido = Viaje("AMQ-859", "AMQ-859", "retorno", 3, id: 1);
+            vencido.Vencido = true;
+            var enCurso = Viaje("BPS-816", null, "carga", 1, id: 2);
+            var activas = UnidadesActivas.DeVitapro(new[] { vencido, enCurso }, Ahora);
+            Assert.Equal(new[] { 2 }, activas.Select(u => u.Viaje.Id).ToArray());
+            Assert.Equal(PestanasSeguimiento.Filtrar(new[] { vencido, enCurso }, "retorno").Count, activas.Count(u => u.Viaje.Fase.Grupo == "retorno"));
+        }
+
+        [Fact]
         public void ProgramadoSinHitos_CuentaPorSuProgramacion()
         {
             var nuevo = Viaje("CBV-854", null, "carga", 0);
