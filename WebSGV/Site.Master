@@ -1,7 +1,7 @@
 ﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.Master.cs" Inherits="WebSGV.SiteMaster" %>
 
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es"<%= AtributosSesion %>>
 <head runat="server">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -20,6 +20,9 @@
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/jquery-3.6.4.min.js") %>"></script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/popper-1.16.1.min.js") %>"></script>
     <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/lib/bootstrap-4.6.2.min.js") %>"></script>
+
+    <!-- Página restaurada con Atrás tras cerrar sesión (bfcache): se comprueba la sesión antes de mostrarla. -->
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/SesionRestaurada.js") %>"></script>
 
     <!-- Estilos para corregir problemas de transparencia -->
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/SiteMaster.css") %>" rel="stylesheet" />

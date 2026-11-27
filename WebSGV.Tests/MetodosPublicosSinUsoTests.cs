@@ -28,6 +28,7 @@ namespace WebSGV.Tests
             { "CspInforme.ashx.cs::CspInforme.ProcessRequest",                     "IHttpHandler: lo llama IIS al pedir CspInforme.ashx" },
             { "Salud.ashx.cs::Salud.ProcessRequest",                               "IHttpHandler: lo llama IIS al pedir Salud.ashx" },
             { "Views/Exportacion/GpsAutomatico.ashx.cs::GpsAutomatico.ProcessRequest", "IHttpHandler: lo llama IIS al pedir GpsAutomatico.ashx" },
+            { "Views/SesionActiva.ashx.cs::SesionActiva.ProcessRequest",           "IHttpHandler: lo llama IIS al pedir SesionActiva.ashx" },
             { "Services/PdfOrdenViajeService.cs::OrdenViajeDocumento.Compose",     "IDocument de QuestPDF: lo llama QuestPDF al generar el PDF" },
             { "Services/Reportes/ReporteTabular.cs::ReporteTabularPdf.Compose",    "IDocument de QuestPDF: lo llama QuestPDF al generar el PDF" },
         };

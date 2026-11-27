@@ -102,6 +102,12 @@ namespace WebSGV.Tests
             new Dictionary<string, (string, string[])>(StringComparer.OrdinalIgnoreCase)
             {
                 {
+                    "Views/SesionActiva.ashx",
+                    ("lo llama SesionRestaurada.js al volver con Atrás (bfcache): sin rol, solo dice 204/401 si la sesión es la del " +
+                     "usuario de la página (SesionRestauradaTests); sesión de solo lectura y sin cuerpo",
+                     new[] { "Cache.SetNoStore()", "Atender(ctx)" })
+                },
+                {
                     "Views/Exportacion/GpsAutomatico.ashx",
                     ("lo llama un cron con la clave X-SGV-Clave, sin sesión; el tablero usa sesión y permiso. " +
                      "ProcessRequest pasa la clave, la sesión y el rol a Atender, que decide (sus ramas: GpsAutomaticoTests, E6-9)",

@@ -328,6 +328,7 @@
     <Content Include="Global.asax" />
     <Content Include="CspInforme.ashx" />
     <Content Include="Salud.ashx" />
+    <Content Include="Views\SesionActiva.ashx" />
     <Content Include="connectionStrings.config" />
     <Content Include="appSettings.Secrets.config" />
     <None Include="connectionStrings.config.example" />
@@ -451,6 +452,7 @@
     <Content Include="Scripts\paginas\ReporteGps.js" />
     <Content Include="Scripts\paginas\SiteMaster-2.js" />
     <Content Include="Scripts\paginas\SiteMaster.js" />
+    <Content Include="Scripts\paginas\SesionRestaurada.js" />
     <Content Include="Views\Auditoria.aspx" />
     <Content Include="Views\DashboardAdminSistema.aspx" />
     <Content Include="Views\EstadoSistema.aspx" />
@@ -594,6 +596,7 @@
     <Compile Include="Helpers\FechaHelper.cs" />
     <Compile Include="Helpers\HashHelper.cs" />
     <Compile Include="Helpers\SesionHelper.cs" />
+    <Compile Include="Helpers\SesionRestauradaHelper.cs" />
     <Compile Include="Helpers\EnvioUnicoHelper.cs" />
     <Compile Include="Helpers\ControlIntentosLogin.cs" />
     <Compile Include="Helpers\CorreoHelper.cs" />
@@ -708,6 +711,9 @@
     <Compile Include="Services\Operacion\InformeCsp.cs" />
     <Compile Include="CspInforme.ashx.cs">
       <DependentUpon>CspInforme.ashx</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SesionActiva.ashx.cs">
+      <DependentUpon>SesionActiva.ashx</DependentUpon>
     </Compile>
     <Compile Include="Salud.ashx.cs">
       <DependentUpon>Salud.ashx</DependentUpon>

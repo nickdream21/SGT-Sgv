@@ -21,6 +21,8 @@ namespace WebSGV
         public bool MuestraMiSeguridad { get; set; }
         /// <summary>Página de inicio del rol actual (logo y enlace "Inicio" del menú).</summary>
         public string UrlInicio { get; set; }
+        /// <summary>Atributos del &lt;html&gt; para SesionRestaurada.js (solo con sesión, en páginas no públicas).</summary>
+        public string AtributosSesion { get; private set; } = "";
 
         /// <summary>Página actual como ruta virtual ("~/Views/X.aspx"), para marcar la opción activa del menú.</summary>
         public string RutaActual => Request.AppRelativeCurrentExecutionFilePath;
@@ -222,6 +224,7 @@ namespace WebSGV
             // Sesión válida: cargar datos del usuario y mostrar navbar
             CargarInformacionUsuario();
             Navbar.Visible = true;
+            AtributosSesion = SesionRestauradaHelper.AtributosHtml(Session);
 
             // Con códigos de recuperación recién generados en pantalla, el modal obligatorio los taparía: se abre
             // cuando el usuario pulsa "Ya los guardé" (recarga sin códigos). Solo en MiSeguridad, como mucho 10 min.

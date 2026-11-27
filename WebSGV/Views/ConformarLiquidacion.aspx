@@ -1,6 +1,6 @@
 <%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ConformarLiquidacion.aspx.cs" Inherits="WebSGV.Views.ConformarLiquidacion" ResponseEncoding="utf-8" %>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es"<%= WebSGV.Helpers.SesionRestauradaHelper.AtributosHtml(Session) %>>
 <head runat="server">
     <meta charset="utf-8" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -13,6 +13,8 @@
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/lib/fontawesome-5.15.4/css/all.min.css") %>" rel="stylesheet" />
 
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/sgv-base.css") %>" rel="stylesheet" />
+    <%-- Página restaurada con Atrás tras cerrar sesión (bfcache): se comprueba la sesión antes de mostrarla. --%>
+    <script src="<%= WebSGV.Helpers.RecursoHelper.Url("~/Scripts/paginas/SesionRestaurada.js") %>"></script>
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/FirmarLiquidacion.css") %>" rel="stylesheet" />
     <link href="<%= WebSGV.Helpers.RecursoHelper.Url("~/Content/paginas/ConformarLiquidacion.css") %>" rel="stylesheet" />
 </head>

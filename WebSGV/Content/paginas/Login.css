@@ -162,3 +162,53 @@ input[type="password"]::-ms-clear {
     font-size: 16px;
     flex-shrink: 0;
 }
+
+/* Celular (< 576 px): logo, título y márgenes más chicos para que "Acceder" se vea sin desplazar,
+   también con el aviso de sesión vencida (406×791 y 360×640). El escritorio no cambia. */
+@media (max-width: 575.98px) {
+    .main-container {
+        margin: 8px auto;
+        padding: 8px 16px;
+    }
+
+    .logo {
+        max-width: 96px;
+        margin-bottom: 6px;
+    }
+
+    .header {
+        font-size: 18px;
+        margin-bottom: 4px;
+    }
+
+    .subheader {
+        font-size: 13px;
+        margin-bottom: 12px;
+    }
+
+    .login-container {
+        padding: 16px;
+    }
+
+    .title {
+        font-size: 20px;
+        margin-bottom: 12px;
+    }
+
+    .form-group {
+        margin-bottom: 12px;
+    }
+
+    .form-group label {
+        margin-bottom: 4px;
+    }
+
+    .login-error {
+        margin-bottom: 12px;
+        padding: 8px 12px;
+    }
+
+    .forgot-password {
+        margin-top: 4px;
+    }
+}
