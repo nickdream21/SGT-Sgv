@@ -642,7 +642,7 @@ namespace WebSGV.Tests
             // Lo que lee FacturasFlete.js sigue en el marcado o en el HTML armado.
             foreach (string clase in new[] { "ff-pestanas", "ff-cuenta", "ff-buscar", "ff-filtro", "ff-contenido", "ff-contador" })
                 Assert.Contains(clase, aspx);
-            Assert.Contains("table class=\\\"table table-sm ff-tabla\\\"", cs);
+            Assert.Contains("table class=\\\"table table-sm ff-tabla sgv-tabla-apilada\\\"", cs);
             Assert.Contains("data-estado=", cs);
             string js = Js("FacturasFlete");
             foreach (string selector in new[] { ".ff-pestanas a[data-pestana=", ".ff-buscar input", ".ff-filtro [data-filtro]", "table.ff-tabla > tbody > tr" })

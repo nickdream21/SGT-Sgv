@@ -68,7 +68,13 @@
     /* "Facturado US$ … y S/ … (n facturas)" no cabe en una línea: en el celular cada parte puede partirse. */
     .ff-pagina .sgv-resumen > span { white-space: normal; }
     .ff-contador { margin-left: 0; }
-    .ff-tabla-wrap { max-height: 70vh; }
+    /* Tablas en tarjetas (M-251, sgv-tabla-apilada): sin scroll propio, cada fila muestra todas sus cifras. */
+    .ff-tabla-wrap { max-height: none; min-height: 0; overflow: visible; }
+    .ff-tabla.sgv-tabla-apilada td.ff-cliente { max-width: none; white-space: normal; }
+    .ff-tabla.sgv-tabla-apilada td.ff-num { text-align: left; }
+    .ff-tabla.sgv-tabla-apilada .ff-col-avisos { min-width: 0; }
+    .ff-tabla.sgv-tabla-apilada tfoot th { position: static; }
+    .ff-tabla.sgv-tabla-apilada tfoot th.ff-num { text-align: left; }
 }
 .ff-avisos li.ff-aviso-info { color: var(--sgv-texto-suave); list-style: none; margin-left: -1rem; }
 /* Desde y Hasta: con IBM Plex el año del campo de fecha se cortaba a 1366 px (col-xl-2); ancho propio. */

@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-121 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-122 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -124,6 +124,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-090** Validación de E5-20a con casos que hoy no hay — (1) en RegistroDespacho, "Agregar" vacío en el paso de agregar conductor de un lote (grupo `AgregarConductor`): `ddlConductor`, `ddlPlacaTracto` y `ddlPlacaCarreta` con su select2 en rojo y el mensaje debajo; (2) modal Editar de un tracto **sin historial** (placa editable): vaciarla con el teclado y Guardar, sin envío; (3) alta de un tracto con placa con espacios (" ABC 123"), que se guarda normalizada; (4) en un celular real, el mensaje junto al campo con el teclado abierto en el alta de un catálogo; (5) en el Edge de la oficina, si el navegador rellena solo "Contraseña actual" al abrir el modal Cambiar contraseña (en un perfil nuevo de Edge sin ventana lo hizo, con la clave guardada en el login), que es lo que `tplCamposContrasena` busca evitar. Con un `sgvEnsayo_*` o con el usuario lo que escribe. · C
 - [ ] **P-074** Anchos que cambiaron con los puntos de corte de E5-13 — las reglas de celular pasaron de `max-width: 768px/576px/992px` a `767.98/575.98/991.98px` (cambia solo exactamente a 768, 576 y 992 px, donde ahora coinciden con la rejilla de Bootstrap) y las de 480, 520 y 560 px a 575.98 px (cambia entre 481 y 575 px): con el ancho exacto, mirar Login, Inicio, Auditoría, ReportesOrdenesViaje, ListaDespachos, RegistroDespacho y LiquidacionesPendientes a 768 px (tablet vertical), y MiSeguridad, SegundoFactor, FirmarLiquidacion, DashboardExportacion y SeguimientoExportacion a 540 px: sin desbordes ni cortes. Además, en RegistroDespacho los 8 desplegables con `custom-select-sm` (Sección del Word, Cliente y Planta de programar e importar, Completa el despacho, Planta de descarga) quedan de 31 px como los campos de su fila. · C
 - [ ] **P-121** Seguimiento en el celular real tras publicar M-248/M-249 — en local ya medido en un Redmi (tablero 6 328 px, "Ver más", paginador arriba y abajo, hitos de 28 px). Falta en el sitio publicado: pestaña Vencidos con un vencido real (casilla de "Marcar los de esta página" cuadrada y etiquetas de 44 px, sin confirmar el cierre) y girar el celular en SeguimientoViaje (vertical→horizontal→vertical redibuja los hitos sin duplicarlos). · C
+- [ ] **P-122** Tablas apiladas en el sitio publicado y celular real (M-250/M-251) — Bandeja "Por camión": tocar el PDF de una guía del remitente y que abra (en local dan 404 porque los archivos no están en esta máquina); EditarLote cambiando el tipo de operación sin guardar; FacturasFlete tras "Leer y registrar" una factura (la tabla del resultado también va apilada, no probada). · B
 
 ## Reglas
 

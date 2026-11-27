@@ -994,3 +994,61 @@ a.badge-primary:hover, a.badge-info:hover { background-color: var(--sgv-info-bor
 .select2-container.select2-container--default .select2-results__option[aria-selected=true] { background-color: var(--sgv-fondo-pagina); color: var(--sgv-texto); }
 .select2-container.select2-container--default .select2-results__option--highlighted[aria-selected] { background-color: var(--sgv-primario); color: var(--sgv-blanco); }
 .select2-container.select2-container--default .select2-results__message { color: var(--sgv-texto-suave); }
+
+/* === Tabla en tarjetas en el celular (M-251) ===
+   <table class="table ... sgv-tabla-apilada"> con cada <td data-label="Título de su columna">: a < 768 px cada fila
+   es una tarjeta y cada celda una línea "título | valor", sin desplazamiento lateral. Un td sin data-label (mensaje
+   vacío, colspan) ocupa la tarjeta entera. El ::before abarca varias filas de la rejilla para que el texto suelto y
+   los elementos de la celda (que la rejilla trata como piezas separadas) vayan todos a la columna del valor; 99 filas
+   alcanzan para unas 49 líneas separadas por <br> y, si una celda tuviera más, lo que sobra baja bajo el título (se
+   sigue viendo, sin desplazamiento lateral). Las filas vacías de la rejilla miden 0. Sin relleno abajo en la fila: el
+   borde de la última celda (App.css, con !important) y el de la tarjeta quedan juntos, como una sola raya.
+   En un GridView la cabecera debe ir en thead (HeaderRow.TableSection = TableHeader). Sin !important: un filtro de
+   página (p. ej. .ff-tabla tr.ff-oculta) sigue ganando por especificidad. */
+@media (max-width: 767.98px) {
+    .sgv-tabla-apilada { display: block; width: 100%; }
+    .sgv-tabla-apilada > thead { display: none; }
+    .sgv-tabla-apilada > tbody,
+    .sgv-tabla-apilada > tfoot { display: block; width: 100%; }
+    .sgv-tabla-apilada > tbody > tr,
+    .sgv-tabla-apilada > tfoot > tr {
+        display: block;
+        padding: 0.375rem 0 0;
+        border-bottom: 1px solid var(--sgv-borde-fuerte);
+    }
+    .sgv-tabla-apilada > tbody > tr > td,
+    .sgv-tabla-apilada > tfoot > tr > th {
+        display: block;
+        min-width: 0;
+        max-width: none;
+        border-top: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+    .sgv-tabla-apilada > tbody > tr > td[data-label] {
+        display: grid;
+        grid-template-columns: 7.5rem minmax(0, 1fr);
+        column-gap: 0.5rem;
+        align-items: start;
+        justify-items: start;
+    }
+    .sgv-tabla-apilada > tbody > tr > td[data-label]::before {
+        content: attr(data-label);
+        grid-column: 1;
+        grid-row: 1 / span 99;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.6;
+        color: var(--sgv-texto-suave);
+        white-space: normal;
+        overflow-wrap: normal;
+    }
+    .sgv-tabla-apilada > tbody > tr > td[data-label] > * { grid-column: 2; }
+    .sgv-tabla-apilada > tfoot > tr > th:empty { display: none; }
+    /* Un combo o una caja de texto usa todo el ancho de la tarjeta, con su título encima. */
+    .sgv-tabla-apilada > tbody > tr > td[data-label]:has(> select, > .select2-container, > input, > textarea) { display: block; }
+    .sgv-tabla-apilada > tbody > tr > td[data-label]:has(> select, > .select2-container, > input, > textarea)::before {
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+}

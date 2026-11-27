@@ -47,3 +47,6 @@
 }
 
 .lac-pie:has(#lblMostrando:empty):has(#paginadorLiquidaciones:empty) { display: none; }
+
+/* Sin resultados (M-251): el mensaje queda a la vista aunque la tabla sea más ancha que la pantalla. */
+.lac-vacio { position: sticky; left: 0; max-width: calc(100vw - 2rem); }

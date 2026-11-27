@@ -238,6 +238,20 @@ namespace WebSGV.Views
             _conductoresLoteCache = null;
         }
 
+        /// <summary>
+        /// Tarjetas en el celular (M-251, sgv-tabla-apilada): la cabecera va en thead (se oculta a &lt; 768 px) y cada
+        /// celda lleva el título de su columna en data-label. En PreRender y no en RowDataBound porque la grilla solo
+        /// se enlaza en la primera carga y un postback parcial la vuelve a pintar sin esos atributos.
+        /// </summary>
+        protected void gvConductoresLote_PreRender(object sender, EventArgs e)
+        {
+            if (gvConductoresLote.HeaderRow != null)
+                gvConductoresLote.HeaderRow.TableSection = TableRowSection.TableHeader;
+            foreach (GridViewRow fila in gvConductoresLote.Rows)
+                for (int i = 0; i < fila.Cells.Count && i < gvConductoresLote.Columns.Count; i++)
+                    fila.Cells[i].Attributes["data-label"] = gvConductoresLote.Columns[i].HeaderText;
+        }
+
         protected void gvConductoresLote_RowDataBound(object sender, GridViewRowEventArgs e)
         {
             if (e.Row.RowType != DataControlRowType.DataRow) return;

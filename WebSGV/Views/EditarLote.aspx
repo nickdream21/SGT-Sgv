@@ -221,10 +221,11 @@
                                     <p class="form-text mb-2">Puede cambiar el conductor de cada despacho por separado. Los cambios se aplican al guardar.</p>
                                     <div class="table-responsive">
                                         <asp:GridView ID="gvConductoresLote" runat="server"
-                                            CssClass="table sgv-tabla mb-0"
+                                            CssClass="table sgv-tabla sgv-tabla-apilada mb-0"
                                             AutoGenerateColumns="false"
                                             DataKeyNames="IdDespacho"
                                             OnRowDataBound="gvConductoresLote_RowDataBound"
+                                            OnPreRender="gvConductoresLote_PreRender"
                                             EmptyDataText="Este lote no tiene despachos."
                                             GridLines="None" CellSpacing="-1">
                                             <EmptyDataRowStyle CssClass="sgv-vacio" />

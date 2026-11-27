@@ -140,3 +140,14 @@
 .bd-exp-celda { white-space: nowrap; }
 .bd-exp-pdf { font-size: .8rem; margin-left: .35rem; white-space: nowrap; }
 .bd-exp-sinpdf { font-size: .75rem; color: var(--sgv-alerta); margin-left: .35rem; }
+
+/* Celular (M-250): el PDF de cada documento es un botón de 44 × 40 px y la celda de "Por camión" se parte en
+   líneas (la tabla va en tarjetas con sgv-tabla-apilada). */
+@media (max-width: 767.98px) {
+    .bd-exp-pdf { display: inline-flex; align-items: center; justify-content: center; min-width: 2.75rem; min-height: 2.5rem;
+                  padding: 0 .75rem; border: 1px solid var(--sgv-borde-fuerte); border-radius: var(--sgv-radio); font-size: .875rem; }
+    .bd-exp-celda { white-space: normal; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .5rem; }
+    /* La lista por cliente también va en tarjetas (M-251): sin el ancho mínimo de 760 px. */
+    .bd-tabla-tablero.sgv-tabla-apilada { min-width: 0; }
+    .bd-tabla-tablero.sgv-tabla-apilada td:nth-child(3) { white-space: normal; overflow: visible; }
+}

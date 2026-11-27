@@ -661,7 +661,7 @@ namespace WebSGV.Views
                 int pendientes = cliente.Count(x => !EstadoDocumental.DeLote(x).Completo);
                 sb.Append($"<div class='bd-cliente'><div class='bd-cliente-titulo'>{H(cliente.Key)}")
                   .Append($"<span class='bd-cliente-cuenta'>{cliente.Count()} lote(s){(pendientes > 0 ? $" &#xB7; {pendientes} con pendientes" : "")}</span></div>")
-                  .Append("<div class='table-responsive'><table class='table table-sm bd-tabla bd-tabla-tablero'><thead><tr>")
+                  .Append("<div class='table-responsive'><table class='table table-sm bd-tabla bd-tabla-tablero sgv-tabla-apilada'><thead><tr>")
                   .Append("<th>Carga</th><th>Pedido</th><th>Planta</th><th class='bd-num'>Unid.</th><th>Documentos</th><th>Antig&#xFC;edad</th><th></th></tr></thead><tbody>");
                 foreach (var lote in cliente)
                 {
@@ -669,12 +669,12 @@ namespace WebSGV.Views
                     bool atrasado = e.Atrasado(lote.FechaProgramacion, hoy);
                     string url = UrlExpediente(lote.IdLoteVirtual);
                     sb.Append(atrasado ? "<tr class='bd-fila-atrasada'>" : "<tr>")
-                      .Append($"<td class='bd-cod'>{lote.FechaProgramacion:dd/MM/yyyy}</td>")
-                      .Append($"<td class='bd-cod'>{H(string.IsNullOrEmpty(lote.NumeroPedido) ? "—" : lote.NumeroPedido)}</td>")
-                      .Append($"<td>{H(lote.PlantaOperacion)}</td>")
-                      .Append($"<td class='bd-num'>{e.Despachos}</td>")
-                      .Append($"<td class='bd-docs'>{ChipsDocumentos(lote, e)}</td>")
-                      .Append($"<td>{(atrasado ? EstadoUiHelper.Sello(e.Antiguedad(lote.FechaProgramacion, hoy), TonoEstado.Peligro) : H(e.Antiguedad(lote.FechaProgramacion, hoy)))}</td>")
+                      .Append($"<td class='bd-cod' data-label='Carga'>{lote.FechaProgramacion:dd/MM/yyyy}</td>")
+                      .Append($"<td class='bd-cod' data-label='Pedido'>{H(string.IsNullOrEmpty(lote.NumeroPedido) ? "—" : lote.NumeroPedido)}</td>")
+                      .Append($"<td data-label='Planta'>{H(lote.PlantaOperacion)}</td>")
+                      .Append($"<td class='bd-num' data-label='Unid.'>{e.Despachos}</td>")
+                      .Append($"<td class='bd-docs' data-label='Documentos'>{ChipsDocumentos(lote, e)}</td>")
+                      .Append($"<td data-label='Antigüedad'>{(atrasado ? EstadoUiHelper.Sello(e.Antiguedad(lote.FechaProgramacion, hoy), TonoEstado.Peligro) : H(e.Antiguedad(lote.FechaProgramacion, hoy)))}</td>")
                       .Append($"<td class='text-right'><a class='btn btn-outline-primary btn-sm' href='{H(url)}'>Abrir</a></td></tr>");
                 }
                 sb.Append("</tbody></table></div></div>");
@@ -794,7 +794,7 @@ namespace WebSGV.Views
             bool conGre = e.Filas.Any(f => f.EsperaGre || f.GreTransportista.Numero != null);
             bool conMci = e.Filas.Concat(e.DescargasSueltas).Any(f => f.EsperaManifiesto);
             sb.Append("<h6 class='bd-exp-subtitulo'>Por camión</h6>")
-              .Append("<div class='table-responsive'><table class='table table-sm bd-tabla bd-exp-tabla'><thead><tr>")
+              .Append("<div class='table-responsive'><table class='table table-sm bd-tabla bd-exp-tabla sgv-tabla-apilada'><thead><tr>")
               .Append("<th>Carga</th><th>Chofer y unidad</th>");
             if (conGuiaRem) sb.Append("<th>Guía del remitente</th>");
             if (conGre) sb.Append("<th>GRE transportista</th>");
@@ -804,13 +804,13 @@ namespace WebSGV.Views
             {
                 bool suelta = e.DescargasSueltas.Contains(f);
                 sb.Append("<tr>")
-                  .Append($"<td class='bd-cod'>{f.Fecha:dd/MM/yyyy}{(suelta ? "<div class='small text-muted'>descarga</div>" : "")}</td>")
-                  .Append($"<td>{H(f.Conductor)}<div class='small text-muted bd-cod'>{H(f.Tracto)} / {H(f.Carreta)}</div></td>");
-                if (conGuiaRem) sb.Append("<td>").Append(string.Concat(f.GuiasRemitente.Select(Celda))).Append("</td>");
-                if (conGre) sb.Append("<td>").Append(Celda(f.GreTransportista)).Append("</td>");
+                  .Append($"<td class='bd-cod' data-label='Carga'>{f.Fecha:dd/MM/yyyy}{(suelta ? "<div class='small text-muted'>descarga</div>" : "")}</td>")
+                  .Append($"<td data-label='Chofer y unidad'>{H(f.Conductor)}<div class='small text-muted bd-cod'>{H(f.Tracto)} / {H(f.Carreta)}</div></td>");
+                if (conGuiaRem) sb.Append("<td data-label='Guía del remitente'>").Append(string.Concat(f.GuiasRemitente.Select(Celda))).Append("</td>");
+                if (conGre) sb.Append("<td data-label='GRE transportista'>").Append(Celda(f.GreTransportista)).Append("</td>");
                 if (conMci)
                 {
-                    sb.Append("<td>");
+                    sb.Append("<td data-label='Descarga y MCI'>");
                     if (f.IdDescarga.HasValue && (f.TractoDescarga != f.Tracto || f.ConductorDescarga != f.Conductor))
                         sb.Append($"<div class='small text-muted'>Descarga: {H(f.ConductorDescarga)} &#xB7; <span class='bd-cod'>{H(f.TractoDescarga)}</span></div>");
                     sb.Append(f.EsperaManifiesto ? string.Concat(f.Manifiestos.Select(m => Celda(m, "MCI "))) : "<span class='text-muted'>—</span>");
@@ -852,7 +852,7 @@ namespace WebSGV.Views
                 sb.Append($"<div class='bd-cod bd-exp-doc-numero'>{H(f.Numero)}</div>")
                   .Append($"<div class='small text-muted'>{f.FechaEmision:dd/MM/yyyy} &#xB7; {H(monto)}</div>");
                 if (f.RutaPdf != null)
-                    sb.Append($"<a class='bd-exp-pdf' target='_blank' rel='noopener' href='{H(DocumentoHelper.UrlDescarga(f.RutaPdf))}'>PDF</a> ");
+                    sb.Append($"<a class='bd-exp-pdf' target='_blank' rel='noopener' href='{H(DocumentoHelper.UrlDescarga(f.RutaPdf))}' aria-label='PDF de la factura de flete {H(f.Numero)}'>PDF</a> ");
                 sb.Append($"<a class='small ml-2' href='{H(url + "?mes=" + f.FechaEmision.ToString("yyyy-MM"))}' title='Conciliación del mes de emisión'>Ver en Facturas de flete</a>");
             }
             return sb.Append("</div>").ToString();
@@ -871,7 +871,7 @@ namespace WebSGV.Views
         private string EnlacePdf(DocumentoExpediente d)
         {
             if (d.RutaPdf != null)
-                return $"<a class='bd-exp-pdf' target='_blank' rel='noopener' href='{H(DocumentoHelper.UrlDescarga(d.RutaPdf))}' title='{H(d.NombrePdf)}'>PDF</a>";
+                return $"<a class='bd-exp-pdf' target='_blank' rel='noopener' href='{H(DocumentoHelper.UrlDescarga(d.RutaPdf))}' title='{H(d.NombrePdf)}' aria-label='PDF {H(d.Numero ?? d.NombrePdf)}'>PDF</a>";
             if (d.Numero == null) return "";
             // Un documento que este cliente no manda (la guía del remitente de un tercero: solo viene su número
             // en nuestra GRE) no es un pendiente: decía "sin PDF" en ámbar bajo "Documentación completa".

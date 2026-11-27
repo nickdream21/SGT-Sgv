@@ -260,11 +260,11 @@ function buscarLiquidaciones(forzarManual, pagina, filtrosGuardados) {
         success: function (response) {
             var r = response && response.d ? response.d : null;
             if (!r) {
-                limpiarResultados('<tr><td colspan="6" class="text-center text-danger py-4">Error al obtener liquidaciones.</td></tr>');
+                limpiarResultados('<tr><td colspan="6"><div class="sgv-vacio lac-vacio text-danger">Error al obtener liquidaciones.</div></td></tr>');
                 return;
             }
             if (r.Mensaje) {
-                limpiarResultados('<tr><td colspan="6" class="text-center text-danger py-4">' + SGV.escaparHtml(r.Mensaje) + '</td></tr>');
+                limpiarResultados('<tr><td colspan="6"><div class="sgv-vacio lac-vacio text-danger">' + SGV.escaparHtml(r.Mensaje) + '</div></td></tr>');
                 return;
             }
 
@@ -278,7 +278,7 @@ function buscarLiquidaciones(forzarManual, pagina, filtrosGuardados) {
             _paginaActual = r.Pagina || 0;
 
             if (!data.length) {
-                limpiarResultados('<tr><td colspan="6" class="text-center text-muted py-4">No se encontraron liquidaciones aprobadas.</td></tr>');
+                limpiarResultados('<tr><td colspan="6"><div class="sgv-vacio lac-vacio">No se encontraron liquidaciones aprobadas.</div></td></tr>');
                 $('#lblMostrando').text('Mostrando 0 de 0');
                 return;
             }
@@ -307,7 +307,7 @@ function buscarLiquidaciones(forzarManual, pagina, filtrosGuardados) {
             $('#tbodyLiquidaciones').html(html);
         },
         error: function () {
-            limpiarResultados('<tr><td colspan="6" class="text-center text-danger py-4">Error al obtener liquidaciones.</td></tr>');
+            limpiarResultados('<tr><td colspan="6"><div class="sgv-vacio lac-vacio text-danger">Error al obtener liquidaciones.</div></td></tr>');
         }
     });
 }
