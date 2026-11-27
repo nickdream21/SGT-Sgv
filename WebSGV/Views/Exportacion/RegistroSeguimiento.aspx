@@ -163,6 +163,12 @@
         </asp:Panel>
 
         <div class="sgv-panel sx-tabla-caja">
+            <%-- El mismo paginador arriba de la tabla, solo en el celular (CSS); el aviso para el lector de pantalla queda en el de abajo. --%>
+            <nav class="sx-paginador sx-paginador-arriba" aria-label="Páginas del tablero (arriba)" hidden>
+                <span class="sx-paginador-texto"></span>
+                <button type="button" class="sx-btn" data-pagina="anterior">Anterior</button>
+                <button type="button" class="sx-btn" data-pagina="siguiente">Siguiente</button>
+            </nav>
             <table class="table sgv-tabla sx-tablero">
                 <thead>
                     <tr><th>Pedido / carreta</th><th>Carga</th><th>Descarga</th><th>Fase y avance</th><th>STATUS y último hito</th><th>Pendiente</th></tr>
@@ -215,8 +221,8 @@
             <%-- Paginación en el navegador (RegistroSeguimiento.js): 25 viajes por página sin partir un pedido; solo con más de 25. --%>
             <nav class="sx-paginador" id="sxPaginador" aria-label="Páginas del tablero" hidden>
                 <span class="sx-paginador-texto" id="sxPaginadorTexto" role="status"></span>
-                <button type="button" class="sx-btn" id="sxPaginaAnterior">Anterior</button>
-                <button type="button" class="sx-btn" id="sxPaginaSiguiente">Siguiente</button>
+                <button type="button" class="sx-btn" id="sxPaginaAnterior" data-pagina="anterior">Anterior</button>
+                <button type="button" class="sx-btn" id="sxPaginaSiguiente" data-pagina="siguiente">Siguiente</button>
             </nav>
             <asp:Panel ID="pnlVacio" runat="server" Visible="false" CssClass="sgv-vacio">
                 No hay viajes en esta fase con los filtros elegidos.

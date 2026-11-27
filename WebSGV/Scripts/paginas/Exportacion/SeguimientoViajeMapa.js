@@ -232,8 +232,34 @@
     var cursor = null;
     function pct(t) { return (t - tMin) / Math.max(1, tMax - tMin) * 100; }
 
+    // Fila de cada hito (0, 1, 2…) para que dos hitos de la misma fila queden al menos a `separacion` px:
+    // cada uno va a la primera fila donde no toca a ninguno de los ya puestos (reparto voraz), sin pasar de
+    // `maxFilas`: si no cabe en ninguna, va a la fila donde su vecino más cercano queda más lejos. Pura, sin DOM.
+    function nivelesHitos(xs, separacion, maxFilas) {
+        var filas = [], tope = Math.max(1, maxFilas || Infinity);
+        function holgura(n, x) {
+            return (filas[n] || []).reduce(function (m, y) { return Math.min(m, Math.abs(x - y)); }, Infinity);
+        }
+        return xs.map(function (x) {
+            var mejor = 0;
+            for (var n = 0; n < tope; n++) {
+                if (holgura(n, x) >= separacion) { mejor = n; break; }
+                if (holgura(n, x) > holgura(mejor, x)) mejor = n;
+            }
+            (filas[mejor] = filas[mejor] || []).push(x);
+            return mejor;
+        });
+    }
+    // Hitos que se montan bajan a otra fila (hasta 3): en el celular miden 28 px (filas cada 30 px, carril de 32),
+    // en escritorio 22 px (cada 24 px, carril de 26). Un viaje sin hitos cercanos queda en una fila, como antes.
+    var celular = window.matchMedia ? window.matchMedia('(max-width: 767.98px)') : null;
+    var FILAS_HITOS = 3, anchoDibujado = 0;
+
     function dibujarLinea() {
         pista.innerHTML = ''; dias.innerHTML = '';
+        var enCelular = !!(celular && celular.matches), ancho = pista.clientWidth;
+        var separacion = enCelular ? 30 : 24, altoCarril = enCelular ? 32 : 26;
+        anchoDibujado = ancho;
         tramos.forEach(function (tr) {
             var carril = document.createElement('div');
             carril.className = 'sx-carril sx-carril-' + tr.clave;
@@ -251,10 +277,14 @@
                 b.title = 'Parada de ' + duracion(pa.hasta - pa.desde) + ' · ' + horaLima.format(new Date(pa.desde)) + ' → ' + horaLima.format(new Date(pa.hasta));
                 carril.appendChild(b);
             });
+            var niveles = nivelesHitos(tr.hitos.map(function (h) { return pct(h.t) / 100 * ancho; }), separacion, FILAS_HITOS);
+            var filasExtra = niveles.length ? Math.max.apply(null, niveles) : 0;
+            if (filasExtra) carril.style.height = (altoCarril + filasExtra * separacion) + 'px';
             tr.hitos.forEach(function (h, i) {
                 var b = document.createElement('button');
                 b.type = 'button'; b.className = 'sx-carril-hito';
                 b.style.left = pct(h.t) + '%'; b.textContent = i + 1;
+                if (niveles[i]) b.style.top = (2 + niveles[i] * separacion) + 'px';
                 b.title = (i + 1) + '. ' + h.nombre + ' · ' + horaLima.format(new Date(h.t));
                 b.setAttribute('aria-label', b.title);
                 b.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
@@ -268,18 +298,37 @@
         });
         cursor = document.createElement('span');
         cursor.className = 'sx-carril-cursor';
+        if (tActual) cursor.style.left = pct(tActual) + '%';   // al redibujar, el cursor sigue en su momento
         pista.appendChild(cursor);
 
-        // Marcas de cada medianoche (hora de Perú, UTC-5).
+        // Marcas de cada medianoche (hora de Perú, UTC-5): hasta 10, y menos si la pista es angosta (una cada 56 px).
         var DIA = 86400000, LIMA = 5 * 3600000;
-        var saltar = Math.max(1, Math.ceil((tMax - tMin) / DIA / 10));
+        var etiquetas = Math.max(1, Math.min(10, Math.floor(ancho / 56)));
+        var saltar = Math.max(1, Math.ceil((tMax - tMin) / DIA / etiquetas));
         for (var k = Math.ceil((tMin - LIMA) / DIA), n = 0; k * DIA + LIMA <= tMax; k++, n++) {
             if (n % saltar) continue;
             var m = document.createElement('span');
-            m.style.left = pct(k * DIA + LIMA) + '%';
+            var p = pct(k * DIA + LIMA);
+            m.style.left = p + '%';
+            if (p > 85) m.className = 'sx-dia-fin';
             m.textContent = horaLima.format(new Date(k * DIA + LIMA)).slice(0, 5);
             dias.appendChild(m);
         }
+    }
+
+    // Al girar el celular o cambiar el ancho, la línea se vuelve a repartir (las filas de hitos dependen del ancho).
+    var esperaRedibujo = 0;
+    function redibujarLinea() {
+        clearTimeout(esperaRedibujo);
+        // Solo si cambió el ancho de la pista: la barra de direcciones de Chrome Android dispara resize al desplazarse.
+        esperaRedibujo = setTimeout(function () {
+            if (!linea.hidden && tramos.length && pista.clientWidth !== anchoDibujado) dibujarLinea();
+        }, 200);
+    }
+    window.addEventListener('resize', redibujarLinea);
+    if (celular) {
+        if (celular.addEventListener) celular.addEventListener('change', redibujarLinea);
+        else if (celular.addListener) celular.addListener(redibujarLinea);
     }
 
     function buscarEnPista(e) {

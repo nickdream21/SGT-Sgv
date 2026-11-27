@@ -152,6 +152,24 @@
         function plano(t) { return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
         filas.forEach(function (tr) { tr._texto = plano(tr.textContent); });
 
+        // "Ver más" de la tarjeta compacta del celular (<576 px, CSS): muestra Carga, Descarga y STATUS de esa fila.
+        // Se agrega después de guardar el texto de búsqueda, para que buscar "ver" no encuentre todas las filas.
+        filas.forEach(function (tr) {
+            var celda = tr.cells[0] && tr.cells[0].querySelector('.sx-celda');
+            if (!celda) return;
+            var ver = document.createElement('button');
+            ver.type = 'button';
+            ver.className = 'sx-btn sx-ver-mas';
+            ver.setAttribute('aria-expanded', 'false');
+            ver.textContent = 'Ver más';
+            // Para el lector de pantalla, de qué viaje es (todas las tarjetas dicen "Ver más").
+            var carreta = celda.querySelector('.sx-sub .sx-mono');
+            ver.dataset.viaje = (tr.dataset.pedido ? 'del pedido ' + tr.dataset.pedido : 'sin pedido') +
+                (carreta && carreta.textContent.trim() ? ', carreta ' + carreta.textContent.trim() : '');
+            ver.setAttribute('aria-label', 'Ver más ' + ver.dataset.viaje);
+            celda.appendChild(ver);
+        });
+
         var caja = document.getElementById(SGV.txtBuscar), cuenta = document.getElementById('sxFiltroCuenta');
         function aplicar() {
             var palabras = caja ? plano(caja.value).split(/\s+/).filter(Boolean) : [], visibles = 0;
@@ -178,9 +196,9 @@
         // Paginación: POR_PAGINA viajes por página sin partir un pedido (un grupo más grande que la página va solo).
         // Pagina lo que deja la búsqueda; las filas de otra página se ocultan con una clase y no con [hidden], así
         // "Copiar STATUS" sigue copiando todas las de la pestaña. Cambiar de pestaña recarga y vuelve a la página 1.
+        // Hay dos paginadores (.sx-paginador): el de abajo y uno arriba de la tabla que solo se ve en el celular.
         var POR_PAGINA = 25, pagina = 0, paginas = [];
-        var nav = document.getElementById('sxPaginador'), textoNav = document.getElementById('sxPaginadorTexto'),
-            anterior = document.getElementById('sxPaginaAnterior'), siguiente = document.getElementById('sxPaginaSiguiente');
+        var navs = Array.prototype.slice.call(document.querySelectorAll('.sx-paginador'));
         function paginar() {
             paginarSinMarcar();
             if (SGV.cierreVencidos) SGV.cierreVencidos.contarVencidosMarcados();
@@ -205,24 +223,38 @@
                 g.cab.classList.toggle('sx-fuera-pagina', fuera);
                 g.filas.forEach(function (tr) { tr.classList.toggle('sx-fuera-pagina', fuera); });
             });
-            if (!nav) return;
-            nav.hidden = !hayPaginas;
-            if (!hayPaginas) return;
-            var inicio = 0;
-            for (var i = 0; i < pagina; i++) inicio += paginas[i].n;
-            var fin = inicio + paginas[pagina].n;
-            textoNav.textContent = (fin === inicio + 1 ? fin : (inicio + 1) + '–' + fin) + ' de ' + total;
-            anterior.disabled = pagina === 0;
-            siguiente.disabled = pagina >= paginas.length - 1;
+            var texto = '';
+            if (hayPaginas) {
+                var inicio = 0;
+                for (var i = 0; i < pagina; i++) inicio += paginas[i].n;
+                var fin = inicio + paginas[pagina].n;
+                texto = (fin === inicio + 1 ? fin : (inicio + 1) + '–' + fin) + ' de ' + total;
+            }
+            navs.forEach(function (nav) {
+                nav.hidden = !hayPaginas;
+                if (!hayPaginas) return;
+                var textoNav = nav.querySelector('.sx-paginador-texto'),
+                    anterior = nav.querySelector('[data-pagina="anterior"]'), siguiente = nav.querySelector('[data-pagina="siguiente"]');
+                if (textoNav) textoNav.textContent = texto;
+                if (anterior) anterior.disabled = pagina === 0;
+                if (siguiente) siguiente.disabled = pagina >= paginas.length - 1;
+            });
         }
+        // Al cambiar de página (desde arriba o desde abajo) se vuelve al inicio del tablero.
         function irA(nueva) {
             pagina = nueva;
             paginar();
             var tabs = document.querySelector('.sgv-tabs');
             if (tabs && tabs.scrollIntoView) tabs.scrollIntoView({ block: 'start' });
         }
-        if (anterior) anterior.addEventListener('click', function () { if (pagina > 0) irA(pagina - 1); });
-        if (siguiente) siguiente.addEventListener('click', function () { if (pagina < paginas.length - 1) irA(pagina + 1); });
+        navs.forEach(function (nav) {
+            nav.addEventListener('click', function (e) {
+                var b = e.target.closest('[data-pagina]');
+                if (!b || b.disabled) return;
+                if (b.getAttribute('data-pagina') === 'anterior') { if (pagina > 0) irA(pagina - 1); }
+                else if (pagina < paginas.length - 1) irA(pagina + 1);
+            });
+        });
 
         aplicar();
         paginar();
@@ -270,6 +302,16 @@
     }, true);
 
     document.addEventListener('click', function (e) {
+        var verMas = e.target.closest('.sx-ver-mas');
+        if (verMas) {
+            var fila = verMas.closest('tr.sx-fila');
+            if (!fila) return;
+            var abierta = fila.classList.toggle('sx-abierta');
+            verMas.setAttribute('aria-expanded', abierta ? 'true' : 'false');
+            verMas.textContent = abierta ? 'Ver menos' : 'Ver más';
+            verMas.setAttribute('aria-label', verMas.textContent + ' ' + (verMas.dataset.viaje || ''));
+            return;
+        }
         var uno = e.target.closest('[data-copiar]');
         if (uno) {
             var celda = uno.closest('.sx-status');

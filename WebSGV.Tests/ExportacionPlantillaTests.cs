@@ -145,6 +145,103 @@ namespace WebSGV.Tests
             Assert.DoesNotContain(".sx-avance-barra > span", css);
         }
 
+        /// <summary>Cuerpos de los bloques «@media (condicion) { … }» de la hoja (con llaves balanceadas).</summary>
+        private static System.Collections.Generic.List<string> BloquesMedia(string css, string condicion)
+        {
+            var bloques = new System.Collections.Generic.List<string>();
+            string apertura = "@media (" + condicion + ") {";
+            for (int i = css.IndexOf(apertura, StringComparison.Ordinal); i >= 0; i = css.IndexOf(apertura, i + 1, StringComparison.Ordinal))
+            {
+                int inicio = i + apertura.Length, nivel = 1, k = inicio;
+                for (; k < css.Length && nivel > 0; k++)
+                {
+                    if (css[k] == '{') nivel++;
+                    else if (css[k] == '}') nivel--;
+                }
+                bloques.Add(css.Substring(inicio, k - inicio - 1));
+            }
+            return bloques;
+        }
+
+        [Fact]
+        public void RS4_TarjetaCompactaConVerMasYPaginadorArriba()
+        {
+            // M-248: a <576 px la tarjeta muestra pedido/carreta, fase con avance y pendiente; Carga, Descarga y STATUS
+            // (columnas 2, 3 y 5) salen con "Ver más" (.sx-abierta). Fuera de esa media el botón no se ve.
+            string css = Css("Exportacion/SeguimientoExportacion");
+            string compacta = BloquesMedia(css, "max-width: 575.98px").SingleOrDefault(b => b.Contains("sx-abierta"));
+            Assert.NotNull(compacta);
+            foreach (int n in new[] { 2, 3, 5 })
+                Assert.Contains("tr.sx-fila:not(.sx-abierta) td:nth-child(" + n + ")", compacta);
+            Assert.DoesNotContain("td:nth-child(4)", compacta);
+            Assert.Contains(".sx-ver-mas { display: inline-flex; height: 2.75rem; }", compacta);
+            int ocultoBase = css.IndexOf(".sx-ver-mas { display: none; }", StringComparison.Ordinal);
+            Assert.True(ocultoBase >= 0, "Falta .sx-ver-mas { display: none; } fuera de la media");
+            Assert.True(ocultoBase < css.IndexOf(compacta, StringComparison.Ordinal), "El display: none del botón tiene que ir antes de la media de 575.98px");
+            Assert.Contains("@media (min-width: 768px) { .sx-paginador-arriba { display: none; } }", css);
+
+            // Dos paginadores (arriba y abajo); solo el de abajo anuncia el cambio con role="status".
+            string aspx = Aspx("Exportacion/RegistroSeguimiento");
+            Assert.Equal(2, Regex.Matches(aspx, @"<nav class=""sx-paginador[ ""]").Count);
+            Assert.Single(Regex.Matches(aspx, @"<nav class=""sx-paginador sx-paginador-arriba""").Cast<Match>());
+            Assert.Single(Regex.Matches(Regex.Match(aspx, @"<nav class=""sx-paginador[\s\S]*</nav>").Value, @"role=""status""").Cast<Match>());
+            Assert.Equal(2, Regex.Matches(aspx, @"data-pagina=""anterior""").Count);
+            Assert.Equal(2, Regex.Matches(aspx, @"data-pagina=""siguiente""").Count);
+
+            // El script maneja los dos paginadores y agrega "Ver más" después de guardar el texto de búsqueda.
+            string js = Js("Exportacion/RegistroSeguimiento");
+            Assert.Contains("document.querySelectorAll('.sx-paginador')", js);
+            int texto = js.IndexOf("tr._texto = plano(tr.textContent)", StringComparison.Ordinal);
+            int verMas = js.IndexOf("'sx-btn sx-ver-mas'", StringComparison.Ordinal);
+            Assert.True(texto >= 0 && verMas > texto, "\"Ver más\" se tiene que crear después de tr._texto");
+            Assert.Contains("classList.toggle('sx-abierta')", js);
+            Assert.Contains("setAttribute('aria-expanded', abierta ? 'true' : 'false')", js);
+            Assert.Contains("ver.setAttribute('aria-label', 'Ver más ' + ver.dataset.viaje)", js);
+            Assert.Contains("verMas.setAttribute('aria-label', verMas.textContent", js);
+            Assert.Contains(".sx-fase + .sx-sub:not(:empty) { display: inline;", compacta);
+        }
+
+        [Fact]
+        public void SV1_SeguimientoViajeParaElDedoEnElCelular()
+        {
+            // M-249: hitos de 28 px con 44 px de toque, repartidos en filas; zoom del mapa y capas de 44 px; el reloj
+            // debajo del mapa; la cabecera en una sola fila flexible con el "?"; botones chicos de 2,75 rem.
+            string css = Css("Exportacion/SeguimientoExportacion");
+            string celular = string.Join("\n", BloquesMedia(css, "max-width: 767.98px"));
+            Assert.Matches(@"\.sx-carril-hito::before \{[^}]*inset: -8px", celular);
+            Assert.Matches(@"\.sx-carril-hito \{ width: 28px; height: 28px; margin-left: -14px; \}", celular);
+            Assert.Contains(".sx-ruta-mapa.leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; }", celular);
+            Assert.Contains(".sx-capa { min-height: 2.75rem; }", celular);
+            Assert.Matches(@"\.sx-ruta-reloj \{[^}]*position: static", celular);
+            Assert.Contains(".sx-acciones-viaje { display: contents; }", celular);
+            Assert.Contains(".sx-btn-chico { height: 2.75rem; }", celular);
+            Assert.Contains("span.sx-dia-fin { transform: translateX(-100%);", celular);
+            // En escritorio el hito sigue en 22 px.
+            Assert.Matches(@"\.sx-carril-hito \{\s*position: absolute; top: 2px; width: 22px; height: 22px; margin-left: -11px;", css);
+
+            Assert.Contains(@"CssClass=""sx-barra-acciones sx-acciones-viaje""", Aspx("Exportacion/SeguimientoViaje"));
+
+            string js = Js("Exportacion/SeguimientoViajeMapa");
+            Assert.Contains("function nivelesHitos(", js);
+            Assert.Contains("matchMedia('(max-width: 767.98px)')", js);
+            Assert.Contains("Math.min(10, Math.floor(ancho / 56))", js);
+            Assert.Contains("'sx-dia-fin'", js);
+            Assert.Contains("window.addEventListener('resize', redibujarLinea)", js);
+            string dibujar = Metodo(js, "dibujarLinea");
+            // Filas de hitos en el celular (cada 30 px) y en escritorio (cada 24 px), hasta 3; redibuja solo si cambió el ancho.
+            Assert.Contains("var separacion = enCelular ? 30 : 24", dibujar);
+            Assert.Contains("nivelesHitos(", dibujar);
+            Assert.Contains("separacion, FILAS_HITOS)", dibujar);
+            Assert.Contains("var FILAS_HITOS = 3", js);
+            Assert.Contains("b.style.top = (2 + niveles[i] * separacion) + 'px'", dibujar);
+            Assert.Contains("anchoDibujado = ancho;", dibujar);
+            Assert.Contains("pista.clientWidth !== anchoDibujado", js);
+
+            // "Marcar los de esta página": casilla cuadrada; las etiquetas de marcar con 2,75 rem en el celular.
+            Assert.Contains(".sx-cierre-todos input[type=checkbox] { width: 1.125rem; height: 1.125rem;", css);
+            Assert.Contains(".sx-cierre-sel, .sx-cierre-todos { min-height: 2.75rem; }", celular);
+        }
+
         // ── Dashboard ────────────────────────────────────────────────────────────────────────
 
         [Fact]

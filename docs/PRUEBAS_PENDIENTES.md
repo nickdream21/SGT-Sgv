@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-120 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-121 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -123,6 +123,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-091** Validación de E5-20b con datos que hoy no hay — con un `sgvEnsayo_*` o con el usuario, a 1366 y 390 px: LiquidacionesPendientes con liquidaciones reales en las tres pestañas (abrir Rechazar, Revertir, Retirar y Corregir salida desde sus botones); anular un movimiento activo desde su fila en MovimientosViaje; Registrar CPIC vacío y con "123" en un lote internacional sin CPIC (ListaDespachos); los modales de alta y Restablecer de GestionUsuarios tras confirmar de verdad la reautenticación. · C
 - [ ] **P-090** Validación de E5-20a con casos que hoy no hay — (1) en RegistroDespacho, "Agregar" vacío en el paso de agregar conductor de un lote (grupo `AgregarConductor`): `ddlConductor`, `ddlPlacaTracto` y `ddlPlacaCarreta` con su select2 en rojo y el mensaje debajo; (2) modal Editar de un tracto **sin historial** (placa editable): vaciarla con el teclado y Guardar, sin envío; (3) alta de un tracto con placa con espacios (" ABC 123"), que se guarda normalizada; (4) en un celular real, el mensaje junto al campo con el teclado abierto en el alta de un catálogo; (5) en el Edge de la oficina, si el navegador rellena solo "Contraseña actual" al abrir el modal Cambiar contraseña (en un perfil nuevo de Edge sin ventana lo hizo, con la clave guardada en el login), que es lo que `tplCamposContrasena` busca evitar. Con un `sgvEnsayo_*` o con el usuario lo que escribe. · C
 - [ ] **P-074** Anchos que cambiaron con los puntos de corte de E5-13 — las reglas de celular pasaron de `max-width: 768px/576px/992px` a `767.98/575.98/991.98px` (cambia solo exactamente a 768, 576 y 992 px, donde ahora coinciden con la rejilla de Bootstrap) y las de 480, 520 y 560 px a 575.98 px (cambia entre 481 y 575 px): con el ancho exacto, mirar Login, Inicio, Auditoría, ReportesOrdenesViaje, ListaDespachos, RegistroDespacho y LiquidacionesPendientes a 768 px (tablet vertical), y MiSeguridad, SegundoFactor, FirmarLiquidacion, DashboardExportacion y SeguimientoExportacion a 540 px: sin desbordes ni cortes. Además, en RegistroDespacho los 8 desplegables con `custom-select-sm` (Sección del Word, Cliente y Planta de programar e importar, Completa el despacho, Planta de descarga) quedan de 31 px como los campos de su fila. · C
+- [ ] **P-121** Seguimiento en el celular real tras publicar M-248/M-249 — en local ya medido en un Redmi (tablero 6 328 px, "Ver más", paginador arriba y abajo, hitos de 28 px). Falta en el sitio publicado: pestaña Vencidos con un vencido real (casilla de "Marcar los de esta página" cuadrada y etiquetas de 44 px, sin confirmar el cierre) y girar el celular en SeguimientoViaje (vertical→horizontal→vertical redibuja los hitos sin duplicarlos). · C
 
 ## Reglas
 

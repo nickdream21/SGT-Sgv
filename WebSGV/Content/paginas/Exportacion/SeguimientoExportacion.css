@@ -277,7 +277,22 @@ p.sx-filtro-cuenta:empty { display: none; }
     .sx-ruta-linea-pista, .sx-ruta-linea-dias, .sx-ruta-linea-leyenda { margin-left: 0; }
     .sx-carril-nombre { display: none; }
     .sx-ruta-mapa { height: 340px; }
-    .sx-ruta-reloj { left: 3.25rem; max-width: none; }
+    /* La hora del momento va debajo del mapa, no encima (tapaba hitos y el zoom). */
+    .sx-ruta-reloj { position: static; max-width: none; border-radius: 0; }
+    .sx-capa { min-height: 2.75rem; }
+    .sx-ruta-mapa.leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; }
+    /* Hitos de 28 px con 44 px de toque (::before); los que se tocan bajan a otra fila (nivelesHitos, SeguimientoViajeMapa.js). */
+    .sx-carril { height: 32px; }
+    .sx-carril::before { top: 14px; }
+    .sx-carril-barra { top: 12px; }
+    .sx-carril-parada { top: 10px; }
+    .sx-carril-hito { width: 28px; height: 28px; margin-left: -14px; }
+    .sx-carril-hito::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; }
+    /* Fecha del eje cerca del final: a la izquierda de su marca, para que no se salga de la pista. */
+    .sx-ruta-linea-dias span.sx-dia-fin { transform: translateX(-100%); padding-left: 0; padding-right: 4px; border-left: 0; border-right: 1px solid var(--sgv-gris-400); }
+    /* Cabecera del viaje: los botones y el "?" en la misma fila flexible (el "?" no queda solo). */
+    .sx-acciones-viaje { display: contents; }
+    .sx-acciones-viaje .sx-btn { flex: 1 1 auto; justify-content: center; height: 2.75rem; }
 }
 
 /* STATUS de la unidad (texto para copiar al Excel) */
@@ -349,6 +364,8 @@ p.sx-filtro-cuenta:empty { display: none; }
 .sx-cierre-fila { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
 .sx-cierre-sel { display: inline-flex; align-items: center; gap: 0.375rem; margin: 0; font-size: 0.8125rem; cursor: pointer; }
 .sx-cierre-sel input { width: 1.125rem; height: 1.125rem; margin: 0; }
+/* "Marcar los de esta página": casilla cuadrada como las de cada fila (.sx-campo input le daba la altura de un campo). */
+.sx-cierre-todos input[type=checkbox] { width: 1.125rem; height: 1.125rem; padding: 0; margin: 0; flex: none; }
 
 /* Paginación del tablero (en el navegador, RegistroSeguimiento.js) */
 .sx-tabla-caja .sx-fila.sx-fuera-pagina, .sx-tabla-caja .sx-grupo.sx-fuera-pagina { display: none; }
@@ -356,6 +373,11 @@ p.sx-filtro-cuenta:empty { display: none; }
 .sx-paginador[hidden] { display: none; }
 .sx-paginador-texto { margin-right: auto; font-size: 0.875rem; color: var(--sgv-texto-medio); font-variant-numeric: tabular-nums; }
 .sx-paginador .sx-btn:disabled { opacity: 0.5; cursor: default; }
+/* Paginador de arriba: solo en el celular (en escritorio la página entra en la pantalla). */
+.sx-paginador.sx-paginador-arriba { border-top: 0; border-bottom: 1px solid var(--sgv-borde); }
+@media (min-width: 768px) { .sx-paginador-arriba { display: none; } }
+/* "Ver más" de la tarjeta compacta: solo a menos de 576 px. */
+.sx-ver-mas { display: none; }
 
 /* Celular: cada viaje es una tarjeta (sin scroll horizontal); la etiqueta de cada dato sale de data-label. */
 @media (max-width: 767.98px) {
@@ -380,10 +402,27 @@ p.sx-filtro-cuenta:empty { display: none; }
     .sx-tablero .sx-fila .sx-avisos { flex-direction: column; }
     .sx-tablero .sx-copiar { min-width: 2.5rem; min-height: 2.5rem; }
     .sx-tablero .sx-btn-cerrar, .sx-paginador .sx-btn, .sx-cierre .sx-btn { height: 2.75rem; min-width: 2.75rem; }
-    .sx-cierre-sel, .sx-cierre-todos { min-height: 2.5rem; }
+    .sx-cierre-sel, .sx-cierre-todos { min-height: 2.75rem; }
     .sx-cierre-campos > * { flex: 1 1 100%; }
     .sx-cierre-campos select, .sx-cierre-otro input { min-width: 0; width: 100%; }
     .sx-paginador { justify-content: space-between; }
     .sx-paginador-texto { flex: 1 1 100%; margin-right: 0; }
     .sx-paginador .sx-btn { flex: 1 1 0; justify-content: center; }
+    .sx-btn-chico { height: 2.75rem; }
+}
+
+/* Celular angosto: tarjeta compacta (pedido y carreta, fase con avance, pendiente); Carga, Descarga y STATUS con "Ver más". */
+@media (max-width: 575.98px) {
+    .table.sgv-tabla.sx-tablero tbody tr.sx-fila:not(.sx-abierta) td:nth-child(2),
+    .table.sgv-tabla.sx-tablero tbody tr.sx-fila:not(.sx-abierta) td:nth-child(3),
+    .table.sgv-tabla.sx-tablero tbody tr.sx-fila:not(.sx-abierta) td:nth-child(5) { display: none; }
+    .table.sgv-tabla.sx-tablero tbody tr.sx-fila:not(.sx-abierta) td:nth-child(n) { grid-template-columns: minmax(0, 1fr); }
+    .sx-tablero tr.sx-fila:not(.sx-abierta) td::before { content: none; }
+    .sx-tablero .sx-fila:not(.sx-abierta) .sx-avisos { flex-direction: row; }
+    .sx-tablero .sx-fila:not(.sx-abierta) .sx-fase + .sx-sub:not(:empty) { display: inline; margin-left: 0.5rem; }
+    .sx-ver-mas { display: inline-flex; height: 2.75rem; }
+    /* Pedido y carreta a la izquierda, "Ver más" a su derecha (no en otra fila). */
+    .sx-tablero tr.sx-fila td:first-child .sx-celda { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 0.5rem; align-items: center; }
+    .sx-tablero tr.sx-fila td:first-child .sx-celda > :not(.sx-ver-mas) { grid-column: 1; }
+    .sx-tablero .sx-celda > .sx-ver-mas { grid-column: 2; grid-row: 1 / span 2; }
 }
