@@ -4,13 +4,14 @@ Registros de la BD que hay que corregir, completar o cargar. Casi todos están e
 
 Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = menor.
 
-Último id usado: D-043 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: D-045 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Facturas
 
 - [ ] **D-001** Facturas de flete de Vitapro por registrar — pedidos 4400134426, 4400134496, 4400134478, 4400134530, 4400134534, 4400134620, 4400134660, 4400134741, 4400134752, 4400134759 y 4400134786 (cargas del 31/10 al 11/11) sin factura de flete; en SUNAT hay 5 E001 a Vitapro del 13/11 (E001-18727 a 18731; 0 registradas al 2026-11-21). Además la F319-00021039 del afrecho del 24/10 (CPIC 0003948) sin factura de flete nuestra, y el pedido de prueba 9900000001. De aquí en adelante, subir cada semana las nuevas en Reportes → Facturas de flete. Control: `SELECT f.numeroPedido, COUNT(ff.idFacturaFlete) AS facturasFlete FROM Factura f LEFT JOIN FacturaFlete ff ON ff.numeroFacturaComercial = f.numeroFactura AND ff.activo = 1 WHERE f.numeroPedido IN ('4400134426', '4400134496', '4400134478', '4400134530', '4400134534', '4400134620', '4400134660', '4400134741', '4400134752', '4400134759', '4400134786') GROUP BY f.numeroPedido` (0 = pendiente; los 11 en 0 al 2026-11-21) y `SELECT numeroFactura FROM FacturaFlete WHERE numeroFactura BETWEEN 'E001-18727' AND 'E001-18731'` (0 filas = pendiente). · A
 - [ ] **D-002** E001-18719 anulada en SUNAT sigue activa en `FacturaFlete` — (activa al 2026-11-21): el pedido figura con 2 facturas, E001-18719 y E001-18725, las dos por F222-00008561 (TG 1300232, CPI 0003949, 237,6 t, US$ 14 731,20; OS 4301332252 y 4301332251). Si la 18719 se reemplazó, falta su NCE en SUNAT y darla de baja en Facturas de flete; si no, se cobró dos veces. La E001-18711 (también anulada) no se registró. Decisión de la oficina. Control: `SELECT numeroFactura, activo FROM FacturaFlete WHERE numeroFactura IN ('E001-18719', 'E001-18725')` (pendiente mientras las dos estén activas). · A
 - [ ] **D-003** Subir los PDF de las facturas de Novopan 484–492 — desde la tarjeta "Factura y CPIC por despacho" (el código ya está publicado). Control: `SELECT f.idFactura, f.numeroFactura, COUNT(df.idDocumento) AS pdfs FROM Factura f LEFT JOIN DocumentosFactura df ON df.idFactura = f.idFactura AND df.activo = 1 WHERE f.idFactura BETWEEN 484 AND 492 GROUP BY f.idFactura, f.numeroFactura` (0 = sin PDF; las 9 al 2026-11-21). · B
+- [ ] **D-044** Facturas 4679, 4680 y 4714 (ids; serie F999) sin despacho activo — de lotes anulados el 2026-11-21: confirmar que son de prueba y darlas de baja. Control: `SELECT idFactura, numeroFactura FROM Factura WHERE idFactura IN (4679, 4680, 4714)`. · C
 
 ## CPIC y MCI
 
@@ -21,6 +22,7 @@ Prioridad: A = dinero o datos que bloquean el trabajo; B = valor claro; C = meno
 - [ ] **D-008** CPIC que solo están como borrador — 0003892, 0003906, 0003964, 0003965 y 0003966 (las tres últimas serían de los pedidos 4400134741, 752 y 759, que aún no llegan en el correo). Pedir las firmadas a transportes y subirlas por la bandeja. · C
 - [ ] **D-009** CPIC y MCI del pedido 4400134786 — (carga del 11/11; 8 despachos, 0 con CPIC al 2026-11-21) y las descargas de ese pedido: llegan en el Word y el correo. · C
 - [ ] **D-010** 11 PDF escaneados (sin texto) de MCI de Novopan — ("MCI FACTURA …"): la bandeja no los lee. Adjuntarlos en el panel del lote (o OCR si se vuelve frecuente). · C
+- [ ] **D-045** Rellenar `numeroManifiesto` de los 371 manifiestos ya guardados — tras M-262, desde la auditoría o releyendo los PDF. Control: `SELECT COUNT(*) FROM DocumentosManifiesto WHERE activo = 1 AND numeroManifiesto IS NULL`. · C
 
 ## Despachos y seguimiento
 

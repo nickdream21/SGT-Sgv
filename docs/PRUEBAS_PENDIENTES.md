@@ -4,7 +4,7 @@ Lo que falta probar en el navegador, en un celular, con un pedido o un conductor
 
 Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. `[~]` = a medias.
 
-Último id usado: P-123 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
+Último id usado: P-124 (el próximo pendiente toma el siguiente; ver "Reglas" al final).
 
 ## Con un pedido o un conductor real (usuario)
 
@@ -126,6 +126,7 @@ Prioridad: A = bloquea el uso real; B = flujo importante sin probar; C = menor. 
 - [ ] **P-121** Seguimiento en el celular real tras publicar M-248/M-249 — en local ya medido en un Redmi (tablero 6 328 px, "Ver más", paginador arriba y abajo, hitos de 28 px). Falta en el sitio publicado: pestaña Vencidos con un vencido real (casilla de "Marcar los de esta página" cuadrada y etiquetas de 44 px, sin confirmar el cierre) y girar el celular en SeguimientoViaje (vertical→horizontal→vertical redibuja los hitos sin duplicarlos). · C
 - [ ] **P-122** Tablas apiladas en el sitio publicado y celular real (M-250/M-251) — Bandeja "Por camión": tocar el PDF de una guía del remitente y que abra (en local dan 404 porque los archivos no están en esta máquina); EditarLote cambiando el tipo de operación sin guardar; FacturasFlete tras "Leer y registrar" una factura (la tabla del resultado también va apilada, no probada). · B
 - [ ] **P-123** Detalles del celular tras publicar M-252/M-254 — en un celular real: selectores de archivo al tacto (FacturasFlete, DestinoDescarga, RegistroChoferes, y los de factura/CPIC/documento de RegistroManualLote con sus paneles visibles), casillas de EditarLote con los dos paneles de documentos e índice de Ayuda; en un portátil real de 1366×768 el Login con el aviso de sesión vencida. · C
+- [ ] **P-124** Muestras reales por la batería de M-259 — en la oficina, los 41 ZIP de `docs/DOCUMENTACION/correo guias` antes y después de M-258: los mismos tractos y guías y 0 documentos desconocidos. · B
 
 ## Reglas
 
